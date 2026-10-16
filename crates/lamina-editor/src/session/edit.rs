@@ -6,12 +6,19 @@ use lamina_core::Project;
 use super::{Session, warnings_of};
 
 impl Session {
-    /// Aplica `change` no projeto como uma edição com `label`. Se der erro, nada muda.
+    /// Aplica `change` no projeto como uma edição com `label`. Se der erro, nada muda. O rótulo
+    /// ganha a lâmina atual ("Trocar layout · lâmina 3"), salvo quando já diz onde (spec HI,
+    /// regra 1).
     pub fn edit<E>(
         &mut self,
         label: &str,
         change: impl FnOnce(&mut Project) -> Result<(), E>,
     ) -> Result<(), E> {
+        let label = if label.contains(" · ") {
+            label.to_owned()
+        } else {
+            format!("{label} · lâmina {}", self.current + 1)
+        };
         self.history.try_apply(label, change)?;
         self.warnings = warnings_of(self.history.present());
         Ok(())
@@ -41,7 +48,7 @@ impl Session {
         Some(label)
     }
 
-    fn after_step(&mut self, before: &Project) {
+    pub(super) fn after_step(&mut self, before: &Project) {
         let now = self.history.present();
         let changed = (0..now.spreads.len().max(before.spreads.len()))
             .find(|&i| now.spreads.get(i) != before.spreads.get(i));

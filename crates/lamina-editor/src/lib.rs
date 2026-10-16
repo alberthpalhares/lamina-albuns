@@ -48,7 +48,7 @@ pub use keys::{Key, Shortcut};
 pub use photos::{Filter, PhotoInfo, PhotoItem, photo_info, photo_list, used_photos};
 pub use prefs_store::{PREFS_FILE, PrefsStore, config_dir};
 pub use screens::{ScreenImages, load_original, prepare_images};
-pub use session::Session;
+pub use session::{HistoryList, HistoryStep, Session};
 pub use suggestions::{List, Part, Unavailable};
 pub use text::{
     BAD_COLOR, PALETTE, color_hex, family_name, frame_dpi_text, parse_color, score_text,

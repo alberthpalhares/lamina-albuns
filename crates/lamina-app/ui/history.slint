@@ -1,0 +1,55 @@
+// Painel de histórico (spec HI): o começo e um passo por linha; o atual destacado, os desfeitos
+// apagados e o marcador "salvo". Clique leva o álbum àquele passo.
+
+import { ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+
+export struct HistoryItem {
+    label: string,
+    undone: bool,
+    saved: bool,
+}
+
+export component HistoryPanel inherits VerticalLayout {
+    // A linha 0 é o começo ("Álbum aberto"); a linha k é o passo k.
+    in property <[HistoryItem]> items;
+    in property <int> position;
+    callback go(int);
+    spacing: 6px;
+
+    Text {
+        text: "Clique num passo para voltar a ele. Os apagados ainda podem ser refeitos.";
+        color: Theme.muted;
+        font-size: 12px;
+        wrap: word-wrap;
+    }
+    ListView {
+        vertical-stretch: 1;
+        for item[i] in root.items: Rectangle {
+            height: 30px;
+            border-radius: 4px;
+            background: i == root.position ? #ffffff1f : touch.has-hover ? #ffffff0d : transparent;
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                spacing: 6px;
+                Text {
+                    text: item.label;
+                    color: item.undone ? #6b6b6b : i == root.position ? Theme.selected : Theme.text;
+                    font-weight: i == root.position ? 700 : 400;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                }
+                if item.saved: Text {
+                    text: "salvo";
+                    color: Theme.warning;
+                    font-size: 11px;
+                    vertical-alignment: center;
+                }
+            }
+            touch := TouchArea { clicked => { root.go(i); } }
+        }
+    }
+}

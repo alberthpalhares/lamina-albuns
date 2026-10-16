@@ -111,4 +111,12 @@ impl Editor {
         };
         s.go_to(target)
     }
+
+    /// Clique num passo do painel de histórico (spec HI, regra 2). Um gesto de recorte em
+    /// andamento é gravado antes.
+    pub fn go_to_step(&mut self, step: usize) -> bool {
+        self.exit_crop();
+        self.selected_frame = None;
+        self.session.as_mut().is_some_and(|s| s.go_to_step(step))
+    }
 }

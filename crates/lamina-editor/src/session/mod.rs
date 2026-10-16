@@ -10,6 +10,9 @@ use crate::EditorError;
 use crate::photos::used_photos;
 
 mod edit;
+mod history;
+
+pub use history::{HistoryList, HistoryStep};
 
 /// Quantos nomes de fotos ausentes aparecem no aviso antes de "e mais N".
 const MISSING_NAMES: usize = 5;
@@ -23,6 +26,8 @@ pub struct Session {
     current: usize,
     missing: Vec<PhotoId>,
     warnings: Vec<Warning>,
+    /// Aberto de um arquivo (o histórico começa em "Álbum aberto"; spec HI).
+    opened: bool,
 }
 
 impl Session {
@@ -53,6 +58,7 @@ impl Session {
             current: 0,
             missing,
             warnings,
+            opened: saved,
         }
     }
 

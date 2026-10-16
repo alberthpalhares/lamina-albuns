@@ -4,6 +4,7 @@
 mod ap;
 mod common;
 mod fq;
+mod hi;
 mod jp_album;
 mod jp_commands;
 mod jp_session;
