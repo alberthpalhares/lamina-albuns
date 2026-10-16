@@ -54,7 +54,14 @@ impl Editor {
             return Panel::unavailable(Unavailable::NoPhotos);
         };
         let (project, index) = (session.project(), session.current());
-        let sel = match selection(project, index, part) {
+        // Com fotos selecionadas no navegador, as opções são para elas (spec FQ, regra 5).
+        let chosen = !self.selection.is_empty() && part == Part::Spread;
+        let sel = if chosen {
+            self.photo_selection()
+        } else {
+            selection(project, index, part)
+        };
+        let sel = match sel {
             Ok(sel) => sel,
             Err(reason) => return Panel::unavailable(reason),
         };
@@ -72,7 +79,7 @@ impl Editor {
         let in_use = preferred
             .list
             .iter()
-            .position(|c| is_in_use(project, index, &sel, c));
+            .position(|c| !chosen && is_in_use(project, index, &sel, c));
         Panel {
             list,
             options: preferred.list,
@@ -105,6 +112,9 @@ impl Editor {
 
     /// Aplica a opção `i` do painel da `part` (clique no painel). `true` = trocou.
     pub fn apply_option(&mut self, part: Part, i: usize) -> bool {
+        if part == Part::Spread && !self.selection.is_empty() {
+            return self.build_from_selection(i);
+        }
         let panel = self.panel(part);
         let (Some(sel), Some(c)) = (panel.selection, panel.options.get(i).cloned()) else {
             return false;

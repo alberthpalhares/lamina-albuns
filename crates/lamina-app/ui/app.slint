@@ -13,6 +13,14 @@ export struct PhotoData {
     img: image,
     name: string,
     uses: int,
+    selected: bool,
+}
+
+// Uma posição da timeline: uma foto, ou o corte depois da lâmina `spread`.
+export struct TimelineItem {
+    img: image,
+    cut: bool,
+    spread: int,
 }
 
 component BarButton inherits Rectangle {
@@ -123,6 +131,22 @@ export component AppWindow inherits Window {
     callback na-changed();
     callback na-create();
     callback confirm(int);
+    // Arrastar (spec FQ): 0 nada, 1 foto do navegador, 2 quadro, 3 lâmina na faixa.
+    in-out property <int> drag-kind;
+    in-out property <int> drag-from: -1;
+    in-out property <image> drag-img;
+    in-out property <length> drag-x;
+    in-out property <length> drag-y;
+    in-out property <length> press-x;
+    in-out property <length> press-y;
+    in property <int> selected-frame: -1;
+    in property <[TimelineItem]> timeline;
+    callback photo-pressed(int, bool, bool);
+    callback drop-photo(int, float, float);
+    callback drop-frame(int, float, float);
+    callback frame-selected(int);
+    callback move-spread(int, int);
+    callback cut-moved(int, int);
     callback layout-apply(int);
     callback layout-favorite(int);
     callback layout-reject(int);
@@ -131,6 +155,15 @@ export component AppWindow inherits Window {
     public function focus-main() {
         keys.focus();
     }
+
+    // Começa a arrastar só depois de 6 px, para um clique não virar arrasto.
+    function far(x: length, y: length) -> bool {
+        abs(x - root.press-x) > 6px || abs(y - root.press-y) > 6px
+    }
+
+    // Onde o ponteiro está na lâmina grande, em frações da largura dela.
+    function frac-x() -> float { (root.drag-x - big.absolute-position.x) / big.width }
+    function frac-y() -> float { (root.drag-y - big.absolute-position.y) / big.width }
 
     // A lâmina atual fica visível na faixa (spec JP, regra 7): se saiu da área vista, a faixa
     // rola até deixá-la no meio.
@@ -202,6 +235,10 @@ export component AppWindow inherits Window {
             if (event.text == Key.End) { return root.key("End", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
             if (event.text == Key.LeftArrow) { return root.key("Left", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
             if (event.text == Key.RightArrow) { return root.key("Right", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
+            if (event.text == Key.Delete) { return root.key("Delete", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
+            if (event.text == Key.Backspace) { return root.key("Backspace", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
+            if (event.text == Key.Escape) { return root.key("Escape", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
+            if (event.text == Key.Return) { return root.key("Enter", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
             if (event.text == Key.UpArrow) { return root.key("Up", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
             if (event.text == Key.DownArrow) { return root.key("Down", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
             root.key(event.text, event.modifiers.control, event.modifiers.shift) ? accept : reject
@@ -245,13 +282,39 @@ export component AppWindow inherits Window {
                     horizontal-stretch: 1;
                     property <length> canvas-width: root.current.aspect > 0
                         ? min(self.width - 48px, (self.height - 48px) / root.current.aspect) : 0px;
-                    if root.has-project: SpreadCanvas {
+                    // Sempre na árvore (some sem projeto) para o arrastar achar a posição dela.
+                    big := SpreadCanvas {
+                        visible: root.has-project;
                         width: area.canvas-width;
                         height: area.canvas-width * root.current.aspect;
                         data: root.current;
                         guides: root.guides;
+                        interactive: true;
+                        selected: root.selected-frame;
                         drop-shadow-blur: 16px;
                         drop-shadow-color: #00000080;
+                        frame-down(i, x, y) => {
+                            root.press-x = x;
+                            root.press-y = y;
+                            root.drag-from = i;
+                        }
+                        frame-move(i, x, y) => {
+                            if (root.drag-kind == 0 && root.far(x, y)) {
+                                root.drag-kind = 2;
+                                root.drag-img = root.current.frames[i].img;
+                            }
+                            root.drag-x = x;
+                            root.drag-y = y;
+                        }
+                        frame-up(i, x, y) => {
+                            if (root.drag-kind == 2) {
+                                root.drop-frame(root.drag-from, root.frac-x(), root.frac-y());
+                            } else {
+                                root.frame-selected(i);
+                            }
+                            root.drag-kind = 0;
+                            root.focus-main();
+                        }
                     }
                     if !root.has-project: VerticalLayout {
                         alignment: center;
@@ -368,7 +431,35 @@ export component AppWindow inherits Window {
                                     background: Theme.warning;
                                     Text { text: "!"; color: black; font-size: 10px; font-weight: 700; }
                                 }
-                                TouchArea { clicked => { root.go-to(i); } }
+                                TouchArea {
+                                    moved => {
+                                        let x = self.absolute-position.x + self.mouse-x;
+                                        let y = self.absolute-position.y + self.mouse-y;
+                                        if (root.drag-kind == 0 && root.far(x, y)) {
+                                            root.drag-kind = 3;
+                                            root.drag-from = i;
+                                        }
+                                        root.drag-x = x;
+                                        root.drag-y = y;
+                                    }
+                                    pointer-event(e) => {
+                                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                                            root.press-x = self.absolute-position.x + self.mouse-x;
+                                            root.press-y = self.absolute-position.y + self.mouse-y;
+                                        }
+                                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                                            if (root.drag-kind == 3) {
+                                                let item = 84px / s.aspect + 16px;
+                                                let at = (root.drag-x - strip-scroll.absolute-position.x - strip-scroll.content-x - 10px) / item;
+                                                root.move-spread(i, max(0, min(root.spreads.length - 1, floor(at))));
+                                            } else {
+                                                root.go-to(i);
+                                            }
+                                            root.drag-kind = 0;
+                                            root.focus-main();
+                                        }
+                                    }
+                                }
                             }
                             Text {
                                 text: i + 1;
@@ -376,6 +467,50 @@ export component AppWindow inherits Window {
                                 color: i == root.current-index ? Theme.selected : Theme.muted;
                                 font-size: 12px;
                                 font-weight: i == root.current-index ? 700 : 400;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Timeline (spec FQ, regra 8): as fotos na ordem do álbum e um corte entre as lâminas.
+            if root.has-project: Rectangle {
+                height: 58px;
+                background: Theme.background;
+                ScrollView {
+                    content-width: line.preferred-width;
+                    content-height: self.height;
+                    line := HorizontalLayout {
+                        padding: 6px;
+                        spacing: 2px;
+                        for t in root.timeline: Rectangle {
+                            width: t.cut ? 14px : 46px;
+                            if !t.cut: Image {
+                                width: 44px;
+                                height: 44px;
+                                source: t.img;
+                                image-fit: contain;
+                            }
+                            if t.cut: Rectangle {
+                                cut-touch := TouchArea {
+                                    mouse-cursor: ew-resize;
+                                    pointer-event(e) => {
+                                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                                            root.press-x = self.absolute-position.x + self.mouse-x;
+                                        }
+                                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                                            let dx = self.absolute-position.x + self.mouse-x - root.press-x;
+                                            root.cut-moved(t.spread, round(dx / 48px));
+                                            root.focus-main();
+                                        }
+                                    }
+                                }
+                                Rectangle {
+                                    x: 5px;
+                                    width: 4px;
+                                    border-radius: 2px;
+                                    background: cut-touch.has-hover || cut-touch.pressed ? Theme.selected : Theme.muted;
+                                }
                             }
                         }
                     }
@@ -404,7 +539,7 @@ export component AppWindow inherits Window {
                             for p[i] in root.photos: Rectangle {
                                 width: 140px;
                                 height: 120px;
-                                background: i == root.selected-photo ? #ffffff1f : transparent;
+                                background: p.selected ? #4fc3f740 : i == root.selected-photo ? #ffffff1f : transparent;
                                 border-radius: 4px;
                                 Image {
                                     y: 4px;
@@ -430,8 +565,33 @@ export component AppWindow inherits Window {
                                     font-size: 11px;
                                 }
                                 TouchArea {
-                                    clicked => { root.photo-clicked(i); }
                                     double-clicked => { root.photo-double-clicked(i); }
+                                    moved => {
+                                        let x = self.absolute-position.x + self.mouse-x;
+                                        let y = self.absolute-position.y + self.mouse-y;
+                                        if (root.drag-kind == 0 && root.far(x, y)) {
+                                            root.drag-kind = 1;
+                                            root.drag-from = i;
+                                            root.drag-img = p.img;
+                                        }
+                                        root.drag-x = x;
+                                        root.drag-y = y;
+                                    }
+                                    pointer-event(e) => {
+                                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                                            root.press-x = self.absolute-position.x + self.mouse-x;
+                                            root.press-y = self.absolute-position.y + self.mouse-y;
+                                        }
+                                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                                            if (root.drag-kind == 1) {
+                                                root.drop-photo(root.drag-from, root.frac-x(), root.frac-y());
+                                            } else {
+                                                root.photo-pressed(i, e.modifiers.control, e.modifiers.shift);
+                                            }
+                                            root.drag-kind = 0;
+                                            root.focus-main();
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -483,6 +643,15 @@ export component AppWindow inherits Window {
             root.show-about = false;
             root.focus-main();
         }
+    }
+    if root.drag-kind == 1 || root.drag-kind == 2: Image {
+        x: root.drag-x - 40px;
+        y: root.drag-y - 40px;
+        width: 80px;
+        height: 80px;
+        source: root.drag-img;
+        image-fit: contain;
+        opacity: 0.8;
     }
     if root.busy-text != "": BusyOverlay {
         text: root.busy-text;

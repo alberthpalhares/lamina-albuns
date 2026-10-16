@@ -2,6 +2,7 @@
 //! build`) mora nos testes do binário `lamina`, que roda os dois caminhos.
 
 mod common;
+mod fq;
 mod jp_album;
 mod jp_commands;
 mod jp_session;

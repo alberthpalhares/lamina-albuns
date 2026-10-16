@@ -114,11 +114,12 @@ pub fn spread_data(
 }
 
 /// Uma foto do navegador.
-pub fn photo_data(item: &PhotoItem, image: Option<Image>) -> PhotoData {
+pub fn photo_data(item: &PhotoItem, image: Option<Image>, selected: bool) -> PhotoData {
     PhotoData {
         img: image.unwrap_or_default(),
         name: item.name.clone().into(),
         uses: i32::try_from(item.uses).unwrap_or(i32::MAX),
+        selected,
     }
 }
 

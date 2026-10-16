@@ -2,7 +2,7 @@
 
 use lamina_core::CoreError;
 use lamina_export::ProjectFileError;
-use lamina_layout::BuildError;
+use lamina_layout::{BuildError, LayoutError};
 use lamina_media::MediaError;
 use thiserror::Error;
 
@@ -20,6 +20,10 @@ pub enum EditorError {
     File(#[from] ProjectFileError),
     #[error(transparent)]
     Core(#[from] CoreError),
+    #[error(transparent)]
+    Layout(#[from] LayoutError),
+    #[error("Quadro ou lâmina que não existe.")]
+    NoFrame,
     #[error("Nenhum projeto aberto.")]
     NoProject,
     #[error("O projeto ainda não tem arquivo: use Salvar como.")]

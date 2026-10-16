@@ -148,3 +148,19 @@ pub fn spread_view(
         frames,
     })
 }
+
+/// O quadro da lâmina `index` sob o ponto (`x`, `y`), em frações da largura da lâmina com a
+/// sangria (como a janela desenha). Para soltar uma foto (spec FQ, regras 1 e 2).
+pub fn frame_at(project: &Project, index: usize, x: f64, y: f64) -> Option<usize> {
+    let canvas = project.spec.canvas_rect();
+    let area = Area {
+        width: 1.0,
+        height: canvas.height.get() / canvas.width.get(),
+        margin: 0.0,
+    };
+    let view = spread_view(project, index, area, &[])?;
+    view.frames.iter().position(|f| {
+        let r = f.rect;
+        x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height
+    })
+}

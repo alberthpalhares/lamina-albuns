@@ -7,6 +7,7 @@
 #![windows_subsystem = "windows"]
 
 mod convert;
+mod drag;
 mod files;
 mod images;
 mod info;
@@ -61,16 +62,22 @@ fn run_command(app: &Shared, command: Command) {
             }
         }
         _ => {
-            let strip = matches!(
+            // Navegar e as guias só mudam a lâmina mostrada; o resto edita o álbum e muda também
+            // a faixa, a timeline e os usos no navegador.
+            let only_view = matches!(
                 command,
-                Command::Undo | Command::Redo | Command::Mirror | Command::Reject
-            ) || command.name().starts_with("layout.");
+                Command::NextSpread
+                    | Command::PreviousSpread
+                    | Command::FirstSpread
+                    | Command::LastSpread
+                    | Command::ToggleGuides
+            );
             if a.editor.run(command) {
-                // Uma troca de layout muda a miniatura da lâmina na faixa também.
-                if strip {
-                    a.refresh_strip();
+                if only_view {
+                    a.refresh_current();
+                } else {
+                    a.refresh_all();
                 }
-                a.refresh_current();
             }
         }
     }
@@ -112,6 +119,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     connect_photos(window, app);
     connect_dialogs(window, app);
     connect_layouts(window, app);
+    drag::connect(window, app);
 }
 
 /// O painel de layouts: clique aplica; a estrela e o "×" marcam a opção (spec TL, seção 3).

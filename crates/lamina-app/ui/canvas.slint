@@ -42,10 +42,16 @@ export component SpreadCanvas inherits Rectangle {
     in property <SpreadData> data;
     in property <bool> guides;
     in property <bool> small;
+    // Lâmina grande: quadros clicáveis e arrastáveis (spec FQ).
+    in property <bool> interactive;
+    in property <int> selected: -1;
+    callback frame-down(int, length, length);
+    callback frame-move(int, length, length);
+    callback frame-up(int, length, length);
     background: root.data.bg;
     clip: true;
 
-    for f in root.data.frames: Rectangle {
+    for f[i] in root.data.frames: Rectangle {
         x: f.x * root.width;
         y: f.y * root.width;
         width: f.w * root.width;
@@ -69,6 +75,24 @@ export component SpreadCanvas inherits Rectangle {
             font-size: 12px;
             horizontal-alignment: center;
             wrap: word-wrap;
+        }
+        if root.interactive: TouchArea {
+            mouse-cursor: f.has-img ? move : default;
+            moved => {
+                root.frame-move(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+            }
+            pointer-event(e) => {
+                if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                    root.frame-down(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                }
+                if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                    root.frame-up(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                }
+            }
+        }
+        if i == root.selected: Rectangle {
+            border-width: 3px;
+            border-color: #4fc3f7;
         }
     }
 
