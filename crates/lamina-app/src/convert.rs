@@ -67,6 +67,16 @@ pub fn spread_data(
                 y: to_f32(f.rect.y),
                 w: to_f32(f.rect.width),
                 h: to_f32(f.rect.height),
+                tl: to_f32(f.radii[0]),
+                tr: to_f32(f.radii[1]),
+                br: to_f32(f.radii[2]),
+                bl: to_f32(f.radii[3]),
+                bw: to_f32(f.border),
+                bcolor: color(f.border_color),
+                bx: to_f32(f.trim.x),
+                by: to_f32(f.trim.y),
+                bww: to_f32(f.trim.width),
+                bh: to_f32(f.trim.height),
                 ..FrameData::default()
             };
             match &f.kind {
@@ -103,6 +113,7 @@ pub fn spread_data(
     SpreadData {
         aspect: to_f32(a),
         bg: color(view.background),
+        bg_right: color(view.background_right),
         trim: boxed(view.trim),
         safe_l: boxed(view.safe[0]),
         safe_r: boxed(view.safe[1]),

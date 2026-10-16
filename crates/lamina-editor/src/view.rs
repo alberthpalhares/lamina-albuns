@@ -33,6 +33,13 @@ pub struct FrameView {
     /// Quadro já estendido até a sangria quando encosta no corte, como na impressão.
     pub rect: PxRect,
     pub kind: FrameKind,
+    /// O quadro no corte final, onde a borda é desenhada (spec AP, regra 4).
+    pub trim: PxRect,
+    /// Espessura da borda (0 = sem borda) e cor.
+    pub border: f64,
+    pub border_color: Rgb,
+    /// Raio de cada canto: cima-esquerda, cima-direita, baixo-direita, baixo-esquerda (regra 5).
+    pub radii: [f64; 4],
 }
 
 /// A lâmina pronta para desenhar.
@@ -51,6 +58,8 @@ pub struct SpreadView {
     /// Páginas sem conteúdo (lâmina de ponta com página simples).
     pub inactive: Vec<PxRect>,
     pub background: Rgb,
+    /// Fundo da página direita (igual ao `background` quando não há fundo por página).
+    pub background_right: Rgb,
     pub frames: Vec<FrameView>,
 }
 
@@ -128,9 +137,24 @@ pub fn spread_view(
                     }
                 }
             };
+            let at = px(bled.rect);
+            let r = (frame.radius.get() * scale)
+                .min(at.width.min(at.height) / 2.0)
+                .max(0.0);
+            let [left, top, right, bottom] = bled.grow.map(|g| g > 0.0);
+            let corner = |a: bool, b: bool| if a || b { 0.0 } else { r };
             FrameView {
-                rect: px(bled.rect),
+                rect: at,
                 kind,
+                trim: px(rect),
+                border: frame.border.width.get() * scale,
+                border_color: frame.border.color,
+                radii: [
+                    corner(left, top),
+                    corner(right, top),
+                    corner(right, bottom),
+                    corner(left, bottom),
+                ],
             }
         })
         .collect();
@@ -145,6 +169,7 @@ pub fn spread_view(
         spine_x: origin.0 + (trim.x.get() + trim.width.get() / 2.0) * scale,
         inactive,
         background: spread.background,
+        background_right: spread.page_background(PageSide::Right),
         frames,
     })
 }

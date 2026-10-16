@@ -138,7 +138,7 @@ fn suggestions(
             LayoutOptions::default().max_candidates
         },
         reordered: false,
-        ..LayoutOptions::default()
+        gap: project.gap,
     };
     let results: Vec<Result<Window, BuildError>> = plan
         .par_iter()

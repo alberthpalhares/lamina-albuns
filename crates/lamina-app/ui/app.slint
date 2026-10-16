@@ -6,8 +6,9 @@ import { Theme } from "theme.slint";
 import { SpreadCanvas, SpreadData, FrameData, BoxData } from "canvas.slint";
 import { NewAlbumDialog, ConfirmDialog, MessageDialog, BusyOverlay } from "dialogs.slint";
 import { LayoutsPanel, LayoutItem } from "layouts.slint";
+import { LookPanel, Swatch } from "look.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem }
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch }
 
 export struct PhotoData {
     img: image,
@@ -141,6 +142,26 @@ export component AppWindow inherits Window {
     in-out property <length> press-y;
     in property <int> selected-frame: -1;
     in property <[TimelineItem]> timeline;
+    // Aparência (spec AP).
+    in property <[Swatch]> palette;
+    in property <string> look-gap;
+    in property <string> look-border;
+    in property <string> look-radius;
+    in property <bool> look-split;
+    in property <color> look-left;
+    in property <color> look-right;
+    in property <color> look-border-color;
+    in property <bool> look-only-frame;
+    in-out property <string> look-hex;
+    in property <string> look-hex-error;
+    callback look-gap-step(int);
+    callback look-border-step(int);
+    callback look-radius-step(int);
+    callback look-background(int, int);
+    callback look-background-hex(string);
+    callback look-split-changed(bool);
+    callback look-border-pick(int);
+    callback look-apply-all();
     // Recorte (spec RC).
     in property <int> crop-frame: -1;
     in property <bool> has-preview;
@@ -380,6 +401,16 @@ export component AppWindow inherits Window {
                             }
                             Rectangle {
                                 height: 30px;
+                                width: look-tab.preferred-width;
+                                look-tab := Text {
+                                    text: "Aparência";
+                                    color: root.panel-tab == 2 ? Theme.selected : Theme.muted;
+                                    font-weight: root.panel-tab == 2 ? 700 : 400;
+                                }
+                                TouchArea { clicked => { root.panel-tab = 2; } }
+                            }
+                            Rectangle {
+                                height: 30px;
                                 width: info-tab.preferred-width;
                                 info-tab := Text {
                                     text: "Informações";
@@ -404,6 +435,28 @@ export component AppWindow inherits Window {
                             favorite(i) => { root.layout-favorite(i); root.focus-main(); }
                             reject(i) => { root.layout-reject(i); root.focus-main(); }
                             list-changed(i) => { root.layout-list-changed(i); root.focus-main(); }
+                        }
+                        if root.panel-tab == 2: LookPanel {
+                            vertical-stretch: 1;
+                            palette: root.palette;
+                            gap: root.look-gap;
+                            border: root.look-border;
+                            radius: root.look-radius;
+                            split: root.look-split;
+                            left: root.look-left;
+                            right: root.look-right;
+                            border-color: root.look-border-color;
+                            only-frame: root.look-only-frame;
+                            hex <=> root.look-hex;
+                            hex-error: root.look-hex-error;
+                            gap-step(d) => { root.look-gap-step(d); root.focus-main(); }
+                            border-step(d) => { root.look-border-step(d); root.focus-main(); }
+                            radius-step(d) => { root.look-radius-step(d); root.focus-main(); }
+                            background(i, side) => { root.look-background(i, side); root.focus-main(); }
+                            background-hex(t) => { root.look-background-hex(t); }
+                            split-changed(on) => { root.look-split-changed(on); root.focus-main(); }
+                            border-pick(i) => { root.look-border-pick(i); root.focus-main(); }
+                            apply-all() => { root.look-apply-all(); root.focus-main(); }
                         }
                         if root.panel-tab == 1: VerticalLayout {
                             vertical-stretch: 1;

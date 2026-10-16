@@ -86,6 +86,7 @@ impl Editor {
             aspects,
             active,
             whole: true,
+            gap: project.spread_gap(&project.spreads[index]),
         })
     }
 

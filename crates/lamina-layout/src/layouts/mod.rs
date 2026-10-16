@@ -23,7 +23,7 @@ use rank::{Limits, Sequence, Sort};
 pub use types::*;
 
 /// Espaço padrão entre fotos: 8 pt (estudo E2), em mm.
-pub const DEFAULT_GAP: Mm = Mm(8.0 * 25.4 / 72.0);
+pub const DEFAULT_GAP: Mm = lamina_core::DEFAULT_GAP;
 
 /// Fotos por página (spec VL, regra 1).
 pub const MAX_PER_PAGE: usize = 12;

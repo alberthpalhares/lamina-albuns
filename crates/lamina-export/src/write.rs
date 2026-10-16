@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use image::RgbaImage;
 use image::imageops::crop_imm;
 use lamina_core::{PageSide, Project};
-use lamina_render::{PhotoSource, RenderTarget, render_spread};
+use lamina_render::{Fill, PhotoSource, RenderTarget, render_spread_with};
 
 use crate::jobs::{Output, SpreadJob};
 use crate::{ExportError, jpeg};
@@ -25,25 +25,45 @@ pub fn spread(ctx: &Ctx, job: &SpreadJob) -> Result<Vec<PathBuf>, ExportError> {
     match &job.output {
         Output::Pages(pages) if pages.is_empty() => Ok(Vec::new()),
         Output::Whole(name) => {
-            let image = render(ctx, job.spread)?;
+            let image = render(ctx, job.spread, Fill::Pages)?;
             Ok(vec![save(ctx, name, image, dpi)?])
         }
         Output::Pages(pages) => {
-            let image = render(ctx, job.spread)?;
+            // Páginas com fundos diferentes: cada uma é renderizada com o próprio fundo, para a
+            // sangria da lombada ter a cor dela (spec AP, regra 3). Fundos iguais: uma vez só.
+            let two = ctx.project.spreads.get(job.spread).is_some_and(|s| {
+                s.page_background(PageSide::Left) != s.page_background(PageSide::Right)
+            });
+            let shared = if two {
+                None
+            } else {
+                Some(render(ctx, job.spread, Fill::Pages)?)
+            };
             pages
                 .iter()
-                .map(|(side, name)| save(ctx, name, page_of(ctx.project, &image, *side), dpi))
+                .map(|(side, name)| {
+                    let image = match &shared {
+                        Some(image) => page_of(ctx.project, image, *side),
+                        None => page_of(
+                            ctx.project,
+                            &render(ctx, job.spread, Fill::Side(*side))?,
+                            *side,
+                        ),
+                    };
+                    save(ctx, name, image, dpi)
+                })
                 .collect()
         }
     }
 }
 
-fn render(ctx: &Ctx, spread: usize) -> Result<RgbaImage, ExportError> {
-    Ok(render_spread(
+fn render(ctx: &Ctx, spread: usize, fill: Fill) -> Result<RgbaImage, ExportError> {
+    Ok(render_spread_with(
         ctx.project,
         spread,
         RenderTarget::Print,
         ctx.photos,
+        fill,
     )?)
 }
 

@@ -15,6 +15,7 @@ pub(super) fn migrate(mut value: Value, from: u32) -> Result<Value, CoreError> {
     while version < CURRENT_SCHEMA_VERSION {
         value = match version {
             1 => v1_para_v2(value)?,
+            2 => v2_para_v3(value)?,
             _ => {
                 return Err(CoreError::Migration {
                     from: version,
@@ -54,6 +55,40 @@ fn v1_para_v2(mut value: Value) -> Result<Value, CoreError> {
         json!({ "start": "full_spread", "end": "full_spread" }),
     );
     value["schema_version"] = json!(2);
+    Ok(value)
+}
+
+/// v2 → v3 (spec AP): espaço entre fotos do álbum (8 pt); por lâmina, fundo da página direita e
+/// espaço próprios (nenhum); por quadro, borda (nenhuma) e cantos (retos).
+fn v2_para_v3(mut value: Value) -> Result<Value, CoreError> {
+    let missing = |what: &str| CoreError::Migration {
+        from: 2,
+        reason: format!("campo `{what}` ausente"),
+    };
+    let object = value.as_object_mut().ok_or_else(|| missing("projeto"))?;
+    object.insert("gap".into(), json!(super::project::DEFAULT_GAP.get()));
+    let spreads = object
+        .get_mut("spreads")
+        .and_then(Value::as_array_mut)
+        .ok_or_else(|| missing("spreads"))?;
+    for spread in spreads {
+        let spread = spread.as_object_mut().ok_or_else(|| missing("lâmina"))?;
+        spread.insert("background_right".into(), Value::Null);
+        spread.insert("gap".into(), Value::Null);
+        let frames = spread
+            .get_mut("frames")
+            .and_then(Value::as_array_mut)
+            .ok_or_else(|| missing("frames"))?;
+        for frame in frames {
+            let frame = frame.as_object_mut().ok_or_else(|| missing("quadro"))?;
+            frame.insert(
+                "border".into(),
+                json!({ "width": 0.0, "color": { "r": 255, "g": 255, "b": 255 } }),
+            );
+            frame.insert("radius".into(), json!(0.0));
+        }
+    }
+    value["schema_version"] = json!(3);
     Ok(value)
 }
 

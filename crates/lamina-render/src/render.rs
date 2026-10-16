@@ -5,9 +5,10 @@ use fast_image_resize::{FilterType, PixelType, ResizeAlg, ResizeOptions, Resizer
 use image::RgbaImage;
 use lamina_core::{Frame, FrameContent, Photo, PixelRegion, Project};
 use rayon::prelude::*;
-use tiny_skia::{Color, Pixmap};
+use tiny_skia::Pixmap;
 
-use crate::place::{PixelBox, Scale, bleed, pixels, region};
+use crate::place::{Bled, PixelBox, Scale, bleed, pixels, region};
+use crate::style::{Fill, draw_styled, paint_background, styled};
 use crate::types::{MIN_PREVIEW, PhotoSource, RenderError, RenderTarget};
 use crate::{preview_size, print_size};
 
@@ -20,17 +21,30 @@ struct Scene<'a> {
 }
 
 /// Uma foto já reduzida para o seu lugar na tela.
-struct Tile {
+struct Tile<'a> {
+    frame: &'a Frame,
+    bled: Bled,
     at: PixelBox,
     rgba: Vec<u8>,
 }
 
-/// Desenha a lâmina `index` (começando em 0) do projeto.
+/// Desenha a lâmina `index` (começando em 0) do projeto, com o fundo de cada página.
 pub fn render_spread(
     project: &Project,
     index: usize,
     target: RenderTarget,
     photos: &dyn PhotoSource,
+) -> Result<RgbaImage, RenderError> {
+    render_spread_with(project, index, target, photos, Fill::Pages)
+}
+
+/// Como [`render_spread`], escolhendo como pintar o fundo (spec AP, regra 3).
+pub fn render_spread_with(
+    project: &Project,
+    index: usize,
+    target: RenderTarget,
+    photos: &dyn PhotoSource,
+    fill: Fill,
 ) -> Result<RgbaImage, RenderError> {
     let spread = project.spreads.get(index).ok_or(RenderError::NoSpread {
         number: index.saturating_add(1),
@@ -48,15 +62,25 @@ pub fn render_spread(
         photos,
     };
     let mut pixmap = Pixmap::new(width, height).ok_or(RenderError::Canvas { width, height })?;
-    let bg = spread.background;
-    pixmap.fill(Color::from_rgba8(bg.r, bg.g, bg.b, 255));
+    paint_background(&mut pixmap, project, spread, fill, scene.scale);
     // Cada foto é lida e reduzida em paralelo; o desenho segue a ordem dos quadros, e o erro
     // devolvido é o do primeiro quadro com problema.
     let tiles: Vec<Result<Option<Tile>, RenderError>> =
         spread.frames.par_iter().map(|f| tile(&scene, f)).collect();
     for tile in tiles {
         if let Some(tile) = tile? {
-            paste(&mut pixmap, &tile);
+            if styled(tile.frame) {
+                draw_styled(
+                    &mut pixmap,
+                    tile.frame,
+                    &tile.bled,
+                    scene.scale,
+                    tile.at,
+                    &tile.rgba,
+                );
+            } else {
+                paste(&mut pixmap, &tile);
+            }
         }
     }
     RgbaImage::from_raw(width, height, pixmap.take()).ok_or(RenderError::Canvas { width, height })
@@ -73,7 +97,7 @@ fn canvas_size(project: &Project, target: RenderTarget) -> Result<(u32, u32), Re
     Ok((size.width, size.height))
 }
 
-fn tile(scene: &Scene, frame: &Frame) -> Result<Option<Tile>, RenderError> {
+fn tile<'a>(scene: &Scene, frame: &'a Frame) -> Result<Option<Tile<'a>>, RenderError> {
     let FrameContent::Photo { photo, crop } = &frame.content else {
         return Ok(None);
     };
@@ -104,7 +128,12 @@ fn tile(scene: &Scene, frame: &Frame) -> Result<Option<Tile>, RenderError> {
     let (pw, ph) = (f64::from(image.width()), f64::from(image.height()));
     let r = region(crop, rect, &bled, (pw, ph));
     let rgba = resize(&image, r, at).map_err(|reason| RenderError::Resize { name, reason })?;
-    Ok(Some(Tile { at, rgba }))
+    Ok(Some(Tile {
+        frame,
+        bled,
+        at,
+        rgba,
+    }))
 }
 
 fn file_name(photo: &Photo) -> String {

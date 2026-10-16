@@ -11,8 +11,8 @@ mod paths;
 mod photo;
 mod project;
 
-pub use content::{Crop, Frame, FrameContent, PixelRegion, Rgb, Spread};
+pub use content::{Border, Crop, Frame, FrameContent, PixelRegion, Rgb, Spread};
 pub use ids::{FrameId, PhotoId, SpreadId};
 pub use paths::{relative_path, validate_project_name};
 pub use photo::{Orientation, Photo};
-pub use project::{CURRENT_SCHEMA_VERSION, Project};
+pub use project::{CURRENT_SCHEMA_VERSION, DEFAULT_GAP, Project};

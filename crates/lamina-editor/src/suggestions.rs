@@ -1,7 +1,9 @@
 //! Sugestões de layout da lâmina atual e as edições que trocam ou espelham o layout (spec TL,
 //! regras 1 a 5). Funções puras sobre o projeto: o [`crate::Editor`] guarda o cache e chama.
 
-use lamina_core::{ActivePages, CoreError, Crop, Frame, FrameContent, PhotoId, Project, RelRect};
+use lamina_core::{
+    ActivePages, CoreError, Crop, Frame, FrameContent, Mm, PhotoId, Project, RelRect,
+};
 use lamina_layout::{LayoutCandidate, LayoutError, LayoutLists, LayoutOptions, layout_options};
 
 /// Folga para dizer que dois quadros estão no mesmo lugar: 0,1 mm (regra 2).
@@ -33,6 +35,8 @@ pub struct Selection {
     pub active: ActivePages,
     /// A lâmina inteira: a troca tira também os quadros vazios (spec FQ, regra 4).
     pub whole: bool,
+    /// Espaço entre fotos da lâmina (spec AP).
+    pub gap: Mm,
 }
 
 /// Por que uma parte não pode trocar de layout (as mensagens da seção 6).
@@ -138,17 +142,18 @@ pub fn selection(project: &Project, index: usize, part: Part) -> Result<Selectio
         aspects,
         active,
         whole: part == Part::Spread,
+        gap: project.spread_gap(spread),
     })
 }
 
-/// As duas listas do motor para a seleção (regra 1).
+/// As duas listas do motor para a seleção, com o espaço entre fotos da lâmina (regra 1; spec
+/// AP, regra 1).
 pub fn lists(project: &Project, sel: &Selection) -> Result<LayoutLists, LayoutError> {
-    layout_options(
-        &project.spec,
-        sel.active,
-        &sel.aspects,
-        &LayoutOptions::default(),
-    )
+    let options = LayoutOptions {
+        gap: sel.gap,
+        ..LayoutOptions::default()
+    };
+    layout_options(&project.spec, sel.active, &sel.aspects, &options)
 }
 
 /// O candidato descreve exatamente os quadros atuais das fotos da seleção? (regra 2)

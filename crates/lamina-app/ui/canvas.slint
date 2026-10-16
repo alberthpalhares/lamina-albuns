@@ -24,11 +24,23 @@ export struct FrameData {
     ch: int,
     missing: bool,
     label: string,
+    // Cantos (cima-esquerda, cima-direita, baixo-direita, baixo-esquerda) e borda (spec AP).
+    tl: float,
+    tr: float,
+    br: float,
+    bl: float,
+    bw: float,
+    bcolor: color,
+    bx: float,
+    by: float,
+    bww: float,
+    bh: float,
 }
 
 export struct SpreadData {
     aspect: float,
     bg: color,
+    bg-right: color,
     trim: BoxData,
     safe-l: BoxData,
     safe-r: BoxData,
@@ -61,6 +73,14 @@ export component SpreadCanvas inherits Rectangle {
     background: root.data.bg;
     clip: true;
 
+    // Fundo da página direita (igual ao da esquerda quando não há fundo por página).
+    Rectangle {
+        x: root.data.spine-x * root.width;
+        width: root.width - self.x;
+        height: root.height;
+        background: root.data.bg-right;
+    }
+
     // Prévia do recorte: a foto inteira, apagada, por baixo dos quadros.
     if root.has-preview: Image {
         x: root.preview.x * root.width;
@@ -78,6 +98,10 @@ export component SpreadCanvas inherits Rectangle {
         width: f.w * root.width;
         height: f.h * root.width;
         clip: true;
+        border-top-left-radius: f.tl * root.width;
+        border-top-right-radius: f.tr * root.width;
+        border-bottom-right-radius: f.br * root.width;
+        border-bottom-left-radius: f.bl * root.width;
         background: f.has-img ? transparent : #8a8a8a;
         if f.has-img: Image {
             width: parent.width;
@@ -116,6 +140,20 @@ export component SpreadCanvas inherits Rectangle {
             border-width: 3px;
             border-color: i == root.cropping ? #e3b341 : #4fc3f7;
         }
+    }
+
+    // Bordas das fotos, no quadro do corte final, para dentro.
+    for f in root.data.frames: Rectangle {
+        x: f.bx * root.width;
+        y: f.by * root.width;
+        width: f.bww * root.width;
+        height: f.bh * root.width;
+        border-width: f.bw * root.width;
+        border-color: f.bcolor;
+        border-top-left-radius: f.tl * root.width;
+        border-top-right-radius: f.tr * root.width;
+        border-bottom-right-radius: f.br * root.width;
+        border-bottom-left-radius: f.bl * root.width;
     }
 
     // Página sem conteúdo (lâmina de ponta com página simples).

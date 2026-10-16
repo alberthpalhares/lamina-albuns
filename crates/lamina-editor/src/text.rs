@@ -40,6 +40,124 @@ pub fn score_text(score: &Score) -> String {
     )
 }
 
+/// "#F5F0E6" → a cor; `None` se não for "#" e seis dígitos hexadecimais (spec AP, seção 6).
+pub fn parse_color(text: &str) -> Option<lamina_core::Rgb> {
+    let hex = text.trim().strip_prefix('#')?;
+    if hex.len() != 6 || !hex.chars().all(|c| c.is_ascii_hexdigit()) {
+        return None;
+    }
+    let byte = |i: usize| u8::from_str_radix(hex.get(i..i + 2)?, 16).ok();
+    Some(lamina_core::Rgb {
+        r: byte(0)?,
+        g: byte(2)?,
+        b: byte(4)?,
+    })
+}
+
+/// A cor como "#RRGGBB".
+pub fn color_hex(c: lamina_core::Rgb) -> String {
+    format!("#{:02X}{:02X}{:02X}", c.r, c.g, c.b)
+}
+
+/// Paleta do painel de aparência: neutros e cores comuns em álbuns (spec AP, seção 3).
+pub const PALETTE: [(&str, lamina_core::Rgb); 12] = {
+    use lamina_core::Rgb;
+    [
+        (
+            "Branco",
+            Rgb {
+                r: 255,
+                g: 255,
+                b: 255,
+            },
+        ),
+        (
+            "Marfim",
+            Rgb {
+                r: 250,
+                g: 246,
+                b: 238,
+            },
+        ),
+        (
+            "Creme",
+            Rgb {
+                r: 245,
+                g: 240,
+                b: 230,
+            },
+        ),
+        (
+            "Areia",
+            Rgb {
+                r: 216,
+                g: 200,
+                b: 168,
+            },
+        ),
+        (
+            "Rosé",
+            Rgb {
+                r: 232,
+                g: 207,
+                b: 203,
+            },
+        ),
+        (
+            "Cinza claro",
+            Rgb {
+                r: 229,
+                g: 229,
+                b: 229,
+            },
+        ),
+        (
+            "Cinza",
+            Rgb {
+                r: 154,
+                g: 154,
+                b: 154,
+            },
+        ),
+        (
+            "Grafite",
+            Rgb {
+                r: 60,
+                g: 60,
+                b: 60,
+            },
+        ),
+        ("Preto", Rgb { r: 0, g: 0, b: 0 }),
+        (
+            "Azul-marinho",
+            Rgb {
+                r: 31,
+                g: 42,
+                b: 68,
+            },
+        ),
+        (
+            "Verde-oliva",
+            Rgb {
+                r: 85,
+                g: 107,
+                b: 47,
+            },
+        ),
+        (
+            "Vinho",
+            Rgb {
+                r: 90,
+                g: 30,
+                b: 43,
+            },
+        ),
+    ]
+};
+
+/// Aviso do campo de cor inválida.
+pub const BAD_COLOR: &str = "Use uma cor como #F5F0E6.";
+
 /// Ampliação a partir da qual o texto vira aviso (a mesma da pré-impressão).
 const WARN_PERCENT: f64 = 120.0;
 

@@ -23,8 +23,9 @@ pub mod units;
 mod error;
 
 pub use document::{
-    CURRENT_SCHEMA_VERSION, Crop, Frame, FrameContent, FrameId, Orientation, Photo, PhotoId,
-    PixelRegion, Project, Rgb, Spread, SpreadId, relative_path, validate_project_name,
+    Border, CURRENT_SCHEMA_VERSION, Crop, DEFAULT_GAP, Frame, FrameContent, FrameId, Orientation,
+    Photo, PhotoId, PixelRegion, Project, Rgb, Spread, SpreadId, relative_path,
+    validate_project_name,
 };
 pub use error::CoreError;
 
