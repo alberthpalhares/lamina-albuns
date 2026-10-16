@@ -4,19 +4,19 @@ import { Button, LineEdit, CheckBox, ComboBox, SpinBox } from "std-widgets.slint
 import { Theme } from "theme.slint";
 
 // Fundo escuro que bloqueia os cliques na janela de baixo.
-component Shade inherits Rectangle {
+export component Shade inherits Rectangle {
     background: #000000a0;
     TouchArea { }
 }
 
-component Panel inherits Rectangle {
+export component Panel inherits Rectangle {
     background: Theme.panel;
     border-radius: 8px;
     drop-shadow-blur: 24px;
     drop-shadow-color: #000000a0;
 }
 
-component Field inherits HorizontalLayout {
+export component Field inherits HorizontalLayout {
     in property <string> label;
     spacing: 8px;
     Text {
@@ -153,7 +153,10 @@ export component ConfirmDialog inherits Shade {
 export component MessageDialog inherits Shade {
     in property <string> title;
     in property <string> message;
+    // Pasta para o botão "Abrir a pasta" (resumo da exportação, spec EI); vazia = sem botão.
+    in property <string> folder;
     callback close();
+    callback open-folder();
     Panel {
         width: 480px;
         height: 250px;
@@ -164,6 +167,8 @@ export component MessageDialog inherits Shade {
             Text { text: root.message; color: Theme.text; wrap: word-wrap; vertical-stretch: 1; }
             HorizontalLayout {
                 alignment: end;
+                spacing: 8px;
+                if root.folder != "": Button { text: "Abrir a pasta"; clicked => { root.open-folder(); } }
                 Button { text: "OK"; primary: true; clicked => { root.close(); } }
             }
         }

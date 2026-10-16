@@ -16,6 +16,7 @@ pub fn show_error(app: &App, title: &str, message: &str) {
     if let Some(w) = app.window.upgrade() {
         w.set_message_title(title.into());
         w.set_message_text(message.into());
+        w.set_message_folder("".into());
         w.set_show_message(true);
     }
 }
@@ -128,7 +129,10 @@ fn open(app: &mut App) {
 /// Abre `file`; se não der, mostra o erro e o projeto anterior continua aberto.
 pub fn open_file(app: &mut App, file: &Path) {
     match app.editor.open(file) {
-        Ok(()) => app.project_changed(),
+        Ok(()) => {
+            app.project_changed();
+            crate::relink::near(app);
+        }
         Err(e) => show_error(app, "Não foi possível abrir o projeto", &e.to_string()),
     }
 }

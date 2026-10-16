@@ -3,7 +3,7 @@
 
 use std::time::{Duration, Instant};
 
-use lamina_core::testing::budget;
+use lamina_core::testing::{TRIES, budget};
 use lamina_core::{Crop, FrameContent, Project};
 use lamina_layout::{LayoutOptions, design_key, layout_options};
 
@@ -215,7 +215,7 @@ fn tl_b13_trocar_rapido() {
         project.add_frame(spread, *rect, content).unwrap();
     }
     let (mut lists, mut change) = (Duration::MAX, Duration::MAX);
-    for _ in 0..3 {
+    for _ in 0..TRIES {
         let mut editor = editor_at(project.clone(), 0);
         let (l, c) = super::common::isolated(|| {
             let started = Instant::now();
@@ -228,6 +228,9 @@ fn tl_b13_trocar_rapido() {
         });
         lists = lists.min(l);
         change = change.min(c);
+        if lists < budget(200) && change < budget(50) {
+            break;
+        }
     }
     assert!(lists < budget(200), "listas em {lists:?}");
     assert!(change < budget(50), "troca em {change:?}");

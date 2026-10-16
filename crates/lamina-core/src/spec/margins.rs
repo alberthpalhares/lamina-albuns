@@ -1,5 +1,6 @@
 //! Margens de página medidas a partir das bordas, com a lombada tratada à parte.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::PageSide;
@@ -10,7 +11,7 @@ use crate::{CoreError, Mm, Rect};
 /// Numa lâmina aberta, `outer` é a borda externa (a esquerda da página esquerda e a direita da
 /// página direita) e `inner` é a borda da lombada. Laboratórios costumam pedir valores
 /// diferentes para cada uma (estudo E2).
-#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
 pub struct Margins {
     pub outer: Mm,
     pub top_bottom: Mm,

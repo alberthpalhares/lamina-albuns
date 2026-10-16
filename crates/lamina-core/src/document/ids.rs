@@ -1,11 +1,12 @@
 //! Identificadores de fotos, lâminas e quadros.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 macro_rules! id_type {
     ($(#[$doc:meta])* $name:ident) => {
         $(#[$doc])*
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema)]
         #[serde(transparent)]
         pub struct $name(pub(crate) u64);
 

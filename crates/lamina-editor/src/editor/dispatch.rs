@@ -13,6 +13,8 @@ impl Editor {
         let last = s.spread_count().saturating_sub(1);
         match command {
             Command::NewAlbum | Command::Open | Command::Save | Command::SaveAs => true,
+            Command::Export => true,
+            Command::FindMissing => !s.missing().is_empty(),
             Command::ToggleGuides | Command::About | Command::ToggleReordered => true,
             Command::NextSpread | Command::LastSpread => s.current() < last,
             Command::PreviousSpread | Command::FirstSpread => s.current() > 0,

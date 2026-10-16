@@ -8,6 +8,7 @@ use lamina_render::PhotoSource;
 use rayon::prelude::*;
 
 use crate::ExportError;
+use crate::clean::remove_leftovers;
 use crate::jobs::{SpreadJob, plan};
 use crate::preflight::{Warning, preflight};
 use crate::write::{self, Ctx};
@@ -35,7 +36,8 @@ pub struct ExportOptions {
     pub range: Option<String>,
     /// Um arquivo por página em vez de um por lâmina.
     pub pages: bool,
-    /// Substituir arquivos que já existem.
+    /// Substituir arquivos que já existem e apagar os que sobraram de uma exportação anterior
+    /// (spec EI, regra 4).
     pub overwrite: bool,
 }
 
@@ -56,6 +58,8 @@ pub struct ExportReport {
     /// Arquivos gravados, na ordem do álbum.
     pub files: Vec<PathBuf>,
     pub warnings: Vec<Warning>,
+    /// Arquivos de uma exportação anterior apagados ao substituir (spec EI, regra 4).
+    pub removed: Vec<PathBuf>,
     pub elapsed: Duration,
 }
 
@@ -83,10 +87,20 @@ pub fn export(
         quality: options.quality,
     };
     let files = write_all(&ctx, &jobs, progress)?;
+    let removed = if options.overwrite {
+        let keep: Vec<String> = jobs
+            .iter()
+            .flat_map(|j| j.names().into_iter().map(str::to_owned).collect::<Vec<_>>())
+            .collect();
+        remove_leftovers(folder, &keep)?
+    } else {
+        Vec::new()
+    };
     let spreads: Vec<usize> = jobs.iter().map(|j| j.spread).collect();
     Ok(ExportReport {
         files,
         warnings: preflight(project, &spreads),
+        removed,
         elapsed: started.elapsed(),
     })
 }

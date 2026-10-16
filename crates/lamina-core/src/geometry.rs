@@ -6,6 +6,7 @@
 //! Os quadros guardam [`RelRect`]: assim um layout reflui sozinho quando o tamanho do
 //! álbum muda (ADR 0003).
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::{CoreError, Mm};
@@ -14,7 +15,7 @@ use crate::{CoreError, Mm};
 const EPSILON: f64 = 1e-9;
 
 /// Retângulo absoluto, em milímetros.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Rect {
     pub x: Mm,
     pub y: Mm,
@@ -74,7 +75,7 @@ impl Rect {
 /// Invariantes (garantidas por [`RelRect::new`] e verificadas por [`RelRect::validate`]
 /// ao carregar um projeto): valores finitos, `x, y >= 0`, `width, height > 0`,
 /// e o retângulo cabe em `0..=1` nos dois eixos.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct RelRect {
     x: f64,
     y: f64,

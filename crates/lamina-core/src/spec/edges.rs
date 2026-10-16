@@ -3,10 +3,11 @@
 //! Em muitos álbuns a primeira página do miolo fica sozinha à direita (a esquerda é a guarda
 //! da capa) e a última fica sozinha à esquerda. O laboratório informa isso na especificação.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Como uma ponta do miolo é diagramada.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AlbumEdge {
     /// A primeira (ou última) lâmina usa as duas páginas.
@@ -17,7 +18,7 @@ pub enum AlbumEdge {
 }
 
 /// Como o miolo começa e termina.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, JsonSchema)]
 pub struct Edges {
     pub start: AlbumEdge,
     pub end: AlbumEdge,

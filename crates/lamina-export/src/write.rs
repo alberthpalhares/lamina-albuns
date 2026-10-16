@@ -9,6 +9,7 @@ use lamina_core::{PageSide, Project};
 use lamina_render::{Fill, PhotoSource, RenderTarget, render_spread_with};
 
 use crate::jobs::{Output, SpreadJob};
+use crate::once::ReadOnce;
 use crate::{ExportError, jpeg};
 
 /// O que toda lâmina precisa para ser gravada.
@@ -21,6 +22,12 @@ pub struct Ctx<'a> {
 
 /// Renderiza a lâmina uma vez e grava os arquivos dela.
 pub fn spread(ctx: &Ctx, job: &SpreadJob) -> Result<Vec<PathBuf>, ExportError> {
+    // A mesma foto em vários quadros (ou nas duas páginas renderizadas) é lida uma vez só.
+    let photos = ReadOnce::new(ctx.photos);
+    let ctx = &Ctx {
+        photos: &photos,
+        ..*ctx
+    };
     let dpi = ctx.project.spec.dpi().get();
     match &job.output {
         Output::Pages(pages) if pages.is_empty() => Ok(Vec::new()),

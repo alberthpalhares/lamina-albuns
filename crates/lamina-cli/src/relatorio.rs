@@ -72,5 +72,10 @@ pub fn export_with_progress(
         folder.display(),
         report.elapsed.as_secs_f64()
     );
+    match report.removed.len() {
+        0 => {}
+        1 => println!("1 arquivo antigo apagado"),
+        n => println!("{n} arquivos antigos apagados"),
+    }
     Ok(report)
 }

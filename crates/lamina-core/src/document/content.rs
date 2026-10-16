@@ -1,12 +1,13 @@
 //! Conteúdo das lâminas: quadros, recortes e cores.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::{FrameId, PhotoId, SpreadId};
 use crate::{CoreError, Mm, PageSide, RelRect};
 
 /// Cor RGB de 8 bits (sRGB).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct Rgb {
     pub r: u8,
     pub g: u8,
@@ -26,7 +27,7 @@ impl Rgb {
 ///
 /// Com `zoom = 1` a foto cobre o quadro inteiro (sem faixas vazias), cortando o que sobra.
 /// `center_x`/`center_y` dizem qual ponto da foto (em frações 0..=1) fica no centro do quadro.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Crop {
     pub zoom: f64,
     pub center_x: f64,
@@ -127,7 +128,7 @@ impl Crop {
 }
 
 /// O que um quadro mostra.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum FrameContent {
     /// Quadro vazio, esperando uma foto.
@@ -146,7 +147,7 @@ pub enum FrameContent {
 }
 
 /// Borda desenhada para dentro do quadro (spec AP, regra 4). Largura 0 = sem borda.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Border {
     pub width: Mm,
     pub color: Rgb,
@@ -162,7 +163,7 @@ impl Default for Border {
 }
 
 /// Um quadro na lâmina. A posição é relativa à lâmina no corte final ([`crate::AlbumSpec::trim_rect`]).
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Frame {
     pub id: FrameId,
     pub rect: RelRect,
@@ -176,7 +177,7 @@ pub struct Frame {
 }
 
 /// Uma lâmina: duas páginas abertas lado a lado.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Spread {
     pub id: SpreadId,
     /// Fundo da lâmina (da página esquerda, quando a direita tem o seu).

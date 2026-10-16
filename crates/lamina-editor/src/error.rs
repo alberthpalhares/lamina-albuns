@@ -1,7 +1,7 @@
 //! Erros do editor, com as mensagens que a janela e a linha de comando mostram.
 
 use lamina_core::CoreError;
-use lamina_export::ProjectFileError;
+use lamina_export::{ExportError, ProjectFileError};
 use lamina_layout::{BuildError, LayoutError};
 use lamina_media::MediaError;
 use thiserror::Error;
@@ -18,6 +18,8 @@ pub enum EditorError {
     Build(#[from] BuildError),
     #[error(transparent)]
     File(#[from] ProjectFileError),
+    #[error(transparent)]
+    Export(#[from] ExportError),
     #[error(transparent)]
     Core(#[from] CoreError),
     #[error(transparent)]

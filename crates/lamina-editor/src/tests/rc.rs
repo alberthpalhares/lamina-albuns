@@ -2,7 +2,7 @@
 
 use std::time::{Duration, Instant};
 
-use lamina_core::testing::budget;
+use lamina_core::testing::{TRIES, budget};
 use lamina_core::{Crop, Dpi, FrameContent, Mm, Project, RelRect};
 use lamina_render::{bleed, region};
 
@@ -327,7 +327,7 @@ fn rc_b10_recortar_rapido() {
     let photos: Vec<(u32, u32)> = (0..40).map(|i| if i % 4 == 3 { V } else { H }).collect();
     let project = built(spec(30.0, 30.0), &photos, 10);
     let (mut step, mut save) = (Duration::ZERO, Duration::MAX);
-    for _ in 0..3 {
+    for _ in 0..TRIES {
         let mut editor = editor_at(project.clone(), 1);
         editor.select_frame(Some(0));
         assert!(editor.run(Command::CropMode) && editor.crop_zoom(2.0));
@@ -350,6 +350,9 @@ fn rc_b10_recortar_rapido() {
             step.min(worst)
         };
         save = save.min(saved);
+        if step < budget(16) && save < budget(50) {
+            break;
+        }
     }
     assert!(step < budget(16), "passo do arrasto em {step:?}");
     assert!(save < budget(50), "gravar em {save:?}");

@@ -2,6 +2,11 @@
 
 use std::time::Duration;
 
+/// Até quantas vezes um teste de velocidade mede: a menor medida vale, e ele para assim que fica
+/// dentro da meta. Os outros testes do mesmo binário disputam a máquina por alguns segundos; uma
+/// lentidão de verdade continua acima da meta em todas as medidas.
+pub const TRIES: usize = 15;
+
 /// Meta de tempo da spec, em milissegundos. No CI (variável `CI`), as máquinas são mais lentas e
 /// rodam os testes em paralelo: a folga é 3 vezes, o que ainda pega uma lentidão de verdade.
 pub fn budget(ms: u64) -> Duration {

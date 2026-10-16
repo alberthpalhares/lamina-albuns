@@ -5,6 +5,7 @@
 
 use std::ops::{Add, Div, Mul, Sub};
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::CoreError;
@@ -13,7 +14,9 @@ use crate::CoreError;
 pub const MM_PER_INCH: f64 = 25.4;
 
 /// Um comprimento em milímetros.
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, PartialOrd, Default, Serialize, Deserialize, JsonSchema,
+)]
 #[serde(transparent)]
 pub struct Mm(pub f64);
 
@@ -87,7 +90,9 @@ impl Div<f64> for Mm {
 }
 
 /// Resolução de impressão em pontos por polegada. Sempre entre 1 e [`Dpi::MAX`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
+)]
 #[serde(try_from = "u32", into = "u32")]
 pub struct Dpi(u32);
 

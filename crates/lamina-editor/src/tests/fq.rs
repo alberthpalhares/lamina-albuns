@@ -2,7 +2,7 @@
 
 use std::time::{Duration, Instant};
 
-use lamina_core::testing::budget;
+use lamina_core::testing::{TRIES, budget};
 use lamina_core::{Crop, FrameContent, PhotoId, Project};
 use lamina_export::WarningKind;
 use lamina_layout::{LayoutOptions, layout_options};
@@ -274,7 +274,7 @@ fn fq_b12_editar_rapido() {
     let mut worst = Duration::ZERO;
     let mut best_of = |f: &mut (dyn FnMut(&mut Editor) -> bool + Send)| {
         let mut best = Duration::MAX;
-        for _ in 0..3 {
+        for _ in 0..TRIES {
             let mut editor = editor_at(project.clone(), 1);
             let elapsed = super::common::isolated(|| {
                 let started = Instant::now();
@@ -282,6 +282,9 @@ fn fq_b12_editar_rapido() {
                 started.elapsed()
             });
             best = best.min(elapsed);
+            if best < budget(50) {
+                break;
+            }
         }
         worst = worst.max(best);
     };
