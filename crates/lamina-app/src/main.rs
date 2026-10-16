@@ -10,6 +10,7 @@ mod convert;
 mod crop;
 mod drag;
 mod files;
+mod history;
 mod images;
 mod info;
 mod look;
@@ -124,6 +125,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     drag::connect(window, app);
     crop::connect(window, app);
     look::connect(window, app);
+    history::connect(window, app);
 }
 
 /// O painel de layouts: clique aplica; a estrela e o "×" marcam a opção (spec TL, seção 3).

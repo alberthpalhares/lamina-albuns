@@ -157,7 +157,8 @@ impl Editor {
     pub(super) fn new_spread_from_selection(&mut self) -> bool {
         let photos = self.selection.clone();
         let mut at = 0;
-        let done = self.change("Nova lâmina com a seleção", |p, i| {
+        let label = self.new_spread_label("Nova lâmina com a seleção");
+        let done = self.change(&label, |p, i| {
             at = insert_spread(p, i);
             layout_with(p, at, &photos)
         });
@@ -170,7 +171,8 @@ impl Editor {
 
     pub(super) fn new_spread(&mut self) -> bool {
         let mut at = 0;
-        let done = self.change("Nova lâmina", |p, i| {
+        let label = self.new_spread_label("Nova lâmina");
+        let done = self.change(&label, |p, i| {
             at = insert_spread(p, i);
             Ok(())
         });
@@ -191,7 +193,9 @@ impl Editor {
 
     /// Muda a lâmina atual para a posição `to` (arrastar na faixa; regra 7).
     pub fn move_current_to(&mut self, to: usize) -> bool {
-        let done = self.change("Mover lâmina", |p, i| move_spread(p, i, to));
+        let from = self.session.as_ref().map_or(0, crate::Session::current);
+        let label = format!("Mover lâmina · {} → {}", from + 1, to + 1);
+        let done = self.change(&label, |p, i| move_spread(p, i, to));
         if done {
             self.go(to);
         }
@@ -223,6 +227,12 @@ impl Editor {
             }
         });
         result.is_ok() && moved
+    }
+
+    /// A lâmina nova entra depois da atual: o rótulo diz a posição dela.
+    fn new_spread_label(&self, what: &str) -> String {
+        let at = self.session.as_ref().map_or(0, crate::Session::current) + 2;
+        format!("{what} · lâmina {at}")
     }
 
     fn go(&mut self, index: usize) {

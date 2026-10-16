@@ -133,7 +133,7 @@ fn rc_b4_um_gesto_uma_edicao() {
     );
     assert!(editor.commit_crop());
     s = editor.session_mut().unwrap();
-    assert_eq!(s.undo().as_deref(), Some("Recortar foto"));
+    assert_eq!(s.undo().as_deref(), Some("Recortar foto · lâmina 2"));
     assert_eq!(crop_of(&editor, 0), start);
     assert!(editor.crop_drag(0.05, 0.0));
     editor.cancel_crop();

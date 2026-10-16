@@ -111,7 +111,9 @@ impl Editor {
         };
         let index = session.current();
         session
-            .edit("Aplicar aparência a todas", |p| style_all(p, index))
+            .edit("Aplicar aparência a todas · todas as lâminas", |p| {
+                style_all(p, index)
+            })
             .is_ok()
     }
 }

@@ -173,6 +173,7 @@ impl App {
         }
         crate::panel::refresh(self);
         crate::look::refresh(self);
+        crate::history::refresh(self);
     }
 
     /// As miniaturas de todas as fotos (miniaturas do painel de layouts).

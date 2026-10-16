@@ -21,6 +21,8 @@ pub struct History<T> {
     /// Estados desfeitos, prontos para refazer; o último é o próximo.
     future: Vec<Entry<T>>,
     limit: usize,
+    /// Passos antigos já saíram por causa do limite (spec HI, regra 4).
+    trimmed: bool,
 }
 
 impl<T: Clone> History<T> {
@@ -37,6 +39,7 @@ impl<T: Clone> History<T> {
             past: Vec::new(),
             future: Vec::new(),
             limit: limit.max(1),
+            trimmed: false,
         }
     }
 
@@ -60,6 +63,7 @@ impl<T: Clone> History<T> {
         });
         if self.past.len() > self.limit {
             self.past.remove(0);
+            self.trimmed = true;
         }
         self.future.clear();
         Ok(result)
@@ -109,6 +113,71 @@ impl<T: Clone> History<T> {
     pub fn undo_labels(&self) -> impl Iterator<Item = &str> {
         self.past.iter().map(|e| e.label.as_str())
     }
+
+    /// Rótulos das edições que podem ser refeitas, da próxima para a última.
+    pub fn redo_labels(&self) -> impl Iterator<Item = &str> {
+        self.future.iter().rev().map(|e| e.label.as_str())
+    }
+
+    /// Os passos do histórico (spec HI): o passo 0 é o começo; o passo `k` é o estado logo
+    /// depois da `k`-ésima edição guardada. Inclui os desfeitos, que ainda podem ser refeitos.
+    pub fn len(&self) -> usize {
+        self.past.len() + self.future.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// O passo atual.
+    pub fn position(&self) -> usize {
+        self.past.len()
+    }
+
+    /// Rótulo da edição que leva ao passo `step` (de 1 a [`History::len`]).
+    pub fn label(&self, step: usize) -> Option<&str> {
+        let p = self.past.len();
+        let entry = if step == 0 {
+            return None;
+        } else if step <= p {
+            self.past.get(step - 1)
+        } else {
+            self.future
+                .len()
+                .checked_sub(step - p)
+                .and_then(|i| self.future.get(i))
+        };
+        entry.map(|e| e.label.as_str())
+    }
+
+    /// O estado no passo `step`.
+    pub fn state_at(&self, step: usize) -> Option<&T> {
+        let p = self.past.len();
+        if step < p {
+            self.past.get(step).map(|e| &*e.state)
+        } else if step == p {
+            Some(&self.present)
+        } else {
+            let i = self.future.len().checked_sub(step - p)?;
+            self.future.get(i).map(|e| &*e.state)
+        }
+    }
+
+    /// Vai direto ao passo `step`, desfazendo ou refazendo o quanto for preciso. `false` se o
+    /// passo não existe ou já é o atual.
+    pub fn go_to(&mut self, step: usize) -> bool {
+        if step > self.len() || step == self.position() {
+            return false;
+        }
+        while self.position() > step && self.undo().is_some() {}
+        while self.position() < step && self.redo().is_some() {}
+        true
+    }
+
+    /// Passos antigos já saíram por causa do limite.
+    pub fn trimmed(&self) -> bool {
+        self.trimmed
+    }
 }
 
 #[cfg(test)]
@@ -130,6 +199,39 @@ mod tests {
 
         assert_eq!(history.redo(), Some("adicionar 2"));
         assert_eq!(history.present(), &vec![1, 2]);
+    }
+
+    #[test]
+    fn passos_e_ir_a_um_passo() {
+        let mut history = History::new(0);
+        for i in 1..=3 {
+            history.apply(format!("+{i}"), |n| *n += i);
+        }
+        assert_eq!((history.len(), history.position()), (3, 3));
+        assert!(history.go_to(1));
+        assert_eq!((*history.present(), history.position()), (1, 1));
+        assert_eq!(history.label(3), Some("+3"));
+        assert_eq!(history.state_at(3), Some(&6));
+        assert_eq!(history.state_at(0), Some(&0));
+        assert_eq!(history.redo_labels().collect::<Vec<_>>(), ["+2", "+3"]);
+        assert!(history.go_to(3));
+        assert_eq!(*history.present(), 6);
+        assert!(!history.go_to(3) && !history.go_to(9));
+    }
+
+    #[test]
+    fn limite_corta_o_mais_antigo() {
+        let mut history = History::with_limit(0, 2);
+        for i in 1..=3 {
+            history.apply(format!("+{i}"), |n| *n += i);
+        }
+        assert!(history.trimmed());
+        assert_eq!(history.len(), 2);
+        assert_eq!(
+            history.state_at(0),
+            Some(&1),
+            "começo guardado: depois da 1ª"
+        );
     }
 
     #[test]

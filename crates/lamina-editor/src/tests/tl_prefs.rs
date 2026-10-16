@@ -217,13 +217,17 @@ fn tl_b13_trocar_rapido() {
     let (mut lists, mut change) = (Duration::MAX, Duration::MAX);
     for _ in 0..3 {
         let mut editor = editor_at(project.clone(), 0);
-        let started = Instant::now();
-        let panel = editor.panel(Part::Spread);
-        lists = lists.min(started.elapsed());
-        assert!(panel.options.len() > 10);
-        let started = Instant::now();
-        assert!(editor.apply_option(Part::Spread, 3));
-        change = change.min(started.elapsed());
+        let (l, c) = super::common::isolated(|| {
+            let started = Instant::now();
+            let panel = editor.panel(Part::Spread);
+            let l = started.elapsed();
+            assert!(panel.options.len() > 10);
+            let started = Instant::now();
+            assert!(editor.apply_option(Part::Spread, 3));
+            (l, started.elapsed())
+        });
+        lists = lists.min(l);
+        change = change.min(c);
     }
     assert!(lists < budget(200), "listas em {lists:?}");
     assert!(change < budget(50), "troca em {change:?}");
