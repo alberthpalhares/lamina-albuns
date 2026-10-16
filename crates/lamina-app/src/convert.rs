@@ -21,7 +21,7 @@ fn to_f32(v: f64) -> f32 {
     v as f32
 }
 
-fn boxed(r: PxRect) -> BoxData {
+pub fn boxed(r: PxRect) -> BoxData {
     BoxData {
         x: to_f32(r.x),
         y: to_f32(r.y),

@@ -184,15 +184,27 @@ pub fn apply(
         return Ok(());
     };
     let id = spread.id;
+    let centers: Vec<(PhotoId, Crop)> = spread
+        .frames
+        .iter()
+        .filter_map(|f| match &f.content {
+            FrameContent::Photo { photo, crop } => Some((*photo, keep_center(*crop))),
+            _ => None,
+        })
+        .collect();
     let kept: Vec<Frame> = std::mem::take(&mut spread.frames)
         .into_iter()
         .filter(|f| !photo_of(f).is_some_and(|p| sel.photos.contains(&p)))
         .filter(|f| !(sel.whole && f.content == FrameContent::Empty))
         .collect();
     let new = sel.photos.iter().zip(&c.frames).map(|(photo, rect)| {
+        let crop = centers
+            .iter()
+            .find(|(p, _)| p == photo)
+            .map_or_else(Crop::default, |(_, c)| *c);
         let content = FrameContent::Photo {
             photo: *photo,
-            crop: Crop::default(),
+            crop,
         };
         (*rect, content)
     });
@@ -208,6 +220,12 @@ pub fn apply(
         project.add_frame(id, rect, content)?;
     }
     Ok(())
+}
+
+/// A mesma foto num quadro de outra proporção: mantém o centro do recorte e volta o zoom a 1
+/// (spec RC, regra 8).
+pub fn keep_center(crop: Crop) -> Crop {
+    Crop { zoom: 1.0, ..crop }
 }
 
 /// Espelha a lâmina: cada quadro vai para a posição espelhada, com a mesma foto (regra 5).

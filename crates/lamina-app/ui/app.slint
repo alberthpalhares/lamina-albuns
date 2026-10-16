@@ -141,6 +141,17 @@ export component AppWindow inherits Window {
     in-out property <length> press-y;
     in property <int> selected-frame: -1;
     in property <[TimelineItem]> timeline;
+    // Recorte (spec RC).
+    in property <int> crop-frame: -1;
+    in property <bool> has-preview;
+    in property <BoxData> preview;
+    in property <image> preview-img;
+    in property <string> info-frame;
+    in property <bool> info-frame-warn;
+    callback frame-double(int);
+    callback crop-drag(float, float);
+    callback crop-end();
+    callback crop-wheel(int);
     callback photo-pressed(int, bool, bool);
     callback drop-photo(int, float, float);
     callback drop-frame(int, float, float);
@@ -282,8 +293,18 @@ export component AppWindow inherits Window {
                     horizontal-stretch: 1;
                     property <length> canvas-width: root.current.aspect > 0
                         ? min(self.width - 48px, (self.height - 48px) / root.current.aspect) : 0px;
+                    // Clique fora dos quadros: desmarca e sai do modo recorte.
+                    TouchArea { clicked => { root.frame-selected(-1); root.focus-main(); } }
                     // Sempre na árvore (some sem projeto) para o arrastar achar a posição dela.
                     big := SpreadCanvas {
+                        cropping: root.crop-frame;
+                        has-preview: root.has-preview;
+                        preview: root.preview;
+                        preview-img: root.preview-img;
+                        frame-double(i) => { root.frame-double(i); root.focus-main(); }
+                        crop-drag(dx, dy) => { root.crop-drag(dx, dy); }
+                        crop-end() => { root.crop-end(); root.focus-main(); }
+                        crop-wheel(n) => { root.crop-wheel(n); }
                         visible: root.has-project;
                         width: area.canvas-width;
                         height: area.canvas-width * root.current.aspect;
@@ -384,6 +405,8 @@ export component AppWindow inherits Window {
                             Text { text: "Lâmina"; color: Theme.muted; font-size: 12px; }
                             Text { text: root.info-spread; color: Theme.text; wrap: word-wrap; }
                             Text { text: root.info-warnings; color: Theme.warning; wrap: word-wrap; }
+                            if root.info-frame != "": Text { text: "Quadro"; color: Theme.muted; font-size: 12px; }
+                            Text { text: root.info-frame; color: root.info-frame-warn ? Theme.warning : Theme.text; wrap: word-wrap; }
                             if root.info-photo != "": Text { text: "Foto"; color: Theme.muted; font-size: 12px; }
                             Text { text: root.info-photo; color: Theme.text; wrap: word-wrap; }
                             Rectangle { vertical-stretch: 1; }

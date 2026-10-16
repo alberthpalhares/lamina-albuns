@@ -46,6 +46,10 @@ pub enum Command {
     DeleteSpread,
     MoveSpreadLeft,
     MoveSpreadRight,
+    CropMode,
+    ZoomIn,
+    ZoomOut,
+    ResetCrop,
     ToggleGuides,
     About,
 }
@@ -54,7 +58,7 @@ pub enum Command {
 type Info = (&'static str, &'static str, Menu, Option<Shortcut>);
 
 impl Command {
-    pub const ALL: [Command; 30] = [
+    pub const ALL: [Command; 34] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
@@ -83,6 +87,10 @@ impl Command {
         Command::DeleteSpread,
         Command::MoveSpreadLeft,
         Command::MoveSpreadRight,
+        Command::CropMode,
+        Command::ZoomIn,
+        Command::ZoomOut,
+        Command::ResetCrop,
         Command::ToggleGuides,
         Command::About,
     ];
@@ -111,8 +119,19 @@ impl Command {
         if shortcut == Shortcut::ctrl_shift('z') {
             return Some(Command::Redo);
         }
+        // Sinais e números: o Shift depende do teclado (o + pede Shift no ABNT2), então não conta.
+        let shortcut = match shortcut.key {
+            Key::Char(c) if !c.is_alphabetic() => Shortcut {
+                shift: false,
+                ..shortcut
+            },
+            _ => shortcut,
+        };
         if shortcut == Shortcut::key(Key::Backspace) {
             return Some(Command::ClearFrame);
+        }
+        if shortcut == Shortcut::key(Key::Char('=')) {
+            return Some(Command::ZoomIn);
         }
         Command::ALL
             .into_iter()

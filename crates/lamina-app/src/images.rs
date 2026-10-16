@@ -14,6 +14,8 @@ pub struct Images {
     screens: ScreenImages,
     converted: HashMap<PhotoId, (Arc<Rgba>, Image)>,
     thumbs: HashMap<PhotoId, Image>,
+    /// A foto original do quadro em modo recorte (spec RC, regra 9).
+    original: Option<(PhotoId, Image)>,
 }
 
 impl Images {
@@ -52,13 +54,37 @@ impl Images {
         self.screens.keep_around(project, index, cache);
         let mut images = HashMap::new();
         for id in photos_of(project, index) {
-            let img = self.screen(id).or_else(|| self.thumb(project, id, cache));
+            let original = self
+                .original
+                .as_ref()
+                .filter(|(o, _)| *o == id)
+                .map(|(_, img)| img.clone());
+            let img = original
+                .or_else(|| self.screen(id))
+                .or_else(|| self.thumb(project, id, cache));
             if let Some(img) = img {
                 images.insert(id, img);
             }
         }
         self.converted.retain(|id, _| images.contains_key(id));
         images
+    }
+
+    pub fn original_id(&self) -> Option<PhotoId> {
+        self.original.as_ref().map(|(id, _)| *id)
+    }
+
+    pub fn set_original(&mut self, id: PhotoId, image: &Rgba) {
+        let buffer = SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(
+            image.as_raw(),
+            image.width(),
+            image.height(),
+        );
+        self.original = Some((id, Image::from_rgba8(buffer)));
+    }
+
+    pub fn clear_original(&mut self) {
+        self.original = None;
     }
 
     fn screen(&mut self, id: PhotoId) -> Option<Image> {

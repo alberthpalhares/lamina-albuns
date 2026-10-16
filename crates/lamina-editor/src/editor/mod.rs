@@ -6,17 +6,19 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::Path;
 
-use lamina_core::{PhotoId, Project};
+use lamina_core::{Crop, PhotoId, Project};
 use lamina_layout::{LayoutLists, Preferences};
 
 use crate::photos::{Filter, photo_list};
 use crate::prefs_store::PrefsStore;
-use crate::suggestions::Part;
-use crate::{Command, EditorError, Session};
+use crate::{EditorError, Session};
 
+mod crop;
+mod dispatch;
 mod frames;
 mod layouts;
 
+pub use crop::ZOOM_STEP;
 pub use layouts::Panel;
 
 /// Resposta à pergunta "Salvar as alterações?".
@@ -42,6 +44,9 @@ pub struct Editor {
     selection: Vec<PhotoId>,
     /// Última foto clicada sem Shift: começo do intervalo do Shift+clique.
     anchor: Option<PhotoId>,
+    /// Quadro em modo recorte e o recorte provisório do gesto (spec RC).
+    crop_frame: Option<usize>,
+    pending_crop: Option<Crop>,
 }
 
 impl Default for Editor {
@@ -70,6 +75,8 @@ impl Editor {
             selected_frame: None,
             selection: Vec::new(),
             anchor: None,
+            crop_frame: None,
+            pending_crop: None,
         }
     }
 
@@ -135,95 +142,6 @@ impl Editor {
                 Ok(true)
             }
         }
-    }
-
-    /// O comando pode rodar agora? (menu e teclado obedecem; regra 10 do JP)
-    pub fn available(&self, command: Command) -> bool {
-        let Some(s) = &self.session else {
-            return matches!(command, Command::NewAlbum | Command::Open | Command::About);
-        };
-        let last = s.spread_count().saturating_sub(1);
-        match command {
-            Command::NewAlbum | Command::Open | Command::Save | Command::SaveAs => true,
-            Command::ToggleGuides | Command::About | Command::ToggleReordered => true,
-            Command::NextSpread | Command::LastSpread => s.current() < last,
-            Command::PreviousSpread | Command::FirstSpread => s.current() > 0,
-            Command::Undo => s.can_undo(),
-            Command::Redo => s.can_redo(),
-            Command::NextLayout | Command::PreviousLayout => self.can_step(Part::Spread),
-            Command::NextLeft | Command::PreviousLeft => self.can_step(Part::Left),
-            Command::NextRight | Command::PreviousRight => self.can_step(Part::Right),
-            Command::Mirror => self.can_mirror(),
-            Command::Favorite | Command::Reject => self.panel(Part::Spread).in_use.is_some(),
-            Command::ClearFrame => self.can_clear(),
-            Command::Deselect => self.selected_frame.is_some() || !self.selection.is_empty(),
-            Command::BuildFromSelection | Command::NewSpreadFromSelection => {
-                !self.selection.is_empty() && self.photo_selection().is_ok()
-            }
-            Command::NewSpread => true,
-            Command::DeleteSpread => s.spread_count() > 1,
-            Command::MoveSpreadLeft => s.current() > 0,
-            Command::MoveSpreadRight => s.current() < last,
-        }
-    }
-
-    /// Roda os comandos que não precisam de diálogo. `true` = algo mudou. Os de arquivo pedem um
-    /// caminho à janela e chamam [`Editor::open`] e a sessão.
-    pub fn run(&mut self, command: Command) -> bool {
-        if !self.available(command) {
-            return false;
-        }
-        match command {
-            Command::ToggleGuides => {
-                self.guides = !self.guides;
-                true
-            }
-            Command::ToggleReordered => {
-                self.reordered = !self.reordered;
-                true
-            }
-            Command::Undo => self.session.as_mut().and_then(Session::undo).is_some(),
-            Command::Redo => self.session.as_mut().and_then(Session::redo).is_some(),
-            Command::NextLayout => self.step(Part::Spread, true),
-            Command::PreviousLayout => self.step(Part::Spread, false),
-            Command::NextLeft => self.step(Part::Left, true),
-            Command::PreviousLeft => self.step(Part::Left, false),
-            Command::NextRight => self.step(Part::Right, true),
-            Command::PreviousRight => self.step(Part::Right, false),
-            Command::Mirror => self.mirror(),
-            Command::Favorite => self.favorite(),
-            Command::Reject => self.reject(),
-            Command::ClearFrame => self.clear_selected(),
-            Command::Deselect => {
-                self.selected_frame = None;
-                self.selection.clear();
-                true
-            }
-            Command::BuildFromSelection => self.build_from_selection(0),
-            Command::NewSpreadFromSelection => self.new_spread_from_selection(),
-            Command::NewSpread => self.new_spread(),
-            Command::DeleteSpread => self.delete_current(),
-            Command::MoveSpreadLeft => self.move_by(-1),
-            Command::MoveSpreadRight => self.move_by(1),
-            _ => {
-                self.selected_frame = None;
-                self.navigate(command)
-            }
-        }
-    }
-
-    fn navigate(&mut self, command: Command) -> bool {
-        let Some(s) = self.session.as_mut() else {
-            return false;
-        };
-        let target = match command {
-            Command::NextSpread => s.current() + 1,
-            Command::PreviousSpread => s.current().saturating_sub(1),
-            Command::FirstSpread => 0,
-            Command::LastSpread => s.spread_count().saturating_sub(1),
-            _ => return false,
-        };
-        s.go_to(target)
     }
 
     /// Vai para a primeira lâmina da foto (duplo clique no navegador). `false` se não é usada.

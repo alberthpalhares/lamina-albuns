@@ -77,9 +77,9 @@ pub fn swap_photos(
         return Err(EditorError::NoFrame);
     }
     let reset = |c: FrameContent| match c {
-        FrameContent::Photo { photo, .. } => FrameContent::Photo {
+        FrameContent::Photo { photo, crop } => FrameContent::Photo {
             photo,
-            crop: Crop::default(),
+            crop: crate::suggestions::keep_center(crop),
         },
         other => other,
     };

@@ -164,3 +164,22 @@ pub fn frame_at(project: &Project, index: usize, x: f64, y: f64) -> Option<usize
         x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height
     })
 }
+
+/// A foto inteira do quadro, na escala e na posição em que o recorte a coloca: a prévia do
+/// recorte (spec RC, regra 6). A parte dela dentro do quadro coincide com a foto mostrada.
+pub fn photo_extent(frame: &FrameView) -> Option<PxRect> {
+    let FrameKind::Photo { source, .. } = &frame.kind else {
+        return None;
+    };
+    if source.width <= 0.0 || source.height <= 0.0 {
+        return None;
+    }
+    let r = frame.rect;
+    let (width, height) = (r.width / source.width, r.height / source.height);
+    Some(PxRect {
+        x: r.x - source.x * width,
+        y: r.y - source.y * height,
+        width,
+        height,
+    })
+}

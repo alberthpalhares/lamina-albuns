@@ -18,6 +18,9 @@ impl Editor {
 
     /// Clique num quadro da lâmina atual (ou `None` para desmarcar).
     pub fn select_frame(&mut self, frame: Option<usize>) {
+        if frame != self.crop_frame {
+            self.exit_crop();
+        }
         self.selected_frame = frame;
     }
 
