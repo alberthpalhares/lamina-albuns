@@ -151,7 +151,9 @@ export component AppWindow inherits Window {
     callback frame-double(int);
     callback crop-drag(float, float);
     callback crop-end();
-    callback crop-wheel(int);
+    callback crop-wheel(float);
+    // Dica embaixo da lâmina: o que dá para fazer com o quadro selecionado.
+    in property <string> hint;
     callback photo-pressed(int, bool, bool);
     callback drop-photo(int, float, float);
     callback drop-frame(int, float, float);
@@ -295,6 +297,12 @@ export component AppWindow inherits Window {
                         ? min(self.width - 48px, (self.height - 48px) / root.current.aspect) : 0px;
                     // Clique fora dos quadros: desmarca e sai do modo recorte.
                     TouchArea { clicked => { root.frame-selected(-1); root.focus-main(); } }
+                    if root.hint != "": Text {
+                        y: parent.height - 22px;
+                        text: root.hint;
+                        color: Theme.muted;
+                        font-size: 12px;
+                    }
                     // Sempre na árvore (some sem projeto) para o arrastar achar a posição dela.
                     big := SpreadCanvas {
                         cropping: root.crop-frame;
@@ -422,6 +430,8 @@ export component AppWindow inherits Window {
                 height: root.has-project ? 128px : 0px;
                 background: Theme.bar;
                 strip-scroll := ScrollView {
+                    // Arrastar com o botão apertado é para mover a lâmina, não para rolar a faixa.
+                    mouse-drag-pan-enabled: false;
                     content-width: strip.preferred-width;
                     content-height: self.height;
                     strip := HorizontalLayout {
@@ -501,6 +511,8 @@ export component AppWindow inherits Window {
                 height: 58px;
                 background: Theme.background;
                 ScrollView {
+                    // Arrastar é para levar a foto (ou o corte), não para rolar.
+                    mouse-drag-pan-enabled: false;
                     content-width: line.preferred-width;
                     content-height: self.height;
                     line := HorizontalLayout {
@@ -554,6 +566,8 @@ export component AppWindow inherits Window {
                         Rectangle { horizontal-stretch: 1; }
                     }
                     ScrollView {
+                        // Arrastar é para levar a foto (ou o corte), não para rolar.
+                        mouse-drag-pan-enabled: false;
                         content-width: browser.preferred-width;
                         content-height: self.height;
                         browser := HorizontalLayout {
