@@ -17,9 +17,11 @@ mod crop;
 mod dispatch;
 mod frames;
 mod layouts;
+mod style;
 
 pub use crop::ZOOM_STEP;
 pub use layouts::Panel;
+pub use style::Look;
 
 /// Resposta à pergunta "Salvar as alterações?".
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

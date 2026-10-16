@@ -172,6 +172,7 @@ impl App {
             w.set_notice(self.notice.clone().into());
         }
         crate::panel::refresh(self);
+        crate::look::refresh(self);
     }
 
     /// As miniaturas de todas as fotos (miniaturas do painel de layouts).

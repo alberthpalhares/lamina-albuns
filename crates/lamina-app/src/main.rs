@@ -12,6 +12,7 @@ mod drag;
 mod files;
 mod images;
 mod info;
+mod look;
 mod new_album;
 mod panel;
 mod state;
@@ -122,6 +123,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     connect_layouts(window, app);
     drag::connect(window, app);
     crop::connect(window, app);
+    look::connect(window, app);
 }
 
 /// O painel de layouts: clique aplica; a estrela e o "×" marcam a opção (spec TL, seção 3).

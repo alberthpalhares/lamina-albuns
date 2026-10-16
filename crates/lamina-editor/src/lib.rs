@@ -17,6 +17,7 @@
 //! - [`screens`]: as imagens de tela na memória, só da lâmina atual e das vizinhas.
 
 pub mod album;
+pub mod appearance;
 pub mod cache;
 pub mod commands;
 pub mod editor;
@@ -26,6 +27,7 @@ pub mod photos;
 pub mod prefs_store;
 pub mod screens;
 pub mod session;
+pub mod spreads;
 pub mod suggestions;
 pub mod text;
 pub mod view;
@@ -48,7 +50,9 @@ pub use prefs_store::{PREFS_FILE, PrefsStore, config_dir};
 pub use screens::{ScreenImages, load_original, prepare_images};
 pub use session::Session;
 pub use suggestions::{List, Part, Unavailable};
-pub use text::{family_name, frame_dpi_text, score_text};
+pub use text::{
+    BAD_COLOR, PALETTE, color_hex, family_name, frame_dpi_text, parse_color, score_text,
+};
 pub use view::{
     Area, FrameKind, FrameView, PxRect, SpreadView, frame_at, photo_extent, spread_view,
 };

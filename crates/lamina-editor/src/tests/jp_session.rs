@@ -135,7 +135,14 @@ fn jp_b11_arquivo_invalido_nao_derruba_a_sessao() {
     let broken = base.path("album/quebrado.lamina");
     std::fs::write(&broken, "{ isto não é JSON").unwrap();
     let text = std::fs::read_to_string(&file).unwrap();
-    let future_text = text.replacen("\"schema_version\": 2", "\"schema_version\": 99", 1);
+    let future_text = text.replacen(
+        &format!(
+            "\"schema_version\": {}",
+            lamina_core::CURRENT_SCHEMA_VERSION
+        ),
+        "\"schema_version\": 99",
+        1,
+    );
     assert_ne!(text, future_text, "o arquivo grava a versão do formato");
     let future = base.path("album/futuro.lamina");
     std::fs::write(&future, future_text).unwrap();

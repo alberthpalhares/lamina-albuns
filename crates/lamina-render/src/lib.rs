@@ -6,10 +6,12 @@
 
 mod place;
 mod render;
+mod style;
 mod types;
 
 pub use place::{Bled, PixelBox, Scale, bleed, pixels, region};
-pub use render::render_spread;
+pub use render::{render_spread, render_spread_with};
+pub use style::Fill;
 pub use types::{MIN_PREVIEW, PhotoSource, RenderError, RenderTarget};
 
 use lamina_core::AlbumSpec;

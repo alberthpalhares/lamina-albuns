@@ -1,0 +1,126 @@
+// Painel de aparência (spec AP): espaço entre fotos, fundo, borda e cantos. Só desenho: os
+// valores e as edições vêm do editor.
+
+import { Button, CheckBox, LineEdit } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+
+export struct Swatch {
+    c: color,
+    name: string,
+}
+
+component Stepper inherits HorizontalLayout {
+    in property <string> value;
+    callback step(int);
+    spacing: 8px;
+    Button { text: "−"; width: 34px; clicked => { root.step(-1); } }
+    Text {
+        text: root.value;
+        color: Theme.text;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+        min-width: 70px;
+    }
+    Button { text: "+"; width: 34px; clicked => { root.step(1); } }
+}
+
+// 12 cores em duas linhas de 6.
+component Swatches inherits Rectangle {
+    in property <[Swatch]> palette;
+    in property <color> chosen;
+    callback pick(int);
+    height: 2 * 30px;
+    for s[i] in root.palette: Rectangle {
+        x: mod(i, 6) * 32px;
+        y: floor(i / 6) * 30px;
+        width: 26px;
+        height: 26px;
+        border-radius: 4px;
+        background: s.c;
+        border-width: s.c == root.chosen ? 2px : 1px;
+        border-color: s.c == root.chosen ? Theme.selected : #ffffff30;
+        TouchArea { clicked => { root.pick(i); } }
+    }
+}
+
+component Label inherits Text {
+    color: Theme.muted;
+    font-size: 12px;
+}
+
+export component LookPanel inherits VerticalLayout {
+    in property <[Swatch]> palette;
+    in property <string> gap;
+    in property <string> border;
+    in property <string> radius;
+    in property <bool> split;
+    in property <color> left;
+    in property <color> right;
+    in property <color> border-color;
+    in property <bool> only-frame;
+    in-out property <string> hex;
+    in property <string> hex-error;
+    callback gap-step(int);
+    callback border-step(int);
+    callback radius-step(int);
+    callback background(int, int);
+    callback background-hex(string);
+    callback split-changed(bool);
+    callback border-pick(int);
+    callback apply-all();
+    spacing: 8px;
+
+    Label { text: "Espaço entre fotos"; }
+    Stepper { value: root.gap; step(d) => { root.gap-step(d); } }
+
+    HorizontalLayout {
+        Label { text: "Fundo"; vertical-alignment: center; }
+        Rectangle { horizontal-stretch: 1; }
+        CheckBox {
+            text: "Por página";
+            checked: root.split;
+            toggled => { root.split-changed(self.checked); }
+        }
+    }
+    if !root.split: Swatches {
+        palette: root.palette;
+        chosen: root.left;
+        pick(i) => { root.background(i, -1); }
+    }
+    if root.split: Label { text: "Página esquerda"; }
+    if root.split: Swatches {
+        palette: root.palette;
+        chosen: root.left;
+        pick(i) => { root.background(i, 0); }
+    }
+    if root.split: Label { text: "Página direita"; }
+    if root.split: Swatches {
+        palette: root.palette;
+        chosen: root.right;
+        pick(i) => { root.background(i, 1); }
+    }
+    HorizontalLayout {
+        spacing: 6px;
+        LineEdit {
+            text <=> root.hex;
+            placeholder-text: "#F5F0E6";
+            accepted(t) => { root.background-hex(t); }
+        }
+        Button { text: "Usar"; clicked => { root.background-hex(root.hex); } }
+    }
+    if root.hex-error != "": Text { text: root.hex-error; color: Theme.warning; font-size: 12px; }
+
+    Label { text: root.only-frame ? "Borda (quadro selecionado)" : "Borda (todas as fotos da lâmina)"; }
+    Stepper { value: root.border; step(d) => { root.border-step(d); } }
+    Swatches {
+        palette: root.palette;
+        chosen: root.border-color;
+        pick(i) => { root.border-pick(i); }
+    }
+
+    Label { text: root.only-frame ? "Cantos (quadro selecionado)" : "Cantos (todas as fotos da lâmina)"; }
+    Stepper { value: root.radius; step(d) => { root.radius-step(d); } }
+
+    Rectangle { vertical-stretch: 1; }
+    Button { text: "Aplicar a todas as lâminas"; clicked => { root.apply-all(); } }
+}

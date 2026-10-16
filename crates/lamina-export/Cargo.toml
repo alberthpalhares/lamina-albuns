@@ -19,5 +19,8 @@ thiserror = { workspace = true }
 # Temporário de nome único para a gravação segura (spec EX, regra 6).
 tempfile = { workspace = true }
 
+[dev-dependencies]
+serde_json = { workspace = true }
+
 [lints]
 workspace = true

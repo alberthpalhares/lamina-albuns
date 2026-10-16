@@ -4,12 +4,21 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use super::{Frame, FrameContent, FrameId, Photo, PhotoId, Rgb, Spread, SpreadId, migration};
-use crate::{AlbumSpec, CoreError, Rect, RelRect};
+use super::{
+    Border, Frame, FrameContent, FrameId, Photo, PhotoId, Rgb, Spread, SpreadId, migration,
+};
+use crate::{AlbumSpec, CoreError, Mm, Rect, RelRect};
 
 /// Versão atual do formato do arquivo de projeto. Suba ao mudar a estrutura e
 /// escreva a migração correspondente em [`Project::from_json`].
-pub const CURRENT_SCHEMA_VERSION: u32 = 2;
+pub const CURRENT_SCHEMA_VERSION: u32 = 3;
+
+/// Espaço entre fotos padrão: 8 pontos tipográficos (spec TP; spec AP, regra 2).
+pub const DEFAULT_GAP: Mm = Mm(8.0 * 25.4 / 72.0);
+
+fn default_gap() -> Mm {
+    DEFAULT_GAP
+}
 
 /// O projeto inteiro: o que é salvo em disco.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -17,6 +26,9 @@ pub struct Project {
     pub schema_version: u32,
     pub name: String,
     pub spec: AlbumSpec,
+    /// Espaço entre fotos do álbum (as lâminas podem ter o seu; spec AP).
+    #[serde(default = "default_gap")]
+    pub gap: Mm,
     pub photos: Vec<Photo>,
     pub spreads: Vec<Spread>,
     /// Próximo identificador livre (compartilhado por fotos, lâminas e quadros).
@@ -29,6 +41,7 @@ impl Project {
             schema_version: CURRENT_SCHEMA_VERSION,
             name: name.into(),
             spec,
+            gap: DEFAULT_GAP,
             photos: Vec::new(),
             spreads: Vec::new(),
             next_id: 1,
@@ -65,6 +78,8 @@ impl Project {
         self.spreads.push(Spread {
             id,
             background: Rgb::WHITE,
+            background_right: None,
+            gap: None,
             frames: Vec::new(),
         });
         id
@@ -79,7 +94,13 @@ impl Project {
         self.check_content(&content)?;
         let id = FrameId(self.take_id());
         let spread = self.spread_mut(spread)?;
-        spread.frames.push(Frame { id, rect, content });
+        spread.frames.push(Frame {
+            id,
+            rect,
+            content,
+            border: Border::default(),
+            radius: Mm(0.0),
+        });
         Ok(id)
     }
 
@@ -102,6 +123,11 @@ impl Project {
             .iter_mut()
             .find(|s| s.id == id)
             .ok_or(CoreError::UnknownSpread(id))
+    }
+
+    /// Espaço entre fotos da lâmina `spread` (o dela ou o do álbum).
+    pub fn spread_gap(&self, spread: &Spread) -> Mm {
+        spread.gap.unwrap_or(self.gap)
     }
 
     /// Posição absoluta de um quadro no canvas da lâmina, em mm.

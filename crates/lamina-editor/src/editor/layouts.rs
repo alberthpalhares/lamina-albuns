@@ -34,11 +34,9 @@ impl Panel {
 
 impl Editor {
     fn cached_lists(&self, project: &Project, sel: &Selection) -> LayoutLists {
-        let key = (
-            sel.aspects.iter().map(|a| a.to_bits()).collect(),
-            sel.active.left,
-            sel.active.right,
-        );
+        let mut bits: Vec<u64> = sel.aspects.iter().map(|a| a.to_bits()).collect();
+        bits.push(sel.gap.get().to_bits());
+        let key = (bits, sel.active.left, sel.active.right);
         if let Some(found) = self.lists.borrow().get(&key) {
             return found.clone();
         }

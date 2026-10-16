@@ -2650,6 +2650,7 @@ dependencies = [
  "lamina-render",
  "moxcms",
  "rayon",
+ "serde_json",
  "tempfile",
  "thiserror 2.0.21",
 ]

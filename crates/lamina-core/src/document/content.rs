@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::{FrameId, PhotoId, SpreadId};
-use crate::{CoreError, RelRect};
+use crate::{CoreError, Mm, PageSide, RelRect};
 
 /// Cor RGB de 8 bits (sRGB).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -145,20 +145,59 @@ pub enum FrameContent {
     },
 }
 
+/// Borda desenhada para dentro do quadro (spec AP, regra 4). Largura 0 = sem borda.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct Border {
+    pub width: Mm,
+    pub color: Rgb,
+}
+
+impl Default for Border {
+    fn default() -> Self {
+        Border {
+            width: Mm(0.0),
+            color: Rgb::WHITE,
+        }
+    }
+}
+
 /// Um quadro na lâmina. A posição é relativa à lâmina no corte final ([`crate::AlbumSpec::trim_rect`]).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Frame {
     pub id: FrameId,
     pub rect: RelRect,
     pub content: FrameContent,
+    /// Borda da foto (spec AP).
+    #[serde(default)]
+    pub border: Border,
+    /// Raio dos cantos arredondados; 0 = cantos retos (spec AP, regra 5).
+    #[serde(default)]
+    pub radius: Mm,
 }
 
 /// Uma lâmina: duas páginas abertas lado a lado.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Spread {
     pub id: SpreadId,
+    /// Fundo da lâmina (da página esquerda, quando a direita tem o seu).
     pub background: Rgb,
+    /// Fundo próprio da página direita (spec AP, regra 3); `None` = o mesmo da esquerda.
+    #[serde(default)]
+    pub background_right: Option<Rgb>,
+    /// Espaço entre fotos desta lâmina; `None` = o do álbum (spec AP, regra 1).
+    #[serde(default)]
+    pub gap: Option<Mm>,
     pub frames: Vec<Frame>,
+}
+
+impl Spread {
+    /// O fundo de uma página.
+    pub fn page_background(&self, side: PageSide) -> Rgb {
+        match side {
+            PageSide::Left => self.background,
+            PageSide::Right => self.background_right.unwrap_or(self.background),
+        }
+    }
 }
 
 #[cfg(test)]
