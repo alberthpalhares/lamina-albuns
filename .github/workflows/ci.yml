@@ -1,9 +1,26 @@
 name: CI
 
+# Plano de economia de minutos (2026-10-16, decisão do dono): o CI roda só no repositório
+# público (lamina-codigo). Em PR e na main, só Linux; Windows e macOS só à mão (Actions → CI →
+# Run workflow), antes de fechar um marco. O Windows também é coberto pelo `cargo xtask verify`
+# local, que roda antes de todo PR.
 on:
   push:
     branches: [main]
+    paths-ignore: ["README.md", "LICENSE"]
   pull_request:
+    paths-ignore: ["README.md", "LICENSE"]
+  workflow_dispatch:
+    inputs:
+      todos:
+        description: "Rodar também no Windows e no macOS"
+        type: boolean
+        default: true
+
+# Um commit novo cancela a rodada anterior do mesmo PR ou branch.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -12,14 +29,13 @@ env:
 jobs:
   testes:
     name: Testes (${{ matrix.os }})
-    # O CI roda só no repositório público (lamina-codigo): minutos de graça. O privado guarda os
-    # documentos e usa o `cargo xtask verify` local.
     if: github.repository == 'alberthpalhares/lamina-codigo'
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: ${{ (github.event_name == 'workflow_dispatch' && inputs.todos) && fromJSON('["ubuntu-latest","windows-latest","macos-latest"]') || fromJSON('["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       # O rustup lê o rust-toolchain.toml e instala a versão fixada.
@@ -29,9 +45,7 @@ jobs:
       - name: Bibliotecas do Linux para a interface
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev libxkbcommon-dev libwayland-dev
-      # A mesma porta de verificação que a equipe roda localmente:
-      # formatação, clippy, testes, camadas, specs, assertivas, sala limpa, documentos,
-      # alerta de tamanho e licenças.
+      # A mesma porta de verificação que a equipe roda localmente.
       - name: Porta de verificação
         run: cargo xtask verify
 
@@ -39,6 +53,7 @@ jobs:
     name: Licenças e avisos de segurança
     if: github.repository == 'alberthpalhares/lamina-codigo'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: EmbarkStudios/cargo-deny-action@v2
