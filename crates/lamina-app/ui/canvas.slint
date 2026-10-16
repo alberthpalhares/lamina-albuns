@@ -56,7 +56,8 @@ export component SpreadCanvas inherits Rectangle {
     callback frame-double(int);
     callback crop-drag(float, float);
     callback crop-end();
-    callback crop-wheel(int);
+    // Quanto a roda girou, em pixels (um entalhe da roda costuma valer 120).
+    callback crop-wheel(float);
     background: root.data.bg;
     clip: true;
 
@@ -97,40 +98,17 @@ export component SpreadCanvas inherits Rectangle {
             wrap: word-wrap;
         }
         if root.interactive: TouchArea {
-            property <length> last-x;
-            property <length> last-y;
             mouse-cursor: f.has-img ? move : default;
             double-clicked => { root.frame-double(i); }
-            scroll-event(e) => {
-                if (i != root.cropping) {
-                    return reject;
-                }
-                root.crop-wheel(e.delta-y > 0 ? 1 : -1);
-                accept
-            }
             moved => {
-                if (i == root.cropping) {
-                    root.crop-drag((self.mouse-x - self.last-x) / self.width, (self.mouse-y - self.last-y) / self.height);
-                    self.last-x = self.mouse-x;
-                    self.last-y = self.mouse-y;
-                } else {
-                    root.frame-move(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
-                }
+                root.frame-move(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
             }
             pointer-event(e) => {
                 if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
-                    self.last-x = self.mouse-x;
-                    self.last-y = self.mouse-y;
-                    if (i != root.cropping) {
-                        root.frame-down(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
-                    }
+                    root.frame-down(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
                 }
                 if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
-                    if (i == root.cropping) {
-                        root.crop-end();
-                    } else {
-                        root.frame-up(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
-                    }
+                    root.frame-up(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
                 }
             }
         }
@@ -195,6 +173,36 @@ export component SpreadCanvas inherits Rectangle {
             height: b.h * root.width;
             border-width: 1px;
             border-color: #4fc3f799;
+        }
+    }
+
+    // Quadro em modo recorte: por cima de tudo (inclusive das guias, que senão ficam com a roda
+    // do mouse), recebe o arrasto e a roda (spec RC).
+    if root.cropping >= 0 && root.cropping < root.data.frames.length: TouchArea {
+        property <length> last-x;
+        property <length> last-y;
+        x: root.data.frames[root.cropping].x * root.width;
+        y: root.data.frames[root.cropping].y * root.width;
+        width: root.data.frames[root.cropping].w * root.width;
+        height: root.data.frames[root.cropping].h * root.width;
+        mouse-cursor: move;
+        scroll-event(e) => {
+            root.crop-wheel(e.delta-y / 1px);
+            accept
+        }
+        moved => {
+            root.crop-drag((self.mouse-x - self.last-x) / self.width, (self.mouse-y - self.last-y) / self.height);
+            self.last-x = self.mouse-x;
+            self.last-y = self.mouse-y;
+        }
+        pointer-event(e) => {
+            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                self.last-x = self.mouse-x;
+                self.last-y = self.mouse-y;
+            }
+            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                root.crop-end();
+            }
         }
     }
 }

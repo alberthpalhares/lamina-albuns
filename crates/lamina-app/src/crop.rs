@@ -17,6 +17,9 @@ use crate::state::{App, Msg};
 
 type Shared = Rc<RefCell<App>>;
 
+/// Giro da roda, em pixels, que vale um passo de zoom (um entalhe da roda do mouse).
+const WHEEL_NOTCH: f64 = 120.0;
+
 /// Pausa da roda do mouse que fecha o gesto de zoom (regra 4).
 const WHEEL_PAUSE: Duration = Duration::from_millis(500);
 
@@ -108,6 +111,14 @@ pub fn refresh_spread(app: &mut App) {
             .into(),
     );
     w.set_info_frame_warn(dpi.is_some_and(|(_, warn)| warn));
+    let hint = if app.editor.crop_mode().is_some() {
+        "Roda do mouse ou + e − para o zoom · arraste para mover · 0 encaixa · Esc sai"
+    } else if app.editor.selected_frame().is_some() {
+        "Delete tira a foto · C ou duplo clique recorta · arraste para outro quadro para trocar"
+    } else {
+        ""
+    };
+    w.set_hint(hint.into());
 }
 
 /// A foto original chegou: entra no quadro se ele ainda está em modo recorte.
@@ -148,9 +159,10 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         }
     });
     let a = app.clone();
-    window.on_crop_wheel(move |steps| {
+    window.on_crop_wheel(move |delta| {
         let mut app = a.borrow_mut();
-        let factor = lamina_editor::editor::ZOOM_STEP.powi(steps);
+        let steps = f64::from(delta) / WHEEL_NOTCH;
+        let factor = lamina_editor::editor::ZOOM_STEP.powf(steps);
         if !app.editor.crop_zoom(factor) {
             return;
         }
