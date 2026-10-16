@@ -1,0 +1,5 @@
+# Em testes, unwrap/expect deixam o código mais legível.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+# Regra 3 vale fora dos testes: em teste, panic! é o jeito de falhar com mensagem.
+allow-panic-in-tests = true

@@ -1,0 +1,5 @@
+# Fins de linha LF no repositório, em qualquer sistema (o CI roda fmt no Linux).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary

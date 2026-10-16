@@ -1,0 +1,132 @@
+// A lâmina desenhada (spec JP, regra 5). Todas as medidas chegam em frações da largura da lâmina
+// com a sangria: x de 0 a 1 e y de 0 a `aspect`. O Rust calcula tudo (lamina-editor); aqui só se
+// desenha.
+
+export struct BoxData {
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+}
+
+export struct FrameData {
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    // 0 = vazio, 1 = foto, 2 = texto
+    kind: int,
+    has-img: bool,
+    img: image,
+    cx: int,
+    cy: int,
+    cw: int,
+    ch: int,
+    missing: bool,
+    label: string,
+}
+
+export struct SpreadData {
+    aspect: float,
+    bg: color,
+    trim: BoxData,
+    safe-l: BoxData,
+    safe-r: BoxData,
+    spine-x: float,
+    inactive: [BoxData],
+    frames: [FrameData],
+    warning: bool,
+}
+
+export component SpreadCanvas inherits Rectangle {
+    in property <SpreadData> data;
+    in property <bool> guides;
+    in property <bool> small;
+    background: root.data.bg;
+    clip: true;
+
+    for f in root.data.frames: Rectangle {
+        x: f.x * root.width;
+        y: f.y * root.width;
+        width: f.w * root.width;
+        height: f.h * root.width;
+        clip: true;
+        background: f.has-img ? transparent : #8a8a8a;
+        if f.has-img: Image {
+            width: parent.width;
+            height: parent.height;
+            source: f.img;
+            image-fit: fill;
+            source-clip-x: f.cx;
+            source-clip-y: f.cy;
+            source-clip-width: f.cw;
+            source-clip-height: f.ch;
+        }
+        if f.missing && !root.small: Text {
+            width: parent.width - 16px;
+            text: "Foto não encontrada\n" + f.label;
+            color: white;
+            font-size: 12px;
+            horizontal-alignment: center;
+            wrap: word-wrap;
+        }
+    }
+
+    // Página sem conteúdo (lâmina de ponta com página simples).
+    for b in root.data.inactive: Rectangle {
+        x: b.x * root.width;
+        y: b.y * root.width;
+        width: b.w * root.width;
+        height: b.h * root.width;
+        background: #3a3a3a;
+    }
+
+    // Lombada.
+    Rectangle {
+        x: root.data.spine-x * root.width;
+        width: 1px;
+        height: root.height;
+        background: #00000040;
+    }
+
+    if root.guides && !root.small: Rectangle {
+        // Faixa de sangria escurecida (o que fica fora do corte).
+        Rectangle {
+            x: 0;
+            y: 0;
+            width: root.width;
+            height: root.data.trim.y * root.width;
+            background: #00000066;
+        }
+        Rectangle {
+            x: 0;
+            y: (root.data.trim.y + root.data.trim.h) * root.width;
+            width: root.width;
+            height: root.height - self.y;
+            background: #00000066;
+        }
+        Rectangle {
+            x: 0;
+            y: root.data.trim.y * root.width;
+            width: root.data.trim.x * root.width;
+            height: root.data.trim.h * root.width;
+            background: #00000066;
+        }
+        Rectangle {
+            x: (root.data.trim.x + root.data.trim.w) * root.width;
+            y: root.data.trim.y * root.width;
+            width: root.width - self.x;
+            height: root.data.trim.h * root.width;
+            background: #00000066;
+        }
+        // Zona segura de cada página.
+        for b in [root.data.safe-l, root.data.safe-r]: Rectangle {
+            x: b.x * root.width;
+            y: b.y * root.width;
+            width: b.w * root.width;
+            height: b.h * root.width;
+            border-width: 1px;
+            border-color: #4fc3f799;
+        }
+    }
+}

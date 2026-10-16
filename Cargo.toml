@@ -1,0 +1,82 @@
+[workspace]
+resolver = "3"
+members = ["crates/*", "xtask"]
+exclude = ["spikes"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "Apache-2.0"
+repository = "https://github.com/alberthpalhares/lamina-codigo"
+authors = ["Equipe Lâmina"]
+
+# Versões centralizadas: cada crate declara `dep = { workspace = true }`.
+[workspace.dependencies]
+lamina-core = { path = "crates/lamina-core" }
+lamina-media = { path = "crates/lamina-media" }
+lamina-layout = { path = "crates/lamina-layout" }
+lamina-render = { path = "crates/lamina-render" }
+lamina-export = { path = "crates/lamina-export" }
+lamina-editor = { path = "crates/lamina-editor" }
+
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+# `float_roundtrip`: ler de volta exatamente os números gravados (projeto salvo = projeto aberto).
+serde_json = { version = "1", features = ["float_roundtrip"] }
+thiserror = "2"
+kamadak-exif = "0.6"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "tiff"] }
+rusqlite = { version = "0.40", features = ["bundled"] }
+blake3 = "1"
+rayon = "1"
+# Renderização (ADR 0006): tela de desenho e redução das fotos com Lanczos3.
+tiny-skia = { version = "0.12", default-features = false, features = ["std", "simd"] }
+fast_image_resize = "6"
+# Perfil de cor sRGB embutido nos JPEGs de impressão (ADR 0007).
+moxcms = "0.8"
+tempfile = "3"
+# Interface (ADR 0002) e diálogos de arquivo do sistema (spec JP).
+slint = "1.18"
+slint-build = "1.18"
+rfd = "0.17"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+# Lints pedagógicos: ajudam iniciantes a evitar armadilhas comuns.
+unwrap_used = "warn"
+expect_used = "warn"
+dbg_macro = "warn"
+todo = "warn"
+# Regra 3: biblioteca devolve erro, não entra em pânico (auditoria do Marco 1, M11).
+panic = "warn"
+unreachable = "warn"
+unimplemented = "warn"
+cast_possible_truncation = "warn"
+cast_sign_loss = "warn"
+
+[profile.dev.package."*"]
+# Dependências otimizadas mesmo em debug: decodificar imagens sem otimização é muito lento.
+opt-level = 2
+
+[profile.dev.package.lamina-export]
+# Teste de velocidade da exportação (spec EX, EX-B12) mede código otimizado.
+opt-level = 3
+
+[profile.dev.package.lamina-render]
+# Mesma razão do lamina-layout: o teste de velocidade (spec RD, RD-B12) mede código otimizado.
+opt-level = 3
+
+[profile.dev.package.lamina-layout]
+# O gerador de layouts responde à interface; o teste de velocidade (spec VL, VL-B9) mede o
+# código otimizado também em `cargo test`.
+opt-level = 3
+
+[profile.dev.package.lamina-editor]
+# Teste de velocidade da janela (spec JP, JP-B13) mede código otimizado.
+opt-level = 3

@@ -1,0 +1,94 @@
+//! Migrações do formato de projeto (ADR 0004).
+//!
+//! Cada função leva o JSON de uma versão para a seguinte. [`migrate`] aplica a cadeia até a
+//! versão atual. Mudou a estrutura? Suba `CURRENT_SCHEMA_VERSION`, escreva a função
+//! `vN_para_vN1` e um teste com um arquivo da versão antiga.
+
+use serde_json::{Map, Value, json};
+
+use super::CURRENT_SCHEMA_VERSION;
+use crate::CoreError;
+
+/// Leva `value` da versão `from` até a atual.
+pub(super) fn migrate(mut value: Value, from: u32) -> Result<Value, CoreError> {
+    let mut version = from;
+    while version < CURRENT_SCHEMA_VERSION {
+        value = match version {
+            1 => v1_para_v2(value)?,
+            _ => {
+                return Err(CoreError::Migration {
+                    from: version,
+                    reason: "versão desconhecida".into(),
+                });
+            }
+        };
+        version += 1;
+    }
+    Ok(value)
+}
+
+fn spec_mut(value: &mut Value, from: u32) -> Result<&mut Map<String, Value>, CoreError> {
+    value
+        .get_mut("spec")
+        .and_then(Value::as_object_mut)
+        .ok_or(CoreError::Migration {
+            from,
+            reason: "campo `spec` ausente".into(),
+        })
+}
+
+/// v1 → v2: sangria e zona segura passam de um número para margens por borda
+/// (`outer`, `top_bottom`, `inner`), e a especificação ganha `edges`.
+fn v1_para_v2(mut value: Value) -> Result<Value, CoreError> {
+    let spec = spec_mut(&mut value, 1)?;
+    let uniform = |v: Option<Value>| {
+        let mm = v.unwrap_or(json!(0.0));
+        json!({ "outer": mm, "top_bottom": mm, "inner": mm })
+    };
+    let bleed = uniform(spec.remove("bleed"));
+    let safe = uniform(spec.remove("safe_margin"));
+    spec.insert("bleed".into(), bleed);
+    spec.insert("safe_margins".into(), safe);
+    spec.insert(
+        "edges".into(),
+        json!({ "start": "full_spread", "end": "full_spread" }),
+    );
+    value["schema_version"] = json!(2);
+    Ok(value)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{AlbumEdge, Margins, Mm, Project};
+
+    /// Projeto salvo pela versão 1 do formato (fundação, 2026-10-14).
+    const PROJETO_V1: &str = r#"{
+        "schema_version": 1,
+        "name": "Álbum antigo",
+        "spec": {
+            "page_width": 300.0, "page_height": 300.0, "dpi": 300,
+            "bleed": 3.0, "safe_margin": 10.0, "mode": "spread"
+        },
+        "photos": [],
+        "spreads": [],
+        "next_id": 1
+    }"#;
+
+    #[test]
+    fn projeto_v1_abre_com_margens_uniformes() {
+        let project = Project::from_json(PROJETO_V1).unwrap();
+        assert_eq!(project.schema_version, super::CURRENT_SCHEMA_VERSION);
+        assert_eq!(project.spec.bleed(), Margins::uniform(Mm(3.0)));
+        assert_eq!(project.spec.safe_margins(), Margins::uniform(Mm(10.0)));
+        assert_eq!(project.spec.edges().start, AlbumEdge::FullSpread);
+    }
+
+    #[test]
+    fn projeto_v1_sem_spec_da_erro_de_migracao() {
+        let json = r#"{ "schema_version": 1, "name": "x" }"#;
+        assert!(matches!(
+            Project::from_json(json),
+            Err(crate::CoreError::Migration { from: 1, .. })
+        ));
+    }
+}

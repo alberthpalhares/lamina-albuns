@@ -1,0 +1,32 @@
+[package]
+name = "lamina-cli"
+description = "Lâmina sem interface: importar, diagramar e exportar pela linha de comando."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[[bin]]
+name = "lamina"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+lamina-core = { workspace = true }
+lamina-layout = { workspace = true }
+lamina-media = { workspace = true }
+lamina-render = { workspace = true }
+lamina-export = { workspace = true }
+lamina-editor = { workspace = true }
+
+[dev-dependencies]
+image = { workspace = true }
+rayon = { workspace = true }
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

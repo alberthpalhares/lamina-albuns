@@ -1,0 +1,184 @@
+// Janelas sobre a janela principal: novo álbum, pergunta antes de sair, erro, sobre e andamento.
+
+import { Button, LineEdit, CheckBox, ComboBox, SpinBox } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+
+// Fundo escuro que bloqueia os cliques na janela de baixo.
+component Shade inherits Rectangle {
+    background: #000000a0;
+    TouchArea { }
+}
+
+component Panel inherits Rectangle {
+    background: Theme.panel;
+    border-radius: 8px;
+    drop-shadow-blur: 24px;
+    drop-shadow-color: #000000a0;
+}
+
+component Field inherits HorizontalLayout {
+    in property <string> label;
+    spacing: 8px;
+    Text {
+        text: root.label;
+        width: 200px;
+        color: Theme.text;
+        vertical-alignment: center;
+    }
+    @children
+}
+
+export component NewAlbumDialog inherits Shade {
+    in property <string> folder;
+    in-out property <string> name;
+    in-out property <string> width-cm;
+    in-out property <string> height-cm;
+    in-out property <string> dpi;
+    in-out property <string> bleed-mm;
+    in-out property <string> safe-mm;
+    in-out property <string> spine-mm;
+    in-out property <bool> starts-single;
+    in-out property <bool> ends-single;
+    in-out property <int> spreads;
+    in-out property <int> reuse;
+    in property <int> photos;
+    in property <string> suggestion;
+    in property <string> error;
+    callback changed();
+    callback create();
+    callback cancel();
+
+    Panel {
+        width: 560px;
+        height: 600px;
+        VerticalLayout {
+            padding: 24px;
+            spacing: 10px;
+            Text {
+                text: "Novo álbum";
+                font-size: 20px;
+                font-weight: 700;
+                color: Theme.text;
+            }
+            Text {
+                text: root.folder + " · " + root.photos + " fotos";
+                color: Theme.muted;
+                overflow: elide;
+            }
+            Field {
+                label: "Nome";
+                LineEdit { text <=> root.name; edited => { root.changed(); } }
+            }
+            Field {
+                label: "Página (largura × altura, cm)";
+                LineEdit { text <=> root.width-cm; input-type: decimal; edited => { root.changed(); } }
+                LineEdit { text <=> root.height-cm; input-type: decimal; edited => { root.changed(); } }
+            }
+            Field {
+                label: "DPI";
+                LineEdit { text <=> root.dpi; input-type: number; edited => { root.changed(); } }
+            }
+            Field {
+                label: "Sangria e zona segura (mm)";
+                LineEdit { text <=> root.bleed-mm; input-type: decimal; edited => { root.changed(); } }
+                LineEdit { text <=> root.safe-mm; input-type: decimal; edited => { root.changed(); } }
+            }
+            Field {
+                label: "Zona segura na lombada (mm)";
+                LineEdit {
+                    text <=> root.spine-mm;
+                    placeholder-text: "igual à zona segura";
+                    input-type: decimal;
+                    edited => { root.changed(); }
+                }
+            }
+            HorizontalLayout {
+                spacing: 16px;
+                CheckBox { text: "Começa com página simples"; checked <=> root.starts-single; toggled => { root.changed(); } }
+                CheckBox { text: "Termina com página simples"; checked <=> root.ends-single; toggled => { root.changed(); } }
+            }
+            Field {
+                label: "Número de lâminas";
+                SpinBox { value <=> root.spreads; minimum: 1; maximum: max(1, root.photos); edited => { root.changed(); } }
+            }
+            Text { text: root.suggestion; color: Theme.muted; }
+            Field {
+                label: "Reutilização de desenhos";
+                ComboBox { model: ["Baixa", "Média", "Alta"]; current-index <=> root.reuse; }
+            }
+            Text { text: root.error; color: Theme.warning; wrap: word-wrap; }
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Button { text: "Cancelar"; clicked => { root.cancel(); } }
+                Button {
+                    text: "Criar";
+                    primary: true;
+                    enabled: root.error == "";
+                    clicked => { root.create(); }
+                }
+            }
+        }
+    }
+}
+
+export component ConfirmDialog inherits Shade {
+    in property <string> name;
+    callback answer(int);
+    Panel {
+        width: 440px;
+        height: 170px;
+        VerticalLayout {
+            padding: 24px;
+            spacing: 16px;
+            Text {
+                text: "Salvar as alterações em \"" + root.name + "\"?";
+                font-size: 16px;
+                font-weight: 600;
+                color: Theme.text;
+                wrap: word-wrap;
+            }
+            Text { text: "Sem salvar, as alterações se perdem."; color: Theme.muted; }
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Button { text: "Cancelar"; clicked => { root.answer(2); } }
+                Button { text: "Não salvar"; clicked => { root.answer(1); } }
+                Button { text: "Salvar"; primary: true; clicked => { root.answer(0); } }
+            }
+        }
+    }
+}
+
+export component MessageDialog inherits Shade {
+    in property <string> title;
+    in property <string> message;
+    callback close();
+    Panel {
+        width: 480px;
+        height: 250px;
+        VerticalLayout {
+            padding: 24px;
+            spacing: 12px;
+            Text { text: root.title; font-size: 16px; font-weight: 600; color: Theme.text; }
+            Text { text: root.message; color: Theme.text; wrap: word-wrap; vertical-stretch: 1; }
+            HorizontalLayout {
+                alignment: end;
+                Button { text: "OK"; primary: true; clicked => { root.close(); } }
+            }
+        }
+    }
+}
+
+export component BusyOverlay inherits Shade {
+    in property <string> text;
+    Panel {
+        width: 380px;
+        height: 90px;
+        Text {
+            text: root.text;
+            color: Theme.text;
+            font-size: 15px;
+        }
+    }
+}

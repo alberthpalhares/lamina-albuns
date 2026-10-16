@@ -1,0 +1,25 @@
+[package]
+name = "lamina-media"
+description = "Importação de fotos: formatos, metadados EXIF, miniaturas e catálogo."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+lamina-core = { workspace = true }
+kamadak-exif = { workspace = true }
+image = { workspace = true }
+rusqlite = { workspace = true }
+blake3 = { workspace = true }
+rayon = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

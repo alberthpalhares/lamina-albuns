@@ -1,0 +1,171 @@
+//! Pré-impressão (spec EX, regra 9): avisos antes de exportar, sem impedir a exportação.
+
+use std::fmt;
+
+use lamina_core::{Frame, FrameContent, Mm, PageSide, Project, Rect};
+
+/// Ampliação a partir da qual a foto vira aviso (120%, como na referência).
+const MAX_ENLARGEMENT: f64 = 1.2;
+/// Distância ao corte abaixo da qual o quadro "encosta" nele, em mm.
+const TOUCH_MM: f64 = 0.1;
+/// Folga da zona segura: um quadro exatamente na borda dela não é aviso (contas em ponto
+/// flutuante passam por um fio).
+const SAFE_TOLERANCE_MM: f64 = 0.01;
+
+/// Um aviso da pré-impressão, numa lâmina (contada a partir de 1).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Warning {
+    pub spread: usize,
+    pub kind: WarningKind,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum WarningKind {
+    /// A foto precisa crescer mais de 120% para encher o quadro.
+    Enlarged {
+        photo: String,
+        percent: u32,
+        effective_dpi: u32,
+    },
+    /// Quadro sem foto.
+    EmptyFrame,
+    /// Quadro fora da zona segura sem encostar no corte, a `distance` dele.
+    NearCut { photo: String, distance: Mm },
+}
+
+impl fmt::Display for Warning {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let n = self.spread;
+        match &self.kind {
+            WarningKind::Enlarged {
+                photo,
+                percent,
+                effective_dpi,
+            } => write!(
+                f,
+                "Lâmina {n}: a foto {photo} está ampliada {percent}% ({effective_dpi} DPI efetivo)."
+            ),
+            WarningKind::EmptyFrame => write!(f, "Lâmina {n}: quadro vazio."),
+            WarningKind::NearCut { photo, distance } => write!(
+                f,
+                "Lâmina {n}: a foto {photo} está fora da zona segura, a {} mm do corte.",
+                millimeters(distance.get())
+            ),
+        }
+    }
+}
+
+/// "2" para 2,0 e "1,5" para 1,5.
+fn millimeters(mm: f64) -> String {
+    let rounded = (mm * 10.0).round() / 10.0;
+    if (rounded - rounded.round()).abs() < 1e-9 {
+        format!("{rounded:.0}")
+    } else {
+        format!("{rounded:.1}").replace('.', ",")
+    }
+}
+
+/// Avisos das lâminas `spreads` (começando em 0), na ordem do álbum e dos quadros.
+pub fn preflight(project: &Project, spreads: &[usize]) -> Vec<Warning> {
+    let mut out = Vec::new();
+    for &i in spreads {
+        let Some(spread) = project.spreads.get(i) else {
+            continue;
+        };
+        for frame in &spread.frames {
+            out.extend(check(project, frame).into_iter().map(|kind| Warning {
+                spread: i + 1,
+                kind,
+            }));
+        }
+    }
+    out
+}
+
+fn check(project: &Project, frame: &Frame) -> Vec<WarningKind> {
+    let FrameContent::Photo { photo, .. } = &frame.content else {
+        return vec![WarningKind::EmptyFrame];
+    };
+    // Foto que não existe no projeto: a validação do projeto já recusa isso ao abrir.
+    let Ok(photo) = project.photo(*photo) else {
+        return Vec::new();
+    };
+    let name = photo
+        .path
+        .file_name()
+        .unwrap_or(photo.path.as_os_str())
+        .to_string_lossy()
+        .into_owned();
+    let mut out = Vec::new();
+    let target = f64::from(project.spec.dpi().get());
+    if let Ok(Some(dpi)) = project.effective_dpi(frame)
+        && dpi > 0.0
+        && target / dpi > MAX_ENLARGEMENT
+    {
+        out.push(WarningKind::Enlarged {
+            photo: name.clone(),
+            percent: whole(target / dpi * 100.0),
+            effective_dpi: whole(dpi),
+        });
+    }
+    if let Some(mm) = near_cut(project, project.frame_rect(frame)) {
+        out.push(WarningKind::NearCut {
+            photo: name,
+            distance: Mm(mm),
+        });
+    }
+    out
+}
+
+/// Distância até o corte, se o quadro sai da zona segura pela borda externa, de cima ou de
+/// baixo sem encostar no corte. A margem da lombada não conta.
+fn near_cut(project: &Project, rect: Rect) -> Option<f64> {
+    let spec = &project.spec;
+    let trim = spec.trim_rect();
+    let (left, right) = (
+        spec.safe_rect(PageSide::Left),
+        spec.safe_rect(PageSide::Right),
+    );
+    // (distância até o corte, saiu da zona segura) para cada borda que importa.
+    let sides = [
+        (
+            rect.x.get() - trim.x.get(),
+            rect.x.get() < left.x.get() - SAFE_TOLERANCE_MM,
+        ),
+        (
+            trim.right().get() - rect.right().get(),
+            rect.right().get() > right.right().get() + SAFE_TOLERANCE_MM,
+        ),
+        (
+            rect.y.get() - trim.y.get(),
+            rect.y.get() < left.y.get() - SAFE_TOLERANCE_MM,
+        ),
+        (
+            trim.bottom().get() - rect.bottom().get(),
+            rect.bottom().get() > left.bottom().get() + SAFE_TOLERANCE_MM,
+        ),
+    ];
+    sides
+        .iter()
+        .filter(|(distance, outside)| *outside && *distance > TOUCH_MM)
+        .map(|(distance, _)| *distance)
+        .reduce(f64::min)
+}
+
+fn whole(value: f64) -> u32 {
+    // Arredondado e preso entre 0 e o maior u32, então o cast não trunca.
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let n = value.round().clamp(0.0, f64::from(u32::MAX)) as u32;
+    n
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn milimetros_sem_casas_quando_inteiro() {
+        assert_eq!(millimeters(2.0), "2");
+        assert_eq!(millimeters(1.54), "1,5");
+    }
+}
