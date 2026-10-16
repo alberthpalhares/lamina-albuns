@@ -14,6 +14,7 @@ use crate::prefs_store::PrefsStore;
 use crate::suggestions::Part;
 use crate::{Command, EditorError, Session};
 
+mod frames;
 mod layouts;
 
 pub use layouts::Panel;
@@ -37,6 +38,10 @@ pub struct Editor {
     prefs: PrefsStore,
     lists: RefCell<HashMap<ListsKey, LayoutLists>>,
     notice: Option<String>,
+    selected_frame: Option<usize>,
+    selection: Vec<PhotoId>,
+    /// Última foto clicada sem Shift: começo do intervalo do Shift+clique.
+    anchor: Option<PhotoId>,
 }
 
 impl Default for Editor {
@@ -62,6 +67,9 @@ impl Editor {
             prefs,
             lists: RefCell::new(HashMap::new()),
             notice,
+            selected_frame: None,
+            selection: Vec::new(),
+            anchor: None,
         }
     }
 
@@ -94,12 +102,16 @@ impl Editor {
     /// Abre o arquivo. Se não der, a sessão anterior continua como estava (JP-B11).
     pub fn open(&mut self, file: &Path) -> Result<(), EditorError> {
         self.session = Some(Session::open(file)?);
+        self.selected_frame = None;
+        self.selection.clear();
         Ok(())
     }
 
     /// Passa a editar um álbum novo, ainda sem arquivo.
     pub fn adopt(&mut self, project: Project) {
         self.session = Some(Session::new_unsaved(project));
+        self.selected_frame = None;
+        self.selection.clear();
     }
 
     /// Fechar, abrir outro ou criar outro precisa perguntar antes?
@@ -143,6 +155,15 @@ impl Editor {
             Command::NextRight | Command::PreviousRight => self.can_step(Part::Right),
             Command::Mirror => self.can_mirror(),
             Command::Favorite | Command::Reject => self.panel(Part::Spread).in_use.is_some(),
+            Command::ClearFrame => self.can_clear(),
+            Command::Deselect => self.selected_frame.is_some() || !self.selection.is_empty(),
+            Command::BuildFromSelection | Command::NewSpreadFromSelection => {
+                !self.selection.is_empty() && self.photo_selection().is_ok()
+            }
+            Command::NewSpread => true,
+            Command::DeleteSpread => s.spread_count() > 1,
+            Command::MoveSpreadLeft => s.current() > 0,
+            Command::MoveSpreadRight => s.current() < last,
         }
     }
 
@@ -172,7 +193,22 @@ impl Editor {
             Command::Mirror => self.mirror(),
             Command::Favorite => self.favorite(),
             Command::Reject => self.reject(),
-            _ => self.navigate(command),
+            Command::ClearFrame => self.clear_selected(),
+            Command::Deselect => {
+                self.selected_frame = None;
+                self.selection.clear();
+                true
+            }
+            Command::BuildFromSelection => self.build_from_selection(0),
+            Command::NewSpreadFromSelection => self.new_spread_from_selection(),
+            Command::NewSpread => self.new_spread(),
+            Command::DeleteSpread => self.delete_current(),
+            Command::MoveSpreadLeft => self.move_by(-1),
+            Command::MoveSpreadRight => self.move_by(1),
+            _ => {
+                self.selected_frame = None;
+                self.navigate(command)
+            }
         }
     }
 

@@ -1,92 +1,10 @@
-//! Registro de comandos (spec JP, regra 10; spec TL, seção 3): cada ação tem um nome estável, um
-//! rótulo e no máximo um atalho, e é chamada igual pelo menu, pelo teclado e pelos testes.
+//! A tabela do registro: nome estável, rótulo, menu e atalho de cada comando.
 
+use super::{Command, Info, Menu};
 use crate::keys::{Key, Shortcut};
 
-/// Menu onde o comando aparece.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Menu {
-    File,
-    Edit,
-    Spread,
-    Layout,
-    View,
-    Help,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Command {
-    NewAlbum,
-    Open,
-    Save,
-    SaveAs,
-    Undo,
-    Redo,
-    NextSpread,
-    PreviousSpread,
-    FirstSpread,
-    LastSpread,
-    NextLayout,
-    PreviousLayout,
-    NextLeft,
-    PreviousLeft,
-    NextRight,
-    PreviousRight,
-    Mirror,
-    Favorite,
-    Reject,
-    ToggleReordered,
-    ToggleGuides,
-    About,
-}
-
-type Info = (&'static str, &'static str, Menu, Option<Shortcut>);
-
 impl Command {
-    pub const ALL: [Command; 22] = [
-        Command::NewAlbum,
-        Command::Open,
-        Command::Save,
-        Command::SaveAs,
-        Command::Undo,
-        Command::Redo,
-        Command::NextSpread,
-        Command::PreviousSpread,
-        Command::FirstSpread,
-        Command::LastSpread,
-        Command::NextLayout,
-        Command::PreviousLayout,
-        Command::NextLeft,
-        Command::PreviousLeft,
-        Command::NextRight,
-        Command::PreviousRight,
-        Command::Mirror,
-        Command::Favorite,
-        Command::Reject,
-        Command::ToggleReordered,
-        Command::ToggleGuides,
-        Command::About,
-    ];
-
-    /// Nome estável, para testes e para a linha de comando.
-    pub fn name(self) -> &'static str {
-        self.info().0
-    }
-
-    /// Rótulo do menu (e do histórico, nas edições).
-    pub fn label(self) -> &'static str {
-        self.info().1
-    }
-
-    pub fn menu(self) -> Menu {
-        self.info().2
-    }
-
-    pub fn shortcut(self) -> Option<Shortcut> {
-        self.info().3
-    }
-
-    fn info(self) -> Info {
+    pub(super) fn info(self) -> Info {
         use Command as C;
         use Shortcut as S;
         let k = |key| Some(S::key(key));
@@ -192,23 +110,51 @@ impl Command {
                 Menu::Layout,
                 k(Key::Char('r')),
             ),
+            C::ClearFrame => (
+                "editar.tirar-foto",
+                "Tirar foto",
+                Menu::Edit,
+                k(Key::Delete),
+            ),
+            C::Deselect => ("editar.desmarcar", "Desmarcar", Menu::Edit, k(Key::Escape)),
+            C::BuildFromSelection => (
+                "layout.montar",
+                "Montar lâmina",
+                Menu::Layout,
+                k(Key::Enter),
+            ),
+            C::NewSpreadFromSelection => (
+                "lamina.nova-com-selecao",
+                "Nova lâmina com a seleção",
+                Menu::Spread,
+                shift(Key::Enter),
+            ),
+            C::NewSpread => (
+                "lamina.nova",
+                "Nova lâmina",
+                Menu::Spread,
+                Some(S::ctrl_shift('n')),
+            ),
+            C::DeleteSpread => (
+                "lamina.apagar",
+                "Apagar lâmina",
+                Menu::Spread,
+                Some(S::ctrl_key(Key::Delete)),
+            ),
+            C::MoveSpreadLeft => (
+                "lamina.mover-esquerda",
+                "Mover lâmina para a esquerda",
+                Menu::Spread,
+                Some(S::ctrl_key(Key::Left)),
+            ),
+            C::MoveSpreadRight => (
+                "lamina.mover-direita",
+                "Mover lâmina para a direita",
+                Menu::Spread,
+                Some(S::ctrl_key(Key::Right)),
+            ),
             C::ToggleGuides => ("ver.guias", "Mostrar guias", Menu::View, k(Key::Char('g'))),
             C::About => ("ajuda.sobre", "Sobre o Lâmina", Menu::Help, None),
         }
-    }
-
-    /// O comando do atalho, se houver. Ctrl+Shift+Z também refaz (costume no macOS e no Linux).
-    pub fn from_shortcut(shortcut: Shortcut) -> Option<Command> {
-        if shortcut == Shortcut::ctrl_shift('z') {
-            return Some(Command::Redo);
-        }
-        Command::ALL
-            .into_iter()
-            .find(|c| c.shortcut() == Some(shortcut))
-    }
-
-    /// O comando de nome `name`, se houver.
-    pub fn from_name(name: &str) -> Option<Command> {
-        Command::ALL.into_iter().find(|c| c.name() == name)
     }
 }

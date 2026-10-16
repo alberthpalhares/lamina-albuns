@@ -13,6 +13,10 @@ pub enum Key {
     Right,
     Up,
     Down,
+    Delete,
+    Backspace,
+    Escape,
+    Enter,
 }
 
 impl Key {
@@ -27,6 +31,10 @@ impl Key {
             "Right" => Key::Right,
             "Up" => Key::Up,
             "Down" => Key::Down,
+            "Delete" => Key::Delete,
+            "Backspace" => Key::Backspace,
+            "Escape" => Key::Escape,
+            "Enter" => Key::Enter,
             _ => {
                 let mut chars = name.chars();
                 let c = chars.next()?;
@@ -65,6 +73,14 @@ impl Shortcut {
         }
     }
 
+    pub const fn ctrl_key(key: Key) -> Self {
+        Shortcut {
+            ctrl: true,
+            shift: false,
+            key,
+        }
+    }
+
     pub const fn ctrl(c: char) -> Self {
         Shortcut {
             ctrl: true,
@@ -93,6 +109,10 @@ impl Shortcut {
             Key::Right => "→".into(),
             Key::Up => "↑".into(),
             Key::Down => "↓".into(),
+            Key::Delete => "Delete".into(),
+            Key::Backspace => "Backspace".into(),
+            Key::Escape => "Esc".into(),
+            Key::Enter => "Enter".into(),
         };
         let ctrl = if self.ctrl { "Ctrl+" } else { "" };
         let shift = if self.shift { "Shift+" } else { "" };

@@ -31,6 +31,8 @@ pub struct Selection {
     pub photos: Vec<PhotoId>,
     pub aspects: Vec<f64>,
     pub active: ActivePages,
+    /// A lâmina inteira: a troca tira também os quadros vazios (spec FQ, regra 4).
+    pub whole: bool,
 }
 
 /// Por que uma parte não pode trocar de layout (as mensagens da seção 6).
@@ -40,6 +42,8 @@ pub enum Unavailable {
     PageWithoutPhotos(Part),
     CrossesSpine,
     EdgeSpread,
+    /// Seleção de fotos maior do que a lâmina comporta (spec FQ, regra 5).
+    TooMany(usize),
 }
 
 impl std::fmt::Display for Unavailable {
@@ -59,6 +63,7 @@ impl std::fmt::Display for Unavailable {
                 "Esta lâmina tem foto sobre a lombada: troque o layout da lâmina inteira."
             ),
             Unavailable::EdgeSpread => write!(f, "Lâmina de ponta: não dá para espelhar."),
+            Unavailable::TooMany(n) => write!(f, "Selecione até {n} fotos para uma lâmina."),
         }
     }
 }
@@ -132,6 +137,7 @@ pub fn selection(project: &Project, index: usize, part: Part) -> Result<Selectio
         photos,
         aspects,
         active,
+        whole: part == Part::Spread,
     })
 }
 
@@ -181,6 +187,7 @@ pub fn apply(
     let kept: Vec<Frame> = std::mem::take(&mut spread.frames)
         .into_iter()
         .filter(|f| !photo_of(f).is_some_and(|p| sel.photos.contains(&p)))
+        .filter(|f| !(sel.whole && f.content == FrameContent::Empty))
         .collect();
     let new = sel.photos.iter().zip(&c.frames).map(|(photo, rect)| {
         let content = FrameContent::Photo {

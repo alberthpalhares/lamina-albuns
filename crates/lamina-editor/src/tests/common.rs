@@ -89,3 +89,13 @@ impl Base {
 pub fn file_name(path: &Path) -> String {
     path.file_name().unwrap().to_string_lossy().into_owned()
 }
+
+/// Roda `f` num pool de threads só dele: os testes de velocidade não esperam o pool global,
+/// que os outros testes do mesmo binário ocupam em paralelo (AGENTS.md, regra 13).
+pub fn isolated<R: Send>(f: impl FnOnce() -> R + Send) -> R {
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .build()
+        .unwrap()
+        .install(f)
+}

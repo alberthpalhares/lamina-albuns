@@ -101,6 +101,11 @@ impl App {
         self.refresh_photos();
     }
 
+    /// As fotos na ordem em que o navegador mostra agora.
+    pub fn shown_photos(&self) -> Vec<PhotoId> {
+        self.list.iter().map(|p| p.id).collect()
+    }
+
     /// Foto `index` do navegador, na lista mostrada agora.
     pub fn photo_at(&self, index: i32) -> Option<PhotoId> {
         let i = usize::try_from(index).ok()?;
@@ -158,6 +163,11 @@ impl App {
         let current = spread_data(&project, index, &missing, &image, !warnings.is_empty());
         w.set_current(current);
         w.set_current_index(i32::try_from(index).unwrap_or(0));
+        let frame = self
+            .editor
+            .selected_frame()
+            .and_then(|f| i32::try_from(f).ok());
+        w.set_selected_frame(frame.unwrap_or(-1));
         if let Some(notice) = self.editor.take_notice() {
             self.notice = notice;
             w.set_notice(self.notice.clone().into());
@@ -190,6 +200,7 @@ impl App {
             .map(|(i, warning)| spread_data(&project, i, &missing, &image, *warning))
             .collect();
         w.set_spreads(model(spreads));
+        crate::drag::refresh_timeline(self);
     }
 
     /// Navegador de fotos e dados da foto selecionada.
@@ -204,7 +215,14 @@ impl App {
         let list = self.list.clone();
         let items = list
             .iter()
-            .map(|item| photo_data(item, self.images.thumb(&project, item.id, &self.cache)))
+            .map(|item| {
+                let picked = self.editor.selection().contains(&item.id);
+                photo_data(
+                    item,
+                    self.images.thumb(&project, item.id, &self.cache),
+                    picked,
+                )
+            })
             .collect();
         w.set_photos(model(items));
         w.set_filter(match self.filter {
