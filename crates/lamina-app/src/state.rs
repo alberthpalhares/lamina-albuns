@@ -31,6 +31,8 @@ pub enum Msg {
     Step(Step),
     Album(Result<(Project, usize), String>),
     ImagesReady,
+    /// A foto original do quadro em modo recorte (spec RC, regra 9).
+    Original(PhotoId, std::sync::Arc<lamina_editor::screens::Rgba>),
 }
 
 pub struct App {
@@ -43,7 +45,11 @@ pub struct App {
     pub new_folder: PathBuf,
     pub new_photos: usize,
     pub notice: String,
-    images: Images,
+    pub(crate) images: Images,
+    /// Foto original sendo carregada para o modo recorte.
+    pub(crate) loading: Option<PhotoId>,
+    /// Fecha o gesto de zoom da roda depois de uma pausa (spec RC, regra 4).
+    pub(crate) crop_timer: slint::Timer,
     filter: Filter,
     list: Vec<PhotoItem>,
     selected: Option<PhotoId>,
@@ -61,6 +67,8 @@ impl App {
             new_photos: 0,
             notice: String::new(),
             images: Images::default(),
+            loading: None,
+            crop_timer: crate::crop::timer(),
             filter: Filter::All,
             list: Vec::new(),
             selected: None,
@@ -151,23 +159,14 @@ impl App {
             .iter()
             .map(ToString::to_string)
             .collect();
-        let (project, missing) = (session.project().clone(), session.missing().to_vec());
+        let project = session.project().clone();
         let count = session.spread_count();
         let frames = project.spreads.get(index).map_or(0, |s| s.frames.len());
         w.set_info_album(album_info(&project).into());
         w.set_info_spread(format!("Lâmina {} de {count} · {frames} quadros", index + 1).into());
         w.set_info_warnings(warnings.join("\n").into());
 
-        let images = self.images.spread(&project, index, &self.cache);
-        let image = |id: PhotoId| images.get(&id).cloned();
-        let current = spread_data(&project, index, &missing, &image, !warnings.is_empty());
-        w.set_current(current);
-        w.set_current_index(i32::try_from(index).unwrap_or(0));
-        let frame = self
-            .editor
-            .selected_frame()
-            .and_then(|f| i32::try_from(f).ok());
-        w.set_selected_frame(frame.unwrap_or(-1));
+        crate::crop::refresh_spread(self);
         if let Some(notice) = self.editor.take_notice() {
             self.notice = notice;
             w.set_notice(self.notice.clone().into());

@@ -153,6 +153,30 @@ impl Command {
                 Menu::Spread,
                 Some(S::ctrl_key(Key::Right)),
             ),
+            C::CropMode => (
+                "recorte.abrir",
+                "Recortar foto",
+                Menu::Edit,
+                k(Key::Char('c')),
+            ),
+            C::ZoomIn => (
+                "recorte.mais-zoom",
+                "Mais zoom",
+                Menu::Edit,
+                k(Key::Char('+')),
+            ),
+            C::ZoomOut => (
+                "recorte.menos-zoom",
+                "Menos zoom",
+                Menu::Edit,
+                k(Key::Char('-')),
+            ),
+            C::ResetCrop => (
+                "recorte.encaixar",
+                "Encaixar a foto",
+                Menu::Edit,
+                k(Key::Char('0')),
+            ),
             C::ToggleGuides => ("ver.guias", "Mostrar guias", Menu::View, k(Key::Char('g'))),
             C::About => ("ajuda.sobre", "Sobre o Lâmina", Menu::Help, None),
         }

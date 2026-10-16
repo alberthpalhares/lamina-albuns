@@ -106,3 +106,10 @@ pub fn prepare_images(project: &Project, first: usize, cache: &Cache) -> usize {
         .filter(|p| cache.ensure_images(p).is_err())
         .count()
 }
+
+/// A foto original, na orientação certa, para o quadro em modo recorte (spec RC, regra 9).
+/// Roda fora da linha da janela; `None` se a foto não abrir.
+pub fn load_original(project: &Project, id: PhotoId) -> Option<Arc<RgbaImage>> {
+    let photo = project.photo(id).ok()?;
+    lamina_media::load_oriented(&photo.path).ok().map(Arc::new)
+}

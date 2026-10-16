@@ -45,8 +45,10 @@ pub use error::EditorError;
 pub use keys::{Key, Shortcut};
 pub use photos::{Filter, PhotoInfo, PhotoItem, photo_info, photo_list, used_photos};
 pub use prefs_store::{PREFS_FILE, PrefsStore, config_dir};
-pub use screens::{ScreenImages, prepare_images};
+pub use screens::{ScreenImages, load_original, prepare_images};
 pub use session::Session;
 pub use suggestions::{List, Part, Unavailable};
-pub use text::{family_name, score_text};
-pub use view::{Area, FrameKind, FrameView, PxRect, SpreadView, frame_at, spread_view};
+pub use text::{family_name, frame_dpi_text, score_text};
+pub use view::{
+    Area, FrameKind, FrameView, PxRect, SpreadView, frame_at, photo_extent, spread_view,
+};

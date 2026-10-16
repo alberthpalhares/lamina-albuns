@@ -48,8 +48,28 @@ export component SpreadCanvas inherits Rectangle {
     callback frame-down(int, length, length);
     callback frame-move(int, length, length);
     callback frame-up(int, length, length);
+    // Recorte (spec RC): o quadro em modo recorte, a prévia da foto inteira e os gestos.
+    in property <int> cropping: -1;
+    in property <bool> has-preview;
+    in property <BoxData> preview;
+    in property <image> preview-img;
+    callback frame-double(int);
+    callback crop-drag(float, float);
+    callback crop-end();
+    callback crop-wheel(int);
     background: root.data.bg;
     clip: true;
+
+    // Prévia do recorte: a foto inteira, apagada, por baixo dos quadros.
+    if root.has-preview: Image {
+        x: root.preview.x * root.width;
+        y: root.preview.y * root.width;
+        width: root.preview.w * root.width;
+        height: root.preview.h * root.width;
+        source: root.preview-img;
+        image-fit: fill;
+        opacity: 0.35;
+    }
 
     for f[i] in root.data.frames: Rectangle {
         x: f.x * root.width;
@@ -77,22 +97,46 @@ export component SpreadCanvas inherits Rectangle {
             wrap: word-wrap;
         }
         if root.interactive: TouchArea {
+            property <length> last-x;
+            property <length> last-y;
             mouse-cursor: f.has-img ? move : default;
+            double-clicked => { root.frame-double(i); }
+            scroll-event(e) => {
+                if (i != root.cropping) {
+                    return reject;
+                }
+                root.crop-wheel(e.delta-y > 0 ? 1 : -1);
+                accept
+            }
             moved => {
-                root.frame-move(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                if (i == root.cropping) {
+                    root.crop-drag((self.mouse-x - self.last-x) / self.width, (self.mouse-y - self.last-y) / self.height);
+                    self.last-x = self.mouse-x;
+                    self.last-y = self.mouse-y;
+                } else {
+                    root.frame-move(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                }
             }
             pointer-event(e) => {
                 if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
-                    root.frame-down(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                    self.last-x = self.mouse-x;
+                    self.last-y = self.mouse-y;
+                    if (i != root.cropping) {
+                        root.frame-down(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                    }
                 }
                 if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
-                    root.frame-up(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                    if (i == root.cropping) {
+                        root.crop-end();
+                    } else {
+                        root.frame-up(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                    }
                 }
             }
         }
         if i == root.selected: Rectangle {
             border-width: 3px;
-            border-color: #4fc3f7;
+            border-color: i == root.cropping ? #e3b341 : #4fc3f7;
         }
     }
 

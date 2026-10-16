@@ -7,6 +7,7 @@
 #![windows_subsystem = "windows"]
 
 mod convert;
+mod crop;
 mod drag;
 mod files;
 mod images;
@@ -120,6 +121,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     connect_dialogs(window, app);
     connect_layouts(window, app);
     drag::connect(window, app);
+    crop::connect(window, app);
 }
 
 /// O painel de layouts: clique aplica; a estrela e o "×" marcam a opção (spec TL, seção 3).

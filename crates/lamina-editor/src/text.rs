@@ -1,5 +1,6 @@
 //! Textos do painel de layouts: o nome da família e a nota explicada (spec TL, seção 4).
 
+use lamina_core::Project;
 use lamina_layout::{FamilyKind, Score};
 
 /// Aviso do painel quando todas as opções estão rejeitadas (spec TL, regra 7).
@@ -37,4 +38,21 @@ pub fn score_text(score: &Score) -> String {
         "Nota {} = aproveitamento {c} + menor foto {s} + equilíbrio {b} − recorte {crop}",
         c + s + b - crop
     )
+}
+
+/// Ampliação a partir da qual o texto vira aviso (a mesma da pré-impressão).
+const WARN_PERCENT: f64 = 120.0;
+
+/// "DPI efetivo 225 · ampliada 133%" do quadro `frame` da lâmina `index`, e se é aviso
+/// (spec RC, regra 7). `None` se o quadro não tem foto.
+pub fn frame_dpi_text(project: &Project, index: usize, frame: usize) -> Option<(String, bool)> {
+    let f = project.spreads.get(index)?.frames.get(frame)?;
+    let dpi = project.effective_dpi(f).ok()??;
+    let percent = f64::from(project.spec.dpi().get()) / dpi * 100.0;
+    let text = format!(
+        "DPI efetivo {} · ampliada {}%",
+        points(dpi),
+        points(percent)
+    );
+    Some((text, percent > WARN_PERCENT))
 }

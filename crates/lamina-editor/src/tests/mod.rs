@@ -8,6 +8,7 @@ mod jp_commands;
 mod jp_session;
 mod jp_speed;
 mod jp_view;
+mod rc;
 mod tl_change;
 mod tl_common;
 mod tl_prefs;
