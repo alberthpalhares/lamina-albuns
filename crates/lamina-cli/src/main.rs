@@ -10,6 +10,7 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use lamina_core::Edges;
 
+mod argumentos;
 mod auto;
 mod build;
 mod importar;
@@ -96,7 +97,11 @@ enum Command {
 }
 
 fn main() -> ExitCode {
-    match run(Cli::parse().command) {
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(err) => return argumentos::report(&err),
+    };
+    match run(cli.command) {
         Ok(()) => ExitCode::SUCCESS,
         Err(err) => {
             eprintln!("Erro: {err:#}");

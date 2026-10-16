@@ -2,7 +2,7 @@
 
 use std::time::{Duration, Instant};
 
-use lamina_core::testing::budget;
+use lamina_core::testing::{TRIES, budget};
 use lamina_layout::Reuse;
 
 use super::common::Base;
@@ -26,7 +26,7 @@ fn jp_b13_abrir_e_navegar_rapido() {
 
     let mut open = Duration::MAX;
     let mut step = Duration::MAX;
-    for _ in 0..3 {
+    for _ in 0..TRIES {
         let started = Instant::now();
         let mut session = Session::open(&file).unwrap();
         let mut screens = ScreenImages::new();
@@ -39,6 +39,9 @@ fn jp_b13_abrir_e_navegar_rapido() {
             assert!(session.go_to(next));
             screens.keep_around(session.project(), next, &cache);
             step = step.min(started.elapsed());
+        }
+        if open < budget(500) && step < budget(100) {
+            break;
         }
     }
     assert!(open < budget(500), "abrir levou {open:?}");

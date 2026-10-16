@@ -16,6 +16,7 @@
 pub mod document;
 pub mod geometry;
 pub mod history;
+pub mod schema;
 pub mod spec;
 pub mod time;
 pub mod units;
@@ -34,6 +35,7 @@ pub use error::CoreError;
 pub mod testing;
 pub use geometry::{Rect, RelRect};
 pub use history::History;
+pub use schema::{project_schema, schema_file_name};
 pub use spec::{ActivePages, AlbumEdge, AlbumSpec, DesignMode, Edges, Margins, PageSide};
 pub use time::CaptureTime;
 pub use units::{Dpi, MM_PER_INCH, Mm};

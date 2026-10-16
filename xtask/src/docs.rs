@@ -1,7 +1,8 @@
 //! Documentos que o código precisa sustentar (auditoria do Marco 1):
 //! - M6: toda dependência de `[workspace.dependencies]` aparece no `AGENTS.md` (seção Stack);
 //! - M7: todo nome de código citado no glossário existe nos fontes, e nenhum termo se repete;
-//! - M9: teste que mede tempo usa a folga única `budget(` (AGENTS.md, regra 13).
+//! - M9: teste que mede tempo usa a folga única `budget(` (AGENTS.md, regra 13);
+//! - o esquema publicado em `docs/formato/` bate com o código (spec EI, regra 9).
 
 use std::collections::HashSet;
 use std::fs;
@@ -145,6 +146,7 @@ pub fn run() -> bool {
             problems.push(format!("{path}: teste de tempo sem `budget(` (regra 13)"));
         }
     }
+    problems.extend(crate::esquema::problem());
     for p in &problems {
         eprintln!("  ✘ {p}");
     }

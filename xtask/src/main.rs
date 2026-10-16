@@ -7,11 +7,13 @@
 //! - `asserts`: nenhuma assertiva frouxa (`is_err()` sem conferir o erro) nos testes.
 //! - `sala-limpa`: nada da marca ou dos arquivos do software de referência no produto.
 //! - `espelho [--trazer] <pasta>`: copia só o código para o clone do `lamina-codigo` (público).
+//! - `esquema`: grava o JSON Schema do formato do projeto em `docs/formato/` (spec EI).
 //! - `portao <termos>`: lista o que foi alocado para a fase que está abrindo.
 
 mod asserts;
 mod docs;
 mod espelho;
+mod esquema;
 mod layers;
 mod portao;
 mod sala_limpa;
@@ -33,11 +35,12 @@ fn main() -> ExitCode {
         "sala-limpa" => sala_limpa::run(),
         "asserts" => asserts::run(),
         "docs" => docs::run(),
+        "esquema" => esquema::run(),
         "espelho" => espelho::run(&std::env::args().skip(2).collect::<Vec<_>>()),
         "portao" => portao::run(&std::env::args().skip(2).collect::<Vec<_>>()),
         _ => {
             eprintln!(
-                "uso: cargo xtask <verify | layers | size | specs | asserts | sala-limpa | portao>"
+                "uso: cargo xtask <verify | layers | size | specs | asserts | sala-limpa | esquema | portao>"
             );
             false
         }

@@ -4,15 +4,18 @@
 //! perfil sRGB e DPI, nomes ordenáveis e pré-impressão. TIFF, PDF/X-4 e Adobe RGB chegam no
 //! Marco 3.
 
+mod clean;
 mod export;
 mod jobs;
 mod jpeg;
+mod once;
 mod preflight;
 mod previews;
 mod project_file;
 mod range;
 mod write;
 
+pub use clean::is_export_name;
 pub use export::{DEFAULT_QUALITY, ExportOptions, ExportReport, export, output_names};
 pub use jpeg::srgb_profile;
 pub use preflight::{Warning, WarningKind, preflight};
@@ -63,6 +66,8 @@ pub enum ExportError {
     Folder { folder: String, reason: String },
     #[error("Não foi possível gravar {path}: {reason}.")]
     Write { path: String, reason: String },
+    #[error("Não foi possível apagar {path}: {reason}.")]
+    Remove { path: String, reason: String },
     #[error("Não foi possível codificar o JPEG: {0}.")]
     Encode(String),
     #[error(transparent)]
@@ -110,6 +115,9 @@ mod tests {
 #[cfg(test)]
 #[path = "tests/ap.rs"]
 mod ap;
+#[cfg(test)]
+#[path = "tests/ei.rs"]
+mod ei;
 #[cfg(test)]
 #[path = "tests/ex.rs"]
 mod ex;

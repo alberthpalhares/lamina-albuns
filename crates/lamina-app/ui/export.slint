@@ -1,0 +1,156 @@
+// Janela Exportar (spec EI): as opções, a pré-impressão com "Ir para a lâmina" e "Ignorar", e
+// a pergunta antes de substituir arquivos.
+
+import { Button, LineEdit, CheckBox, SpinBox, ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Shade, Panel, Field } from "dialogs.slint";
+
+export component ExportDialog inherits Shade {
+    in property <string> folder;
+    in-out property <bool> all-spreads: true;
+    in-out property <string> range;
+    in-out property <bool> pages;
+    in-out property <int> quality: 95;
+    in property <string> error;
+    // 0 = opções, 1 = avisos da pré-impressão, 2 = substituir arquivos.
+    in property <int> step;
+    in property <[string]> warnings;
+    in property <string> replace-text;
+    callback pick-folder();
+    callback changed();
+    callback export();
+    callback go-to(int);
+    callback ignore(int);
+    callback proceed();
+    callback replace();
+    callback back();
+    callback cancel();
+
+    if root.step == 0: Panel {
+        width: 560px;
+        height: 380px;
+        VerticalLayout {
+            padding: 24px;
+            spacing: 12px;
+            Text { text: "Exportar"; font-size: 20px; font-weight: 700; color: Theme.text; }
+            Field {
+                label: "Pasta";
+                Text {
+                    text: root.folder;
+                    color: Theme.text;
+                    overflow: elide;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+                Button { text: "Escolher…"; clicked => { root.pick-folder(); } }
+            }
+            Field {
+                label: "Lâminas";
+                CheckBox {
+                    text: "Todas";
+                    checked <=> root.all-spreads;
+                    toggled => { root.changed(); }
+                }
+                LineEdit {
+                    text <=> root.range;
+                    enabled: !root.all-spreads;
+                    placeholder-text: "ex.: 1, 2, 5-7";
+                    edited => { root.changed(); }
+                }
+            }
+            Field {
+                label: "Páginas soltas";
+                CheckBox {
+                    text: "Um arquivo por página";
+                    checked <=> root.pages;
+                    toggled => { root.changed(); }
+                }
+            }
+            Field {
+                label: "Qualidade do JPEG";
+                SpinBox {
+                    value <=> root.quality;
+                    minimum: 1;
+                    maximum: 100;
+                    edited => { root.changed(); }
+                }
+            }
+            Text { text: root.error; color: Theme.warning; wrap: word-wrap; vertical-stretch: 1; }
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Button { text: "Cancelar"; clicked => { root.cancel(); } }
+                Button {
+                    text: "Exportar";
+                    primary: true;
+                    enabled: root.error == "";
+                    clicked => { root.export(); }
+                }
+            }
+        }
+    }
+
+    if root.step == 1: Panel {
+        width: 640px;
+        height: 460px;
+        VerticalLayout {
+            padding: 24px;
+            spacing: 12px;
+            Text { text: "Pré-impressão"; font-size: 20px; font-weight: 700; color: Theme.text; }
+            Text {
+                text: root.warnings.length == 0
+                    ? "Todos os avisos foram ignorados."
+                    : "Confira antes de exportar. Os avisos não impedem a exportação.";
+                color: Theme.muted;
+                wrap: word-wrap;
+            }
+            ListView {
+                vertical-stretch: 1;
+                for warning[i] in root.warnings: Rectangle {
+                    height: 36px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        padding-right: 8px;
+                        Text {
+                            text: warning;
+                            color: Theme.text;
+                            font-size: 12px;
+                            vertical-alignment: center;
+                            overflow: elide;
+                            horizontal-stretch: 1;
+                        }
+                        Button { text: "Ir para a lâmina"; clicked => { root.go-to(i); } }
+                        Button { text: "Ignorar"; clicked => { root.ignore(i); } }
+                    }
+                }
+            }
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Button { text: "Voltar"; clicked => { root.back(); } }
+                Button {
+                    text: root.warnings.length == 0 ? "Exportar" : "Exportar mesmo assim";
+                    primary: true;
+                    clicked => { root.proceed(); }
+                }
+            }
+        }
+    }
+
+    if root.step == 2: Panel {
+        width: 480px;
+        height: 220px;
+        VerticalLayout {
+            padding: 24px;
+            spacing: 12px;
+            Text { text: "Substituir os arquivos?"; font-size: 16px; font-weight: 600; color: Theme.text; }
+            Text { text: root.replace-text; color: Theme.text; wrap: word-wrap; vertical-stretch: 1; }
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Button { text: "Cancelar"; clicked => { root.back(); } }
+                Button { text: "Substituir"; primary: true; clicked => { root.replace(); } }
+            }
+        }
+    }
+}

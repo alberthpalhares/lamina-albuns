@@ -3,7 +3,7 @@
 
 use lamina_core::Project;
 
-use super::{Session, warnings_of};
+use super::{Session, missing_of, warnings_of};
 
 impl Session {
     /// Aplica `change` no projeto como uma edição com `label`. Se der erro, nada muda. O rótulo
@@ -55,5 +55,9 @@ impl Session {
         let last = now.spreads.len().saturating_sub(1);
         self.current = changed.unwrap_or(self.current).min(last);
         self.warnings = warnings_of(now);
+        // Desfazer "Reencontrar fotos" volta aos caminhos antigos (spec EI).
+        if now.photos != before.photos {
+            self.missing = missing_of(now);
+        }
     }
 }

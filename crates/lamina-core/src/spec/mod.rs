@@ -24,12 +24,13 @@ mod margins;
 pub use edges::{ActivePages, AlbumEdge, Edges};
 pub use margins::Margins;
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::{CoreError, Dpi, Mm};
 
 /// Como o usuário diagrama o álbum.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum DesignMode {
     /// Lâmina inteira: quadros podem atravessar o centro (encadernação lay-flat).
@@ -40,7 +41,7 @@ pub enum DesignMode {
 }
 
 /// Lado de uma página dentro da lâmina.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum PageSide {
     Left,
@@ -52,7 +53,7 @@ pub enum PageSide {
 ///
 /// Construa com [`AlbumSpec::new`] e ajuste com os métodos `with_*`. Os campos são privados
 /// para que uma especificação inválida não possa existir.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct AlbumSpec {
     page_width: Mm,
     page_height: Mm,

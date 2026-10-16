@@ -7,8 +7,8 @@ use std::sync::mpsc::Sender;
 
 use lamina_core::{PhotoId, Project};
 use lamina_editor::{
-    Cache, Command, Editor, Filter, PhotoItem, Session, Step, photo_info, photo_list,
-    prepare_images,
+    Cache, Command, Editor, ExportCheck, Filter, Found, PhotoItem, Session, Step, photo_info,
+    photo_list, prepare_images,
 };
 use slint::{ComponentHandle, Image};
 
@@ -33,6 +33,17 @@ pub enum Msg {
     ImagesReady,
     /// A foto original do quadro em modo recorte (spec RC, regra 9).
     Original(PhotoId, std::sync::Arc<lamina_editor::screens::Rgba>),
+    /// Andamento e fim da exportação (spec EI): o resumo ou o erro, e a pasta.
+    Exporting(usize, usize),
+    Exported(Result<String, String>, PathBuf),
+    /// Andamento e resultado da procura de fotos ausentes (spec EI). `file` é o projeto em que a
+    /// procura começou; `folder`, a pasta escolhida (nenhuma = a procura ao abrir).
+    Searching(usize, usize),
+    Relinked {
+        file: Option<PathBuf>,
+        found: Vec<Found>,
+        folder: Option<PathBuf>,
+    },
 }
 
 pub struct App {
@@ -45,6 +56,8 @@ pub struct App {
     pub new_folder: PathBuf,
     pub new_photos: usize,
     pub notice: String,
+    /// A conferência da janela Exportar aberta (avisos que sobraram e arquivos que já existem).
+    pub export_check: Option<ExportCheck>,
     pub(crate) images: Images,
     /// Foto original sendo carregada para o modo recorte.
     pub(crate) loading: Option<PhotoId>,
@@ -66,6 +79,7 @@ impl App {
             new_folder: PathBuf::new(),
             new_photos: 0,
             notice: String::new(),
+            export_check: None,
             images: Images::default(),
             loading: None,
             crop_timer: crate::crop::timer(),
@@ -138,6 +152,7 @@ impl App {
         };
         w.set_has_project(self.session().is_some());
         w.set_can_save(self.editor.available(Command::Save));
+        w.set_has_missing(self.editor.available(Command::FindMissing));
         w.set_can_prev(self.editor.available(Command::PreviousSpread));
         w.set_can_next(self.editor.available(Command::NextSpread));
         w.set_guides(self.editor.guides());

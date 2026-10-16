@@ -3,6 +3,7 @@
 
 mod ap;
 mod common;
+mod ei;
 mod fq;
 mod hi;
 mod jp_album;

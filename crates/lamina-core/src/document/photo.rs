@@ -2,13 +2,14 @@
 
 use std::path::PathBuf;
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::PhotoId;
 use crate::CaptureTime;
 
 /// Orientação de uma foto ou quadro.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum Orientation {
     Landscape,
@@ -30,7 +31,7 @@ impl Orientation {
 }
 
 /// Uma foto vinculada ao projeto.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Photo {
     pub id: PhotoId,
     /// Caminho relativo à pasta do arquivo de projeto.

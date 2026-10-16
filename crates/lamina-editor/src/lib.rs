@@ -14,6 +14,8 @@
 //! - [`text`]: nome das famílias e nota explicada, para o painel de layouts.
 //! - [`view`]: a lâmina em pixels da tela, igual à impressão.
 //! - [`photos`]: o navegador de fotos.
+//! - [`exporting`]: exportar pela janela, com a pré-impressão antes (spec EI).
+//! - [`relink`]: reencontrar fotos que mudaram de pasta (spec EI).
 //! - [`screens`]: as imagens de tela na memória, só da lâmina atual e das vizinhas.
 
 pub mod album;
@@ -22,9 +24,11 @@ pub mod cache;
 pub mod commands;
 pub mod editor;
 pub mod edits;
+pub mod exporting;
 pub mod keys;
 pub mod photos;
 pub mod prefs_store;
+pub mod relink;
 pub mod screens;
 pub mod session;
 pub mod spreads;
@@ -44,9 +48,14 @@ pub use cache::Cache;
 pub use commands::{Command, Menu};
 pub use editor::{Editor, Leave, Panel};
 pub use error::EditorError;
+pub use exporting::{
+    DEFAULT_QUALITY, ExportCheck, ExportOptions, Warning, export_progress, export_project,
+    export_summary,
+};
 pub use keys::{Key, Shortcut};
 pub use photos::{Filter, PhotoInfo, PhotoItem, photo_info, photo_list, used_photos};
 pub use prefs_store::{PREFS_FILE, PrefsStore, config_dir};
+pub use relink::{Found, not_found_message, relinked_message, search_folder, search_near};
 pub use screens::{ScreenImages, load_original, prepare_images};
 pub use session::{HistoryList, HistoryStep, Session};
 pub use suggestions::{List, Part, Unavailable};

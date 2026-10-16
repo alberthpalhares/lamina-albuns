@@ -10,7 +10,9 @@ use crate::EditorError;
 use crate::photos::used_photos;
 
 mod edit;
+mod export;
 mod history;
+mod relink;
 
 pub use history::{HistoryList, HistoryStep};
 
@@ -28,6 +30,8 @@ pub struct Session {
     warnings: Vec<Warning>,
     /// Aberto de um arquivo (o histórico começa em "Álbum aberto"; spec HI).
     opened: bool,
+    /// Última pasta de exportação usada nesta sessão (spec EI, seção 3).
+    export_folder: Option<PathBuf>,
 }
 
 impl Session {
@@ -44,12 +48,7 @@ impl Session {
     }
 
     fn with(project: Project, file: Option<PathBuf>, saved: bool) -> Self {
-        let missing = project
-            .photos
-            .iter()
-            .filter(|p| !p.path.exists())
-            .map(|p| p.id)
-            .collect();
+        let missing = missing_of(&project);
         let warnings = warnings_of(&project);
         Session {
             saved: saved.then(|| project.clone()),
@@ -59,6 +58,7 @@ impl Session {
             missing,
             warnings,
             opened: saved,
+            export_folder: None,
         }
     }
 
@@ -162,6 +162,16 @@ impl Session {
         self.file = Some(saved.clone());
         Ok(saved)
     }
+}
+
+/// As fotos cujo arquivo não existe no caminho do projeto.
+fn missing_of(project: &Project) -> Vec<PhotoId> {
+    project
+        .photos
+        .iter()
+        .filter(|p| !p.path.exists())
+        .map(|p| p.id)
+        .collect()
 }
 
 /// Avisos de pré-impressão de todas as lâminas.

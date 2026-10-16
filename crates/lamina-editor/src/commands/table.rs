@@ -24,6 +24,18 @@ impl Command {
                 Menu::File,
                 Some(S::ctrl_shift('s')),
             ),
+            C::Export => (
+                "arquivo.exportar",
+                "Exportar…",
+                Menu::File,
+                Some(S::ctrl('e')),
+            ),
+            C::FindMissing => (
+                "arquivo.procurar-fotos",
+                "Procurar fotos ausentes…",
+                Menu::File,
+                None,
+            ),
             C::Undo => (
                 "editar.desfazer",
                 "Desfazer",

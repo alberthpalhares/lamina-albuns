@@ -22,6 +22,8 @@ pub enum Command {
     Open,
     Save,
     SaveAs,
+    Export,
+    FindMissing,
     Undo,
     Redo,
     NextSpread,
@@ -58,11 +60,13 @@ pub enum Command {
 type Info = (&'static str, &'static str, Menu, Option<Shortcut>);
 
 impl Command {
-    pub const ALL: [Command; 34] = [
+    pub const ALL: [Command; 36] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
         Command::SaveAs,
+        Command::Export,
+        Command::FindMissing,
         Command::Undo,
         Command::Redo,
         Command::NextSpread,

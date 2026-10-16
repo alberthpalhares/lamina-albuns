@@ -3,7 +3,7 @@
 
 use std::time::{Duration, Instant};
 
-use lamina_core::testing::budget;
+use lamina_core::testing::{TRIES, budget};
 use lamina_core::{Crop, FrameContent, Mm, PhotoId, Project, Rgb};
 use lamina_layout::design_key;
 
@@ -191,7 +191,7 @@ fn ap_b11_rapido() {
     let photos: Vec<(u32, u32)> = (0..40).map(|i| if i % 4 == 3 { V } else { H }).collect();
     let project = built(spec(30.0, 30.0), &photos, 10);
     let (mut one, mut all) = (Duration::MAX, Duration::MAX);
-    for _ in 0..3 {
+    for _ in 0..TRIES {
         let mut editor = editor_at(project.clone(), 1);
         let (a, b) = isolated(|| {
             let started = Instant::now();
@@ -203,6 +203,9 @@ fn ap_b11_rapido() {
         });
         one = one.min(a);
         all = all.min(b);
+        if one < budget(100) && all < budget(1000) {
+            break;
+        }
     }
     assert!(one < budget(100), "lâmina em {one:?}");
     assert!(all < budget(1000), "álbum em {all:?}");

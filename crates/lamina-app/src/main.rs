@@ -9,6 +9,7 @@
 mod convert;
 mod crop;
 mod drag;
+mod export;
 mod files;
 mod history;
 mod images;
@@ -16,6 +17,7 @@ mod info;
 mod look;
 mod new_album;
 mod panel;
+mod relink;
 mod state;
 
 use std::cell::RefCell;
@@ -59,6 +61,8 @@ fn run_command(app: &Shared, command: Command) {
         Command::SaveAs => {
             files::save(&mut a, true);
         }
+        Command::Export => export::start(&mut a),
+        Command::FindMissing => relink::find(&mut a),
         Command::About => {
             if let Some(w) = a.window.upgrade() {
                 w.set_show_about(true);
@@ -193,6 +197,7 @@ fn connect_dialogs(window: &AppWindow, app: &Shared) {
     window.on_na_create(move || new_album::create(&mut a.borrow_mut()));
     let a = app.clone();
     window.on_confirm(move |choice| files::answer(&mut a.borrow_mut(), choice));
+    connect_export(window, app);
     let a = app.clone();
     window.window().on_close_requested(move || {
         let mut app = a.borrow_mut();
@@ -203,6 +208,28 @@ fn connect_dialogs(window: &AppWindow, app: &Shared) {
             CloseRequestResponse::HideWindow
         }
     });
+}
+
+/// A janela Exportar e o resumo com "Abrir a pasta" (spec EI).
+fn connect_export(window: &AppWindow, app: &Shared) {
+    let a = app.clone();
+    window.on_ex_pick_folder(move || export::pick_folder(&mut a.borrow_mut()));
+    let a = app.clone();
+    window.on_ex_changed(move || export::changed(&mut a.borrow_mut()));
+    let a = app.clone();
+    window.on_ex_export(move || export::export(&mut a.borrow_mut()));
+    let a = app.clone();
+    window.on_ex_go_to(move |i| export::go_to(&mut a.borrow_mut(), i));
+    let a = app.clone();
+    window.on_ex_ignore(move |i| export::ignore(&mut a.borrow_mut(), i));
+    let a = app.clone();
+    window.on_ex_proceed(move || export::proceed(&mut a.borrow_mut()));
+    let a = app.clone();
+    window.on_ex_replace(move || export::run(&mut a.borrow_mut(), true));
+    let a = app.clone();
+    window.on_ex_back(move || export::back(&mut a.borrow_mut()));
+    let a = app.clone();
+    window.on_open_folder(move || export::open_folder(&a.borrow()));
 }
 
 fn main() -> anyhow::Result<()> {

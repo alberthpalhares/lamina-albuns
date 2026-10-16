@@ -16,6 +16,9 @@ const SAFE_TOLERANCE_MM: f64 = 0.01;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Warning {
     pub spread: usize,
+    /// O quadro do aviso, na ordem dos quadros da lâmina (começando em 0), para "Ir para a
+    /// lâmina" selecioná-lo (spec EI, regra 2).
+    pub frame: usize,
     pub kind: WarningKind,
 }
 
@@ -72,9 +75,10 @@ pub fn preflight(project: &Project, spreads: &[usize]) -> Vec<Warning> {
         let Some(spread) = project.spreads.get(i) else {
             continue;
         };
-        for frame in &spread.frames {
+        for (f, frame) in spread.frames.iter().enumerate() {
             out.extend(check(project, frame).into_iter().map(|kind| Warning {
                 spread: i + 1,
+                frame: f,
                 kind,
             }));
         }

@@ -2,6 +2,7 @@
 
 use std::path::PathBuf;
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -21,7 +22,7 @@ fn default_gap() -> Mm {
 }
 
 /// O projeto inteiro: o que é salvo em disco.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Project {
     pub schema_version: u32,
     pub name: String,

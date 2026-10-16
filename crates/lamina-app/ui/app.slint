@@ -8,6 +8,7 @@ import { NewAlbumDialog, ConfirmDialog, MessageDialog, BusyOverlay } from "dialo
 import { LayoutsPanel, LayoutItem } from "layouts.slint";
 import { LookPanel, Swatch } from "look.slint";
 import { HistoryPanel, HistoryItem } from "history.slint";
+import { ExportDialog } from "export.slint";
 
 export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem }
 
@@ -105,6 +106,28 @@ export component AppWindow inherits Window {
     in-out property <bool> show-about;
     in property <string> message-title;
     in property <string> message-text;
+    in property <string> message-folder;
+    callback open-folder();
+    // Janela Exportar (spec EI).
+    in-out property <bool> show-export;
+    in property <string> ex-folder;
+    in-out property <bool> ex-all: true;
+    in-out property <string> ex-range;
+    in-out property <bool> ex-pages;
+    in-out property <int> ex-quality: 95;
+    in property <string> ex-error;
+    in property <int> ex-step;
+    in property <[string]> ex-warnings;
+    in property <string> ex-replace-text;
+    callback ex-pick-folder();
+    callback ex-changed();
+    callback ex-export();
+    callback ex-go-to(int);
+    callback ex-ignore(int);
+    callback ex-proceed();
+    callback ex-replace();
+    callback ex-back();
+    in property <bool> has-missing;
     in property <string> busy-text;
 
     // Campos da janela "Novo álbum".
@@ -228,6 +251,9 @@ export component AppWindow inherits Window {
             MenuSeparator { }
             MenuItem { title: "Salvar  (Ctrl+S)"; enabled: root.can-save; activated => { root.command("arquivo.salvar"); } }
             MenuItem { title: "Salvar como…  (Ctrl+Shift+S)"; enabled: root.can-save; activated => { root.command("arquivo.salvar-como"); } }
+            MenuSeparator { }
+            MenuItem { title: "Exportar…  (Ctrl+E)"; enabled: root.has-project; activated => { root.command("arquivo.exportar"); } }
+            MenuItem { title: "Procurar fotos ausentes…"; enabled: root.has-missing; activated => { root.command("arquivo.procurar-fotos"); } }
         }
         Menu {
             title: "Editar";
@@ -267,7 +293,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(event) => {
-            if (root.show-new || root.show-confirm || root.show-message || root.show-about || root.busy-text != "") {
+            if (root.show-new || root.show-confirm || root.show-message || root.show-about || root.show-export || root.busy-text != "") {
                 return reject;
             }
             if (event.text == Key.PageDown) { return root.key("PageDown", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
@@ -306,14 +332,20 @@ export component AppWindow inherits Window {
                     BarButton { text: "Novo"; clicked => { root.command("arquivo.novo"); } }
                     BarButton { text: "Abrir"; clicked => { root.command("arquivo.abrir"); } }
                     BarButton { text: "Salvar"; enabled: root.can-save; clicked => { root.command("arquivo.salvar"); } }
-                    BarButton { text: "Exportar"; enabled: false; }
+                    BarButton { text: "Exportar"; enabled: root.has-project; clicked => { root.command("arquivo.exportar"); } }
                 }
             }
 
             if root.notice != "": Rectangle {
                 height: 30px;
                 background: #4a3f1f;
-                Text { x: 16px; text: root.notice; color: Theme.text; vertical-alignment: center; }
+                HorizontalLayout {
+                    padding-left: 16px;
+                    padding-right: 8px;
+                    spacing: 12px;
+                    Text { text: root.notice; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+                    if root.has-missing: BarButton { text: "Procurar fotos…"; clicked => { root.command("arquivo.procurar-fotos"); } }
+                }
             }
 
             HorizontalLayout {
@@ -741,9 +773,34 @@ export component AppWindow inherits Window {
         name: root.project-title;
         answer(choice) => { root.confirm(choice); }
     }
+    if root.show-export: ExportDialog {
+        folder: root.ex-folder;
+        all-spreads <=> root.ex-all;
+        range <=> root.ex-range;
+        pages <=> root.ex-pages;
+        quality <=> root.ex-quality;
+        error: root.ex-error;
+        step: root.ex-step;
+        warnings: root.ex-warnings;
+        replace-text: root.ex-replace-text;
+        pick-folder => { root.ex-pick-folder(); }
+        changed => { root.ex-changed(); }
+        export => { root.ex-export(); }
+        go-to(i) => { root.ex-go-to(i); }
+        ignore(i) => { root.ex-ignore(i); }
+        proceed => { root.ex-proceed(); }
+        replace => { root.ex-replace(); }
+        back => { root.ex-back(); }
+        cancel => {
+            root.show-export = false;
+            root.focus-main();
+        }
+    }
     if root.show-message: MessageDialog {
         title: root.message-title;
         message: root.message-text;
+        folder: root.message-folder;
+        open-folder => { root.open-folder(); }
         close => {
             root.show-message = false;
             root.focus-main();
