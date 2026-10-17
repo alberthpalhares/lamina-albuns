@@ -7,18 +7,18 @@ use lamina_core::Project;
 use lamina_render::PhotoSource;
 use rayon::prelude::*;
 
-use crate::ExportError;
 use crate::clean::remove_leftovers;
 use crate::jobs::{SpreadJob, plan};
 use crate::preflight::{Warning, preflight};
 use crate::write::{self, Ctx};
+use crate::{ExportError, ExportFormat, pdf};
 
 /// Máximo de lâminas de impressão processadas ao mesmo tempo (~175 MB cada entre a imagem e
 /// a cópia em RGB; regra 7). Codificar o JPEG é o passo mais lento e usa um núcleo por lâmina.
 const AT_ONCE: usize = 4;
 
 /// Lâminas ao mesmo tempo: até `AT_ONCE`, nunca mais que os núcleos da máquina.
-fn at_once() -> usize {
+pub(crate) fn at_once() -> usize {
     std::thread::available_parallelism().map_or(1, |n| n.get().min(AT_ONCE))
 }
 
@@ -39,6 +39,10 @@ pub struct ExportOptions {
     /// Substituir arquivos que já existem e apagar os que sobraram de uma exportação anterior
     /// (spec EI, regra 4).
     pub overwrite: bool,
+    /// JPEG (um arquivo por lâmina ou página) ou PDF (um arquivo do álbum; spec PD).
+    pub format: ExportFormat,
+    /// Marcas de corte, só no PDF (spec PD, regra 6).
+    pub crop_marks: bool,
 }
 
 impl Default for ExportOptions {
@@ -48,6 +52,8 @@ impl Default for ExportOptions {
             range: None,
             pages: false,
             overwrite: false,
+            format: ExportFormat::Jpeg,
+            crop_marks: false,
         }
     }
 }
@@ -73,8 +79,9 @@ pub fn export(
 ) -> Result<ExportReport, ExportError> {
     let started = Instant::now();
     let jobs = plan(project, options)?;
+    let names = names_of(project, options, &jobs);
     if !options.overwrite {
-        refuse_existing(&jobs, folder)?;
+        refuse_existing(&names, folder)?;
     }
     std::fs::create_dir_all(folder).map_err(|e| ExportError::Folder {
         folder: folder.display().to_string(),
@@ -86,13 +93,13 @@ pub fn export(
         photos,
         quality: options.quality,
     };
-    let files = write_all(&ctx, &jobs, progress)?;
-    let removed = if options.overwrite {
-        let keep: Vec<String> = jobs
-            .iter()
-            .flat_map(|j| j.names().into_iter().map(str::to_owned).collect::<Vec<_>>())
-            .collect();
-        remove_leftovers(folder, &keep)?
+    let files = match options.format {
+        ExportFormat::Pdf => vec![pdf::write(&ctx, &jobs, options, progress)?],
+        _ => write_all(&ctx, &jobs, progress)?,
+    };
+    // A limpeza só vale para os JPEGs (spec PD, regra 7).
+    let removed = if options.overwrite && options.format == ExportFormat::Jpeg {
+        remove_leftovers(folder, &names)?
     } else {
         Vec::new()
     };
@@ -111,21 +118,26 @@ pub fn output_names(
     project: &Project,
     options: &ExportOptions,
 ) -> Result<Vec<String>, ExportError> {
-    Ok(plan(project, options)?
-        .iter()
-        .flat_map(|j| j.names().into_iter().map(str::to_owned).collect::<Vec<_>>())
-        .collect())
+    let jobs = plan(project, options)?;
+    Ok(names_of(project, options, &jobs))
+}
+
+/// Os arquivos de saída: os JPEGs de cada lâmina, ou o PDF do álbum.
+fn names_of(project: &Project, options: &ExportOptions, jobs: &[SpreadJob]) -> Vec<String> {
+    match options.format {
+        ExportFormat::Pdf => vec![pdf::file_name(project)],
+        _ => jobs
+            .iter()
+            .flat_map(|j| j.names().into_iter().map(str::to_owned).collect::<Vec<_>>())
+            .collect(),
+    }
 }
 
 /// Nada é gravado se algum arquivo de saída já existe (regra 5).
-fn refuse_existing(jobs: &[SpreadJob], folder: &Path) -> Result<(), ExportError> {
-    let existing = jobs
-        .iter()
-        .flat_map(SpreadJob::names)
-        .find(|name| folder.join(name).exists());
-    match existing {
+fn refuse_existing(names: &[String], folder: &Path) -> Result<(), ExportError> {
+    match names.iter().find(|name| folder.join(name).exists()) {
         Some(name) => Err(ExportError::Exists {
-            name: name.to_owned(),
+            name: name.clone(),
             folder: folder.display().to_string(),
         }),
         None => Ok(()),

@@ -77,6 +77,8 @@ export component AppWindow inherits Window {
     in-out property <string> ex-range;
     in-out property <bool> ex-pages;
     in-out property <int> ex-quality: 95;
+    in-out property <bool> ex-pdf;
+    in-out property <bool> ex-marks;
     in property <string> ex-error;
     in property <int> ex-step;
     in property <[string]> ex-warnings;
@@ -541,6 +543,8 @@ export component AppWindow inherits Window {
         range <=> root.ex-range;
         pages <=> root.ex-pages;
         quality <=> root.ex-quality;
+        pdf <=> root.ex-pdf;
+        marks <=> root.ex-marks;
         error: root.ex-error;
         step: root.ex-step;
         warnings: root.ex-warnings;

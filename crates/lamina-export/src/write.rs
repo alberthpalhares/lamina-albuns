@@ -22,19 +22,26 @@ pub struct Ctx<'a> {
 
 /// Renderiza a lâmina uma vez e grava os arquivos dela.
 pub fn spread(ctx: &Ctx, job: &SpreadJob) -> Result<Vec<PathBuf>, ExportError> {
+    let dpi = ctx.project.spec.dpi().get();
+    images(ctx, job)?
+        .into_iter()
+        .zip(job.names())
+        .map(|(image, name)| save(ctx, name, image, dpi))
+        .collect()
+}
+
+/// As imagens de impressão da lâmina, uma por arquivo de saída e na mesma ordem: a lâmina
+/// inteira, ou cada página com a própria sangria. O PDF usa as mesmas (spec PD, regra 3).
+pub fn images(ctx: &Ctx, job: &SpreadJob) -> Result<Vec<RgbaImage>, ExportError> {
     // A mesma foto em vários quadros (ou nas duas páginas renderizadas) é lida uma vez só.
     let photos = ReadOnce::new(ctx.photos);
     let ctx = &Ctx {
         photos: &photos,
         ..*ctx
     };
-    let dpi = ctx.project.spec.dpi().get();
     match &job.output {
         Output::Pages(pages) if pages.is_empty() => Ok(Vec::new()),
-        Output::Whole(name) => {
-            let image = render(ctx, job.spread, Fill::Pages)?;
-            Ok(vec![save(ctx, name, image, dpi)?])
-        }
+        Output::Whole(_) => Ok(vec![render(ctx, job.spread, Fill::Pages)?]),
         Output::Pages(pages) => {
             // Páginas com fundos diferentes: cada uma é renderizada com o próprio fundo, para a
             // sangria da lombada ter a cor dela (spec AP, regra 3). Fundos iguais: uma vez só.
@@ -48,16 +55,13 @@ pub fn spread(ctx: &Ctx, job: &SpreadJob) -> Result<Vec<PathBuf>, ExportError> {
             };
             pages
                 .iter()
-                .map(|(side, name)| {
-                    let image = match &shared {
-                        Some(image) => page_of(ctx.project, image, *side),
-                        None => page_of(
-                            ctx.project,
-                            &render(ctx, job.spread, Fill::Side(*side))?,
-                            *side,
-                        ),
-                    };
-                    save(ctx, name, image, dpi)
+                .map(|(side, _)| match &shared {
+                    Some(image) => Ok(page_of(ctx.project, image, *side)),
+                    None => Ok(page_of(
+                        ctx.project,
+                        &render(ctx, job.spread, Fill::Side(*side))?,
+                        *side,
+                    )),
                 })
                 .collect()
         }

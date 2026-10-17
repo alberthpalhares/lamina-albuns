@@ -39,6 +39,9 @@ moxcms = "0.8"
 tempfile = "3"
 # Esquema JSON do formato do projeto, gerado dos tipos (spec EI, regra 9).
 schemars = "1"
+# PDF de impressão (spec PD; ADR 0007, plano B) e a leitura dele nos testes.
+pdf-writer = "0.15"
+lopdf = "0.45"
 # Interface (ADR 0002) e diálogos de arquivo do sistema (spec JP).
 slint = "1.18"
 slint-build = "1.18"

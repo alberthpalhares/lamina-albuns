@@ -9,7 +9,7 @@ use lamina_core::{Mm, Project, Rgb};
 use crate::Editor;
 use crate::album::SpecFields;
 use crate::editor::Look;
-use crate::exporting::{DEFAULT_QUALITY, ExportOptions};
+use crate::exporting::{DEFAULT_QUALITY, ExportFormat, ExportOptions};
 use crate::photos::PhotoInfo;
 
 /// Número com no máximo uma casa e vírgula: 30 → "30", 2,5 → "2,5".
@@ -94,16 +94,27 @@ pub struct ExportForm {
     pub all_spreads: bool,
     pub range: String,
     pub pages: bool,
+    /// PDF do álbum em vez de JPEGs (spec PD).
+    pub pdf: bool,
+    /// Marcas de corte; só valem no PDF.
+    pub crop_marks: bool,
 }
 
 impl ExportForm {
-    /// As opções da exportação; a qualidade fica entre 1 e 100.
+    /// As opções da exportação; a qualidade fica entre 1 e 100, e as marcas de corte só valem
+    /// no PDF (no JPEG a janela nem mostra a opção).
     pub fn options(&self, overwrite: bool) -> ExportOptions {
         ExportOptions {
             quality: u8::try_from(self.quality.clamp(1, 100)).unwrap_or(DEFAULT_QUALITY),
             range: (!self.all_spreads).then(|| self.range.trim().to_owned()),
             pages: self.pages,
             overwrite,
+            format: if self.pdf {
+                ExportFormat::Pdf
+            } else {
+                ExportFormat::Jpeg
+            },
+            crop_marks: self.pdf && self.crop_marks,
         }
     }
 }

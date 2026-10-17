@@ -18,9 +18,12 @@ rayon = { workspace = true }
 thiserror = { workspace = true }
 # Temporário de nome único para a gravação segura (spec EX, regra 6).
 tempfile = { workspace = true }
+# PDF/X-4 de impressão (spec PD).
+pdf-writer = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
+lopdf = { workspace = true }
 
 [lints]
 workspace = true

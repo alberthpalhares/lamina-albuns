@@ -1,14 +1,15 @@
 //! # lamina-export
 //!
 //! Exportação para impressão (spec `exportacao`): JPEG por lâmina ou por página, com sangria,
-//! perfil sRGB e DPI, nomes ordenáveis e pré-impressão. TIFF, PDF/X-4 e Adobe RGB chegam no
-//! Marco 3.
+//! perfil sRGB e DPI, nomes ordenáveis e pré-impressão; PDF/X-4 do álbum inteiro (spec PD). TIFF
+//! e Adobe RGB chegam no Marco 3 (spec CT).
 
 mod clean;
 mod export;
 mod jobs;
 mod jpeg;
 mod once;
+mod pdf;
 mod preflight;
 mod previews;
 mod project_file;
@@ -29,8 +30,9 @@ use lamina_render::RenderError;
 use thiserror::Error;
 
 /// Formatos de saída.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ExportFormat {
+    #[default]
     Jpeg,
     /// Prévias de tela (sem perda).
     Png,
@@ -54,6 +56,10 @@ impl ExportFormat {
 pub enum ExportError {
     #[error("A qualidade do JPEG vai de 1 a 100, não {0}.")]
     Quality(u8),
+    #[error("As marcas de corte só existem no PDF.")]
+    CropMarksNeedPdf,
+    #[error("O formato {0} ainda não é exportado.")]
+    Format(&'static str),
     #[error("Intervalo inválido: \"{0}\". Use, por exemplo, 1, 2, 5-7.")]
     BadRange(String),
     #[error("O intervalo pede a lâmina {asked}; o projeto tem {count}.")]
@@ -121,3 +127,6 @@ mod ei;
 #[cfg(test)]
 #[path = "tests/ex.rs"]
 mod ex;
+#[cfg(test)]
+#[path = "tests/pd.rs"]
+mod pd;

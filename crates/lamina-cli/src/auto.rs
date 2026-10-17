@@ -96,6 +96,7 @@ pub fn run(args: &AutoArgs) -> Result<()> {
             range: args.laminas_exportar.clone(),
             pages: args.paginas,
             overwrite: args.sobrescrever,
+            ..ExportOptions::default()
         };
         exportar::run(&built.project, &thumbs, dir, &options)?;
     }

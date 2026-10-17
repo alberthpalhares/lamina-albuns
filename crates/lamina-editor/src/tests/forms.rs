@@ -39,11 +39,22 @@ fn campos_da_exportacao_e_a_pergunta() {
         all_spreads: false,
         range: " 1, 3-4 ".into(),
         pages: true,
+        pdf: false,
+        crop_marks: true,
     };
     let options = form.options(true);
     assert_eq!(options.quality, 100);
     assert_eq!(options.range.as_deref(), Some("1, 3-4"));
     assert!(options.pages && options.overwrite);
+    assert_eq!(options.format, crate::exporting::ExportFormat::Jpeg);
+    assert!(!options.crop_marks, "marcas de corte só no PDF");
+    let pdf = ExportForm {
+        pdf: true,
+        ..form.clone()
+    };
+    let options = pdf.options(false);
+    assert_eq!(options.format, crate::exporting::ExportFormat::Pdf);
+    assert!(options.crop_marks);
     let all = ExportForm {
         all_spreads: true,
         quality: 0,
