@@ -4,7 +4,7 @@
 
 mod file;
 mod meta;
-mod profile;
+pub(crate) mod profile;
 
 use std::path::PathBuf;
 
@@ -58,11 +58,11 @@ pub fn write(
     let path = ctx.folder.join(file_name(ctx.project));
     let mut pdf = PdfFile::create(ctx.folder, &path)?;
     let mut chunk = Chunk::new();
-    let output = profile::output_profile().map_err(ExportError::Encode)?;
+    let output = profile::output_profile(ctx.space).map_err(ExportError::Encode)?;
     chunk.icc_profile(OUTPUT_ICC, output).n(3);
     pdf.object(OUTPUT_ICC, &chunk)?;
     let mut chunk = Chunk::new();
-    let image = profile::image_profile().map_err(ExportError::Encode)?;
+    let image = profile::image_profile(ctx.space).map_err(ExportError::Encode)?;
     chunk.icc_profile(IMAGE_ICC, image).n(3);
     pdf.object(IMAGE_ICC, &chunk)?;
 
@@ -96,7 +96,13 @@ pub fn write(
     pdf.object(INFO, &meta::info(INFO, &title))?;
     pdf.object(
         CATALOG,
-        &meta::catalog(CATALOG, PAGES, METADATA, OUTPUT_ICC),
+        &meta::catalog(
+            CATALOG,
+            PAGES,
+            METADATA,
+            OUTPUT_ICC,
+            profile::output_condition(ctx.space),
+        ),
     )?;
     pdf.finish(CATALOG, INFO)
 }
@@ -114,7 +120,8 @@ fn sheets(ctx: &Ctx, job: &SpreadJob) -> Result<Vec<Sheet>, ExportError> {
                 None => (spec.canvas_rect(), spec.trim_rect()),
                 Some(side) => (spec.page_canvas_rect(side), spec.page_rect(side)),
             };
-            let jpeg = jpeg::encode(image, ctx.quality, dpi).map_err(ExportError::Encode)?;
+            let jpeg =
+                jpeg::encode(image, ctx.quality, dpi, ctx.space).map_err(ExportError::Encode)?;
             Ok(Sheet {
                 jpeg,
                 size_px,

@@ -3,7 +3,9 @@
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
-use lamina_core::Project;
+use std::borrow::Cow;
+
+use lamina_core::{ColorSpace, Project};
 use lamina_render::PhotoSource;
 use rayon::prelude::*;
 
@@ -43,6 +45,9 @@ pub struct ExportOptions {
     pub format: ExportFormat,
     /// Marcas de corte, só no PDF (spec PD, regra 6).
     pub crop_marks: bool,
+    /// Espaço de cor da saída (spec CT). A fonte de fotos passada a [`export`] tem que entregar as
+    /// fotos já nele (`lamina_media::original_source_in`).
+    pub space: ColorSpace,
 }
 
 impl Default for ExportOptions {
@@ -54,6 +59,7 @@ impl Default for ExportOptions {
             overwrite: false,
             format: ExportFormat::Jpeg,
             crop_marks: false,
+            space: ColorSpace::Srgb,
         }
     }
 }
@@ -78,6 +84,8 @@ pub fn export(
     progress: &dyn Fn(usize, usize),
 ) -> Result<ExportReport, ExportError> {
     let started = Instant::now();
+    let in_space = colors_in(project, options.space);
+    let project = in_space.as_ref();
     let jobs = plan(project, options)?;
     let names = names_of(project, options, &jobs);
     if !options.overwrite {
@@ -92,13 +100,15 @@ pub fn export(
         folder,
         photos,
         quality: options.quality,
+        space: options.space,
+        format: options.format,
     };
     let files = match options.format {
         ExportFormat::Pdf => vec![pdf::write(&ctx, &jobs, options, progress)?],
         _ => write_all(&ctx, &jobs, progress)?,
     };
-    // A limpeza só vale para os JPEGs (spec PD, regra 7).
-    let removed = if options.overwrite && options.format == ExportFormat::Jpeg {
+    // A limpeza só vale para os JPEGs e TIFFs (spec PD, regra 7; spec CT, regra 6).
+    let removed = if options.overwrite && options.format != ExportFormat::Pdf {
         remove_leftovers(folder, &names)?
     } else {
         Vec::new()
@@ -110,6 +120,23 @@ pub fn export(
         removed,
         elapsed: started.elapsed(),
     })
+}
+
+/// O projeto com fundo e borda no espaço de cor da saída (spec CT, regra 3). Em sRGB, o próprio
+/// projeto, sem cópia (nada muda: regra 7).
+fn colors_in(project: &Project, space: ColorSpace) -> Cow<'_, Project> {
+    if space == ColorSpace::Srgb {
+        return Cow::Borrowed(project);
+    }
+    let mut copy = project.clone();
+    for spread in &mut copy.spreads {
+        spread.background = space.from_srgb(spread.background);
+        spread.background_right = spread.background_right.map(|c| space.from_srgb(c));
+        for frame in &mut spread.frames {
+            frame.border.color = space.from_srgb(frame.border.color);
+        }
+    }
+    Cow::Owned(copy)
 }
 
 /// Nomes dos arquivos que a exportação vai gravar, na ordem do álbum, sem gravar nada (para

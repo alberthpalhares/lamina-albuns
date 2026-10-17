@@ -91,6 +91,8 @@ pub struct NewAlbum {
 pub struct Imported {
     pub project: Project,
     pub failures: Vec<(PathBuf, String)>,
+    /// Fotos com perfil de cor ilegível, usadas como sRGB (spec CT, seção 6).
+    pub warnings: Vec<String>,
 }
 
 /// Importa a pasta e monta o projeto, com o nome pedido ou o da pasta. Com `screens`, gera
@@ -122,6 +124,7 @@ pub fn import_project(
     Ok(Imported {
         project: project_from(&report, &name, spec),
         failures: report.failures,
+        warnings: report.warnings,
     })
 }
 

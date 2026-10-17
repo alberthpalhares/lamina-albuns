@@ -6,8 +6,6 @@ use pdf_writer::types::OutputIntentSubtype;
 use pdf_writer::writers::{Catalog, DocumentInfo};
 use pdf_writer::{Chunk, Date, Name, Ref, Str, TextStr};
 
-use super::profile::OUTPUT_CONDITION;
-
 /// Data gravada no PDF (a mesma do perfil de cor).
 const DATE: &str = "2026-01-01T00:00:00Z";
 
@@ -22,7 +20,7 @@ fn date() -> Date {
 }
 
 /// Catálogo: árvore de páginas, metadados e o perfil de saída.
-pub fn catalog(id: Ref, pages: Ref, metadata: Ref, output_icc: Ref) -> Chunk {
+pub fn catalog(id: Ref, pages: Ref, metadata: Ref, output_icc: Ref, condition: &str) -> Chunk {
     let mut chunk = Chunk::new();
     let mut catalog = chunk.indirect(id).start::<Catalog>();
     catalog.pages(pages).metadata(metadata);
@@ -30,10 +28,10 @@ pub fn catalog(id: Ref, pages: Ref, metadata: Ref, output_icc: Ref) -> Chunk {
         .output_intents()
         .push()
         .subtype(OutputIntentSubtype::PDFX)
-        .output_condition_identifier(TextStr(OUTPUT_CONDITION))
-        .output_condition(TextStr(OUTPUT_CONDITION))
+        .output_condition_identifier(TextStr(condition))
+        .output_condition(TextStr(condition))
         .registry_name(TextStr("http://www.color.org"))
-        .info(TextStr(OUTPUT_CONDITION))
+        .info(TextStr(condition))
         .dest_output_profile(output_icc);
     drop(catalog);
     chunk

@@ -27,6 +27,7 @@ lamina-editor = { workspace = true }
 image = { workspace = true }
 rayon = { workspace = true }
 tempfile = { workspace = true }
+tiff = { workspace = true }
 
 [lints]
 workspace = true

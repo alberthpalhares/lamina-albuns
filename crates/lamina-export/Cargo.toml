@@ -20,6 +20,8 @@ thiserror = { workspace = true }
 tempfile = { workspace = true }
 # PDF/X-4 de impressão (spec PD).
 pdf-writer = { workspace = true }
+# TIFF sem perda, com perfil de cor (spec CT).
+tiff = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }

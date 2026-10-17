@@ -4,6 +4,7 @@ use std::sync::OnceLock;
 
 use image::codecs::jpeg::{JpegEncoder, PixelDensity};
 use image::{DynamicImage, ExtendedColorType, ImageEncoder, RgbaImage};
+use lamina_core::ColorSpace;
 
 /// Data fixa gravada no cabeçalho do perfil (2026-01-01 00:00:00): ano, mês, dia, hora,
 /// minuto e segundo, em u16 big-endian (ICC.1, bytes 24 a 35).
@@ -41,15 +42,29 @@ pub fn fix_header(mut icc: Vec<u8>) -> Result<Vec<u8>, String> {
     Ok(icc)
 }
 
-/// Codifica a imagem com qualidade `quality` (1 a 100) e densidade `dpi`.
-pub fn encode(image: RgbaImage, quality: u8, dpi: u32) -> Result<Vec<u8>, String> {
+/// O perfil embutido nos arquivos de imagem: o sRGB de sempre (os JPEGs em sRGB não mudam: spec CT,
+/// regra 7), ou o compatível com Adobe RGB (1998).
+pub fn embedded_profile(space: ColorSpace) -> Result<&'static [u8], String> {
+    match space {
+        ColorSpace::Srgb => srgb_profile(),
+        ColorSpace::AdobeRgb => crate::pdf::profile::image_profile(space),
+    }
+}
+
+/// Codifica a imagem com qualidade `quality` (1 a 100), densidade `dpi` e o perfil de `space`.
+pub fn encode(
+    image: RgbaImage,
+    quality: u8,
+    dpi: u32,
+    space: ColorSpace,
+) -> Result<Vec<u8>, String> {
     let rgb = DynamicImage::ImageRgba8(image).into_rgb8();
     let mut bytes = Vec::new();
     let mut encoder = JpegEncoder::new_with_quality(&mut bytes, quality);
     let density = u16::try_from(dpi).unwrap_or(u16::MAX);
     encoder.set_pixel_density(PixelDensity::dpi(density));
     encoder
-        .set_icc_profile(srgb_profile()?.to_vec())
+        .set_icc_profile(embedded_profile(space)?.to_vec())
         .map_err(|e| e.to_string())?;
     encoder
         .write_image(

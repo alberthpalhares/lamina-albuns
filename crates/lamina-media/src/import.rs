@@ -22,6 +22,9 @@ pub struct ImportReport {
     pub processed: usize,
     /// Arquivos que não puderam ser importados, com o motivo.
     pub failures: Vec<(PathBuf, String)>,
+    /// Avisos das fotos lidas agora (perfil de cor ilegível: spec CT, seção 6), em ordem de
+    /// caminho.
+    pub warnings: Vec<String>,
 }
 
 /// Andamento da importação: chamado com (fotos prontas, total), sempre em ordem crescente.
@@ -91,6 +94,9 @@ pub fn import_folder_with(
             Ok(entry) => {
                 catalog.upsert(&entry)?;
                 report.processed += 1;
+                report
+                    .warnings
+                    .extend(crate::color::profile_problem(&entry.path));
                 report.entries.push(entry);
             }
             Err(failure) => report.failures.push(failure),
@@ -111,7 +117,9 @@ fn is_current(e: &CatalogEntry, size: i64, modified: i64, dirs: DerivedDirs<'_>)
     let screen_ok = dirs
         .screens
         .is_none_or(|d| derived_path(d, &e.fingerprint).exists());
-    e.file_size == size && e.modified == modified && e.thumbnail.exists() && screen_ok
+    // A miniatura tem que ser da versão atual do cache (spec CT, regra 10).
+    let thumb_ok = e.thumbnail == derived_path(dirs.thumbs, &e.fingerprint) && e.thumbnail.exists();
+    e.file_size == size && e.modified == modified && thumb_ok && screen_ok
 }
 
 /// Tamanho e data de modificação (segundos desde 1970) do arquivo.

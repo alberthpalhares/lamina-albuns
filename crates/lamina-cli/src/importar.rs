@@ -46,6 +46,9 @@ pub fn run(folder: &Path, cache: Option<PathBuf>) -> Result<()> {
     for (path, reason) in &report.failures {
         println!("  ✘ {}: {reason}", relative(folder, path));
     }
+    for warning in &report.warnings {
+        println!("  ! {warning}");
+    }
     println!(
         "\n{} foto(s) em {:.2} s: {} lida(s) agora, {} do catálogo, {} com problema.",
         report.entries.len(),

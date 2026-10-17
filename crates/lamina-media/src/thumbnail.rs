@@ -32,9 +32,13 @@ pub struct DerivedDirs<'a> {
     pub screens: Option<&'a Path>,
 }
 
+/// Versão das cópias reduzidas: a 2 converte as fotos com perfil próprio para sRGB (spec CT,
+/// regra 10). As cópias de outra versão são ignoradas e refeitas.
+const DERIVED_VERSION: u32 = 2;
+
 /// Arquivo da cópia de uma foto (miniatura ou imagem de tela) dentro de `dir`.
 pub fn derived_path(dir: &Path, fingerprint: &str) -> PathBuf {
-    dir.join(format!("{fingerprint}.jpg"))
+    dir.join(format!("{fingerprint}.v{DERIVED_VERSION}.jpg"))
 }
 
 /// Gera (se ainda não existir) a miniatura em `dir/<impressão digital>.jpg` e devolve o caminho.

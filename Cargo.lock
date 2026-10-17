@@ -2784,6 +2784,7 @@ dependencies = [
  "lamina-render",
  "rayon",
  "tempfile",
+ "tiff",
 ]
 
 [[package]]
@@ -2827,6 +2828,7 @@ dependencies = [
  "serde_json",
  "tempfile",
  "thiserror 2.0.21",
+ "tiff",
 ]
 
 [[package]]
@@ -2846,6 +2848,7 @@ dependencies = [
  "image",
  "kamadak-exif",
  "lamina-core",
+ "moxcms",
  "rayon",
  "rusqlite",
  "tempfile",

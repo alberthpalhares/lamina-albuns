@@ -5,12 +5,12 @@ use std::path::{Path, PathBuf};
 
 use image::RgbaImage;
 use image::imageops::crop_imm;
-use lamina_core::{PageSide, Project};
+use lamina_core::{ColorSpace, PageSide, Project};
 use lamina_render::{Fill, PhotoSource, RenderTarget, render_spread_with};
 
 use crate::jobs::{Output, SpreadJob};
 use crate::once::ReadOnce;
-use crate::{ExportError, jpeg};
+use crate::{ExportError, ExportFormat, jpeg, tiff_out};
 
 /// O que toda lâmina precisa para ser gravada.
 pub struct Ctx<'a> {
@@ -18,6 +18,10 @@ pub struct Ctx<'a> {
     pub folder: &'a Path,
     pub photos: &'a dyn PhotoSource,
     pub quality: u8,
+    /// Espaço de cor da saída (spec CT): a fonte de fotos já entrega as fotos nele.
+    pub space: ColorSpace,
+    /// JPEG ou TIFF (o PDF tem o próprio caminho).
+    pub format: ExportFormat,
 }
 
 /// Renderiza a lâmina uma vez e grava os arquivos dela.
@@ -79,7 +83,14 @@ fn render(ctx: &Ctx, spread: usize, fill: Fill) -> Result<RgbaImage, ExportError
 }
 
 fn save(ctx: &Ctx, name: &str, image: RgbaImage, dpi: u32) -> Result<PathBuf, ExportError> {
-    let bytes = jpeg::encode(image, ctx.quality, dpi).map_err(ExportError::Encode)?;
+    let bytes = match ctx.format {
+        ExportFormat::Tiff => {
+            let profile = jpeg::embedded_profile(ctx.space).map_err(ExportError::Encode)?;
+            tiff_out::encode(image, dpi, profile)
+        }
+        _ => jpeg::encode(image, ctx.quality, dpi, ctx.space),
+    }
+    .map_err(ExportError::Encode)?;
     let path = ctx.folder.join(name);
     write_atomic(ctx.folder, &path, &bytes)?;
     Ok(path)
