@@ -6,7 +6,7 @@ use std::path::Path;
 use lamina_core::Project;
 pub use lamina_export::{DEFAULT_QUALITY, ExportFormat, ExportOptions, Warning};
 use lamina_export::{ExportReport, export};
-use lamina_media::original_source;
+use lamina_media::original_source_in;
 
 use crate::{Editor, EditorError};
 
@@ -29,7 +29,8 @@ impl ExportCheck {
     }
 }
 
-/// Exporta o projeto como está na tela (não precisa salvar antes), lendo os originais: os mesmos
+/// Exporta o projeto como está na tela (não precisa salvar antes), lendo os originais no espaço
+/// de cor da saída (spec CT): os mesmos
 /// arquivos do `lamina exportar` com as mesmas opções (regra 1). Roda em qualquer linha;
 /// `progress` recebe (feitos, total) a cada arquivo.
 pub fn export_project(
@@ -41,7 +42,7 @@ pub fn export_project(
     Ok(export(
         project,
         folder,
-        &original_source(),
+        &original_source_in(options.space),
         options,
         progress,
     )?)

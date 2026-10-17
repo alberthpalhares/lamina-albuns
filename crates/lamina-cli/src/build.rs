@@ -8,7 +8,7 @@ use lamina_core::Project;
 use lamina_editor::{import_project, suggestion, suggestion_text};
 use lamina_export::{ExportOptions, output_names, preflight, project_file_name, save_project};
 use lamina_layout::{AutoBuild, BuildOptions, auto_build};
-use lamina_media::original_source;
+use lamina_media::original_source_in;
 
 use crate::auto::parse_reuse;
 use crate::importar::cache_at;
@@ -71,6 +71,7 @@ pub fn run(args: &BuildArgs) -> Result<()> {
         overwrite: args.sobrescrever,
         format,
         crop_marks,
+        space: args.saida_formato.space(),
     };
     // Tudo validado antes de gravar qualquer coisa (regra 5): nomes de saída e opções.
     let file = project_file_name(&built.project.name)?;
@@ -83,7 +84,8 @@ pub fn run(args: &BuildArgs) -> Result<()> {
     let saved = save_project(&built.project, &args.saida, &file)?;
     let all: Vec<usize> = (0..spreads).collect();
     print_warnings(&preflight(&built.project, &all));
-    export_with_progress(&built.project, &args.saida, &original_source(), &export)?;
+    let photos = original_source_in(export.space);
+    export_with_progress(&built.project, &args.saida, &photos, &export)?;
     println!("Projeto: {}", saved.display());
     Ok(())
 }
@@ -97,6 +99,9 @@ fn imported(args: &BuildArgs) -> Result<Project> {
     let imported = import_project(&args.pasta, name, spec, &cache, false, &|_| {})?;
     for (path, reason) in &imported.failures {
         println!("Não foi possível importar {}: {reason}.", file_name(path));
+    }
+    for warning in &imported.warnings {
+        println!("{warning}");
     }
     Ok(imported.project)
 }

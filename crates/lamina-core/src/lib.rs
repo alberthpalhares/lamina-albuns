@@ -13,6 +13,7 @@
 //! Convenção: identificadores em inglês, documentação em português.
 //! O glossário em `docs/glossario.md` faz a ponte (ex.: lâmina = `Spread`, quadro = `Frame`).
 
+pub mod color;
 pub mod document;
 pub mod geometry;
 pub mod history;
@@ -23,6 +24,7 @@ pub mod units;
 
 mod error;
 
+pub use color::ColorSpace;
 pub use document::{
     Border, CURRENT_SCHEMA_VERSION, Crop, DEFAULT_GAP, Frame, FrameContent, FrameId, Orientation,
     Photo, PhotoId, PixelRegion, Project, Rgb, Spread, SpreadId, relative_path,

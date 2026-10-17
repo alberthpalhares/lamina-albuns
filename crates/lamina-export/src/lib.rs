@@ -14,11 +14,12 @@ mod preflight;
 mod previews;
 mod project_file;
 mod range;
+mod tiff_out;
 mod write;
 
 pub use clean::is_export_name;
 pub use export::{DEFAULT_QUALITY, ExportOptions, ExportReport, export, output_names};
-pub use jpeg::srgb_profile;
+pub use jpeg::{embedded_profile as color_profile, srgb_profile};
 pub use preflight::{Warning, WarningKind, preflight};
 pub use previews::write_previews;
 pub use project_file::{
@@ -121,6 +122,9 @@ mod tests {
 #[cfg(test)]
 #[path = "tests/ap.rs"]
 mod ap;
+#[cfg(test)]
+#[path = "tests/ct.rs"]
+mod ct;
 #[cfg(test)]
 #[path = "tests/ei.rs"]
 mod ei;

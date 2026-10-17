@@ -4,31 +4,54 @@
 use std::path::Path;
 
 use image::metadata::Orientation;
-use image::{DynamicImage, ImageReader, RgbaImage};
+use image::{DynamicImage, ImageDecoder, ImageReader, RgbaImage};
+use lamina_core::ColorSpace;
 
+use crate::color::convert;
 use crate::{MediaError, read_metadata};
 
-/// Decodifica a foto e aplica a orientação EXIF `exif_orientation` (1 a 8).
+/// Decodifica a foto em sRGB (a tela; spec CT, regra 1) e aplica a orientação EXIF
+/// `exif_orientation` (1 a 8).
 pub fn decode_with_orientation(
     path: &Path,
     exif_orientation: u8,
 ) -> Result<DynamicImage, MediaError> {
-    let mut image = ImageReader::open(path)
+    decode_in(path, exif_orientation, ColorSpace::Srgb)
+}
+
+/// Decodifica a foto convertendo do perfil dela para `space` (spec CT, regra 2) e aplica a
+/// orientação EXIF. Foto sem perfil em sRGB passa intacta (regra 7).
+pub fn decode_in(
+    path: &Path,
+    exif_orientation: u8,
+    space: ColorSpace,
+) -> Result<DynamicImage, MediaError> {
+    let mut decoder = ImageReader::open(path)
         .map_err(MediaError::io(path))?
         .with_guessed_format()
         .map_err(MediaError::io(path))?
-        .decode()
+        .into_decoder()
         .map_err(MediaError::image(path))?;
+    let icc = decoder.icc_profile().ok().flatten();
+    let mut image = DynamicImage::from_decoder(decoder).map_err(MediaError::image(path))?;
+    if icc.is_some() || space != ColorSpace::Srgb {
+        image = DynamicImage::ImageRgba8(convert(image.into_rgba8(), icc.as_deref(), space));
+    }
     if let Some(orientation) = Orientation::from_exif(exif_orientation) {
         image.apply_orientation(orientation);
     }
     Ok(image)
 }
 
-/// Lê a orientação do próprio arquivo e devolve os pixels em pé, em RGBA.
+/// Lê a orientação do próprio arquivo e devolve os pixels em pé, em RGBA, em sRGB.
 pub fn load_oriented(path: &Path) -> Result<RgbaImage, MediaError> {
+    load_oriented_in(path, ColorSpace::Srgb)
+}
+
+/// Como [`load_oriented`], no espaço de cor da saída (spec CT, regra 2).
+pub fn load_oriented_in(path: &Path, space: ColorSpace) -> Result<RgbaImage, MediaError> {
     let orientation = read_metadata(path)?.exif_orientation;
-    Ok(decode_with_orientation(path, orientation)?.into_rgba8())
+    Ok(decode_in(path, orientation, space)?.into_rgba8())
 }
 
 #[cfg(test)]

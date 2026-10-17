@@ -4,7 +4,7 @@
 
 use std::path::Path;
 
-use lamina_core::{Mm, Project, Rgb};
+use lamina_core::{ColorSpace, Mm, Project, Rgb};
 
 use crate::Editor;
 use crate::album::SpecFields;
@@ -94,10 +94,12 @@ pub struct ExportForm {
     pub all_spreads: bool,
     pub range: String,
     pub pages: bool,
-    /// PDF do álbum em vez de JPEGs (spec PD).
-    pub pdf: bool,
+    /// JPEG, PDF (spec PD) ou TIFF (spec CT).
+    pub format: ExportFormat,
     /// Marcas de corte; só valem no PDF.
     pub crop_marks: bool,
+    /// sRGB ou Adobe RGB (spec CT).
+    pub space: ColorSpace,
 }
 
 impl ExportForm {
@@ -109,12 +111,9 @@ impl ExportForm {
             range: (!self.all_spreads).then(|| self.range.trim().to_owned()),
             pages: self.pages,
             overwrite,
-            format: if self.pdf {
-                ExportFormat::Pdf
-            } else {
-                ExportFormat::Jpeg
-            },
-            crop_marks: self.pdf && self.crop_marks,
+            format: self.format,
+            crop_marks: self.format == ExportFormat::Pdf && self.crop_marks,
+            space: self.space,
         }
     }
 }

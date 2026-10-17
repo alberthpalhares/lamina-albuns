@@ -42,6 +42,8 @@ schemars = "1"
 # PDF de impressão (spec PD; ADR 0007, plano B) e a leitura dele nos testes.
 pdf-writer = "0.15"
 lopdf = "0.45"
+# TIFF de impressão sem perda (spec CT); a mesma versão que o `image` usa.
+tiff = "0.11"
 # Interface (ADR 0002) e diálogos de arquivo do sistema (spec JP).
 slint = "1.18"
 slint-build = "1.18"

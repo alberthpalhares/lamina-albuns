@@ -9,16 +9,23 @@ use std::sync::Arc;
 use image::RgbaImage;
 use lamina_core::{Photo, PhotoId};
 
-use crate::load_oriented;
+use lamina_core::ColorSpace;
+
 use crate::thumbnail::THUMB_SIZE;
+use crate::{load_oriented, load_oriented_in};
 
 /// Resultado de uma fonte de fotos: a imagem compartilhada, ou o motivo em texto.
 pub type Loaded = Result<Arc<RgbaImage>, String>;
 
-/// Sempre o arquivo original: para a impressão.
+/// Sempre o arquivo original, em sRGB: para a impressão em sRGB.
 pub fn original_source() -> impl Fn(&Photo, (u32, u32)) -> Loaded + Sync {
-    |photo: &Photo, _: (u32, u32)| {
-        load_oriented(&photo.path)
+    original_source_in(ColorSpace::Srgb)
+}
+
+/// Sempre o arquivo original, convertido para o espaço de cor da saída (spec CT, regra 2).
+pub fn original_source_in(space: ColorSpace) -> impl Fn(&Photo, (u32, u32)) -> Loaded + Sync {
+    move |photo: &Photo, _: (u32, u32)| {
+        load_oriented_in(&photo.path, space)
             .map(Arc::new)
             .map_err(|e| e.to_string())
     }

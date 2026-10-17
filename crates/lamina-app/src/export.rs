@@ -3,9 +3,10 @@
 
 use std::path::{Path, PathBuf};
 
+use lamina_core::ColorSpace;
 use lamina_editor::forms::{ExportForm, replace_question};
 use lamina_editor::{
-    DEFAULT_QUALITY, ExportOptions, export_progress, export_project, export_summary,
+    DEFAULT_QUALITY, ExportFormat, ExportOptions, export_progress, export_project, export_summary,
 };
 
 use crate::AppWindow;
@@ -22,8 +23,9 @@ pub fn start(app: &mut App) {
     w.set_ex_all(true);
     w.set_ex_range("".into());
     w.set_ex_pages(false);
-    w.set_ex_pdf(false);
+    w.set_ex_format(0);
     w.set_ex_marks(false);
+    w.set_ex_adobe(false);
     w.set_ex_quality(i32::from(DEFAULT_QUALITY));
     w.set_ex_step(0);
     app.export_check = None;
@@ -38,8 +40,17 @@ fn options(w: &AppWindow, overwrite: bool) -> ExportOptions {
         all_spreads: w.get_ex_all(),
         range: w.get_ex_range().into(),
         pages: w.get_ex_pages(),
-        pdf: w.get_ex_pdf(),
+        format: match w.get_ex_format() {
+            1 => ExportFormat::Pdf,
+            2 => ExportFormat::Tiff,
+            _ => ExportFormat::Jpeg,
+        },
         crop_marks: w.get_ex_marks(),
+        space: if w.get_ex_adobe() {
+            ColorSpace::AdobeRgb
+        } else {
+            ColorSpace::Srgb
+        },
     }
     .options(overwrite)
 }

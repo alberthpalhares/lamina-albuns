@@ -13,6 +13,8 @@ publish = false
 lamina-core = { workspace = true }
 kamadak-exif = { workspace = true }
 image = { workspace = true }
+# Converter as fotos com perfil próprio (spec CT; ADR 0007).
+moxcms = { workspace = true }
 rusqlite = { workspace = true }
 blake3 = { workspace = true }
 rayon = { workspace = true }

@@ -53,8 +53,8 @@ pub use commands::{Command, Menu};
 pub use editor::{Editor, Leave, Panel};
 pub use error::EditorError;
 pub use exporting::{
-    DEFAULT_QUALITY, ExportCheck, ExportOptions, Warning, export_progress, export_project,
-    export_summary,
+    DEFAULT_QUALITY, ExportCheck, ExportFormat, ExportOptions, Warning, export_progress,
+    export_project, export_summary,
 };
 pub use keys::{Key, Shortcut};
 pub use photos::{Filter, PhotoInfo, PhotoItem, photo_info, photo_list, used_photos};

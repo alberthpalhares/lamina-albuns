@@ -39,8 +39,9 @@ fn campos_da_exportacao_e_a_pergunta() {
         all_spreads: false,
         range: " 1, 3-4 ".into(),
         pages: true,
-        pdf: false,
+        format: crate::exporting::ExportFormat::Jpeg,
         crop_marks: true,
+        space: lamina_core::ColorSpace::AdobeRgb,
     };
     let options = form.options(true);
     assert_eq!(options.quality, 100);
@@ -48,8 +49,9 @@ fn campos_da_exportacao_e_a_pergunta() {
     assert!(options.pages && options.overwrite);
     assert_eq!(options.format, crate::exporting::ExportFormat::Jpeg);
     assert!(!options.crop_marks, "marcas de corte só no PDF");
+    assert_eq!(options.space, lamina_core::ColorSpace::AdobeRgb);
     let pdf = ExportForm {
-        pdf: true,
+        format: crate::exporting::ExportFormat::Pdf,
         ..form.clone()
     };
     let options = pdf.options(false);

@@ -1,5 +1,6 @@
-//! Perfis de cor do PDF de impressão (spec PD, regra 4; ADR 0007, adendo do PD). Aprovados no
-//! Preflight PDF/X-4 do Acrobat pelo protótipo (2026-10-16):
+//! Perfis de cor do PDF de impressão (spec PD, regra 4; ADR 0007, adendo do PD), em sRGB ou em
+//! Adobe RGB (spec CT, regra 4). Aprovados no Preflight PDF/X-4 do Acrobat pelo protótipo
+//! (2026-10-16):
 //!
 //! - o da **imagem** é o sRGB do `moxcms` sem a etiqueta `cicp` e marcado como ICC 4.2 (o 4.3/4.4
 //!   que o `moxcms` grava é mais novo que o PDF/X-4);
@@ -9,6 +10,7 @@
 
 use std::sync::OnceLock;
 
+use lamina_core::ColorSpace;
 use moxcms::{
     ColorProfile, DataColorSpace, LutDataType, LutStore, LutType, LutWarehouse, Matrix3d,
     ProfileClass, ProfileText,
@@ -21,32 +23,65 @@ const GRID: usize = 33;
 /// Branco D50 do PCS.
 const D50: [f64; 3] = [0.9642, 1.0, 0.8249];
 
-/// O sRGB da imagem (classe `mntr`).
-pub fn image_profile() -> Result<&'static [u8], String> {
-    static PROFILE: OnceLock<Result<Vec<u8>, String>> = OnceLock::new();
-    PROFILE
-        .get_or_init(|| {
-            let mut profile = ColorProfile::new_srgb();
-            profile.cicp = None;
-            encode(&profile)
-        })
+type Cached = OnceLock<Result<Vec<u8>, String>>;
+
+fn cached(
+    cell: &'static Cached,
+    build: impl FnOnce() -> Result<Vec<u8>, String>,
+) -> Result<&'static [u8], String> {
+    cell.get_or_init(build)
         .as_ref()
         .map(Vec::as_slice)
         .map_err(Clone::clone)
 }
 
-/// O perfil de saída (classe `prtr`, PCS Lab, tabelas lut16).
-pub fn output_profile() -> Result<&'static [u8], String> {
-    static PROFILE: OnceLock<Result<Vec<u8>, String>> = OnceLock::new();
-    PROFILE
-        .get_or_init(build_output)
-        .as_ref()
-        .map(Vec::as_slice)
-        .map_err(Clone::clone)
+/// O perfil do espaço como o `moxcms` o descreve.
+fn base(space: ColorSpace) -> ColorProfile {
+    match space {
+        ColorSpace::Srgb => ColorProfile::new_srgb(),
+        ColorSpace::AdobeRgb => ColorProfile::new_adobe_rgb(),
+    }
 }
 
-/// Descrição do perfil de saída, também usada no `OutputIntent`.
-pub const OUTPUT_CONDITION: &str = "sRGB IEC61966-2.1";
+/// O perfil da imagem (classe `mntr`), também embutido no JPEG e no TIFF em Adobe RGB.
+pub fn image_profile(space: ColorSpace) -> Result<&'static [u8], String> {
+    static SRGB: Cached = OnceLock::new();
+    static ADOBE: Cached = OnceLock::new();
+    let cell = match space {
+        ColorSpace::Srgb => &SRGB,
+        ColorSpace::AdobeRgb => &ADOBE,
+    };
+    cached(cell, || {
+        let mut profile = base(space);
+        profile.cicp = None;
+        if space == ColorSpace::AdobeRgb {
+            profile.description = Some(ProfileText::PlainString(ADOBE_DESCRIPTION.to_owned()));
+        }
+        encode(&profile)
+    })
+}
+
+/// O perfil de saída (classe `prtr`, PCS Lab, tabelas lut16) do espaço.
+pub fn output_profile(space: ColorSpace) -> Result<&'static [u8], String> {
+    static SRGB: Cached = OnceLock::new();
+    static ADOBE: Cached = OnceLock::new();
+    let cell = match space {
+        ColorSpace::Srgb => &SRGB,
+        ColorSpace::AdobeRgb => &ADOBE,
+    };
+    cached(cell, || build_output(space))
+}
+
+/// Como o perfil compatível com Adobe RGB se descreve (spec CT, regra 4).
+const ADOBE_DESCRIPTION: &str = "Compativel com Adobe RGB (1998)";
+
+/// A condição de impressão do `OutputIntent`.
+pub fn output_condition(space: ColorSpace) -> &'static str {
+    match space {
+        ColorSpace::Srgb => "sRGB IEC61966-2.1",
+        ColorSpace::AdobeRgb => "Adobe RGB (1998)",
+    }
+}
 
 fn encode(profile: &ColorProfile) -> Result<Vec<u8>, String> {
     let icc = profile.encode().map_err(|e| e.to_string())?;
@@ -56,12 +91,11 @@ fn encode(profile: &ColorProfile) -> Result<Vec<u8>, String> {
     Ok(icc)
 }
 
-fn build_output() -> Result<Vec<u8>, String> {
-    let base = ColorProfile::new_srgb();
-    let to_xyz = base.colorant_matrix();
-    let to_rgb = invert(&to_xyz).ok_or("matriz do sRGB sem inversa")?;
-    let (to_lab, from_lab) = tables(&to_xyz, &to_rgb);
-    let mut profile = ColorProfile::new_srgb();
+fn build_output(space: ColorSpace) -> Result<Vec<u8>, String> {
+    let to_xyz = base(space).colorant_matrix();
+    let to_rgb = invert(&to_xyz).ok_or("matriz do espaço de cor sem inversa")?;
+    let (to_lab, from_lab) = tables(space, &to_xyz, &to_rgb);
+    let mut profile = base(space);
     profile.profile_class = ProfileClass::OutputDevice;
     profile.pcs = DataColorSpace::Lab;
     profile.cicp = None;
@@ -69,7 +103,8 @@ fn build_output() -> Result<Vec<u8>, String> {
     profile.green_trc = None;
     profile.blue_trc = None;
     profile.description = Some(ProfileText::PlainString(format!(
-        "{OUTPUT_CONDITION} para impressao (Lamina)"
+        "{} para impressao (Lamina)",
+        output_condition(space)
     )));
     let (a2b, b2a) = (lut(to_lab), lut(from_lab));
     profile.lut_a_to_b_perceptual = Some(a2b.clone());
@@ -81,7 +116,9 @@ fn build_output() -> Result<Vec<u8>, String> {
 
 /// As duas grades: RGB → Lab e Lab → RGB, na codificação lut16 do Lab (L 0..100 → 0..0xFF00;
 /// a e b: (valor + 128) × 256). A primeira entrada varia mais devagar (ICC.1).
-fn tables(to_xyz: &Matrix3d, to_rgb: &Matrix3d) -> (Vec<u16>, Vec<u16>) {
+fn tables(space: ColorSpace, to_xyz: &Matrix3d, to_rgb: &Matrix3d) -> (Vec<u16>, Vec<u16>) {
+    let decode = |v: f64| decode(space, v);
+    let encode_trc = |l: f64| encode_trc(space, l);
     let points = GRID * GRID * GRID * 3;
     let (mut to_lab, mut from_lab) = (Vec::with_capacity(points), Vec::with_capacity(points));
     let step = |i: usize| as_f64(i) / as_f64(GRID - 1);
@@ -124,22 +161,25 @@ fn lut(clut: Vec<u16>) -> LutWarehouse {
     })
 }
 
-/// Valor codificado do sRGB → linear.
-fn decode(v: f64) -> f64 {
-    if v <= 0.040_45 {
-        v / 12.92
-    } else {
-        ((v + 0.055) / 1.055).powf(2.4)
+/// Gama do Adobe RGB (1998): 563/256.
+const ADOBE_GAMMA: f64 = 563.0 / 256.0;
+
+/// Valor codificado → linear, na curva do espaço.
+fn decode(space: ColorSpace, v: f64) -> f64 {
+    match space {
+        ColorSpace::Srgb if v <= 0.040_45 => v / 12.92,
+        ColorSpace::Srgb => ((v + 0.055) / 1.055).powf(2.4),
+        ColorSpace::AdobeRgb => v.powf(ADOBE_GAMMA),
     }
 }
 
-/// Linear → valor codificado do sRGB.
-fn encode_trc(l: f64) -> f64 {
+/// Linear → valor codificado, na curva do espaço.
+fn encode_trc(space: ColorSpace, l: f64) -> f64 {
     let l = l.clamp(0.0, 1.0);
-    if l <= 0.003_130_8 {
-        12.92 * l
-    } else {
-        1.055 * l.powf(1.0 / 2.4) - 0.055
+    match space {
+        ColorSpace::Srgb if l <= 0.003_130_8 => 12.92 * l,
+        ColorSpace::Srgb => 1.055 * l.powf(1.0 / 2.4) - 0.055,
+        ColorSpace::AdobeRgb => l.powf(1.0 / ADOBE_GAMMA),
     }
 }
 
@@ -222,8 +262,8 @@ mod tests {
 
     #[test]
     fn perfis_na_versao_4_2_e_nas_classes_certas() {
-        let image = image_profile().unwrap();
-        let output = output_profile().unwrap();
+        let image = image_profile(ColorSpace::Srgb).unwrap();
+        let output = output_profile(ColorSpace::Srgb).unwrap();
         assert_eq!(&image[8..12], &[4, 0x20, 0, 0]);
         assert_eq!(&output[8..12], &[4, 0x20, 0, 0]);
         assert_eq!(&image[12..16], b"mntr");

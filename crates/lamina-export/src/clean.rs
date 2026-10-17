@@ -6,9 +6,12 @@ use std::path::{Path, PathBuf};
 
 use crate::ExportError;
 
-/// O nome é de um arquivo que a exportação grava (`lamina-01.jpg`, `pagina-007.jpg`)?
+/// O nome é de um arquivo que a exportação grava (`lamina-01.jpg`, `pagina-007.tif`)?
 pub fn is_export_name(name: &str) -> bool {
-    let Some(number) = name.strip_suffix(".jpg").and_then(|n| {
+    let stem = name
+        .strip_suffix(".jpg")
+        .or_else(|| name.strip_suffix(".tif"));
+    let Some(number) = stem.and_then(|n| {
         n.strip_prefix("lamina-")
             .or_else(|| n.strip_prefix("pagina-"))
     }) else {
@@ -48,6 +51,7 @@ mod tests {
     fn so_o_nosso_padrao_de_nome() {
         assert!(is_export_name("lamina-01.jpg"));
         assert!(is_export_name("pagina-120.jpg"));
+        assert!(is_export_name("lamina-03.tif"));
         for other in [
             "lamina-1.jpg",
             "lamina-01.png",

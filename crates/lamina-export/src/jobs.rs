@@ -49,6 +49,8 @@ pub fn plan(project: &Project, options: &ExportOptions) -> Result<Vec<SpreadJob>
             }
         }
         ExportFormat::Pdf => {}
+        ExportFormat::Tiff if options.crop_marks => return Err(ExportError::CropMarksNeedPdf),
+        ExportFormat::Tiff => {}
         other => return Err(ExportError::Format(other.extension())),
     }
     let total = project.spreads.len();
@@ -59,13 +61,18 @@ pub fn plan(project: &Project, options: &ExportOptions) -> Result<Vec<SpreadJob>
         Some(text) => parse_range(text, total)?,
         None => (0..total).collect(),
     };
-    let pages = options.pages.then(|| page_names(project));
+    // JPEG ou TIFF: o PDF não usa estes nomes, só a lista de lâminas e páginas.
+    let format = match options.format {
+        ExportFormat::Tiff => ExportFormat::Tiff,
+        _ => ExportFormat::Jpeg,
+    };
+    let pages = options.pages.then(|| page_names(project, format));
     Ok(spreads
         .into_iter()
         .map(|spread| {
             let output = match &pages {
                 Some(all) => Output::Pages(all[spread].clone()),
-                None => Output::Whole(spread_file_name(spread + 1, total, ExportFormat::Jpeg)),
+                None => Output::Whole(spread_file_name(spread + 1, total, format)),
             };
             SpreadJob { spread, output }
         })
@@ -73,7 +80,7 @@ pub fn plan(project: &Project, options: &ExportOptions) -> Result<Vec<SpreadJob>
 }
 
 /// Nome de cada página ativa, lâmina por lâmina, numeradas em sequência no álbum inteiro.
-fn page_names(project: &Project) -> Vec<Vec<(PageSide, String)>> {
+fn page_names(project: &Project, format: ExportFormat) -> Vec<Vec<(PageSide, String)>> {
     let edges = project.spec.edges();
     let total = project.spreads.len();
     let pages = edges.page_count(total);
@@ -89,7 +96,7 @@ fn page_names(project: &Project) -> Vec<Vec<(PageSide, String)>> {
             .filter(|(on, _)| *on)
             .map(|(_, side)| {
                 number += 1;
-                (side, page_file_name(number, pages, ExportFormat::Jpeg))
+                (side, page_file_name(number, pages, format))
             })
             .collect()
         })

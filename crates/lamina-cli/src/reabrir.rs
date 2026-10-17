@@ -7,7 +7,7 @@ use anyhow::Result;
 use clap::Args;
 use lamina_export::{ExportOptions, open_project, parse_range, preflight};
 
-use lamina_media::original_source;
+use lamina_media::original_source_in;
 
 use crate::relatorio::{export_with_progress, print_warnings};
 
@@ -44,12 +44,14 @@ pub fn run(args: &ReopenArgs) -> Result<()> {
         overwrite: args.sobrescrever,
         format,
         crop_marks,
+        space: args.saida_formato.space(),
     };
     let spreads = match &options.range {
         Some(text) => parse_range(text, project.spreads.len())?,
         None => (0..project.spreads.len()).collect(),
     };
     print_warnings(&preflight(&project, &spreads));
-    export_with_progress(&project, &args.saida, &original_source(), &options)?;
+    let photos = original_source_in(options.space);
+    export_with_progress(&project, &args.saida, &photos, &options)?;
     Ok(())
 }
