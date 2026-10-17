@@ -5,7 +5,9 @@
 use std::fs;
 use std::path::Path;
 
-const LOOSE: &[&str] = &[".is_err()", ".is_ok()"];
+/// `Err(_)` dentro de `matches!` e `is_err_and(|_|` também aceitam qualquer erro (auditoria do
+/// Marco 2, M3).
+const LOOSE: &[&str] = &[".is_err()", ".is_ok()", "Err(_)", ".is_err_and(|_|"];
 const ALLOW: &str = "// qualquer erro";
 
 /// Linhas (1-based) com assertiva frouxa sem a marca de exceção. Vale também quando a
@@ -68,6 +70,14 @@ mod tests {
     fn com_mensagem_ou_quebrado_e_apontado() {
         assert_eq!(loose_lines("assert!(f().is_err(), \"x\");"), [1]);
         assert_eq!(loose_lines("assert!(\n    f().is_ok(),\n);"), [2]);
+    }
+
+    /// Proveta do M3 do Marco 2: `Err(_)` e `is_err_and(|_|` aceitam qualquer erro.
+    #[test]
+    fn erro_curinga_e_apontado() {
+        assert_eq!(loose_lines("assert!(matches!(f(), Err(_)));"), [1]);
+        assert_eq!(loose_lines("assert!(f().is_err_and(|_| true));"), [1]);
+        assert!(loose_lines("assert!(matches!(f(), Err(E::Nome { .. })));").is_empty());
     }
 
     #[test]

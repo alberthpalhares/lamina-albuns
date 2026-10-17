@@ -2,7 +2,7 @@
 //! regras 1 a 5). Funções puras sobre o projeto: o [`crate::Editor`] guarda o cache e chama.
 
 use lamina_core::{
-    ActivePages, CoreError, Crop, Frame, FrameContent, Mm, PhotoId, Project, RelRect,
+    ActivePages, Border, CoreError, Crop, Frame, FrameContent, Mm, PhotoId, Project, RelRect,
 };
 use lamina_layout::{LayoutCandidate, LayoutError, LayoutLists, LayoutOptions, layout_options};
 
@@ -197,6 +197,21 @@ pub fn apply(
             _ => None,
         })
         .collect();
+    // Borda e cantos ficam com a foto; foto nova herda o estilo da lâmina (o do primeiro quadro
+    // com foto). Antes, trocar o layout ou o espaço apagava os dois (auditoria do Marco 2, M7).
+    let styles: Vec<(PhotoId, Border, Mm)> = spread
+        .frames
+        .iter()
+        .filter_map(|f| photo_of(f).map(|p| (p, f.border, f.radius)))
+        .collect();
+    let common = styles
+        .first()
+        .map_or((Border::default(), Mm(0.0)), |(_, b, r)| (*b, *r));
+    let style_of = |photo: Option<PhotoId>| {
+        photo
+            .and_then(|p| styles.iter().find(|(q, _, _)| *q == p))
+            .map_or(common, |(_, b, r)| (*b, *r))
+    };
     let kept: Vec<Frame> = std::mem::take(&mut spread.frames)
         .into_iter()
         .filter(|f| !photo_of(f).is_some_and(|p| sel.photos.contains(&p)))
@@ -222,7 +237,19 @@ pub fn apply(
         kept.chain(new).collect()
     };
     for (rect, content) in ordered {
+        let (border, radius) = style_of(match &content {
+            FrameContent::Photo { photo, .. } => Some(*photo),
+            _ => None,
+        });
         project.add_frame(id, rect, content)?;
+        if let Some(frame) = project
+            .spreads
+            .get_mut(index)
+            .and_then(|s| s.frames.last_mut())
+        {
+            frame.border = border;
+            frame.radius = radius;
+        }
     }
     Ok(())
 }

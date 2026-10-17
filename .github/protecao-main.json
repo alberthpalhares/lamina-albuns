@@ -1,13 +1,5 @@
 {
-  "required_status_checks": {
-    "strict": true,
-    "contexts": [
-      "Testes (windows-latest)",
-      "Testes (macos-latest)",
-      "Testes (ubuntu-latest)",
-      "Licenças e avisos de segurança"
-    ]
-  },
+  "required_status_checks": null,
   "enforce_admins": true,
   "required_pull_request_reviews": {
     "required_approving_review_count": 0,

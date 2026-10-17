@@ -1,0 +1,50 @@
+// O painel da direita: as abas (Layouts, Aparência, Histórico, Informações) e a aba de
+// informações. As outras abas moram em layouts.slint, look.slint e history.slint.
+
+import { Theme } from "theme.slint";
+
+component Tab inherits Rectangle {
+    in property <string> text;
+    in property <bool> active;
+    callback clicked();
+    height: 30px;
+    width: label.preferred-width;
+    label := Text {
+        text: root.text;
+        color: root.active ? Theme.selected : Theme.muted;
+        font-weight: root.active ? 700 : 400;
+    }
+    TouchArea { clicked => { root.clicked(); } }
+}
+
+// A ordem na tela não é a dos números: 0 = Layouts, 2 = Aparência, 3 = Histórico,
+// 1 = Informações (os números ficaram da ordem em que as abas chegaram).
+export component PanelTabs inherits HorizontalLayout {
+    in-out property <int> tab;
+    spacing: 16px;
+    Tab { text: "Layouts"; active: root.tab == 0; clicked => { root.tab = 0; } }
+    Tab { text: "Aparência"; active: root.tab == 2; clicked => { root.tab = 2; } }
+    Tab { text: "Histórico"; active: root.tab == 3; clicked => { root.tab = 3; } }
+    Tab { text: "Informações"; active: root.tab == 1; clicked => { root.tab = 1; } }
+    Rectangle { horizontal-stretch: 1; }
+}
+
+export component InfoPanel inherits VerticalLayout {
+    in property <string> album;
+    in property <string> spread;
+    in property <string> warnings;
+    in property <string> frame;
+    in property <bool> frame-warn;
+    in property <string> photo;
+    spacing: 8px;
+    Text { text: "Álbum"; color: Theme.muted; font-size: 12px; }
+    Text { text: root.album; color: Theme.text; wrap: word-wrap; }
+    Text { text: "Lâmina"; color: Theme.muted; font-size: 12px; }
+    Text { text: root.spread; color: Theme.text; wrap: word-wrap; }
+    Text { text: root.warnings; color: Theme.warning; wrap: word-wrap; }
+    if root.frame != "": Text { text: "Quadro"; color: Theme.muted; font-size: 12px; }
+    Text { text: root.frame; color: root.frame-warn ? Theme.warning : Theme.text; wrap: word-wrap; }
+    if root.photo != "": Text { text: "Foto"; color: Theme.muted; font-size: 12px; }
+    Text { text: root.photo; color: Theme.text; wrap: word-wrap; }
+    Rectangle { vertical-stretch: 1; }
+}

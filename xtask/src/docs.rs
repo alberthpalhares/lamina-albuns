@@ -31,11 +31,37 @@ pub fn workspace_deps(cargo_toml: &str) -> Vec<String> {
 }
 
 /// Dependências que o `AGENTS.md` não cita (entre crases ou não).
+/// Vale só como palavra inteira: `serde` não fica citada por `serde_json` (auditoria do Marco 2,
+/// M3).
 pub fn deps_missing_in(agents: &str, deps: &[String]) -> Vec<String> {
     deps.iter()
-        .filter(|d| !agents.contains(d.as_str()))
+        .filter(|d| !has_word(agents, d))
         .cloned()
         .collect()
+}
+
+/// Crates de `crates/` que o texto não cita: crate novo entra na arquitetura e no README
+/// (auditoria do Marco 2, M6: o `lamina-editor` faltava nos dois).
+pub fn crates_missing_in(text: &str, crates: &[String]) -> Vec<String> {
+    crates
+        .iter()
+        .filter(|c| !has_word(text, c))
+        .cloned()
+        .collect()
+}
+
+/// Nomes das pastas de `crates/`, em ordem.
+fn crate_names() -> Vec<String> {
+    let mut names: Vec<String> = fs::read_dir("crates")
+        .map(|d| {
+            d.flatten()
+                .filter(|e| e.path().is_dir())
+                .map(|e| e.file_name().to_string_lossy().into_owned())
+                .collect()
+        })
+        .unwrap_or_default();
+    names.sort();
+    names
 }
 
 /// Problemas do glossário: nome de código que não existe nos fontes e termo repetido.
@@ -99,9 +125,22 @@ fn has_word(text: &str, word: &str) -> bool {
     })
 }
 
-/// `true` se o arquivo mede tempo num teste sem usar a folga única `budget(`.
-pub fn timing_without_budget(text: &str) -> bool {
-    text.contains("#[test]") && text.contains("Instant::now()") && !text.contains("budget(")
+/// O que falta num arquivo de teste que mede tempo (AGENTS.md, regra 13): a folga única
+/// `budget(`, a repetição (`TRIES`, `HEAVY_TRIES`) e "rapido" no nome do teste, que põe o teste
+/// no passo de velocidade da porta, rodando sozinho (auditoria do Marco 2, M1).
+pub fn timing_problem(text: &str) -> Option<&'static str> {
+    if !(text.contains("#[test]") && text.contains("Instant::now()")) {
+        return None;
+    }
+    if !text.contains("budget(") {
+        Some("teste de tempo sem `budget(`")
+    } else if !text.contains("TRIES") {
+        Some("teste de tempo sem repetição (`TRIES` ou `HEAVY_TRIES`)")
+    } else if !text.contains("rapido") {
+        Some("teste de tempo sem \"rapido\" no nome (fica fora do passo de velocidade)")
+    } else {
+        None
+    }
 }
 
 fn sources(dir: &Path, out: &mut Vec<(String, String)>) {
@@ -142,8 +181,14 @@ pub fn run() -> bool {
         problems.push(format!("docs/glossario.md: {p}"));
     }
     for (path, text) in &files {
-        if timing_without_budget(text) {
-            problems.push(format!("{path}: teste de tempo sem `budget(` (regra 13)"));
+        if let Some(problem) = timing_problem(text) {
+            problems.push(format!("{path}: {problem} (regra 13)"));
+        }
+    }
+    let crates = crate_names();
+    for doc in ["docs/arquitetura.md", "README.md"] {
+        for name in crates_missing_in(&read(doc), &crates) {
+            problems.push(format!("{doc} não cita o crate {name}"));
         }
     }
     problems.extend(crate::esquema::problem());
@@ -169,6 +214,11 @@ mod tests {
             deps_missing_in("Stack: foo", &workspace_deps(toml)),
             ["bar"]
         );
+        // Proveta do M3 do Marco 2: `bar_json` não cita `bar`.
+        assert_eq!(
+            deps_missing_in("Stack: foo, bar_json", &workspace_deps(toml)),
+            ["bar"]
+        );
     }
 
     /// Proveta do M7: nome que não existe e termo repetido reprovam.
@@ -185,13 +235,31 @@ mod tests {
         );
     }
 
+    /// Proveta do M6 do Marco 2: crate fora da arquitetura é apontado.
+    #[test]
+    fn crate_sem_mencao_e_apontado() {
+        let crates = vec!["lamina-core".to_owned(), "lamina-editor".to_owned()];
+        assert_eq!(
+            crates_missing_in("lamina-core e lamina-editors", &crates),
+            ["lamina-editor"]
+        );
+    }
+
     /// Proveta do M9: teste de tempo sem a folga única reprova.
     #[test]
     fn teste_de_tempo_sem_budget_e_apontado() {
         let bad = "#[test]\nfn t() { let s = Instant::now(); assert!(s.elapsed() < Duration::from_millis(5)); }";
-        assert!(timing_without_budget(bad));
-        assert!(!timing_without_budget(
-            &bad.replace("Duration::from_millis(5)", "budget(5)")
-        ));
+        assert_eq!(timing_problem(bad), Some("teste de tempo sem `budget(`"));
+        // Proveta do M1 do Marco 2: sem repetição ou sem "rapido" no nome também reprova.
+        let with_budget = bad.replace("Duration::from_millis(5)", "budget(5)");
+        assert!(
+            timing_problem(&with_budget)
+                .unwrap()
+                .contains("sem repetição")
+        );
+        let with_tries = with_budget.replace("fn t()", "fn u() { for _ in 0..TRIES {} }\nfn t()");
+        assert!(timing_problem(&with_tries).unwrap().contains("rapido"));
+        let good = with_tries.replace("fn t()", "fn t_rapido()");
+        assert_eq!(timing_problem(&good), None);
     }
 }

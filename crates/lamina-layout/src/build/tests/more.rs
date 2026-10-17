@@ -7,7 +7,7 @@ use lamina_core::{AlbumEdge, Project};
 
 use super::tests::{album, build, forty, names, spec};
 use super::*;
-use lamina_core::testing::budget;
+use lamina_core::testing::{HEAVY_TRIES, budget};
 
 #[test]
 fn ab_b7_foto_sem_tamanho() {
@@ -78,14 +78,15 @@ fn ab_b10_o_relatorio_explica_cada_escolha() {
 #[test]
 fn ab_b11_rapido_para_albuns_grandes() {
     let project = album(spec(), 20, &(0..200).collect::<Vec<_>>());
-    let fastest = (0..2)
-        .map(|_| {
-            let start = Instant::now();
-            build(&project, 50, Reuse::Medium);
-            start.elapsed()
-        })
-        .min()
-        .unwrap();
+    let mut fastest = std::time::Duration::MAX;
+    for _ in 0..HEAVY_TRIES {
+        let start = Instant::now();
+        build(&project, 50, Reuse::Medium);
+        fastest = fastest.min(start.elapsed());
+        if fastest < budget(2000) {
+            break;
+        }
+    }
     assert!(fastest < budget(2000), "{fastest:?}");
 }
 

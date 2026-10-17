@@ -47,7 +47,17 @@ fn hi_b1_lista_com_rotulo_e_lamina() {
 fn hi_b2_voltar_a_um_passo() {
     let mut editor = three_edits();
     let after_first = editor.session().unwrap().history_list();
+    // O álbum logo depois do primeiro passo, por outro caminho: desfazer os dois últimos.
+    let mut probe = three_edits();
+    let s = probe.session_mut().unwrap();
+    assert!(s.undo().is_some() && s.undo().is_some());
+    let expected = s.project().clone();
     assert!(editor.go_to_step(1));
+    assert_eq!(
+        editor.session().unwrap().project(),
+        &expected,
+        "o álbum de logo depois do passo"
+    );
     let s = editor.session().unwrap();
     assert_eq!(s.current(), 2, "a lâmina do passo: a 3");
     let list = s.history_list();

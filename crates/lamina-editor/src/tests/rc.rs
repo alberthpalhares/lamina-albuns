@@ -299,6 +299,7 @@ fn rc_b9_registro_de_comandos() {
     let plus = Shortcut {
         ctrl: false,
         shift: true,
+        alt: false,
         key: Key::Char('+'),
     };
     assert_eq!(Command::from_shortcut(plus), Some(Command::ZoomIn));

@@ -13,7 +13,6 @@ mod export;
 mod files;
 mod history;
 mod images;
-mod info;
 mod look;
 mod new_album;
 mod panel;
@@ -26,7 +25,8 @@ use std::sync::mpsc::channel;
 use std::time::Duration;
 
 use lamina_editor::{
-    Cache, Command, Editor, Filter, Key, PREFS_FILE, Part, PrefsStore, Shortcut, config_dir,
+    Cache, Command, Editor, Filter, Key, PREFS_FILE, Part, PrefsStore, STRIPS_FILE, Shortcut,
+    StripsStore, config_dir,
 };
 use slint::{CloseRequestResponse, ComponentHandle, Timer, TimerMode};
 
@@ -52,6 +52,10 @@ type Shared = Rc<RefCell<App>>;
 /// Roda um comando do registro (menu, botões e teclado passam por aqui).
 fn run_command(app: &Shared, command: Command) {
     let mut a = app.borrow_mut();
+    // O menu também obedece: no meio de um trabalho em segundo plano, nada além de "Sobre".
+    if !a.editor.available(command) {
+        return;
+    }
     match command {
         Command::NewAlbum => files::request(&mut a, Pending::NewAlbum),
         Command::Open => files::request(&mut a, Pending::Open),
@@ -78,6 +82,9 @@ fn run_command(app: &Shared, command: Command) {
                     | Command::FirstSpread
                     | Command::LastSpread
                     | Command::ToggleGuides
+                    | Command::ToggleSpreads
+                    | Command::ToggleTimeline
+                    | Command::TogglePhotos
             );
             if a.editor.run(command) {
                 if only_view {
@@ -98,11 +105,16 @@ fn connect(window: &AppWindow, app: &Shared) {
         }
     });
     let a = app.clone();
-    window.on_key(move |name, ctrl, shift| {
+    window.on_key(move |name, ctrl, shift, alt| {
         let Some(key) = Key::from_name(&name) else {
             return false;
         };
-        let shortcut = Shortcut { ctrl, shift, key };
+        let shortcut = Shortcut {
+            ctrl,
+            shift,
+            alt,
+            key,
+        };
         let Some(command) = Command::from_shortcut(shortcut) else {
             return false;
         };
@@ -114,11 +126,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     window.on_go_to(move |index| {
         let mut app = a.borrow_mut();
-        let moved = app
-            .editor
-            .session_mut()
-            .zip(usize::try_from(index).ok())
-            .is_some_and(|(s, i)| s.go_to(i));
+        let moved = usize::try_from(index).is_ok_and(|i| app.editor.go_to_spread(i));
         if moved {
             app.refresh_current();
         }
@@ -237,7 +245,8 @@ fn main() -> anyhow::Result<()> {
     window.set_version(env!("CARGO_PKG_VERSION").into());
     let (tx, rx) = channel();
     let prefs = PrefsStore::load(&config_dir().join(PREFS_FILE));
-    let editor = Editor::with_prefs(prefs);
+    let mut editor = Editor::with_prefs(prefs);
+    editor.set_strips(StripsStore::load(&config_dir().join(STRIPS_FILE)));
     let app: Shared = Rc::new(RefCell::new(App::new(&window, Cache::system(), editor, tx)));
     connect(&window, &app);
     app.borrow_mut().refresh_all();

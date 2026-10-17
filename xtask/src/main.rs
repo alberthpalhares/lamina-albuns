@@ -57,7 +57,9 @@ type Check = (&'static str, fn() -> bool);
 
 /// Roda todos os passos em ordem e para no primeiro que reprovar.
 fn verify() -> bool {
-    let cargo_steps: [(&str, &[&str]); 3] = [
+    // Os testes de velocidade (todos com "rapido" no nome) rodam num passo próprio, um de cada
+    // vez: junto dos outros, disputam a máquina e reprovam sem motivo (auditoria do Marco 2, M1).
+    let cargo_steps: [(&str, &[&str]); 4] = [
         ("formatação", &["fmt", "--all", "--check"]),
         (
             "clippy",
@@ -70,7 +72,21 @@ fn verify() -> bool {
                 "warnings",
             ],
         ),
-        ("testes", &["test", "--workspace", "--quiet"]),
+        (
+            "testes",
+            &["test", "--workspace", "--quiet", "--", "--skip", "rapido"],
+        ),
+        (
+            "testes de velocidade",
+            &[
+                "test",
+                "--workspace",
+                "--quiet",
+                "--",
+                "rapido",
+                "--test-threads=1",
+            ],
+        ),
     ];
     for (name, args) in cargo_steps {
         if !step(name, || cargo(args)) {

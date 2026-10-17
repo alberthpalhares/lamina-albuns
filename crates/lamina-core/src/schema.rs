@@ -46,9 +46,18 @@ mod tests {
             .unwrap_or_default()
     }
 
+    /// Os obrigatórios estão no objeto, e o objeto não grava nada que o esquema não conheça
+    /// (auditoria do Marco 2, M7).
     fn has_all(object: &Value, schema: &Value, what: &str) {
         for field in required(schema) {
             assert!(object.get(field).is_some(), "{what} sem o campo {field}");
+        }
+        let known = schema["properties"].as_object().unwrap();
+        for key in object.as_object().unwrap().keys() {
+            assert!(
+                known.contains_key(key),
+                "{what}: campo {key} fora do esquema"
+            );
         }
     }
 

@@ -111,14 +111,7 @@ pub fn refresh_spread(app: &mut App) {
             .into(),
     );
     w.set_info_frame_warn(dpi.is_some_and(|(_, warn)| warn));
-    let hint = if app.editor.crop_mode().is_some() {
-        "Roda do mouse ou + e − para o zoom · arraste para mover · 0 encaixa · Esc sai"
-    } else if app.editor.selected_frame().is_some() {
-        "Delete tira a foto · C ou duplo clique recorta · arraste para outro quadro para trocar"
-    } else {
-        ""
-    };
-    w.set_hint(hint.into());
+    w.set_hint(app.editor.hint().into());
 }
 
 /// A foto original chegou: entra no quadro se ele ainda está em modo recorte.

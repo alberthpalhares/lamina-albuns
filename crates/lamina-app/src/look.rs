@@ -4,7 +4,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use lamina_core::{Mm, PageSide};
+use lamina_core::PageSide;
+use lamina_editor::forms::{LookField, mm_text};
 use lamina_editor::{BAD_COLOR, PALETTE, color_hex, parse_color};
 use slint::Color;
 
@@ -14,26 +15,8 @@ use crate::{AppWindow, Swatch};
 
 type Shared = Rc<RefCell<App>>;
 
-/// Passos dos botões − e +, em mm, e os limites (spec AP, seção 3).
-const GAP_STEP: f64 = 0.5;
-const GAP_MAX: f64 = 20.0;
-const BORDER_STEP: f64 = 0.5;
-const BORDER_MAX: f64 = 5.0;
-const RADIUS_STEP: f64 = 1.0;
-const RADIUS_MAX: f64 = 10.0;
-/// Borda que uma cor escolhida sem espessura ganha.
-const BORDER_FIRST: f64 = 1.0;
-
-fn mm(v: f64) -> String {
-    format!("{} mm", (v * 10.0).round() / 10.0).replace('.', ",")
-}
-
 fn color(c: lamina_core::Rgb) -> Color {
     Color::from_rgb_u8(c.r, c.g, c.b)
-}
-
-fn stepped(value: f64, delta: i32, step: f64, max: f64) -> Mm {
-    Mm((value + f64::from(delta) * step).clamp(0.0, max))
 }
 
 pub fn refresh(app: &App) {
@@ -48,9 +31,9 @@ pub fn refresh(app: &App) {
         })
         .collect();
     w.set_palette(model(palette));
-    w.set_look_gap(mm(look.gap.get()).into());
-    w.set_look_border(mm(look.border.width.get()).into());
-    w.set_look_radius(mm(look.radius.get()).into());
+    w.set_look_gap(mm_text(look.gap.get()).into());
+    w.set_look_border(mm_text(look.border.width.get()).into());
+    w.set_look_radius(mm_text(look.radius.get()).into());
     w.set_look_split(look.split);
     w.set_look_left(color(look.left));
     w.set_look_right(color(look.right));
@@ -69,38 +52,20 @@ fn after(app: &mut App, notice: Option<String>) {
     app.refresh_all();
 }
 
+/// Um clique em − ou + (espaço, borda ou cantos).
+fn step(app: &Shared, field: LookField, delta: i32) {
+    let mut app = app.borrow_mut();
+    let notice = app.editor.step_look(field, delta);
+    after(&mut app, notice);
+}
+
 pub fn connect(window: &AppWindow, app: &Shared) {
     let a = app.clone();
-    window.on_look_gap_step(move |d| {
-        let mut app = a.borrow_mut();
-        let Some(look) = app.editor.look() else {
-            return;
-        };
-        let notice = app
-            .editor
-            .set_gap(stepped(look.gap.get(), d, GAP_STEP, GAP_MAX));
-        after(&mut app, notice);
-    });
+    window.on_look_gap_step(move |d| step(&a, LookField::Gap, d));
     let a = app.clone();
-    window.on_look_border_step(move |d| {
-        let mut app = a.borrow_mut();
-        let Some(look) = app.editor.look() else {
-            return;
-        };
-        let width = stepped(look.border.width.get(), d, BORDER_STEP, BORDER_MAX);
-        app.editor.set_border(width, look.border.color);
-        after(&mut app, None);
-    });
+    window.on_look_border_step(move |d| step(&a, LookField::Border, d));
     let a = app.clone();
-    window.on_look_radius_step(move |d| {
-        let mut app = a.borrow_mut();
-        let Some(look) = app.editor.look() else {
-            return;
-        };
-        app.editor
-            .set_radius(stepped(look.radius.get(), d, RADIUS_STEP, RADIUS_MAX));
-        after(&mut app, None);
-    });
+    window.on_look_radius_step(move |d| step(&a, LookField::Radius, d));
     let a = app.clone();
     window.on_look_background(move |i, side| {
         let mut app = a.borrow_mut();
@@ -143,18 +108,10 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     window.on_look_border_pick(move |i| {
         let mut app = a.borrow_mut();
-        let (Some(look), Some((_, c))) = (
-            app.editor.look(),
-            usize::try_from(i).ok().and_then(|i| PALETTE.get(i)),
-        ) else {
+        let Some((_, c)) = usize::try_from(i).ok().and_then(|i| PALETTE.get(i)) else {
             return;
         };
-        let width = if look.border.width.get() > 0.0 {
-            look.border.width
-        } else {
-            Mm(BORDER_FIRST)
-        };
-        app.editor.set_border(width, *c);
+        app.editor.pick_border_color(*c);
         after(&mut app, None);
     });
     let a = app.clone();

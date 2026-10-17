@@ -23,8 +23,9 @@ pub fn is_implemented(spec: &str) -> bool {
         .is_some_and(|l| l.to_lowercase().contains("implementada"))
 }
 
-/// Cenários sem teste: procura `fn <id_minúsculo>_` com `#[test]` na linha de cima (pulando
-/// comentários de documentação).
+/// Cenários sem teste: procura `fn <id_minúsculo>_` com `#[test]` entre os atributos de cima
+/// (pulando comentários de documentação). Um `#[ignore]` ali não conta: teste que não roda não
+/// cobre o cenário (auditoria do Marco 2, M3).
 pub fn missing_tests(spec: &str, sources: &str) -> Vec<String> {
     let lines: Vec<&str> = sources.lines().map(str::trim).collect();
     scenario_ids(spec)
@@ -32,12 +33,15 @@ pub fn missing_tests(spec: &str, sources: &str) -> Vec<String> {
         .filter(|id| {
             let prefix = format!("fn {}_", id.to_lowercase().replace('-', "_"));
             !lines.iter().enumerate().any(|(i, line)| {
+                let attributes: Vec<&&str> = lines[..i]
+                    .iter()
+                    .rev()
+                    .filter(|l| !l.is_empty() && !l.starts_with("///"))
+                    .take_while(|l| l.starts_with("#["))
+                    .collect();
                 line.starts_with(&prefix)
-                    && lines[..i]
-                        .iter()
-                        .rev()
-                        .find(|l| !l.is_empty() && !l.starts_with("///"))
-                        .is_some_and(|l| l.contains("#[test]"))
+                    && attributes.iter().any(|l| l.contains("#[test]"))
+                    && !attributes.iter().any(|l| l.contains("#[ignore"))
             })
         })
         .collect()
@@ -58,6 +62,11 @@ fn rust_sources(dir: &Path, out: &mut String) {
 }
 
 pub fn run() -> bool {
+    // No repositório público (só o código) não há specs: a checagem roda só no privado.
+    if !Path::new("specs").is_dir() {
+        println!("  specs: sem pasta specs/ (repositório só de código), checagem pulada");
+        return true;
+    }
     let mut sources = String::new();
     rust_sources(Path::new("crates"), &mut sources);
     let mut specs: Vec<PathBuf> = fs::read_dir("specs")
@@ -113,6 +122,20 @@ mod tests {
     }
 
     /// Proveta do achado M1: o teste do B10 não pode cobrir o B1.
+    /// Proveta do M3 do Marco 2: teste ignorado não cobre o cenário.
+    #[test]
+    fn teste_ignorado_nao_conta() {
+        for sources in [
+            "#[test]\n#[ignore]\nfn pl_b1_x() {}\n#[test]\nfn pl_b2_y() {}",
+            "#[ignore = \"lento\"]\n#[test]\nfn pl_b1_x() {}\n#[test]\nfn pl_b2_y() {}",
+        ] {
+            assert_eq!(missing_tests(SPEC, sources), ["PL-B1"], "{sources}");
+        }
+        let with_doc =
+            "/// doc\n#[test]\n#[allow(clippy::x)]\nfn pl_b1_x() {}\n#[test]\nfn pl_b2_y() {}";
+        assert!(missing_tests(SPEC, with_doc).is_empty());
+    }
+
     #[test]
     fn b1_nao_e_coberto_pelo_b10() {
         let spec = "CENÁRIO AB-B1: um\nCENÁRIO AB-B10: dez\n";

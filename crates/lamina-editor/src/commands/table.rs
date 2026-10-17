@@ -190,6 +190,19 @@ impl Command {
                 k(Key::Char('0')),
             ),
             C::ToggleGuides => ("ver.guias", "Mostrar guias", Menu::View, k(Key::Char('g'))),
+            C::ToggleSpreads => (
+                "ver.faixa-laminas",
+                "Faixa de lâminas",
+                Menu::View,
+                Some(S::alt('1')),
+            ),
+            C::ToggleTimeline => (
+                "ver.linha-do-tempo",
+                "Linha do tempo",
+                Menu::View,
+                Some(S::alt('2')),
+            ),
+            C::TogglePhotos => ("ver.fotos", "Fotos", Menu::View, Some(S::alt('3'))),
             C::About => ("ajuda.sobre", "Sobre o Lâmina", Menu::Help, None),
         }
     }

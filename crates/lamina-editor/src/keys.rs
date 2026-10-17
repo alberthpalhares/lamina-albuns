@@ -48,11 +48,13 @@ impl Key {
     }
 }
 
-/// Tecla com modificadores. `ctrl` é Ctrl no Windows e no Linux e Cmd no macOS.
+/// Tecla com modificadores. `ctrl` é Ctrl no Windows e no Linux e Cmd no macOS; `alt` é Alt
+/// (Option no macOS).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Shortcut {
     pub ctrl: bool,
     pub shift: bool,
+    pub alt: bool,
     pub key: Key,
 }
 
@@ -61,6 +63,7 @@ impl Shortcut {
         Shortcut {
             ctrl: false,
             shift: false,
+            alt: false,
             key,
         }
     }
@@ -69,6 +72,7 @@ impl Shortcut {
         Shortcut {
             ctrl: false,
             shift: true,
+            alt: false,
             key,
         }
     }
@@ -77,6 +81,7 @@ impl Shortcut {
         Shortcut {
             ctrl: true,
             shift: false,
+            alt: false,
             key,
         }
     }
@@ -85,6 +90,7 @@ impl Shortcut {
         Shortcut {
             ctrl: true,
             shift: false,
+            alt: false,
             key: Key::Char(c),
         }
     }
@@ -93,6 +99,17 @@ impl Shortcut {
         Shortcut {
             ctrl: true,
             shift: true,
+            alt: false,
+            key: Key::Char(c),
+        }
+    }
+
+    /// Alt com uma tecla (faixas da janela, spec PN: Ctrl+1/2/3 batem com o ZoomIt).
+    pub const fn alt(c: char) -> Self {
+        Shortcut {
+            ctrl: false,
+            shift: false,
+            alt: true,
             key: Key::Char(c),
         }
     }
@@ -116,6 +133,7 @@ impl Shortcut {
         };
         let ctrl = if self.ctrl { "Ctrl+" } else { "" };
         let shift = if self.shift { "Shift+" } else { "" };
-        format!("{ctrl}{shift}{key}")
+        let alt = if self.alt { "Alt+" } else { "" };
+        format!("{ctrl}{alt}{shift}{key}")
     }
 }
