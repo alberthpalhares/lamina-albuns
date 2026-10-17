@@ -23,9 +23,14 @@ pub fn srgb_profile() -> Result<&'static [u8], String> {
 /// mesmos arquivos em qualquer dia (spec EX, regra 10). O identificador do perfil (MD5 dos
 /// bytes, opcional no ICC) é zerado, porque mudaria com a data.
 fn build_profile() -> Result<Vec<u8>, String> {
-    let mut icc = moxcms::ColorProfile::new_srgb()
+    let icc = moxcms::ColorProfile::new_srgb()
         .encode()
         .map_err(|e| e.to_string())?;
+    fix_header(icc)
+}
+
+/// Data fixa e identificador zerado no cabeçalho de um perfil ICC (também os perfis do PDF).
+pub fn fix_header(mut icc: Vec<u8>) -> Result<Vec<u8>, String> {
     if icc.len() < 128 {
         return Err("perfil ICC menor que o cabeçalho".to_owned());
     }

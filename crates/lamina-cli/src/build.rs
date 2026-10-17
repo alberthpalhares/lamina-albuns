@@ -46,6 +46,8 @@ pub struct BuildArgs {
     /// Substituir o projeto e os JPEGs que já existem na saída.
     #[arg(long)]
     pub sobrescrever: bool,
+    #[command(flatten)]
+    pub saida_formato: crate::formato::SaidaArgs,
     /// Pasta do catálogo e das miniaturas (padrão: cache do sistema).
     #[arg(long)]
     pub cache: Option<PathBuf>,
@@ -61,11 +63,14 @@ pub fn run(args: &BuildArgs) -> Result<()> {
     let built = auto_build(&project, spreads, &options)?;
     print_build_report(&built);
     warn_min_pages(args, &built);
+    let (format, crop_marks) = args.saida_formato.options()?;
     let export = ExportOptions {
         quality: args.qualidade,
         range: None,
         pages: args.paginas,
         overwrite: args.sobrescrever,
+        format,
+        crop_marks,
     };
     // Tudo validado antes de gravar qualquer coisa (regra 5): nomes de saída e opções.
     let file = project_file_name(&built.project.name)?;

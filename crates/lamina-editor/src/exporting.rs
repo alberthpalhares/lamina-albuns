@@ -4,7 +4,7 @@
 use std::path::Path;
 
 use lamina_core::Project;
-pub use lamina_export::{DEFAULT_QUALITY, ExportOptions, Warning};
+pub use lamina_export::{DEFAULT_QUALITY, ExportFormat, ExportOptions, Warning};
 use lamina_export::{ExportReport, export};
 use lamina_media::original_source;
 

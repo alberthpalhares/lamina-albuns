@@ -22,6 +22,8 @@ pub fn start(app: &mut App) {
     w.set_ex_all(true);
     w.set_ex_range("".into());
     w.set_ex_pages(false);
+    w.set_ex_pdf(false);
+    w.set_ex_marks(false);
     w.set_ex_quality(i32::from(DEFAULT_QUALITY));
     w.set_ex_step(0);
     app.export_check = None;
@@ -36,6 +38,8 @@ fn options(w: &AppWindow, overwrite: bool) -> ExportOptions {
         all_spreads: w.get_ex_all(),
         range: w.get_ex_range().into(),
         pages: w.get_ex_pages(),
+        pdf: w.get_ex_pdf(),
+        crop_marks: w.get_ex_marks(),
     }
     .options(overwrite)
 }

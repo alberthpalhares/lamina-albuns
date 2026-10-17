@@ -30,15 +30,20 @@ pub struct ReopenArgs {
     /// Substituir os JPEGs que já existem na saída.
     #[arg(long)]
     pub sobrescrever: bool,
+    #[command(flatten)]
+    pub saida_formato: crate::formato::SaidaArgs,
 }
 
 pub fn run(args: &ReopenArgs) -> Result<()> {
+    let (format, crop_marks) = args.saida_formato.options()?;
     let project = open_project(&args.projeto)?;
     let options = ExportOptions {
         quality: args.qualidade,
         range: args.laminas_exportar.clone(),
         pages: args.paginas,
         overwrite: args.sobrescrever,
+        format,
+        crop_marks,
     };
     let spreads = match &options.range {
         Some(text) => parse_range(text, project.spreads.len())?,

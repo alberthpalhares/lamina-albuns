@@ -21,6 +21,14 @@ pub struct SpreadJob {
 }
 
 impl SpreadJob {
+    /// O lado de cada arquivo de saída: nenhum para a lâmina inteira (spec PD, caixas).
+    pub fn sides(&self) -> Vec<Option<PageSide>> {
+        match &self.output {
+            Output::Whole(_) => vec![None],
+            Output::Pages(pages) => pages.iter().map(|(side, _)| Some(*side)).collect(),
+        }
+    }
+
     pub fn names(&self) -> Vec<&str> {
         match &self.output {
             Output::Whole(name) => vec![name.as_str()],
@@ -33,6 +41,15 @@ impl SpreadJob {
 pub fn plan(project: &Project, options: &ExportOptions) -> Result<Vec<SpreadJob>, ExportError> {
     if !(1..=100).contains(&options.quality) {
         return Err(ExportError::Quality(options.quality));
+    }
+    match options.format {
+        ExportFormat::Jpeg => {
+            if options.crop_marks {
+                return Err(ExportError::CropMarksNeedPdf);
+            }
+        }
+        ExportFormat::Pdf => {}
+        other => return Err(ExportError::Format(other.extension())),
     }
     let total = project.spreads.len();
     if total == 0 {

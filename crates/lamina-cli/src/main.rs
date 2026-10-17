@@ -13,6 +13,7 @@ use lamina_core::Edges;
 mod argumentos;
 mod auto;
 mod build;
+mod formato;
 mod importar;
 mod layouts;
 mod plano;

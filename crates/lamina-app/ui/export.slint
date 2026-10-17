@@ -1,7 +1,7 @@
 // Janela Exportar (spec EI): as opções, a pré-impressão com "Ir para a lâmina" e "Ignorar", e
 // a pergunta antes de substituir arquivos.
 
-import { Button, LineEdit, CheckBox, SpinBox, ListView } from "std-widgets.slint";
+import { Button, LineEdit, CheckBox, SpinBox, ListView, ComboBox } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Shade, Panel, Field } from "dialogs.slint";
 
@@ -11,6 +11,9 @@ export component ExportDialog inherits Shade {
     in-out property <string> range;
     in-out property <bool> pages;
     in-out property <int> quality: 95;
+    // Formato (spec PD): JPEG ou PDF; marcas de corte só no PDF.
+    in-out property <bool> pdf;
+    in-out property <bool> marks;
     in property <string> error;
     // 0 = opções, 1 = avisos da pré-impressão, 2 = substituir arquivos.
     in property <int> step;
@@ -28,7 +31,7 @@ export component ExportDialog inherits Shade {
 
     if root.step == 0: Panel {
         width: 560px;
-        height: 380px;
+        height: 450px;
         VerticalLayout {
             padding: 24px;
             spacing: 12px;
@@ -56,6 +59,25 @@ export component ExportDialog inherits Shade {
                     enabled: !root.all-spreads;
                     placeholder-text: "ex.: 1, 2, 5-7";
                     edited => { root.changed(); }
+                }
+            }
+            Field {
+                label: "Formato";
+                ComboBox {
+                    model: ["JPEG (um arquivo por lâmina)", "PDF de impressão (PDF/X-4)"];
+                    current-index: root.pdf ? 1 : 0;
+                    selected => {
+                        root.pdf = self.current-index == 1;
+                        root.changed();
+                    }
+                }
+            }
+            if root.pdf: Field {
+                label: "Marcas de corte";
+                CheckBox {
+                    text: "Nos quatro cantos";
+                    checked <=> root.marks;
+                    toggled => { root.changed(); }
                 }
             }
             Field {
