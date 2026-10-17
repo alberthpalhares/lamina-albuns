@@ -6,16 +6,16 @@ use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 
 use lamina_core::{PhotoId, Project};
+use lamina_editor::forms::{album_info, photo_text};
 use lamina_editor::{
     Cache, Command, Editor, ExportCheck, Filter, Found, PhotoItem, Session, Step, photo_info,
-    photo_list, prepare_images,
+    photo_list, prepare_images, strip_titles,
 };
 use slint::{ComponentHandle, Image};
 
 use crate::AppWindow;
 use crate::convert::{model, photo_data, spread_data};
 use crate::images::Images;
-use crate::info::{album_info, photo_text};
 
 /// O que fazer depois da pergunta "Salvar as alterações?".
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -153,6 +153,10 @@ impl App {
         w.set_has_project(self.session().is_some());
         w.set_can_save(self.editor.available(Command::Save));
         w.set_has_missing(self.editor.available(Command::FindMissing));
+        let strips = self.editor.strips();
+        w.set_spreads_open(strips.spreads);
+        w.set_timeline_open(strips.timeline);
+        w.set_photos_open(strips.photos);
         w.set_can_prev(self.editor.available(Command::PreviousSpread));
         w.set_can_next(self.editor.available(Command::NextSpread));
         w.set_guides(self.editor.guides());
@@ -168,6 +172,12 @@ impl App {
         w.set_window_title(format!("{title} — Lâmina").into());
         w.set_project_title(title.into());
         w.set_counter(session.counter().into());
+        // "Lâminas · 4 lâminas (8 páginas)": o nome fica no cabeçalho, aqui vai só o resumo.
+        let [spreads, timeline, photos] = strip_titles(session)
+            .map(|t| t.split_once(" · ").map_or(t.clone(), |(_, s)| s.to_owned()));
+        w.set_strip_spreads(spreads.into());
+        w.set_strip_timeline(timeline.into());
+        w.set_strip_photos(photos.into());
         let index = session.current();
         let warnings: Vec<String> = session
             .warnings_for(index)

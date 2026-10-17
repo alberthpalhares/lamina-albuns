@@ -132,11 +132,19 @@ fn ap_b8_aplicar_a_todas() {
     assert!(editor.set_background(cream, None));
     assert!(editor.set_border(Mm(1.0), Rgb::WHITE));
     assert!(editor.set_radius(Mm(3.0)));
+    // Espaço e fundo da página direita também vão (auditoria do Marco 2, M7).
+    assert_eq!(editor.set_gap(Mm(6.0)), None);
+    assert!(editor.set_background(Rgb::WHITE, Some(lamina_core::PageSide::Right)));
+    let current = editor.session().unwrap().project().spreads[1].clone();
+    assert_eq!(current.gap, Some(Mm(6.0)));
     let before: Vec<_> = editor.session().unwrap().project().spreads.clone();
     assert!(editor.style_all());
     let p = editor.session().unwrap().project();
     for s in &p.spreads {
         assert_eq!(s.background, cream);
+        assert_eq!(s.background_right, current.background_right);
+        // O espaço passa a ser o do álbum, igual ao da lâmina de origem.
+        assert_eq!(p.spread_gap(s), Mm(6.0));
         assert!(
             s.frames
                 .iter()

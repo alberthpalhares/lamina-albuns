@@ -45,6 +45,7 @@ fn atalho_leva_ao_comando() {
     let save_as = Shortcut {
         ctrl: true,
         shift: true,
+        alt: false,
         key: Key::Char('s'),
     };
     assert_eq!(Command::from_shortcut(save_as), Some(Command::SaveAs));

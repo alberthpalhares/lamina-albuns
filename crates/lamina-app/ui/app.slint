@@ -9,49 +9,11 @@ import { LayoutsPanel, LayoutItem } from "layouts.slint";
 import { LookPanel, Swatch } from "look.slint";
 import { HistoryPanel, HistoryItem } from "history.slint";
 import { ExportDialog } from "export.slint";
+import { StripHeader, SpreadStrip, TimelineStrip, PhotoStrip, PhotoData, TimelineItem } from "strips.slint";
+import { BarButton, FilterTab } from "widgets.slint";
+import { PanelTabs, InfoPanel } from "side.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem }
-
-export struct PhotoData {
-    img: image,
-    name: string,
-    uses: int,
-    selected: bool,
-}
-
-// Uma posição da timeline: uma foto, ou o corte depois da lâmina `spread`.
-export struct TimelineItem {
-    img: image,
-    cut: bool,
-    spread: int,
-}
-
-component BarButton inherits Rectangle {
-    in property <string> text;
-    in property <bool> enabled: true;
-    callback clicked();
-    width: label.preferred-width + 24px;
-    border-radius: 4px;
-    background: touch.has-hover && root.enabled ? #ffffff1a : transparent;
-    label := Text {
-        text: root.text;
-        color: root.enabled ? Theme.text : #6b6b6b;
-        vertical-alignment: center;
-    }
-    touch := TouchArea {
-        enabled: root.enabled;
-        clicked => { root.clicked(); }
-    }
-}
-
-component FilterTab inherits BarButton {
-    in property <bool> active;
-    Rectangle {
-        y: parent.height - 2px;
-        height: 2px;
-        background: root.active ? Theme.selected : transparent;
-    }
-}
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -128,6 +90,13 @@ export component AppWindow inherits Window {
     callback ex-replace();
     callback ex-back();
     in property <bool> has-missing;
+    // Faixas de baixo (spec PN): o resumo de cada uma e se está aberta.
+    in property <string> strip-spreads;
+    in property <string> strip-timeline;
+    in property <string> strip-photos;
+    in property <bool> spreads-open: true;
+    in property <bool> timeline-open: true;
+    in property <bool> photos-open: true;
     in property <string> busy-text;
 
     // Campos da janela "Novo álbum".
@@ -148,7 +117,7 @@ export component AppWindow inherits Window {
     in property <string> na-error;
 
     callback command(string);
-    callback key(string, bool, bool) -> bool;
+    callback key(string, bool, bool, bool) -> bool;
     callback go-to(int);
     callback photo-clicked(int);
     callback photo-double-clicked(int);
@@ -229,20 +198,6 @@ export component AppWindow inherits Window {
     function frac-x() -> float { (root.drag-x - big.absolute-position.x) / big.width }
     function frac-y() -> float { (root.drag-y - big.absolute-position.y) / big.width }
 
-    // A lâmina atual fica visível na faixa (spec JP, regra 7): se saiu da área vista, a faixa
-    // rola até deixá-la no meio.
-    changed current-index => {
-        if (root.current.aspect <= 0) {
-            return;
-        }
-        let item = 84px / root.current.aspect + 6px + 10px;
-        let left = 10px + root.current-index * item;
-        let shown = strip-scroll.visible-width;
-        if (left + strip-scroll.content-x < 0px || left + item + strip-scroll.content-x > shown) {
-            strip-scroll.content-x = max(min(0px, shown / 2 - left - item / 2), shown - strip.preferred-width);
-        }
-    }
-
     MenuBar {
         Menu {
             title: "Arquivo";
@@ -284,6 +239,10 @@ export component AppWindow inherits Window {
         Menu {
             title: "Visualizar";
             MenuItem { title: root.guides ? "Esconder guias  (G)" : "Mostrar guias  (G)"; enabled: root.has-project; activated => { root.command("ver.guias"); } }
+            MenuSeparator { }
+            MenuItem { title: (root.spreads-open ? "✓ " : "    ") + "Faixa de lâminas  (Alt+1)"; enabled: root.has-project; activated => { root.command("ver.faixa-laminas"); } }
+            MenuItem { title: (root.timeline-open ? "✓ " : "    ") + "Linha do tempo  (Alt+2)"; enabled: root.has-project; activated => { root.command("ver.linha-do-tempo"); } }
+            MenuItem { title: (root.photos-open ? "✓ " : "    ") + "Fotos  (Alt+3)"; enabled: root.has-project; activated => { root.command("ver.fotos"); } }
         }
         Menu {
             title: "Ajuda";
@@ -296,19 +255,19 @@ export component AppWindow inherits Window {
             if (root.show-new || root.show-confirm || root.show-message || root.show-about || root.show-export || root.busy-text != "") {
                 return reject;
             }
-            if (event.text == Key.PageDown) { return root.key("PageDown", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
-            if (event.text == Key.PageUp) { return root.key("PageUp", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
-            if (event.text == Key.Home) { return root.key("Home", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
-            if (event.text == Key.End) { return root.key("End", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
-            if (event.text == Key.LeftArrow) { return root.key("Left", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
-            if (event.text == Key.RightArrow) { return root.key("Right", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
-            if (event.text == Key.Delete) { return root.key("Delete", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
-            if (event.text == Key.Backspace) { return root.key("Backspace", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
-            if (event.text == Key.Escape) { return root.key("Escape", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
-            if (event.text == Key.Return) { return root.key("Enter", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
-            if (event.text == Key.UpArrow) { return root.key("Up", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
-            if (event.text == Key.DownArrow) { return root.key("Down", event.modifiers.control, event.modifiers.shift) ? accept : reject; }
-            root.key(event.text, event.modifiers.control, event.modifiers.shift) ? accept : reject
+            if (event.text == Key.PageDown) { return root.key("PageDown", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
+            if (event.text == Key.PageUp) { return root.key("PageUp", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
+            if (event.text == Key.Home) { return root.key("Home", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
+            if (event.text == Key.End) { return root.key("End", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
+            if (event.text == Key.LeftArrow) { return root.key("Left", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
+            if (event.text == Key.RightArrow) { return root.key("Right", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
+            if (event.text == Key.Delete) { return root.key("Delete", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
+            if (event.text == Key.Backspace) { return root.key("Backspace", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
+            if (event.text == Key.Escape) { return root.key("Escape", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
+            if (event.text == Key.Return) { return root.key("Enter", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
+            if (event.text == Key.UpArrow) { return root.key("Up", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
+            if (event.text == Key.DownArrow) { return root.key("Down", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
+            root.key(event.text, event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject
         }
 
         VerticalLayout {
@@ -426,50 +385,7 @@ export component AppWindow inherits Window {
                     VerticalLayout {
                         padding: 12px;
                         spacing: 8px;
-                        HorizontalLayout {
-                            spacing: 16px;
-                            Rectangle {
-                                height: 30px;
-                                width: layouts-tab.preferred-width;
-                                layouts-tab := Text {
-                                    text: "Layouts";
-                                    color: root.panel-tab == 0 ? Theme.selected : Theme.muted;
-                                    font-weight: root.panel-tab == 0 ? 700 : 400;
-                                }
-                                TouchArea { clicked => { root.panel-tab = 0; } }
-                            }
-                            Rectangle {
-                                height: 30px;
-                                width: look-tab.preferred-width;
-                                look-tab := Text {
-                                    text: "Aparência";
-                                    color: root.panel-tab == 2 ? Theme.selected : Theme.muted;
-                                    font-weight: root.panel-tab == 2 ? 700 : 400;
-                                }
-                                TouchArea { clicked => { root.panel-tab = 2; } }
-                            }
-                            Rectangle {
-                                height: 30px;
-                                width: history-tab.preferred-width;
-                                history-tab := Text {
-                                    text: "Histórico";
-                                    color: root.panel-tab == 3 ? Theme.selected : Theme.muted;
-                                    font-weight: root.panel-tab == 3 ? 700 : 400;
-                                }
-                                TouchArea { clicked => { root.panel-tab = 3; } }
-                            }
-                            Rectangle {
-                                height: 30px;
-                                width: info-tab.preferred-width;
-                                info-tab := Text {
-                                    text: "Informações";
-                                    color: root.panel-tab == 1 ? Theme.selected : Theme.muted;
-                                    font-weight: root.panel-tab == 1 ? 700 : 400;
-                                }
-                                TouchArea { clicked => { root.panel-tab = 1; } }
-                            }
-                            Rectangle { horizontal-stretch: 1; }
-                        }
+                        PanelTabs { tab <=> root.panel-tab; }
                         if root.panel-tab == 0: LayoutsPanel {
                             vertical-stretch: 1;
                             items: root.layouts;
@@ -513,235 +429,81 @@ export component AppWindow inherits Window {
                             position: root.history-pos;
                             go(i) => { root.history-go(i); root.focus-main(); }
                         }
-                        if root.panel-tab == 1: VerticalLayout {
+                        if root.panel-tab == 1: InfoPanel {
                             vertical-stretch: 1;
-                            spacing: 8px;
-                            Text { text: "Álbum"; color: Theme.muted; font-size: 12px; }
-                            Text { text: root.info-album; color: Theme.text; wrap: word-wrap; }
-                            Text { text: "Lâmina"; color: Theme.muted; font-size: 12px; }
-                            Text { text: root.info-spread; color: Theme.text; wrap: word-wrap; }
-                            Text { text: root.info-warnings; color: Theme.warning; wrap: word-wrap; }
-                            if root.info-frame != "": Text { text: "Quadro"; color: Theme.muted; font-size: 12px; }
-                            Text { text: root.info-frame; color: root.info-frame-warn ? Theme.warning : Theme.text; wrap: word-wrap; }
-                            if root.info-photo != "": Text { text: "Foto"; color: Theme.muted; font-size: 12px; }
-                            Text { text: root.info-photo; color: Theme.text; wrap: word-wrap; }
-                            Rectangle { vertical-stretch: 1; }
+                            album: root.info-album;
+                            spread: root.info-spread;
+                            warnings: root.info-warnings;
+                            frame: root.info-frame;
+                            frame-warn: root.info-frame-warn;
+                            photo: root.info-photo;
                         }
                     }
                 }
             }
 
-            // Faixa de lâminas: a atual com contorno claro e o número embaixo de cada uma.
-            // Fica sempre na árvore (só some sem projeto) para o `changed current-index` rolar.
-            Rectangle {
-                visible: root.has-project;
-                height: root.has-project ? 128px : 0px;
-                background: Theme.bar;
-                strip-scroll := ScrollView {
-                    // Arrastar com o botão apertado é para mover a lâmina, não para rolar a faixa.
-                    mouse-drag-pan-enabled: false;
-                    content-width: strip.preferred-width;
-                    content-height: self.height;
-                    strip := HorizontalLayout {
-                        padding: 8px;
-                        padding-left: 10px;
-                        padding-right: 10px;
-                        spacing: 10px;
-                        for s[i] in root.spreads: VerticalLayout {
-                            spacing: 4px;
-                            Rectangle {
-                                width: 84px / s.aspect + 6px;
-                                height: 90px;
-                                border-radius: 4px;
-                                border-width: 2px;
-                                border-color: i == root.current-index ? Theme.selected : transparent;
-                                SpreadCanvas {
-                                    x: 3px;
-                                    y: 3px;
-                                    width: parent.width - 6px;
-                                    height: parent.height - 6px;
-                                    data: s;
-                                    small: true;
-                                }
-                                if s.warning: Rectangle {
-                                    x: parent.width - 21px;
-                                    y: 6px;
-                                    width: 14px;
-                                    height: 14px;
-                                    border-radius: 7px;
-                                    background: Theme.warning;
-                                    Text { text: "!"; color: black; font-size: 10px; font-weight: 700; }
-                                }
-                                TouchArea {
-                                    moved => {
-                                        let x = self.absolute-position.x + self.mouse-x;
-                                        let y = self.absolute-position.y + self.mouse-y;
-                                        if (root.drag-kind == 0 && root.far(x, y)) {
-                                            root.drag-kind = 3;
-                                            root.drag-from = i;
-                                        }
-                                        root.drag-x = x;
-                                        root.drag-y = y;
-                                    }
-                                    pointer-event(e) => {
-                                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
-                                            root.press-x = self.absolute-position.x + self.mouse-x;
-                                            root.press-y = self.absolute-position.y + self.mouse-y;
-                                        }
-                                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
-                                            if (root.drag-kind == 3) {
-                                                let item = 84px / s.aspect + 16px;
-                                                let at = (root.drag-x - strip-scroll.absolute-position.x - strip-scroll.content-x - 10px) / item;
-                                                root.move-spread(i, max(0, min(root.spreads.length - 1, floor(at))));
-                                            } else {
-                                                root.go-to(i);
-                                            }
-                                            root.drag-kind = 0;
-                                            root.focus-main();
-                                        }
-                                    }
-                                }
-                            }
-                            Text {
-                                text: i + 1;
-                                horizontal-alignment: center;
-                                color: i == root.current-index ? Theme.selected : Theme.muted;
-                                font-size: 12px;
-                                font-weight: i == root.current-index ? 700 : 400;
-                            }
-                        }
-                    }
-                }
+            // As três faixas de baixo (spec PN): cabeçalho com nome e resumo, e o conteúdo, que
+            // recolhe. A faixa de lâminas fica sempre na árvore (só some sem projeto ou
+            // recolhida) para rolar até a lâmina atual.
+            if root.has-project: StripHeader {
+                name: "Lâminas";
+                summary: root.strip-spreads;
+                open: root.spreads-open;
+                toggled => { root.command("ver.faixa-laminas"); }
             }
-
-            // Timeline (spec FQ, regra 8): as fotos na ordem do álbum e um corte entre as lâminas.
-            if root.has-project: Rectangle {
+            SpreadStrip {
+                visible: root.has-project && root.spreads-open;
+                height: self.visible ? 128px : 0px;
+                spreads: root.spreads;
+                current-index: root.current-index;
+                current-aspect: root.current.aspect;
+                drag-kind <=> root.drag-kind;
+                drag-from <=> root.drag-from;
+                drag-x <=> root.drag-x;
+                drag-y <=> root.drag-y;
+                press-x <=> root.press-x;
+                press-y <=> root.press-y;
+                go-to(i) => { root.go-to(i); }
+                move-spread(from, to) => { root.move-spread(from, to); }
+                focus-main => { root.focus-main(); }
+            }
+            if root.has-project: StripHeader {
+                name: "Linha do tempo";
+                summary: root.strip-timeline;
+                open: root.timeline-open;
+                toggled => { root.command("ver.linha-do-tempo"); }
+            }
+            if root.has-project && root.timeline-open: TimelineStrip {
                 height: 58px;
-                background: Theme.background;
-                ScrollView {
-                    // Arrastar é para levar a foto (ou o corte), não para rolar.
-                    mouse-drag-pan-enabled: false;
-                    content-width: line.preferred-width;
-                    content-height: self.height;
-                    line := HorizontalLayout {
-                        padding: 6px;
-                        spacing: 2px;
-                        for t in root.timeline: Rectangle {
-                            width: t.cut ? 14px : 46px;
-                            if !t.cut: Image {
-                                width: 44px;
-                                height: 44px;
-                                source: t.img;
-                                image-fit: contain;
-                            }
-                            if t.cut: Rectangle {
-                                cut-touch := TouchArea {
-                                    mouse-cursor: ew-resize;
-                                    pointer-event(e) => {
-                                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
-                                            root.press-x = self.absolute-position.x + self.mouse-x;
-                                        }
-                                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
-                                            let dx = self.absolute-position.x + self.mouse-x - root.press-x;
-                                            root.cut-moved(t.spread, round(dx / 48px));
-                                            root.focus-main();
-                                        }
-                                    }
-                                }
-                                Rectangle {
-                                    x: 5px;
-                                    width: 4px;
-                                    border-radius: 2px;
-                                    background: cut-touch.has-hover || cut-touch.pressed ? Theme.selected : Theme.muted;
-                                }
-                            }
-                        }
-                    }
-                }
+                timeline: root.timeline;
+                press-x <=> root.press-x;
+                cut-moved(spread, delta) => { root.cut-moved(spread, delta); }
+                focus-main => { root.focus-main(); }
             }
-
-            // Navegador de fotos.
-            if root.has-project: Rectangle {
-                height: 176px;
-                background: Theme.panel;
-                VerticalLayout {
-                    HorizontalLayout {
-                        height: 32px;
-                        padding-left: 8px;
-                        FilterTab { text: "Todas"; active: root.filter == 0; clicked => { root.filter-changed(0); } }
-                        FilterTab { text: "Usadas"; active: root.filter == 1; clicked => { root.filter-changed(1); } }
-                        FilterTab { text: "Não usadas"; active: root.filter == 2; clicked => { root.filter-changed(2); } }
-                        Rectangle { horizontal-stretch: 1; }
-                    }
-                    ScrollView {
-                        // Arrastar é para levar a foto (ou o corte), não para rolar.
-                        mouse-drag-pan-enabled: false;
-                        content-width: browser.preferred-width;
-                        content-height: self.height;
-                        browser := HorizontalLayout {
-                            padding: 8px;
-                            spacing: 8px;
-                            for p[i] in root.photos: Rectangle {
-                                width: 140px;
-                                height: 120px;
-                                background: p.selected ? #4fc3f740 : i == root.selected-photo ? #ffffff1f : transparent;
-                                border-radius: 4px;
-                                Image {
-                                    y: 4px;
-                                    width: parent.width - 8px;
-                                    height: 92px;
-                                    source: p.img;
-                                    image-fit: contain;
-                                }
-                                Text {
-                                    x: 6px;
-                                    y: parent.height - 20px;
-                                    width: parent.width - 36px;
-                                    text: p.name;
-                                    color: Theme.muted;
-                                    font-size: 11px;
-                                    overflow: elide;
-                                }
-                                Text {
-                                    x: parent.width - 26px;
-                                    y: parent.height - 20px;
-                                    text: p.uses == 0 ? "–" : "×" + p.uses;
-                                    color: p.uses == 0 ? Theme.muted : Theme.text;
-                                    font-size: 11px;
-                                }
-                                TouchArea {
-                                    double-clicked => { root.photo-double-clicked(i); }
-                                    moved => {
-                                        let x = self.absolute-position.x + self.mouse-x;
-                                        let y = self.absolute-position.y + self.mouse-y;
-                                        if (root.drag-kind == 0 && root.far(x, y)) {
-                                            root.drag-kind = 1;
-                                            root.drag-from = i;
-                                            root.drag-img = p.img;
-                                        }
-                                        root.drag-x = x;
-                                        root.drag-y = y;
-                                    }
-                                    pointer-event(e) => {
-                                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
-                                            root.press-x = self.absolute-position.x + self.mouse-x;
-                                            root.press-y = self.absolute-position.y + self.mouse-y;
-                                        }
-                                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
-                                            if (root.drag-kind == 1) {
-                                                root.drop-photo(root.drag-from, root.frac-x(), root.frac-y());
-                                            } else {
-                                                root.photo-pressed(i, e.modifiers.control, e.modifiers.shift);
-                                            }
-                                            root.drag-kind = 0;
-                                            root.focus-main();
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            if root.has-project: StripHeader {
+                name: "Fotos";
+                summary: root.strip-photos;
+                open: root.photos-open;
+                toggled => { root.command("ver.fotos"); }
+                FilterTab { text: "Todas"; active: root.filter == 0; clicked => { root.filter-changed(0); } }
+                FilterTab { text: "Usadas"; active: root.filter == 1; clicked => { root.filter-changed(1); } }
+                FilterTab { text: "Não usadas"; active: root.filter == 2; clicked => { root.filter-changed(2); } }
+            }
+            if root.has-project && root.photos-open: PhotoStrip {
+                height: 144px;
+                photos: root.photos;
+                selected-photo: root.selected-photo;
+                drag-kind <=> root.drag-kind;
+                drag-from <=> root.drag-from;
+                drag-img <=> root.drag-img;
+                drag-x <=> root.drag-x;
+                drag-y <=> root.drag-y;
+                press-x <=> root.press-x;
+                press-y <=> root.press-y;
+                photo-double-clicked(i) => { root.photo-double-clicked(i); }
+                photo-pressed(i, ctrl, shift) => { root.photo-pressed(i, ctrl, shift); }
+                dropped => { root.drop-photo(root.drag-from, root.frac-x(), root.frac-y()); }
+                focus-main => { root.focus-main(); }
             }
         }
     }

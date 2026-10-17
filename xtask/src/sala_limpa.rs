@@ -15,9 +15,14 @@ fn forbidden_terms() -> Vec<String> {
 /// Extensões de arquivo do software de referência que nunca entram no repositório.
 const FORBIDDEN_EXTENSIONS: &[&str] = &["saproj"];
 
-/// Termos proibidos encontrados em `text` (sem diferenciar maiúsculas).
+/// Termos proibidos encontrados em `text` (sem diferenciar maiúsculas, e também quando escritos
+/// com espaço, hífen, ponto ou sublinhado no meio; auditoria do Marco 2, M3).
 pub fn terms_in(text: &str) -> Vec<String> {
-    let lower = text.to_lowercase();
+    let lower: String = text
+        .to_lowercase()
+        .chars()
+        .filter(|c| !matches!(c, ' ' | '-' | '.' | '_'))
+        .collect();
     forbidden_terms()
         .into_iter()
         .filter(|t| lower.contains(t.as_str()))
@@ -81,6 +86,11 @@ mod tests {
         let code = format!("// layout copiado do {}", ["Smart", "Albums"].concat());
         assert_eq!(terms_in(&code).len(), 1);
         assert!(terms_in("// layout nosso, feito do zero").is_empty());
+        // Proveta do M3 do Marco 2: com espaço ou hífen no meio também.
+        for sep in [" ", "-", "_", "."] {
+            let split = format!("// como no {}", ["Smart", sep, "Albums"].concat());
+            assert_eq!(terms_in(&split).len(), 1, "{split}");
+        }
     }
 
     #[test]

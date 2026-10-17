@@ -53,6 +53,9 @@ pub enum Command {
     ZoomOut,
     ResetCrop,
     ToggleGuides,
+    ToggleSpreads,
+    ToggleTimeline,
+    TogglePhotos,
     About,
 }
 
@@ -60,7 +63,7 @@ pub enum Command {
 type Info = (&'static str, &'static str, Menu, Option<Shortcut>);
 
 impl Command {
-    pub const ALL: [Command; 36] = [
+    pub const ALL: [Command; 39] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
@@ -96,6 +99,9 @@ impl Command {
         Command::ZoomOut,
         Command::ResetCrop,
         Command::ToggleGuides,
+        Command::ToggleSpreads,
+        Command::ToggleTimeline,
+        Command::TogglePhotos,
         Command::About,
     ];
 

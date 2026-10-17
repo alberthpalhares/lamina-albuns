@@ -86,6 +86,10 @@ pub fn relinked_message(found: usize, still_missing: usize) -> Option<String> {
     Some(text)
 }
 
+/// A procura ao abrir achou fotos, mas não aplicou para não apagar o "refazer".
+pub const RELINK_LATER: &str = "Algumas fotos ausentes foram achadas perto do projeto: use \
+     Arquivo → Procurar fotos ausentes… para reencontrá-las.";
+
 /// "Nenhuma das 3 fotos ausentes foi encontrada em <pasta>." (spec EI, seção 6).
 pub fn not_found_message(missing: usize, folder: &Path) -> String {
     if missing == 1 {

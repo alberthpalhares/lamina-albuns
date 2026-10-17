@@ -1,6 +1,7 @@
 //! A janela "Novo álbum" (spec JP, seção 3): escolhe a pasta, mostra a sugestão, confere os
 //! campos a cada mudança e monta o álbum em segundo plano, com andamento.
 
+use lamina_editor::forms::{SpecText, album_name_error};
 use lamina_editor::{
     NewAlbum, SpecFields, Step, check_spreads, count_photos, create_album, folder_name,
     suggestion_for, suggestion_text,
@@ -32,18 +33,19 @@ pub fn start(app: &mut App) {
         return;
     };
     let d = SpecFields::default();
+    let text = SpecText::from(&d);
     let spec = d.to_spec().ok();
     let suggested = spec.map_or(1, |s| suggestion_for(photos, &s));
     w.set_na_folder(folder.display().to_string().into());
     w.set_na_name(folder_name(&folder).into());
-    w.set_na_width(number(d.width_cm).into());
-    w.set_na_height(number(d.height_cm).into());
-    w.set_na_dpi(d.dpi.to_string().into());
-    w.set_na_bleed(number(d.bleed_mm).into());
-    w.set_na_safe(number(d.safe_mm).into());
-    w.set_na_spine("".into());
-    w.set_na_starts(false);
-    w.set_na_ends(false);
+    w.set_na_width(text.width_cm.into());
+    w.set_na_height(text.height_cm.into());
+    w.set_na_dpi(text.dpi.into());
+    w.set_na_bleed(text.bleed_mm.into());
+    w.set_na_safe(text.safe_mm.into());
+    w.set_na_spine(text.spine_mm.into());
+    w.set_na_starts(text.starts_single);
+    w.set_na_ends(text.ends_single);
     w.set_na_spreads(i32::try_from(suggested).unwrap_or(1));
     w.set_na_reuse(1);
     w.set_na_photos(i32::try_from(photos).unwrap_or(i32::MAX));
@@ -53,38 +55,19 @@ pub fn start(app: &mut App) {
     w.set_show_new(true);
 }
 
-fn number(v: f64) -> String {
-    format!("{v}").replace('.', ",")
-}
-
-fn parse(text: &str) -> Option<f64> {
-    text.trim().replace(',', ".").parse().ok()
-}
-
 /// Os campos da janela como medidas; `Err` com a mensagem do campo errado.
 fn fields(w: &AppWindow) -> Result<SpecFields, String> {
-    let field = |text: slint::SharedString, name: &str| {
-        parse(&text).ok_or_else(|| format!("{name}: digite um número."))
-    };
-    let spine = w.get_na_spine();
-    Ok(SpecFields {
-        width_cm: field(w.get_na_width(), "Largura")?,
-        height_cm: field(w.get_na_height(), "Altura")?,
-        dpi: w
-            .get_na_dpi()
-            .trim()
-            .parse()
-            .map_err(|_| "DPI: digite um número inteiro.")?,
-        bleed_mm: field(w.get_na_bleed(), "Sangria")?,
-        safe_mm: field(w.get_na_safe(), "Zona segura")?,
-        spine_mm: if spine.trim().is_empty() {
-            None
-        } else {
-            Some(field(spine, "Lombada")?)
-        },
+    SpecText {
+        width_cm: w.get_na_width().into(),
+        height_cm: w.get_na_height().into(),
+        dpi: w.get_na_dpi().into(),
+        bleed_mm: w.get_na_bleed().into(),
+        safe_mm: w.get_na_safe().into(),
+        spine_mm: w.get_na_spine().into(),
         starts_single: w.get_na_starts(),
         ends_single: w.get_na_ends(),
-    })
+    }
+    .parse()
 }
 
 /// Confere tudo a cada mudança: o erro aparece na janela e "Criar" fica desabilitado.
@@ -100,11 +83,7 @@ pub fn changed(app: &mut App) {
             w.set_na_suggestion(suggestion_text(suggestion_for(photos, &spec)).into());
             check_spreads(photos, spreads, &spec).map_err(|e| e.to_string())
         });
-    let name_error = w
-        .get_na_name()
-        .trim()
-        .is_empty()
-        .then(|| "Dê um nome ao álbum.".to_owned());
+    let name_error = album_name_error(&w.get_na_name()).map(str::to_owned);
     let error = check.err().or(name_error).unwrap_or_default();
     w.set_na_error(error.into());
 }
@@ -132,6 +111,7 @@ pub fn create(app: &mut App) {
     };
     w.set_show_new(false);
     w.set_busy_text("Importando as fotos…".into());
+    app.editor.set_busy(true);
     let (cache, tx) = (app.cache.clone(), app.tx.clone());
     std::thread::spawn(move || {
         let progress = |step: Step| {
@@ -157,6 +137,7 @@ pub fn message(app: &mut App, msg: Msg) {
         Msg::Step(Step::Building) => w.set_busy_text("Montando o álbum…".into()),
         Msg::Album(result) => {
             w.set_busy_text("".into());
+            app.editor.set_busy(false);
             w.invoke_focus_main();
             match result {
                 Ok((project, failures)) => {

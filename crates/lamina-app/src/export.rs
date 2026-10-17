@@ -3,6 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
+use lamina_editor::forms::{ExportForm, replace_question};
 use lamina_editor::{
     DEFAULT_QUALITY, ExportOptions, export_progress, export_project, export_summary,
 };
@@ -30,13 +31,13 @@ pub fn start(app: &mut App) {
 
 /// As opções como estão na janela.
 fn options(w: &AppWindow, overwrite: bool) -> ExportOptions {
-    let range = w.get_ex_range();
-    ExportOptions {
-        quality: u8::try_from(w.get_ex_quality().clamp(1, 100)).unwrap_or(DEFAULT_QUALITY),
-        range: (!w.get_ex_all()).then(|| range.trim().to_owned()),
+    ExportForm {
+        quality: w.get_ex_quality(),
+        all_spreads: w.get_ex_all(),
+        range: w.get_ex_range().into(),
         pages: w.get_ex_pages(),
-        overwrite,
     }
+    .options(overwrite)
 }
 
 fn folder(w: &AppWindow) -> PathBuf {
@@ -145,16 +146,7 @@ pub fn proceed(app: &mut App) {
         run(app, false);
         return;
     }
-    let files = if existing == 1 {
-        "1 arquivo desta exportação".to_owned()
-    } else {
-        format!("{existing} arquivos desta exportação")
-    };
-    let text = format!(
-        "Já existem {files} em {}. Substituindo, os arquivos lamina-NN.jpg e pagina-NN.jpg que \
-         não fizerem parte desta exportação também saem da pasta; os outros arquivos ficam.",
-        folder(&w).display()
-    );
+    let text = replace_question(existing, &folder(&w));
     w.set_ex_replace_text(text.into());
     w.set_ex_step(2);
 }
@@ -175,6 +167,7 @@ pub fn run(app: &mut App, overwrite: bool) {
     let project = session.project().clone();
     w.set_show_export(false);
     w.set_busy_text("Exportando…".into());
+    app.editor.set_busy(true);
     let tx = app.tx.clone();
     std::thread::spawn(move || {
         let progress = |done: usize, total: usize| {
@@ -197,6 +190,7 @@ pub fn message(app: &mut App, msg: Msg) {
         Msg::Exporting(done, total) => w.set_busy_text(export_progress(done, total).into()),
         Msg::Exported(result, folder) => {
             w.set_busy_text("".into());
+            app.editor.set_busy(false);
             match result {
                 Ok(summary) => {
                     w.set_message_title("Exportação concluída".into());

@@ -10,6 +10,8 @@ use std::path::{Path, PathBuf};
 pub const CODE_TARGET: usize = 200;
 /// Alvo de linhas para o bloco de testes de um arquivo.
 pub const TEST_TARGET: usize = 300;
+/// Alvo de linhas para uma tela `.slint` (declarativa, mais verbosa; auditoria do Marco 2, M3).
+pub const SCREEN_TARGET: usize = 400;
 
 /// Faixa de alerta pelo percentual sobre o alvo; `None` = dentro do alvo.
 pub fn band(lines: usize, target: usize) -> Option<&'static str> {
@@ -46,7 +48,10 @@ fn rust_files(dir: &Path, out: &mut Vec<PathBuf>) {
     for path in entries.flatten().map(|e| e.path()) {
         if path.is_dir() && !path.ends_with("target") {
             rust_files(&path, out);
-        } else if path.extension().is_some_and(|ext| ext == "rs") {
+        } else if path
+            .extension()
+            .is_some_and(|ext| ext == "rs" || ext == "slint")
+        {
             out.push(path);
         }
     }
@@ -62,14 +67,19 @@ pub fn run() {
         let Ok(source) = fs::read_to_string(file) else {
             continue;
         };
-        let (code, tests) = if is_test_file(file) {
+        let screen = file.extension().is_some_and(|e| e == "slint");
+        let (code, tests) = if screen {
+            (0, 0)
+        } else if is_test_file(file) {
             (0, source.lines().count())
         } else {
             split_counts(&source)
         };
+        let screen_lines = if screen { source.lines().count() } else { 0 };
         for (kind, lines, target) in [
             ("código", code, CODE_TARGET),
             ("testes", tests, TEST_TARGET),
+            ("tela", screen_lines, SCREEN_TARGET),
         ] {
             if let Some(band) = band(lines, target) {
                 alerts += 1;

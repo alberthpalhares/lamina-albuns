@@ -8,7 +8,7 @@ use lamina_core::{ActivePages, AlbumSpec, DesignMode, Dpi, Mm, Rect};
 use super::area::Ctx;
 use super::score::score;
 use super::*;
-use lamina_core::testing::budget;
+use lamina_core::testing::{TRIES, budget};
 
 const H: f64 = 1.5;
 const V: f64 = 2.0 / 3.0;
@@ -42,23 +42,26 @@ fn photos(h: usize, v: usize) -> Vec<f64> {
     out
 }
 
-fn fastest(aspects: &[f64]) -> Duration {
+/// A menor de até `TRIES` medidas, parando quando cabe em `goal`.
+fn fastest(aspects: &[f64], goal: Duration) -> Duration {
     let s = spec(DesignMode::Spread);
-    (0..3)
-        .map(|_| {
-            let start = Instant::now();
-            layout_options(&s, BOTH, aspects, &LayoutOptions::default()).unwrap();
-            start.elapsed()
-        })
-        .min()
-        .unwrap()
+    let mut best = Duration::MAX;
+    for _ in 0..TRIES {
+        let start = Instant::now();
+        layout_options(&s, BOTH, aspects, &LayoutOptions::default()).unwrap();
+        best = best.min(start.elapsed());
+        if best < goal {
+            break;
+        }
+    }
+    best
 }
 
 #[test]
 fn vl_b9_rapido_o_bastante_para_a_interface() {
-    let twelve = fastest(&photos(9, 3));
+    let twelve = fastest(&photos(9, 3), budget(200));
     assert!(twelve < budget(200), "12 fotos: {twelve:?}");
-    let many = fastest(&photos(18, 6));
+    let many = fastest(&photos(18, 6), budget(1000));
     assert!(many < budget(1000), "24 fotos: {many:?}");
 }
 

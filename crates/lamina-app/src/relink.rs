@@ -3,7 +3,9 @@
 
 use std::path::PathBuf;
 
-use lamina_editor::{Found, not_found_message, relinked_message, search_folder, search_near};
+use lamina_editor::{
+    Found, RELINK_LATER, not_found_message, relinked_message, search_folder, search_near,
+};
 
 use crate::files::show_error;
 use crate::state::{App, Msg};
@@ -48,6 +50,7 @@ pub fn find(app: &mut App) {
     if let Some(w) = app.window.upgrade() {
         w.set_busy_text("Procurando as fotos…".into());
     }
+    app.editor.set_busy(true);
     let tx = app.tx.clone();
     std::thread::spawn(move || {
         let progress = |done: usize, total: usize| {
@@ -82,11 +85,12 @@ pub fn message(app: &mut App, msg: Msg) {
 fn relinked(app: &mut App, file: Option<PathBuf>, found: &[Found], folder: Option<PathBuf>) {
     // Só a procura numa pasta escolhida trava a janela; a de abrir corre sem andamento (e não
     // pode apagar o de uma exportação em curso).
-    if folder.is_some()
-        && let Some(w) = app.window.upgrade()
-    {
-        w.set_busy_text("".into());
-        w.invoke_focus_main();
+    if folder.is_some() {
+        app.editor.set_busy(false);
+        if let Some(w) = app.window.upgrade() {
+            w.set_busy_text("".into());
+            w.invoke_focus_main();
+        }
     }
     // Outro projeto foi aberto enquanto a procura corria: o resultado não é dele.
     let Some(session) = app.editor.session_mut() else {
@@ -96,7 +100,20 @@ fn relinked(app: &mut App, file: Option<PathBuf>, found: &[Found], folder: Optio
         return;
     }
     let before = session.missing().len();
-    let changed = session.relink(found);
+    let changed = if folder.is_some() {
+        session.relink(found)
+    } else {
+        match session.relink_after_open(found) {
+            Some(n) => n,
+            None => {
+                if !found.is_empty() {
+                    app.notice = RELINK_LATER.to_owned();
+                    app.refresh_current();
+                }
+                return;
+            }
+        }
+    };
     let still = session.missing().len();
     if changed > 0 {
         // As fotos achadas precisam das imagens de tela: recarrega como um projeto novo, mas

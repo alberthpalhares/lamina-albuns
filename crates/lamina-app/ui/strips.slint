@@ -1,0 +1,315 @@
+// As faixas de baixo da janela (spec PN): lâminas, linha do tempo e fotos. Cada uma tem um
+// cabeçalho (nome e resumo), um fundo próprio e pode ser recolhida. O estado do arrastar mora na
+// janela principal e chega aqui ligado nos dois sentidos.
+
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { SpreadCanvas, SpreadData } from "canvas.slint";
+
+export struct PhotoData {
+    img: image,
+    name: string,
+    uses: int,
+    selected: bool,
+}
+
+// Uma posição da timeline: uma foto, ou o corte depois da lâmina `spread`.
+export struct TimelineItem {
+    img: image,
+    cut: bool,
+    spread: int,
+}
+
+// Fundos das faixas: a de lâminas a mais clara, a de fotos a mais escura (spec PN, seção 4).
+export global StripTheme {
+    out property <color> header: #1a1a1a;
+    out property <color> header-hover: #242424;
+    out property <color> line: #3a3a3a;
+    out property <color> spreads: #343434;
+    out property <color> timeline: #2a2a2a;
+    out property <color> photos: #202020;
+}
+
+// Cabeçalho: seta, nome em negrito e resumo. Clique recolhe ou abre; o que vier dentro (as abas
+// do navegador) fica à direita.
+export component StripHeader inherits Rectangle {
+    in property <string> name;
+    in property <string> summary;
+    in property <bool> open;
+    callback toggled();
+    height: 26px;
+    background: touch.has-hover ? StripTheme.header-hover : StripTheme.header;
+    touch := TouchArea { clicked => { root.toggled(); } }
+    Rectangle { y: 0; height: 1px; background: StripTheme.line; }
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 8px;
+        spacing: 8px;
+        Text { text: root.open ? "▾" : "▸"; color: Theme.muted; font-size: 12px; vertical-alignment: center; }
+        Text { text: root.name; color: Theme.text; font-size: 12px; font-weight: 700; vertical-alignment: center; }
+        Text {
+            text: root.summary;
+            color: Theme.muted;
+            font-size: 12px;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+        }
+        @children
+    }
+}
+
+// Faixa de lâminas: a atual com contorno claro e o número embaixo de cada uma.
+export component SpreadStrip inherits Rectangle {
+    in property <[SpreadData]> spreads;
+    in property <int> current-index;
+    in property <float> current-aspect;
+    in-out property <int> drag-kind;
+    in-out property <int> drag-from;
+    in-out property <length> drag-x;
+    in-out property <length> drag-y;
+    in-out property <length> press-x;
+    in-out property <length> press-y;
+    callback go-to(int);
+    callback move-spread(int, int);
+    callback focus-main();
+    background: StripTheme.spreads;
+
+    // Começa a arrastar só depois de 6 px, para um clique não virar arrasto.
+    function far(x: length, y: length) -> bool {
+        abs(x - root.press-x) > 6px || abs(y - root.press-y) > 6px
+    }
+
+    // A lâmina atual fica visível na faixa (spec JP, regra 7): se saiu da área vista, a faixa
+    // rola até deixá-la no meio.
+    changed current-index => {
+        if (root.current-aspect <= 0) {
+            return;
+        }
+        let item = 84px / root.current-aspect + 6px + 10px;
+        let left = 10px + root.current-index * item;
+        let shown = strip-scroll.visible-width;
+        if (left + strip-scroll.content-x < 0px || left + item + strip-scroll.content-x > shown) {
+            strip-scroll.content-x = max(min(0px, shown / 2 - left - item / 2), shown - strip.preferred-width);
+        }
+    }
+
+    strip-scroll := ScrollView {
+        // Arrastar com o botão apertado é para mover a lâmina, não para rolar a faixa.
+        mouse-drag-pan-enabled: false;
+        content-width: strip.preferred-width;
+        content-height: self.height;
+        strip := HorizontalLayout {
+            padding: 8px;
+            padding-left: 10px;
+            padding-right: 10px;
+            spacing: 10px;
+            for s[i] in root.spreads: VerticalLayout {
+                spacing: 4px;
+                Rectangle {
+                    width: 84px / s.aspect + 6px;
+                    height: 90px;
+                    border-radius: 4px;
+                    border-width: 2px;
+                    border-color: i == root.current-index ? Theme.selected : transparent;
+                    SpreadCanvas {
+                        x: 3px;
+                        y: 3px;
+                        width: parent.width - 6px;
+                        height: parent.height - 6px;
+                        data: s;
+                        small: true;
+                    }
+                    if s.warning: Rectangle {
+                        x: parent.width - 21px;
+                        y: 6px;
+                        width: 14px;
+                        height: 14px;
+                        border-radius: 7px;
+                        background: Theme.warning;
+                        Text { text: "!"; color: black; font-size: 10px; font-weight: 700; }
+                    }
+                    TouchArea {
+                        moved => {
+                            let x = self.absolute-position.x + self.mouse-x;
+                            let y = self.absolute-position.y + self.mouse-y;
+                            if (root.drag-kind == 0 && root.far(x, y)) {
+                                root.drag-kind = 3;
+                                root.drag-from = i;
+                            }
+                            root.drag-x = x;
+                            root.drag-y = y;
+                        }
+                        pointer-event(e) => {
+                            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                                root.press-x = self.absolute-position.x + self.mouse-x;
+                                root.press-y = self.absolute-position.y + self.mouse-y;
+                            }
+                            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                                if (root.drag-kind == 3) {
+                                    let item = 84px / s.aspect + 16px;
+                                    let at = (root.drag-x - strip-scroll.absolute-position.x - strip-scroll.content-x - 10px) / item;
+                                    root.move-spread(i, max(0, min(root.spreads.length - 1, floor(at))));
+                                } else {
+                                    root.go-to(i);
+                                }
+                                root.drag-kind = 0;
+                                root.focus-main();
+                            }
+                        }
+                    }
+                }
+                Text {
+                    text: i + 1;
+                    horizontal-alignment: center;
+                    color: i == root.current-index ? Theme.selected : Theme.muted;
+                    font-size: 12px;
+                    font-weight: i == root.current-index ? 700 : 400;
+                }
+            }
+        }
+    }
+}
+
+// Linha do tempo (spec FQ, regra 8): as fotos na ordem do álbum e um corte entre as lâminas.
+export component TimelineStrip inherits Rectangle {
+    in property <[TimelineItem]> timeline;
+    in-out property <length> press-x;
+    callback cut-moved(int, int);
+    callback focus-main();
+    background: StripTheme.timeline;
+    Rectangle { y: 0; height: 1px; background: StripTheme.line; }
+
+    ScrollView {
+        // Arrastar é para levar a foto (ou o corte), não para rolar.
+        mouse-drag-pan-enabled: false;
+        content-width: line.preferred-width;
+        content-height: self.height;
+        line := HorizontalLayout {
+            padding: 6px;
+            spacing: 2px;
+            for t in root.timeline: Rectangle {
+                width: t.cut ? 14px : 46px;
+                if !t.cut: Image {
+                    width: 44px;
+                    height: 44px;
+                    source: t.img;
+                    image-fit: contain;
+                }
+                if t.cut: Rectangle {
+                    cut-touch := TouchArea {
+                        mouse-cursor: ew-resize;
+                        pointer-event(e) => {
+                            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                                root.press-x = self.absolute-position.x + self.mouse-x;
+                            }
+                            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                                let dx = self.absolute-position.x + self.mouse-x - root.press-x;
+                                root.cut-moved(t.spread, round(dx / 48px));
+                                root.focus-main();
+                            }
+                        }
+                    }
+                    Rectangle {
+                        x: 5px;
+                        width: 4px;
+                        border-radius: 2px;
+                        background: cut-touch.has-hover || cut-touch.pressed ? Theme.selected : Theme.muted;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Navegador de fotos (as abas Todas, Usadas, Não usadas ficam no cabeçalho).
+export component PhotoStrip inherits Rectangle {
+    in property <[PhotoData]> photos;
+    in property <int> selected-photo;
+    in-out property <int> drag-kind;
+    in-out property <int> drag-from;
+    in-out property <image> drag-img;
+    in-out property <length> drag-x;
+    in-out property <length> drag-y;
+    in-out property <length> press-x;
+    in-out property <length> press-y;
+    callback photo-double-clicked(int);
+    callback photo-pressed(int, bool, bool);
+    // Uma foto foi solta fora do navegador: a janela calcula onde.
+    callback dropped();
+    callback focus-main();
+    background: StripTheme.photos;
+
+    function far(x: length, y: length) -> bool {
+        abs(x - root.press-x) > 6px || abs(y - root.press-y) > 6px
+    }
+
+    ScrollView {
+        // Arrastar é para levar a foto (ou o corte), não para rolar.
+        mouse-drag-pan-enabled: false;
+        content-width: browser.preferred-width;
+        content-height: self.height;
+        browser := HorizontalLayout {
+            padding: 8px;
+            spacing: 8px;
+            for p[i] in root.photos: Rectangle {
+                width: 140px;
+                height: 120px;
+                background: p.selected ? #4fc3f740 : i == root.selected-photo ? #ffffff1f : transparent;
+                border-radius: 4px;
+                Image {
+                    y: 4px;
+                    width: parent.width - 8px;
+                    height: 92px;
+                    source: p.img;
+                    image-fit: contain;
+                }
+                Text {
+                    x: 6px;
+                    y: parent.height - 20px;
+                    width: parent.width - 36px;
+                    text: p.name;
+                    color: Theme.muted;
+                    font-size: 11px;
+                    overflow: elide;
+                }
+                Text {
+                    x: parent.width - 26px;
+                    y: parent.height - 20px;
+                    text: p.uses == 0 ? "–" : "×" + p.uses;
+                    color: p.uses == 0 ? Theme.muted : Theme.text;
+                    font-size: 11px;
+                }
+                TouchArea {
+                    double-clicked => { root.photo-double-clicked(i); }
+                    moved => {
+                        let x = self.absolute-position.x + self.mouse-x;
+                        let y = self.absolute-position.y + self.mouse-y;
+                        if (root.drag-kind == 0 && root.far(x, y)) {
+                            root.drag-kind = 1;
+                            root.drag-from = i;
+                            root.drag-img = p.img;
+                        }
+                        root.drag-x = x;
+                        root.drag-y = y;
+                    }
+                    pointer-event(e) => {
+                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                            root.press-x = self.absolute-position.x + self.mouse-x;
+                            root.press-y = self.absolute-position.y + self.mouse-y;
+                        }
+                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                            if (root.drag-kind == 1) {
+                                root.dropped();
+                            } else {
+                                root.photo-pressed(i, e.modifiers.control, e.modifiers.shift);
+                            }
+                            root.drag-kind = 0;
+                            root.focus-main();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

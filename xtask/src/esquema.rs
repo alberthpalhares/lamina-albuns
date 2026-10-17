@@ -35,7 +35,10 @@ pub fn run() -> bool {
 
 /// O problema, se o esquema publicado não é o que o código gera.
 pub fn problem() -> Option<String> {
-    let expected = project_schema().ok()?;
+    let expected = match project_schema() {
+        Ok(text) => text,
+        Err(e) => return Some(format!("o esquema do projeto não pôde ser gerado: {e}")),
+    };
     let published = fs::read_to_string(path()).unwrap_or_default();
     (published != expected).then(|| {
         format!(

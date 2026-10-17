@@ -2,11 +2,14 @@
 
 use super::{Editor, crop};
 use crate::suggestions::Part;
-use crate::{Command, Session};
+use crate::{Command, Session, Strip};
 
 impl Editor {
     /// O comando pode rodar agora? (menu e teclado obedecem; regra 10 do JP)
     pub fn available(&self, command: Command) -> bool {
+        if self.busy {
+            return command == Command::About;
+        }
         let Some(s) = &self.session else {
             return matches!(command, Command::NewAlbum | Command::Open | Command::About);
         };
@@ -16,6 +19,7 @@ impl Editor {
             Command::Export => true,
             Command::FindMissing => !s.missing().is_empty(),
             Command::ToggleGuides | Command::About | Command::ToggleReordered => true,
+            Command::ToggleSpreads | Command::ToggleTimeline | Command::TogglePhotos => true,
             Command::NextSpread | Command::LastSpread => s.current() < last,
             Command::PreviousSpread | Command::FirstSpread => s.current() > 0,
             Command::Undo => s.can_undo(),
@@ -70,6 +74,9 @@ impl Editor {
                 self.reordered = !self.reordered;
                 true
             }
+            Command::ToggleSpreads => self.toggle_strip(Strip::Spreads),
+            Command::ToggleTimeline => self.toggle_strip(Strip::Timeline),
+            Command::TogglePhotos => self.toggle_strip(Strip::Photos),
             Command::Undo => self.session.as_mut().and_then(Session::undo).is_some(),
             Command::Redo => self.session.as_mut().and_then(Session::redo).is_some(),
             Command::NextLayout => self.step(Part::Spread, true),

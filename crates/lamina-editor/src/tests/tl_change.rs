@@ -142,7 +142,28 @@ fn tl_b5_opcao_reordenada() {
         .iter()
         .position(|c| c.order != vec![0, 1, 2, 3])
         .unwrap();
+    let chosen = panel.options[pick].frames.clone();
+    // As fotos da lâmina na ordem original (a das capturas), antes de aplicar.
+    let before: Vec<_> = frames(&editor).into_iter().map(|(p, _)| p).collect();
+    let mut original = before.clone();
+    original.sort_by_key(|id| {
+        let project = editor.session().unwrap().project();
+        project.photos.iter().position(|p| p.id == *id)
+    });
     assert!(editor.apply_option(Part::Spread, pick));
+    // A opção traz um quadro por foto, na ordem original: a foto i vai para o quadro i
+    // (auditoria do Marco 2, M7: antes só a orientação era conferida).
+    let placed = frames(&editor);
+    for (i, photo) in original.iter().enumerate() {
+        let (_, rect) = placed.iter().find(|(p, _)| p == photo).unwrap();
+        let want = chosen[i];
+        assert!(
+            (rect.x() - want.x()).abs() < 1e-6
+                && (rect.y() - want.y()).abs() < 1e-6
+                && (rect.width() - want.width()).abs() < 1e-6,
+            "foto {i}: {rect:?} em vez de {want:?}"
+        );
+    }
     let s = editor.session().unwrap();
     let trim = s.project().spec.trim_rect();
     for (photo, rect) in frames(&editor) {

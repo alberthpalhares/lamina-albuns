@@ -11,6 +11,7 @@ use lamina_layout::{LayoutLists, Preferences};
 
 use crate::photos::{Filter, photo_list};
 use crate::prefs_store::PrefsStore;
+use crate::strips::{Strip, Strips, StripsStore};
 use crate::{EditorError, Session};
 
 mod crop;
@@ -49,6 +50,10 @@ pub struct Editor {
     /// Quadro em modo recorte e o recorte provisório do gesto (spec RC).
     crop_frame: Option<usize>,
     pending_crop: Option<Crop>,
+    /// Trabalho em segundo plano (novo álbum, exportar, procurar fotos): os comandos esperam.
+    busy: bool,
+    /// As faixas de baixo e o arquivo delas (spec PN).
+    strips: StripsStore,
 }
 
 impl Default for Editor {
@@ -79,6 +84,8 @@ impl Editor {
             anchor: None,
             crop_frame: None,
             pending_crop: None,
+            busy: false,
+            strips: StripsStore::default(),
         }
     }
 
@@ -110,17 +117,71 @@ impl Editor {
 
     /// Abre o arquivo. Se não der, a sessão anterior continua como estava (JP-B11).
     pub fn open(&mut self, file: &Path) -> Result<(), EditorError> {
-        self.session = Some(Session::open(file)?);
-        self.selected_frame = None;
-        self.selection.clear();
+        let session = Session::open(file)?;
+        self.forget_view();
+        self.session = Some(session);
         Ok(())
     }
 
     /// Passa a editar um álbum novo, ainda sem arquivo.
     pub fn adopt(&mut self, project: Project) {
+        self.forget_view();
         self.session = Some(Session::new_unsaved(project));
+    }
+
+    /// Outro projeto na tela: nada do anterior sobra (quadro, seleção, modo recorte e o gesto
+    /// pendente, que não pode virar edição no projeto novo; auditoria do Marco 2, M2).
+    fn forget_view(&mut self) {
         self.selected_frame = None;
         self.selection.clear();
+        self.anchor = None;
+        self.crop_frame = None;
+        self.pending_crop = None;
+    }
+
+    /// Passa a usar o estado das faixas de `store` (lido de `janela.json`). O aviso de leitura,
+    /// se houver, vira o próximo aviso da janela.
+    pub fn set_strips(&mut self, mut store: StripsStore) {
+        if let Some(warning) = store.warning.take() {
+            self.notice = Some(warning);
+        }
+        self.strips = store;
+    }
+
+    /// Quais faixas estão abertas.
+    pub fn strips(&self) -> Strips {
+        self.strips.strips
+    }
+
+    /// Recolhe ou abre a faixa e grava; se não gravar, vale nesta sessão, com aviso (spec PN,
+    /// seção 6).
+    fn toggle_strip(&mut self, strip: Strip) -> bool {
+        self.strips.strips.toggle(strip);
+        if let Err(message) = self.strips.save() {
+            self.notice = Some(message);
+        }
+        true
+    }
+
+    /// Há trabalho em segundo plano? Enquanto houver, só "Sobre" fica disponível (auditoria do
+    /// Marco 2, M8): abrir ou criar outro álbum no meio dele trocaria o projeto sem perguntar.
+    pub fn busy(&self) -> bool {
+        self.busy
+    }
+
+    pub fn set_busy(&mut self, busy: bool) {
+        self.busy = busy;
+    }
+
+    /// Vai para a lâmina `index` (clique na faixa): sai do modo recorte, gravando o gesto, e
+    /// desmarca o quadro (spec RC, regra 1). `false` se a lâmina não existe.
+    pub fn go_to_spread(&mut self, index: usize) -> bool {
+        if index >= self.session.as_ref().map_or(0, Session::spread_count) {
+            return false;
+        }
+        self.exit_crop();
+        self.selected_frame = None;
+        self.session.as_mut().is_some_and(|s| s.go_to(index))
     }
 
     /// Fechar, abrir outro ou criar outro precisa perguntar antes?
@@ -148,13 +209,12 @@ impl Editor {
 
     /// Vai para a primeira lâmina da foto (duplo clique no navegador). `false` se não é usada.
     pub fn go_to_photo(&mut self, id: PhotoId) -> bool {
-        let Some(s) = self.session.as_mut() else {
-            return false;
-        };
-        let first = photo_list(s.project(), Filter::All)
-            .into_iter()
-            .find(|item| item.id == id)
-            .and_then(|item| item.first_spread);
-        first.is_some_and(|index| s.go_to(index))
+        let first = self.session.as_ref().and_then(|s| {
+            photo_list(s.project(), Filter::All)
+                .into_iter()
+                .find(|item| item.id == id)
+                .and_then(|item| item.first_spread)
+        });
+        first.is_some_and(|index| self.go_to_spread(index))
     }
 }

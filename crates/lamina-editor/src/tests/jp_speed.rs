@@ -34,12 +34,16 @@ fn jp_b13_abrir_e_navegar_rapido() {
         open = open.min(started.elapsed());
         assert!(!screens.is_empty());
 
+        // A pior troca da rodada: a spec pede cada troca abaixo da meta (auditoria do Marco 2,
+        // M7: antes valia a troca mais rápida).
+        let mut worst = Duration::ZERO;
         for next in 1..session.spread_count() {
             let started = Instant::now();
             assert!(session.go_to(next));
             screens.keep_around(session.project(), next, &cache);
-            step = step.min(started.elapsed());
+            worst = worst.max(started.elapsed());
         }
+        step = step.min(worst);
         if open < budget(500) && step < budget(100) {
             break;
         }

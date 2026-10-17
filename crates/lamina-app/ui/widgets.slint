@@ -1,0 +1,30 @@
+// Peças pequenas usadas em mais de uma tela: o botão da barra e a aba de filtro.
+
+import { Theme } from "theme.slint";
+
+export component BarButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    callback clicked();
+    width: label.preferred-width + 24px;
+    border-radius: 4px;
+    background: touch.has-hover && root.enabled ? #ffffff1a : transparent;
+    label := Text {
+        text: root.text;
+        color: root.enabled ? Theme.text : #6b6b6b;
+        vertical-alignment: center;
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+}
+
+export component FilterTab inherits BarButton {
+    in property <bool> active;
+    Rectangle {
+        y: parent.height - 2px;
+        height: 2px;
+        background: root.active ? Theme.selected : transparent;
+    }
+}

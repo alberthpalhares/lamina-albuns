@@ -37,4 +37,14 @@ impl Session {
         self.missing = missing_of(self.project());
         n
     }
+
+    /// A procura ao abrir chega depois, em segundo plano: se o fotógrafo já desfez algo, aplicar
+    /// agora apagaria o "refazer" dele. Aí nada muda e a janela sugere "Procurar fotos
+    /// ausentes…" (auditoria do Marco 2, M8). `None` = não aplicado.
+    pub fn relink_after_open(&mut self, found: &[Found]) -> Option<usize> {
+        if self.can_redo() {
+            return None;
+        }
+        Some(self.relink(found))
+    }
 }

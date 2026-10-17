@@ -7,6 +7,9 @@ use std::time::Duration;
 /// lentidão de verdade continua acima da meta em todas as medidas.
 pub const TRIES: usize = 15;
 
+/// Para os testes que levam segundos a cada medida (exportar ou montar um álbum inteiro): até 3.
+pub const HEAVY_TRIES: usize = 3;
+
 /// Meta de tempo da spec, em milissegundos. No CI (variável `CI`), as máquinas são mais lentas e
 /// rodam os testes em paralelo: a folga é 3 vezes, o que ainda pega uma lentidão de verdade.
 pub fn budget(ms: u64) -> Duration {
