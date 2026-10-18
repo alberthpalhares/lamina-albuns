@@ -18,7 +18,7 @@ type Shared = Rc<RefCell<App>>;
 /// Destino de um preset escolhido ou salvo: 0 = o "Novo álbum"; 1 = a "Especificação do álbum".
 const NEW: i32 = 0;
 
-const CUSTOM: &str = "Personalizado";
+use lamina_editor::naming::{CUSTOM_PRESET as CUSTOM, Named};
 
 /// Os nomes na lista (os do Lâmina, os do fotógrafo e "Personalizado") e a lista dos do fotógrafo.
 pub fn refresh(app: &App) {
@@ -117,7 +117,7 @@ fn save_as(app: &mut App, target: i32) {
         return;
     };
     app.preset_target = target;
-    app.name_confirm = false;
+    app.name_guard.reset();
     let ui = w.global::<PresetUi>();
     ui.set_name("".into());
     ui.set_name_message("".into());
@@ -161,9 +161,8 @@ fn name_save(app: &mut App) {
         Ok(p) => p,
         Err(e) => return ui.set_name_message(e.into()),
     };
-    if app.presets.exists(&name) && !app.name_confirm {
-        app.name_confirm = true;
-        let text = "Já existe um preset com esse nome. Clique em Salvar de novo para substituir.";
+    let exists = app.presets.exists(&name);
+    if let Err(text) = app.name_guard.check(Named::Preset, &name, exists) {
         return ui.set_name_message(text.into());
     }
     if let Err(e) = app.presets.save(preset) {

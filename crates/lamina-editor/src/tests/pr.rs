@@ -32,7 +32,30 @@ fn pr_b1_presets_do_lamina() {
             "Retrato 20 × 30"
         ]
     );
+    // Os números de cada preset, escritos aqui (auditoria do Marco 3, M5).
+    let sizes: Vec<(f64, f64)> = builtin_presets()
+        .iter()
+        .map(|p| (p.fields.width_cm, p.fields.height_cm))
+        .collect();
+    assert_eq!(
+        sizes,
+        [
+            (20.0, 20.0),
+            (25.0, 25.0),
+            (30.0, 30.0),
+            (30.0, 20.0),
+            (40.0, 30.0),
+            (20.0, 30.0)
+        ]
+    );
     for preset in builtin_presets() {
+        let f = &preset.fields;
+        assert_eq!(
+            (f.dpi, f.bleed_mm, f.safe_mm),
+            (300, 3.0, 10.0),
+            "{}",
+            preset.name
+        );
         let spec = preset.fields.to_spec().unwrap();
         assert_eq!(spec.dpi().get(), 300, "{}", preset.name);
         assert_eq!((preset.limits.min, preset.limits.max), (Some(20), Some(80)));
@@ -53,6 +76,13 @@ fn pr_b2_novo_album_a_partir_de_um_preset() {
     let (built, _) = create_album(&new, &base.cache(), &|_| {}).unwrap();
     let project = built.project;
     assert_eq!(SpecFields::from_spec(&project.spec), preset.fields);
+    let page = project.spec.page_rect(lamina_core::PageSide::Left);
+    assert!((page.width.get() - 300.0).abs() < 1e-9 && (page.height.get() - 200.0).abs() < 1e-9);
+    assert_eq!(project.spec.dpi().get(), 300);
+    assert_eq!(
+        (project.page_limits.min, project.page_limits.max),
+        (Some(20), Some(80))
+    );
     assert_eq!(project.page_limits, preset.limits);
     assert_eq!(project.export, ExportPrefs::default());
 }
@@ -252,6 +282,28 @@ fn pr_b8_trocar_para_outra_proporcao() {
         crate::respec::changed_message(&[4, 7]).as_deref(),
         Some("2 lâminas mudaram de desenho: 4 e 7.")
     );
+}
+
+/// O desenho que não existe na proporção nova cai na 1ª opção, citada no aviso (auditoria do
+/// Marco 3, M5): procura, entre as opções da lâmina 1, uma que some no 30 × 20.
+#[test]
+fn pr_b8_desenho_que_some_vira_a_primeira_opcao_com_aviso() {
+    let mut editor = album(1);
+    let count = editor.panel(crate::Part::Spread).options.len();
+    let mut found = false;
+    for i in 0..count {
+        editor.apply_option(crate::Part::Spread, i);
+        let notice = editor
+            .respec(spec(30.0, 20.0), PageLimits::default())
+            .unwrap();
+        if let Some(text) = notice {
+            assert_eq!(text, "1 lâmina mudou de desenho: 1.");
+            found = true;
+            break;
+        }
+        assert!(editor.run(Command::Undo));
+    }
+    assert!(found, "nenhuma das {count} opções sumiu no 30 × 20");
 }
 
 #[test]

@@ -181,6 +181,19 @@ fn ct_b8_srgb_continua_byte_a_byte() {
             assert!(x == y, "{name:?} mudou");
         }
     }
+    // Sem conversão nenhuma no caminho sRGB: o JPEG exportado é a renderização codificada direto
+    // (auditoria do Marco 3, M5).
+    let dir = tempfile::tempdir().unwrap();
+    album.export(dir.path(), &ExportOptions::default()).unwrap();
+    let dpi = album.project.spec.dpi().get();
+    let direct = crate::jpeg::encode(
+        album.print(0),
+        crate::DEFAULT_QUALITY,
+        dpi,
+        ColorSpace::Srgb,
+    )
+    .unwrap();
+    assert!(std::fs::read(dir.path().join("lamina-01.jpg")).unwrap() == direct);
     // O JPEG em sRGB leva o mesmo perfil de sempre.
     let dir = tempfile::tempdir().unwrap();
     album.export(dir.path(), &ExportOptions::default()).unwrap();

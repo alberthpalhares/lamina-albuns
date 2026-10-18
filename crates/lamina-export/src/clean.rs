@@ -1,6 +1,6 @@
 //! Limpeza da saída ao substituir (spec EI, regra 4): os arquivos com o nosso padrão de nome
-//! (`lamina-NN.jpg`, `pagina-NN.jpg`) que não fazem parte desta exportação saem da pasta.
-//! Nenhum outro arquivo é tocado.
+//! (`lamina-NN`, `pagina-NN`, em `.jpg` ou `.tif`) do formato desta exportação que não fazem
+//! parte dela saem da pasta. Nenhum outro arquivo é tocado.
 
 use std::path::{Path, PathBuf};
 
@@ -20,9 +20,14 @@ pub fn is_export_name(name: &str) -> bool {
     number.len() >= 2 && number.bytes().all(|b| b.is_ascii_digit())
 }
 
-/// Apaga de `folder` (sem entrar nas subpastas) os arquivos com o nosso padrão de nome que não
-/// estão em `keep`. Devolve os apagados, em ordem de nome.
-pub fn remove_leftovers(folder: &Path, keep: &[String]) -> Result<Vec<PathBuf>, ExportError> {
+/// Apaga de `folder` (sem entrar nas subpastas) os arquivos com o nosso padrão de nome e a
+/// extensão `ext` desta exportação que não estão em `keep`: substituir em TIFF não apaga os JPEGs
+/// da mesma pasta, nem o contrário (auditoria do Marco 3, D1). Devolve os apagados, em ordem.
+pub fn remove_leftovers(
+    folder: &Path,
+    keep: &[String],
+    ext: &str,
+) -> Result<Vec<PathBuf>, ExportError> {
     let fail = |path: &Path, e: std::io::Error| ExportError::Remove {
         path: path.display().to_string(),
         reason: e.to_string(),
@@ -33,7 +38,8 @@ pub fn remove_leftovers(folder: &Path, keep: &[String]) -> Result<Vec<PathBuf>, 
         .filter(|entry| entry.file_type().is_ok_and(|t| t.is_file()))
         .filter_map(|entry| {
             let name = entry.file_name().to_str()?.to_owned();
-            (is_export_name(&name) && !keep.contains(&name)).then(|| entry.path())
+            let ours = is_export_name(&name) && name.ends_with(ext);
+            (ours && !keep.contains(&name)).then(|| entry.path())
         })
         .collect();
     leftovers.sort();
@@ -46,6 +52,22 @@ pub fn remove_leftovers(folder: &Path, keep: &[String]) -> Result<Vec<PathBuf>, 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn substituir_em_tiff_nao_apaga_os_jpegs() {
+        let dir = tempfile::tempdir().unwrap();
+        for name in [
+            "lamina-01.jpg",
+            "lamina-02.jpg",
+            "lamina-01.tif",
+            "lamina-09.tif",
+        ] {
+            std::fs::write(dir.path().join(name), b"x").unwrap();
+        }
+        let removed = remove_leftovers(dir.path(), &["lamina-01.tif".into()], ".tif").unwrap();
+        assert_eq!(removed, [dir.path().join("lamina-09.tif")]);
+        assert!(dir.path().join("lamina-02.jpg").exists());
+    }
 
     #[test]
     fn so_o_nosso_padrao_de_nome() {

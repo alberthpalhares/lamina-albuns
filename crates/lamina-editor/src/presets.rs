@@ -165,8 +165,10 @@ impl PresetsStore {
                 preset.name
             )));
         }
-        self.user.retain(|p| p.name != old);
-        self.user.push(preset);
+        // Renomear deixa o preset no mesmo lugar da lista (auditoria do Marco 3, D5).
+        if let Some(slot) = self.user.iter_mut().find(|p| p.name == old) {
+            *slot = preset;
+        }
         self.write().map(|()| true)
     }
 

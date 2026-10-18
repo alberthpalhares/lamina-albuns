@@ -44,13 +44,21 @@ pub struct ModelsStore {
     pub warning: Option<String>,
 }
 
-/// Um quadro sem tamanho faz o arquivo inteiro ser recusado (seção 6).
-fn valid(m: &SpreadModel) -> bool {
-    m.slots
-        .iter()
-        .map(|s| s.rect)
-        .chain(m.texts.iter().map(|t| t.rect))
-        .all(|r| r.width() > 0.0 && r.height() > 0.0)
+/// Prende os quadros ao corte (seção 6). `false` se algum não tem tamanho: o arquivo inteiro é
+/// recusado.
+fn fit(m: &mut SpreadModel) -> bool {
+    let rects = m
+        .slots
+        .iter_mut()
+        .map(|s| &mut s.rect)
+        .chain(m.texts.iter_mut().map(|t| &mut t.rect));
+    for r in rects {
+        match r.clamped() {
+            Some(c) => *r = c,
+            None => return false,
+        }
+    }
+    true
 }
 
 impl ModelsStore {
@@ -65,10 +73,12 @@ impl ModelsStore {
         };
         let problem = match serde_json::from_str::<OnDisk>(&text) {
             Ok(disk) if disk.versao > VERSION => format!("versão {} do arquivo", disk.versao),
-            Ok(disk) if !disk.modelos.iter().all(valid) => "quadro sem tamanho".to_owned(),
-            Ok(disk) => {
-                store.models = disk.modelos;
-                return store;
+            Ok(mut disk) => {
+                if disk.modelos.iter_mut().all(fit) {
+                    store.models = disk.modelos;
+                    return store;
+                }
+                "quadro sem tamanho".to_owned()
             }
             Err(e) => e.to_string(),
         };

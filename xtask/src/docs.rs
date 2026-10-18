@@ -125,32 +125,57 @@ fn has_word(text: &str, word: &str) -> bool {
     })
 }
 
-/// O que falta num arquivo de teste que mede tempo (AGENTS.md, regra 13): a folga única
-/// `budget(`, a repetição (`TRIES`, `HEAVY_TRIES`) e "rapido" no nome do teste, que põe o teste
-/// no passo de velocidade da porta, rodando sozinho (auditoria do Marco 2, M1).
+/// O que falta num teste que mede tempo (AGENTS.md, regra 13): a folga única `budget(`, a
+/// repetição (`TRIES`, `HEAVY_TRIES`) e "rapido" no nome, que põe o teste no passo de velocidade
+/// da porta, rodando sozinho (auditoria do Marco 2, M1). Cada função `#[test]` com
+/// `Instant::now()` é conferida sozinha: um teste certo no arquivo não esconde outro errado
+/// (auditoria do Marco 3, M9).
 pub fn timing_problem(text: &str) -> Option<&'static str> {
-    if !(text.contains("#[test]") && text.contains("Instant::now()")) {
-        return None;
+    let lines: Vec<&str> = text.lines().collect();
+    let is_fn = |l: &str| l.trim_start().starts_with("fn ");
+    for (i, line) in lines.iter().enumerate() {
+        if !line.contains("Instant::now()") {
+            continue;
+        }
+        let Some(start) = (0..=i).rev().find(|&k| is_fn(lines[k])) else {
+            continue;
+        };
+        let attrs = &lines[start.saturating_sub(3)..start];
+        if !attrs.iter().any(|a| a.contains("#[test]")) {
+            continue;
+        }
+        let end = (start + 1..lines.len())
+            .find(|&k| is_fn(lines[k]) || lines[k].contains("#[test]"))
+            .unwrap_or(lines.len());
+        let body = lines[start..end].join("\n");
+        if !body.contains("budget(") {
+            return Some("teste de tempo sem `budget(`");
+        }
+        if !body.contains("TRIES") {
+            return Some("teste de tempo sem repetição (`TRIES` ou `HEAVY_TRIES`)");
+        }
+        if !lines[start].contains("rapido") {
+            return Some(
+                "teste de tempo sem \"rapido\" no nome (fica fora do passo de velocidade)",
+            );
+        }
     }
-    if !text.contains("budget(") {
-        Some("teste de tempo sem `budget(`")
-    } else if !text.contains("TRIES") {
-        Some("teste de tempo sem repetição (`TRIES` ou `HEAVY_TRIES`)")
-    } else if !text.contains("rapido") {
-        Some("teste de tempo sem \"rapido\" no nome (fica fora do passo de velocidade)")
-    } else {
-        None
-    }
+    None
 }
 
 fn sources(dir: &Path, out: &mut Vec<(String, String)>) {
+    sources_with(dir, "rs", out);
+}
+
+/// Os arquivos com a extensão `ext` de `dir` e das subpastas: (caminho, texto).
+fn sources_with(dir: &Path, ext: &str, out: &mut Vec<(String, String)>) {
     let Ok(entries) = fs::read_dir(dir) else {
         return;
     };
     for path in entries.flatten().map(|e| e.path()) {
         if path.is_dir() {
-            sources(&path, out);
-        } else if path.extension().is_some_and(|e| e == "rs") {
+            sources_with(&path, ext, out);
+        } else if path.extension().is_some_and(|e| e == ext) {
             let text = fs::read_to_string(&path).unwrap_or_default();
             out.push((path.display().to_string(), text));
         }
@@ -199,6 +224,18 @@ pub fn run() -> bool {
         }
     }
     problems.extend(crate::esquema::problem());
+    // Destino vencido: pendência num marco já fechado sem dizer o que aconteceu (M11, Marco 3).
+    let closed = crate::fases::closed_phases(Path::new("docs/auditorias"));
+    let mut docs = Vec::new();
+    sources_with(Path::new("specs"), "md", &mut docs);
+    docs.push(("STATUS.md".to_owned(), read("STATUS.md")));
+    for (path, text) in &docs {
+        for line in crate::fases::stale_lines(text, &closed) {
+            problems.push(format!(
+                "{path}:{line}: destino num marco fechado sem \"feito\" ou destino novo"
+            ));
+        }
+    }
     for p in &problems {
         eprintln!("  ✘ {p}");
     }
@@ -264,9 +301,17 @@ mod tests {
                 .unwrap()
                 .contains("sem repetição")
         );
-        let with_tries = with_budget.replace("fn t()", "fn u() { for _ in 0..TRIES {} }\nfn t()");
+        let with_tries = with_budget.replace("let s =", "for _ in 0..TRIES {} let s =");
         assert!(timing_problem(&with_tries).unwrap().contains("rapido"));
         let good = with_tries.replace("fn t()", "fn t_rapido()");
         assert_eq!(timing_problem(&good), None);
+        // Proveta do M9 do Marco 3: um teste certo não esconde outro, no mesmo arquivo, sem nada.
+        let mixed = format!("{good}\n#[test]\nfn u() {{ let s = Instant::now(); }}");
+        assert_eq!(timing_problem(&mixed), Some("teste de tempo sem `budget(`"));
+        // Função auxiliar (sem #[test]) não é conferida.
+        assert_eq!(
+            timing_problem("fn ajuda() { let s = Instant::now(); }"),
+            None
+        );
     }
 }

@@ -4,6 +4,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use lamina_editor::naming::{Named, model_saved};
 use slint::{ComponentHandle, SharedString};
 
 use crate::convert::model;
@@ -12,14 +13,8 @@ use crate::{AppWindow, ModelUi};
 
 type Shared = Rc<RefCell<App>>;
 
-/// O aviso de nome repetido já foi mostrado para este nome: o segundo clique substitui (regra 1).
-fn confirmed(ui: &ModelUi<'_>, name: &str) -> bool {
-    ui.get_name_message()
-        .starts_with(&format!("Já existe um modelo \"{name}\""))
-}
-
 /// Lâmina → Salvar como modelo…
-pub fn open_save(app: &App) {
+pub fn open_save(app: &mut App) {
     let Some(w) = app.window.upgrade() else {
         return;
     };
@@ -27,6 +22,7 @@ pub fn open_save(app: &App) {
     ui.set_name("".into());
     ui.set_name_message("".into());
     ui.set_show_name(true);
+    app.name_guard.reset();
 }
 
 fn name_save(app: &mut App) {
@@ -35,17 +31,15 @@ fn name_save(app: &mut App) {
     };
     let ui = w.global::<ModelUi>();
     let name = ui.get_name().trim().to_owned();
-    if app.editor.model_exists(&name) && !confirmed(&ui, &name) {
-        ui.set_name_message(
-            format!("Já existe um modelo \"{name}\". Clique em Salvar de novo para substituir.")
-                .into(),
-        );
+    let exists = app.editor.model_exists(&name);
+    if let Err(text) = app.name_guard.check(Named::Model, &name, exists) {
+        ui.set_name_message(text.into());
         return;
     }
     match app.editor.save_model(&name) {
         Ok(()) => {
             ui.set_show_name(false);
-            app.notice = format!("Modelo \"{name}\" salvo.");
+            app.notice = model_saved(&name);
             app.refresh_current();
             w.invoke_focus_main();
         }

@@ -109,7 +109,12 @@ pub fn export(
     };
     // A limpeza só vale para os JPEGs e TIFFs (spec PD, regra 7; spec CT, regra 6).
     let removed = if options.overwrite && options.format != ExportFormat::Pdf {
-        remove_leftovers(folder, &names)?
+        let ext = if options.format == ExportFormat::Tiff {
+            ".tif"
+        } else {
+            ".jpg"
+        };
+        remove_leftovers(folder, &names, ext)?
     } else {
         Vec::new()
     };

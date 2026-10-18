@@ -103,6 +103,9 @@ impl Project {
         rect: RelRect,
         content: FrameContent,
     ) -> Result<FrameId, CoreError> {
+        // Um retângulo que veio de fora sem validação (um modelo editado à mão) não pode entrar:
+        // o projeto salvaria e não abriria de novo (auditoria do Marco 3, M3).
+        rect.validate()?;
         self.check_content(&content)?;
         let id = FrameId(self.take_id());
         let spread = self.spread_mut(spread)?;

@@ -87,7 +87,8 @@ impl SpreadModel {
         }
     }
 
-    /// Igual ao próprio espelho: os mesmos quadros, em qualquer ordem.
+    /// Igual ao próprio espelho: os mesmos quadros com as mesmas orientações e os mesmos textos
+    /// no mesmo lugar, em qualquer ordem (auditoria do Marco 3, M7).
     pub fn is_symmetric(&self) -> bool {
         let m = self.mirrored();
         let same = |a: &RelRect, b: &RelRect| {
@@ -100,11 +101,17 @@ impl SpreadModel {
             .iter()
             .all(|d| d.abs() < 1e-6)
         };
-        m.pages() == self.pages()
-            && self
-                .slots
+        let slots = self.slots.iter().all(|s| {
+            m.slots
                 .iter()
-                .all(|s| m.slots.iter().any(|t| same(&s.rect, &t.rect)))
+                .any(|t| same(&s.rect, &t.rect) && s.orientation == t.orientation)
+        });
+        let texts = self.texts.iter().all(|s| {
+            m.texts
+                .iter()
+                .any(|t| same(&s.rect, &t.rect) && s.text == t.text)
+        });
+        m.pages() == self.pages() && slots && texts
     }
 }
 

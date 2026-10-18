@@ -14,12 +14,14 @@ mod asserts;
 mod docs;
 mod espelho;
 mod esquema;
+mod fases;
 mod fontes;
 mod layers;
 mod portao;
 mod sala_limpa;
 mod size;
 mod specs;
+mod speed;
 
 use std::process::{Command, ExitCode};
 
@@ -60,7 +62,7 @@ type Check = (&'static str, fn() -> bool);
 fn verify() -> bool {
     // Os testes de velocidade (todos com "rapido" no nome) rodam num passo próprio, um de cada
     // vez: junto dos outros, disputam a máquina e reprovam sem motivo (auditoria do Marco 2, M1).
-    let cargo_steps: [(&str, &[&str]); 4] = [
+    let cargo_steps: [(&str, &[&str]); 3] = [
         ("formatação", &["fmt", "--all", "--check"]),
         (
             "clippy",
@@ -77,22 +79,14 @@ fn verify() -> bool {
             "testes",
             &["test", "--workspace", "--quiet", "--", "--skip", "rapido"],
         ),
-        (
-            "testes de velocidade",
-            &[
-                "test",
-                "--workspace",
-                "--quiet",
-                "--",
-                "rapido",
-                "--test-threads=1",
-            ],
-        ),
     ];
     for (name, args) in cargo_steps {
         if !step(name, || cargo(args)) {
             return false;
         }
+    }
+    if !step("testes de velocidade", speed::run) {
+        return false;
     }
     let checks: [Check; 5] = [
         ("camadas", layers::run),

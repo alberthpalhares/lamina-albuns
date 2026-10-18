@@ -37,7 +37,7 @@ pub fn run_command(app: &Shared, command: Command) {
             }
         }
         Command::NewText => new_text(&mut a),
-        Command::SaveModel => models::open_save(&a),
+        Command::SaveModel => models::open_save(&mut a),
         Command::Models => models::open_list(&a),
         _ => {
             // Navegar e as guias só mudam a lâmina mostrada; o resto edita o álbum e muda também

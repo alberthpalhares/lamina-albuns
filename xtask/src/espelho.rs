@@ -78,6 +78,25 @@ pub fn copy_code(from: &Path, to: &Path) -> std::io::Result<usize> {
     Ok(list.len())
 }
 
+/// O que pode existir no público além do código: o README mínimo, a licença, o git e o `target`.
+const PUBLIC_EXTRA: &[&str] = &["README.md", "LICENSE", ".git", "target"];
+
+/// Entradas do topo de `dest` que não são código nem os extras do público: um `specs/` ou
+/// `docs/` que entrou por engano fica lá para sempre, porque a cópia só olha o código
+/// (auditoria do Marco 3, M9).
+pub fn strays(dest: &Path) -> Vec<String> {
+    let Ok(entries) = fs::read_dir(dest) else {
+        return Vec::new();
+    };
+    let mut out: Vec<String> = entries
+        .flatten()
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| !CODE.contains(&n.as_str()) && !PUBLIC_EXTRA.contains(&n.as_str()))
+        .collect();
+    out.sort();
+    out
+}
+
 pub fn run(args: &[String]) -> bool {
     let (back, folder) = match args {
         [flag, folder] if flag == "--trazer" => (true, folder),
@@ -91,6 +110,16 @@ pub fn run(args: &[String]) -> bool {
     if !there.join(".git").exists() {
         eprintln!("  ✘ {folder} não é um clone git");
         return false;
+    }
+    if !back {
+        let extra = strays(there);
+        if !extra.is_empty() {
+            eprintln!(
+                "  ✘ espelho: {folder} tem o que não é código (apague à mão e confira): {}",
+                extra.join(", ")
+            );
+            return false;
+        }
     }
     let result = if back {
         copy_code(there, here)
@@ -113,6 +142,20 @@ pub fn run(args: &[String]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Proveta do M9 do Marco 3: um documento que já estava no público é apontado.
+    #[test]
+    fn documento_que_ja_estava_no_publico_e_apontado() {
+        let dir = tempfile::tempdir().unwrap();
+        for f in ["Cargo.toml", "README.md", "LICENSE"] {
+            fs::write(dir.path().join(f), "x").unwrap();
+        }
+        fs::create_dir_all(dir.path().join("crates")).unwrap();
+        assert!(strays(dir.path()).is_empty());
+        fs::create_dir_all(dir.path().join("specs")).unwrap();
+        fs::write(dir.path().join("STATUS.md"), "x").unwrap();
+        assert_eq!(strays(dir.path()), ["STATUS.md", "specs"]);
+    }
 
     /// Proveta: documento nunca vai para o público; código apagado some de lá.
     #[test]

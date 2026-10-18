@@ -61,6 +61,9 @@ pub struct BuildArgs {
 }
 
 pub fn run(args: &BuildArgs) -> Result<()> {
+    // Antes de importar: o erro das marcas não pode jogar fora minutos de trabalho (auditoria do
+    // Marco 3, M8).
+    args.saida_formato.check_marks()?;
     let preset = args.album.preset()?;
     let (mut limits, prefs) = crate::spec::preset_extras(preset.as_ref());
     if let Some(min) = args.paginas_minimas.and_then(|m| u32::try_from(m).ok()) {
@@ -126,7 +129,10 @@ fn models_and_prefs() -> (Vec<lamina_layout::SpreadModel>, lamina_layout::Prefer
     if let Some(warning) = models.warning.take() {
         println!("{warning}");
     }
-    let prefs = PrefsStore::load(&dir.join(PREFS_FILE));
+    let mut prefs = PrefsStore::load(&dir.join(PREFS_FILE));
+    if let Some(warning) = prefs.warning.take() {
+        println!("{warning}");
+    }
     (models.all().to_vec(), prefs.prefs)
 }
 

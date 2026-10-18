@@ -85,11 +85,6 @@ impl Editor {
         self.change(label, |p, i| set_rect(p, i, g.frame, g.now))
     }
 
-    /// Esc no meio do gesto: o quadro volta.
-    pub fn frame_cancel(&mut self) {
-        self.gesture = None;
-    }
-
     /// O quadro do gesto e onde ele está agora (mm), para a tela desenhar.
     pub fn gesture_rect(&self) -> Option<(usize, Rect)> {
         self.gesture.as_ref().map(|g| (g.frame, g.now))
@@ -132,7 +127,19 @@ impl Editor {
         let Some(frame) = self.selected_frame else {
             return false;
         };
-        self.change("Mover quadro", |p, i| set_rect(p, i, frame, rect))
+        let Some(s) = &self.session else {
+            return false;
+        };
+        let same_size = frame_mm(s.project(), s.current(), frame).is_some_and(|r| {
+            (r.width.get() - rect.width.get()).abs() < 1e-9
+                && (r.height.get() - rect.height.get()).abs() < 1e-9
+        });
+        let label = if same_size {
+            "Mover quadro"
+        } else {
+            "Redimensionar quadro"
+        };
+        self.change(label, |p, i| set_rect(p, i, frame, rect))
     }
 
     /// T: texto novo na página pedida (a do mouse), selecionado (regra 11).
