@@ -26,9 +26,9 @@ mod error;
 
 pub use color::ColorSpace;
 pub use document::{
-    Border, CURRENT_SCHEMA_VERSION, Crop, DEFAULT_GAP, Frame, FrameContent, FrameId, Orientation,
-    Photo, PhotoId, PixelRegion, Project, Rgb, Spread, SpreadId, relative_path,
-    validate_project_name,
+    Border, CURRENT_SCHEMA_VERSION, Crop, DEFAULT_GAP, ExportPrefs, Frame, FrameContent, FrameId,
+    Orientation, OutputFormat, PageLimits, Photo, PhotoId, PixelRegion, Project, Rgb, Spread,
+    SpreadId, relative_path, validate_project_name,
 };
 pub use error::CoreError;
 

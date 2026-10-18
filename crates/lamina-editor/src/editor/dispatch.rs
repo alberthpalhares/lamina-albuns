@@ -11,12 +11,15 @@ impl Editor {
             return command == Command::About;
         }
         let Some(s) = &self.session else {
-            return matches!(command, Command::NewAlbum | Command::Open | Command::About);
+            return matches!(
+                command,
+                Command::NewAlbum | Command::Open | Command::About | Command::Presets
+            );
         };
         let last = s.spread_count().saturating_sub(1);
         match command {
             Command::NewAlbum | Command::Open | Command::Save | Command::SaveAs => true,
-            Command::Export => true,
+            Command::Export | Command::Specification | Command::Presets => true,
             Command::FindMissing => !s.missing().is_empty(),
             Command::ToggleGuides | Command::About | Command::ToggleReordered => true,
             Command::ToggleSpreads | Command::ToggleTimeline | Command::TogglePhotos => true,

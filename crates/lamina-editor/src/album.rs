@@ -3,7 +3,9 @@
 
 use std::path::{Path, PathBuf};
 
-use lamina_core::{AlbumEdge, AlbumSpec, CoreError, Dpi, Margins, Mm, Project};
+use lamina_core::{
+    AlbumEdge, AlbumSpec, CoreError, Dpi, ExportPrefs, Margins, Mm, PageLimits, Project,
+};
 use lamina_layout::{
     AutoBuild, BuildOptions, PHOTOS_PER_SPREAD, PlanError, PlanOptions, Preferences, Reuse,
     auto_build, suggest_spreads, validate_plan,
@@ -11,6 +13,7 @@ use lamina_layout::{
 use lamina_media::{
     DerivedDirs, ImageFormat, ImportReport, MediaError, import_folder_with, list_photos,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{Cache, EditorError};
 
@@ -22,16 +25,24 @@ pub enum Step {
 }
 
 /// As medidas do álbum como o fotógrafo digita (cm, mm, DPI), com os padrões do `lamina build`.
-#[derive(Debug, Clone, PartialEq)]
+/// Também é o que um preset guarda (spec PR), com nomes em português no arquivo.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SpecFields {
+    #[serde(rename = "largura_cm")]
     pub width_cm: f64,
+    #[serde(rename = "altura_cm")]
     pub height_cm: f64,
     pub dpi: u32,
+    #[serde(rename = "sangria_mm")]
     pub bleed_mm: f64,
+    #[serde(rename = "zona_segura_mm")]
     pub safe_mm: f64,
     /// Zona segura na lombada; `None` = igual à zona segura.
+    #[serde(rename = "lombada_mm", default)]
     pub spine_mm: Option<f64>,
+    #[serde(rename = "inicia_com_pagina", default)]
     pub starts_single: bool,
+    #[serde(rename = "termina_com_pagina", default)]
     pub ends_single: bool,
 }
 
@@ -51,6 +62,22 @@ impl Default for SpecFields {
 }
 
 impl SpecFields {
+    /// Os campos de uma especificação pronta (a janela "Especificação do álbum"; spec PR).
+    pub fn from_spec(spec: &AlbumSpec) -> Self {
+        let safe = spec.safe_margins();
+        SpecFields {
+            width_cm: spec.page_width().get() / 10.0,
+            height_cm: spec.page_height().get() / 10.0,
+            dpi: spec.dpi().get(),
+            bleed_mm: spec.bleed().outer.get(),
+            safe_mm: safe.outer.get(),
+            spine_mm: ((safe.inner.get() - safe.outer.get()).abs() > 1e-9)
+                .then_some(safe.inner.get()),
+            starts_single: spec.edges().start == AlbumEdge::SinglePage,
+            ends_single: spec.edges().end == AlbumEdge::SinglePage,
+        }
+    }
+
     pub fn to_spec(&self) -> Result<AlbumSpec, CoreError> {
         let safe = Mm(self.safe_mm);
         let inner = Mm(self.spine_mm.unwrap_or(self.safe_mm));
@@ -84,6 +111,9 @@ pub struct NewAlbum {
     pub reuse: Reuse,
     /// Favoritos e rejeitados do fotógrafo (spec TL, regra 8); vazio = escolha de sempre.
     pub preferences: Preferences,
+    /// Faixa de páginas e exportação do preset (spec PR); padrão = sem limite, JPEG em sRGB.
+    pub limits: PageLimits,
+    pub export: ExportPrefs,
 }
 
 /// Fotos importadas, já num projeto sem lâminas, e as que não deram para importar.
@@ -142,14 +172,27 @@ pub fn project_from(report: &ImportReport, name: &str, spec: AlbumSpec) -> Proje
     project
 }
 
-/// Número de lâminas sugerido para as fotos do projeto (~4 por lâmina; spec CB, regra 2).
+/// Número de lâminas sugerido para as fotos do projeto (~4 por lâmina; spec CB, regra 2), sem
+/// ficar abaixo do mínimo de páginas dele (spec PR, regra 4).
 pub fn suggestion(project: &Project) -> usize {
-    suggestion_for(project.photos.len(), &project.spec)
+    suggestion_within(project.photos.len(), &project.spec, project.page_limits)
 }
 
 /// A sugestão para `photos` fotos, antes de importar (janela "Novo álbum").
 pub fn suggestion_for(photos: usize, spec: &AlbumSpec) -> usize {
     suggest_spreads(photos, spec.edges(), &PlanOptions::default())
+}
+
+/// A sugestão sem ficar abaixo do mínimo de páginas (nem passar de uma lâmina por foto).
+pub fn suggestion_within(photos: usize, spec: &AlbumSpec, limits: PageLimits) -> usize {
+    let mut spreads = suggestion_for(photos, spec);
+    let Some(min) = limits.min.and_then(|m| usize::try_from(m).ok()) else {
+        return spreads;
+    };
+    while spec.edges().page_count(spreads) < min && spreads < photos.max(1) {
+        spreads += 1;
+    }
+    spreads
 }
 
 /// Confere o número de lâminas pedido antes de montar, com as mensagens do plano (PL).
@@ -185,7 +228,9 @@ pub fn create_album(
     progress: &(dyn Fn(Step) + Sync),
 ) -> Result<(AutoBuild, Vec<(PathBuf, String)>), EditorError> {
     let name = new.name.as_deref();
-    let imported = import_project(&new.folder, name, new.spec.clone(), cache, true, progress)?;
+    let mut imported = import_project(&new.folder, name, new.spec.clone(), cache, true, progress)?;
+    imported.project.page_limits = new.limits;
+    imported.project.export = new.export;
     progress(Step::Building);
     let spreads = new.spreads.unwrap_or_else(|| suggestion(&imported.project));
     let options = BuildOptions {

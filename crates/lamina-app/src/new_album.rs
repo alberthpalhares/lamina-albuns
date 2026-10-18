@@ -1,16 +1,17 @@
 //! A janela "Novo álbum" (spec JP, seção 3): escolhe a pasta, mostra a sugestão, confere os
 //! campos a cada mudança e monta o álbum em segundo plano, com andamento.
 
-use lamina_editor::forms::{SpecText, album_name_error};
+use lamina_editor::forms::{SpecText, album_name_error, parse_limits};
 use lamina_editor::{
     NewAlbum, SpecFields, Step, check_spreads, count_photos, create_album, folder_name,
-    suggestion_for, suggestion_text,
+    suggestion_text, suggestion_within,
 };
 use lamina_layout::Reuse;
+use slint::ComponentHandle;
 
-use crate::AppWindow;
 use crate::files::show_error;
 use crate::state::{App, Msg};
+use crate::{AppWindow, PresetUi};
 
 /// Escolhe a pasta e abre a janela com os padrões do `lamina build`.
 pub fn start(app: &mut App) {
@@ -32,12 +33,28 @@ pub fn start(app: &mut App) {
     let Some(w) = app.window.upgrade() else {
         return;
     };
-    let d = SpecFields::default();
-    let text = SpecText::from(&d);
-    let spec = d.to_spec().ok();
-    let suggested = spec.map_or(1, |s| suggestion_for(photos, &s));
     w.set_na_folder(folder.display().to_string().into());
     w.set_na_name(folder_name(&folder).into());
+    fill(&w, &SpecFields::default());
+    w.set_na_reuse(1);
+    w.set_na_photos(i32::try_from(photos).unwrap_or(i32::MAX));
+    // Sem preset: "Personalizado", sem faixa de páginas, JPEG em sRGB (spec PR).
+    crate::presets::refresh(app);
+    let ui = w.global::<PresetUi>();
+    ui.set_new_preset(crate::presets::custom_index(app));
+    ui.set_new_min("".into());
+    ui.set_new_max("".into());
+    app.new_export = lamina_core::ExportPrefs::default();
+    app.new_folder = folder;
+    app.new_photos = photos;
+    changed(app);
+    suggest(app);
+    w.set_show_new(true);
+}
+
+/// Os campos da especificação na janela.
+pub fn fill(w: &AppWindow, fields: &SpecFields) {
+    let text = SpecText::from(fields);
     w.set_na_width(text.width_cm.into());
     w.set_na_height(text.height_cm.into());
     w.set_na_dpi(text.dpi.into());
@@ -46,17 +63,23 @@ pub fn start(app: &mut App) {
     w.set_na_spine(text.spine_mm.into());
     w.set_na_starts(text.starts_single);
     w.set_na_ends(text.ends_single);
-    w.set_na_spreads(i32::try_from(suggested).unwrap_or(1));
-    w.set_na_reuse(1);
-    w.set_na_photos(i32::try_from(photos).unwrap_or(i32::MAX));
-    app.new_folder = folder;
-    app.new_photos = photos;
-    changed(app);
-    w.set_show_new(true);
+}
+
+/// O número de lâminas passa a ser a sugestão (respeitando o mínimo de páginas; spec PR, regra 4).
+pub fn suggest(app: &App) {
+    let Some(w) = app.window.upgrade() else {
+        return;
+    };
+    let ui = w.global::<PresetUi>();
+    let limits = parse_limits(&ui.get_new_min(), &ui.get_new_max()).unwrap_or_default();
+    if let Ok(spec) = fields(&w).and_then(|f| f.to_spec().map_err(|e| e.to_string())) {
+        let n = suggestion_within(app.new_photos, &spec, limits);
+        w.set_na_spreads(i32::try_from(n).unwrap_or(1));
+    }
 }
 
 /// Os campos da janela como medidas; `Err` com a mensagem do campo errado.
-fn fields(w: &AppWindow) -> Result<SpecFields, String> {
+pub fn fields(w: &AppWindow) -> Result<SpecFields, String> {
     SpecText {
         width_cm: w.get_na_width().into(),
         height_cm: w.get_na_height().into(),
@@ -77,12 +100,16 @@ pub fn changed(app: &mut App) {
     };
     let photos = app.new_photos;
     let spreads = usize::try_from(w.get_na_spreads()).unwrap_or(0);
+    let ui = w.global::<PresetUi>();
+    let limits = parse_limits(&ui.get_new_min(), &ui.get_new_max());
     let check = fields(&w)
         .and_then(|f| f.to_spec().map_err(|e| e.to_string()))
         .and_then(|spec| {
-            w.set_na_suggestion(suggestion_text(suggestion_for(photos, &spec)).into());
+            let suggested = suggestion_within(photos, &spec, limits.clone().unwrap_or_default());
+            w.set_na_suggestion(suggestion_text(suggested).into());
             check_spreads(photos, spreads, &spec).map_err(|e| e.to_string())
-        });
+        })
+        .and_then(|()| limits.map(|_| ()));
     let name_error = album_name_error(&w.get_na_name()).map(str::to_owned);
     let error = check.err().or(name_error).unwrap_or_default();
     w.set_na_error(error.into());
@@ -93,8 +120,12 @@ pub fn create(app: &mut App) {
     let Some(w) = app.window.upgrade() else {
         return;
     };
-    let spec = match fields(&w).and_then(|f| f.to_spec().map_err(|e| e.to_string())) {
-        Ok(spec) => spec,
+    let ui = w.global::<PresetUi>();
+    let parsed = fields(&w)
+        .and_then(|f| f.to_spec().map_err(|e| e.to_string()))
+        .and_then(|spec| parse_limits(&ui.get_new_min(), &ui.get_new_max()).map(|l| (spec, l)));
+    let (spec, limits) = match parsed {
+        Ok(v) => v,
         Err(e) => return w.set_na_error(e.into()),
     };
     let new = NewAlbum {
@@ -108,6 +139,8 @@ pub fn create(app: &mut App) {
             _ => Reuse::Medium,
         },
         preferences: app.editor.preferences().clone(),
+        limits,
+        export: app.new_export,
     };
     w.set_show_new(false);
     w.set_busy_text("Importando as fotos…".into());

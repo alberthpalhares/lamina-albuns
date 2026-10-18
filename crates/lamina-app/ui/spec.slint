@@ -1,0 +1,227 @@
+// Presets e especificação do álbum (spec PR): o formulário da especificação (usado pelo "Novo
+// álbum" e pela "Especificação do álbum"), o nome de um preset novo e a lista dos presets do
+// fotógrafo. O estado mora no global `PresetUi`, que o Rust lê e escreve.
+
+import { Button, LineEdit, CheckBox, ComboBox, ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Shade, Panel, Field } from "widgets.slint";
+
+export global PresetUi {
+    // Os nomes: os do Lâmina, os do fotógrafo e, por último, "Personalizado".
+    in property <[string]> presets;
+    // Novo álbum: o preset escolhido e a faixa de páginas.
+    in-out property <int> new-preset;
+    in-out property <string> new-min;
+    in-out property <string> new-max;
+    // Especificação do álbum aberto.
+    in-out property <bool> show-spec;
+    in-out property <int> spec-preset;
+    in-out property <string> spec-width;
+    in-out property <string> spec-height;
+    in-out property <string> spec-dpi;
+    in-out property <string> spec-bleed;
+    in-out property <string> spec-safe;
+    in-out property <string> spec-spine;
+    in-out property <bool> spec-starts;
+    in-out property <bool> spec-ends;
+    in-out property <string> spec-min;
+    in-out property <string> spec-max;
+    in property <string> spec-error;
+    // Nome de um preset novo.
+    in-out property <bool> show-name;
+    in-out property <string> name;
+    in property <string> name-message;
+    // Presets do fotógrafo.
+    in-out property <bool> show-list;
+    in property <[string]> user-presets;
+    in-out property <int> list-selected: -1;
+    in-out property <string> list-name;
+    in property <string> list-message;
+    // 0 = novo álbum, 1 = especificação do álbum.
+    callback picked(int, int);
+    callback save-as(int);
+    callback new-changed();
+    callback spec-changed();
+    callback spec-apply();
+    callback name-save();
+    callback list-rename();
+    callback list-delete();
+    callback closed();
+}
+
+// Os campos da especificação, com o preset e a faixa de páginas.
+export component SpecForm inherits VerticalLayout {
+    in property <[string]> presets;
+    in-out property <int> preset;
+    in-out property <string> width-cm;
+    in-out property <string> height-cm;
+    in-out property <string> dpi;
+    in-out property <string> bleed-mm;
+    in-out property <string> safe-mm;
+    in-out property <string> spine-mm;
+    in-out property <bool> starts-single;
+    in-out property <bool> ends-single;
+    in-out property <string> min-pages;
+    in-out property <string> max-pages;
+    callback changed();
+    callback picked(int);
+    callback save-preset();
+    spacing: 10px;
+
+    Field {
+        label: "Preset";
+        ComboBox {
+            model: root.presets;
+            current-index <=> root.preset;
+            selected => { root.picked(self.current-index); }
+        }
+        Button { text: "Salvar como preset…"; clicked => { root.save-preset(); } }
+    }
+    Field {
+        label: "Página (largura × altura, cm)";
+        LineEdit { text <=> root.width-cm; input-type: decimal; edited => { root.changed(); } }
+        LineEdit { text <=> root.height-cm; input-type: decimal; edited => { root.changed(); } }
+    }
+    Field {
+        label: "DPI";
+        LineEdit { text <=> root.dpi; input-type: number; edited => { root.changed(); } }
+    }
+    Field {
+        label: "Sangria e zona segura (mm)";
+        LineEdit { text <=> root.bleed-mm; input-type: decimal; edited => { root.changed(); } }
+        LineEdit { text <=> root.safe-mm; input-type: decimal; edited => { root.changed(); } }
+    }
+    Field {
+        label: "Zona segura na lombada (mm)";
+        LineEdit {
+            text <=> root.spine-mm;
+            placeholder-text: "igual à zona segura";
+            input-type: decimal;
+            edited => { root.changed(); }
+        }
+    }
+    HorizontalLayout {
+        spacing: 16px;
+        CheckBox { text: "Começa com página simples"; checked <=> root.starts-single; toggled => { root.changed(); } }
+        CheckBox { text: "Termina com página simples"; checked <=> root.ends-single; toggled => { root.changed(); } }
+    }
+    Field {
+        label: "Páginas (mínimo e máximo)";
+        LineEdit { text <=> root.min-pages; placeholder-text: "sem mínimo"; input-type: number; edited => { root.changed(); } }
+        LineEdit { text <=> root.max-pages; placeholder-text: "sem máximo"; input-type: number; edited => { root.changed(); } }
+    }
+}
+
+// Arquivo → Especificação do álbum…
+export component SpecDialog inherits Shade {
+    Panel {
+        width: 600px;
+        height: 520px;
+        VerticalLayout {
+            padding: 24px;
+            spacing: 10px;
+            Text { text: "Especificação do álbum"; font-size: 20px; font-weight: 700; color: Theme.text; }
+            SpecForm {
+                presets: PresetUi.presets;
+                preset <=> PresetUi.spec-preset;
+                width-cm <=> PresetUi.spec-width;
+                height-cm <=> PresetUi.spec-height;
+                dpi <=> PresetUi.spec-dpi;
+                bleed-mm <=> PresetUi.spec-bleed;
+                safe-mm <=> PresetUi.spec-safe;
+                spine-mm <=> PresetUi.spec-spine;
+                starts-single <=> PresetUi.spec-starts;
+                ends-single <=> PresetUi.spec-ends;
+                min-pages <=> PresetUi.spec-min;
+                max-pages <=> PresetUi.spec-max;
+                changed => { PresetUi.spec-changed(); }
+                picked(i) => { PresetUi.picked(1, i); }
+                save-preset => { PresetUi.save-as(1); }
+            }
+            Text {
+                text: "As lâminas são refeitas com o mesmo desenho no tamanho novo. Ctrl+Z desfaz.";
+                color: Theme.muted;
+                wrap: word-wrap;
+            }
+            Text { text: PresetUi.spec-error; color: Theme.warning; wrap: word-wrap; vertical-stretch: 1; }
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Button { text: "Cancelar"; clicked => { PresetUi.show-spec = false; PresetUi.closed(); } }
+                Button {
+                    text: "Aplicar";
+                    primary: true;
+                    enabled: PresetUi.spec-error == "";
+                    clicked => { PresetUi.spec-apply(); }
+                }
+            }
+        }
+    }
+}
+
+// O nome de um preset novo.
+export component PresetNameDialog inherits Shade {
+    Panel {
+        width: 440px;
+        height: 220px;
+        VerticalLayout {
+            padding: 24px;
+            spacing: 12px;
+            Text { text: "Salvar como preset"; font-size: 16px; font-weight: 600; color: Theme.text; }
+            LineEdit { text <=> PresetUi.name; placeholder-text: "ex.: Laboratório da cidade, 30 × 30"; }
+            Text { text: PresetUi.name-message; color: Theme.warning; wrap: word-wrap; vertical-stretch: 1; }
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Button { text: "Cancelar"; clicked => { PresetUi.show-name = false; } }
+                Button { text: "Salvar"; primary: true; clicked => { PresetUi.name-save(); } }
+            }
+        }
+    }
+}
+
+// Arquivo → Presets…: os presets do fotógrafo.
+export component PresetsDialog inherits Shade {
+    Panel {
+        width: 480px;
+        height: 420px;
+        VerticalLayout {
+            padding: 24px;
+            spacing: 10px;
+            Text { text: "Meus presets"; font-size: 16px; font-weight: 600; color: Theme.text; }
+            Text {
+                text: PresetUi.user-presets.length == 0
+                    ? "Nenhum preset salvo. Use \"Salvar como preset…\" no novo álbum ou na especificação."
+                    : "Os presets do Lâmina não aparecem aqui: não dá para mudá-los.";
+                color: Theme.muted;
+                wrap: word-wrap;
+            }
+            ListView {
+                vertical-stretch: 1;
+                for item[i] in PresetUi.user-presets: Rectangle {
+                    height: 28px;
+                    border-radius: 4px;
+                    background: i == PresetUi.list-selected ? #ffffff1f : touch.has-hover ? #ffffff0d : transparent;
+                    Text { x: 8px; text: item; color: Theme.text; vertical-alignment: center; }
+                    touch := TouchArea {
+                        clicked => {
+                            PresetUi.list-selected = i;
+                            PresetUi.list-name = item;
+                        }
+                    }
+                }
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                LineEdit { text <=> PresetUi.list-name; enabled: PresetUi.list-selected >= 0; }
+                Button { text: "Renomear"; enabled: PresetUi.list-selected >= 0; clicked => { PresetUi.list-rename(); } }
+                Button { text: "Apagar"; enabled: PresetUi.list-selected >= 0; clicked => { PresetUi.list-delete(); } }
+            }
+            Text { text: PresetUi.list-message; color: Theme.warning; wrap: word-wrap; }
+            HorizontalLayout {
+                alignment: end;
+                Button { text: "Fechar"; primary: true; clicked => { PresetUi.show-list = false; PresetUi.closed(); } }
+            }
+        }
+    }
+}

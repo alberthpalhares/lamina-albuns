@@ -3,7 +3,7 @@
 
 use anyhow::{Result, bail};
 use clap::{Args, ValueEnum};
-use lamina_core::ColorSpace;
+use lamina_core::{ColorSpace, ExportPrefs, OutputFormat};
 use lamina_export::ExportFormat;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, ValueEnum)]
@@ -28,21 +28,36 @@ pub enum Cor {
 
 #[derive(Debug, Args)]
 pub struct SaidaArgs {
-    /// Formato da exportação.
-    #[arg(long, value_enum, default_value_t = Formato::Jpeg)]
-    pub formato: Formato,
+    /// Formato da exportação (padrão: o do preset, ou jpeg).
+    #[arg(long, value_enum)]
+    pub formato: Option<Formato>,
     /// Marcas de corte nos cantos (só no PDF).
     #[arg(long)]
     pub marcas_de_corte: bool,
-    /// Espaço de cor da saída.
-    #[arg(long, value_enum, default_value_t = Cor::Srgb)]
-    pub cor: Cor,
+    /// Espaço de cor da saída (padrão: o do preset, ou srgb).
+    #[arg(long, value_enum)]
+    pub cor: Option<Cor>,
 }
 
 impl SaidaArgs {
-    /// O formato e as marcas, ou o erro da seção 6 da spec.
-    pub fn options(&self) -> Result<(ExportFormat, bool)> {
-        match self.formato {
+    /// Marcas de corte pedem `--formato pdf` digitado (o erro sai antes de abrir qualquer coisa).
+    pub fn check_marks(&self) -> Result<()> {
+        if self.marcas_de_corte && self.formato != Some(Formato::Pdf) {
+            bail!("marcas de corte só existem no PDF (use --formato pdf).");
+        }
+        Ok(())
+    }
+
+    /// Como [`Self::options`], com o formato do preset ou do projeto quando nenhum foi digitado
+    /// (spec PR, regra 5).
+    pub fn options_with(&self, prefs: ExportPrefs) -> Result<(ExportFormat, bool)> {
+        self.check_marks()?;
+        let formato = self.formato.unwrap_or(match prefs.format {
+            OutputFormat::Jpeg => Formato::Jpeg,
+            OutputFormat::Pdf => Formato::Pdf,
+            OutputFormat::Tiff => Formato::Tiff,
+        });
+        match formato {
             Formato::Jpeg | Formato::Tiff if self.marcas_de_corte => {
                 bail!("marcas de corte só existem no PDF (use --formato pdf).")
             }
@@ -52,10 +67,12 @@ impl SaidaArgs {
         }
     }
 
-    pub fn space(&self) -> ColorSpace {
+    /// O espaço digitado, ou o do preset.
+    pub fn space_with(&self, prefs: ExportPrefs) -> ColorSpace {
         match self.cor {
-            Cor::Srgb => ColorSpace::Srgb,
-            Cor::AdobeRgb => ColorSpace::AdobeRgb,
+            Some(Cor::Srgb) => ColorSpace::Srgb,
+            Some(Cor::AdobeRgb) => ColorSpace::AdobeRgb,
+            None => prefs.space,
         }
     }
 }

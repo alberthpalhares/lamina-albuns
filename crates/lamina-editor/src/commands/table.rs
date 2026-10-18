@@ -36,6 +36,13 @@ impl Command {
                 Menu::File,
                 None,
             ),
+            C::Specification => (
+                "arquivo.especificacao",
+                "Especificação do álbum…",
+                Menu::File,
+                None,
+            ),
+            C::Presets => ("arquivo.presets", "Presets…", Menu::File, None),
             C::Undo => (
                 "editar.desfazer",
                 "Desfazer",

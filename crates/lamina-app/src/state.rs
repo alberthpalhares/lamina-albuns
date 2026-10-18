@@ -58,6 +58,14 @@ pub struct App {
     pub notice: String,
     /// A conferência da janela Exportar aberta (avisos que sobraram e arquivos que já existem).
     pub export_check: Option<ExportCheck>,
+    /// Presets (spec PR) e o que eles trazem para o "Novo álbum" e a "Especificação do álbum".
+    pub presets: lamina_editor::PresetsStore,
+    pub new_export: lamina_core::ExportPrefs,
+    pub spec_export: lamina_core::ExportPrefs,
+    /// Para onde vai o preset salvo (0 = novo álbum, 1 = especificação) e se o nome repetido
+    /// já foi confirmado.
+    pub preset_target: i32,
+    pub name_confirm: bool,
     pub(crate) images: Images,
     /// Foto original sendo carregada para o modo recorte.
     pub(crate) loading: Option<PhotoId>,
@@ -80,6 +88,11 @@ impl App {
             new_photos: 0,
             notice: String::new(),
             export_check: None,
+            presets: lamina_editor::PresetsStore::default(),
+            new_export: lamina_core::ExportPrefs::default(),
+            spec_export: lamina_core::ExportPrefs::default(),
+            preset_target: 0,
+            name_confirm: false,
             images: Images::default(),
             loading: None,
             crop_timer: crate::crop::timer(),
@@ -172,6 +185,7 @@ impl App {
         w.set_window_title(format!("{title} — Lâmina").into());
         w.set_project_title(title.into());
         w.set_counter(session.counter().into());
+        w.set_counter_warning(session.page_warning().unwrap_or_default().into());
         // "Lâminas · 4 lâminas (8 páginas)": o nome fica no cabeçalho, aqui vai só o resumo.
         let [spreads, timeline, photos] = strip_titles(session)
             .map(|t| t.split_once(" · ").map_or(t.clone(), |(_, s)| s.to_owned()));

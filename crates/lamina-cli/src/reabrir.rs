@@ -35,16 +35,19 @@ pub struct ReopenArgs {
 }
 
 pub fn run(args: &ReopenArgs) -> Result<()> {
-    let (format, crop_marks) = args.saida_formato.options()?;
+    args.saida_formato.check_marks()?;
     let project = open_project(&args.projeto)?;
+    // O que o projeto lembra vale quando nada foi digitado (spec PR, regra 5).
+    let prefs = project.export;
+    let (format, crop_marks) = args.saida_formato.options_with(prefs)?;
     let options = ExportOptions {
         quality: args.qualidade,
         range: args.laminas_exportar.clone(),
-        pages: args.paginas,
+        pages: args.paginas || prefs.pages,
         overwrite: args.sobrescrever,
         format,
         crop_marks,
-        space: args.saida_formato.space(),
+        space: args.saida_formato.space_with(prefs),
     };
     let spreads = match &options.range {
         Some(text) => parse_range(text, project.spreads.len())?,

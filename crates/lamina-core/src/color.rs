@@ -2,10 +2,14 @@
 //! projeto (fundo, borda) são escolhidas em sRGB; numa saída em Adobe RGB são convertidas aqui,
 //! com as fórmulas dos dois espaços (mesmo branco D65, nenhuma adaptação de branco).
 
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
 use crate::Rgb;
 
 /// Espaço de cor dos arquivos exportados.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum ColorSpace {
     #[default]
     Srgb,

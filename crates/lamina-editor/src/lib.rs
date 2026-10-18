@@ -14,6 +14,7 @@
 //! - [`text`]: nome das famílias e nota explicada, para o painel de layouts.
 //! - [`view`]: a lâmina em pixels da tela, igual à impressão.
 //! - [`photos`]: o navegador de fotos.
+//! - [`presets`] e [`respec`]: presets e trocar a especificação de um álbum pronto (spec PR).
 //! - [`strips`]: as três faixas de baixo, com título e recolhíveis (spec PN).
 //! - [`forms`]: campos, passos e textos das janelas (novo álbum, exportar, aparência).
 //! - [`exporting`]: exportar pela janela, com a pré-impressão antes (spec EI).
@@ -31,7 +32,9 @@ pub mod forms;
 pub mod keys;
 pub mod photos;
 pub mod prefs_store;
+pub mod presets;
 pub mod relink;
+pub mod respec;
 pub mod screens;
 pub mod session;
 pub mod spreads;
@@ -46,7 +49,7 @@ mod tests;
 
 pub use album::{
     Imported, NewAlbum, SpecFields, Step, check_spreads, count_photos, create_album, folder_name,
-    import_project, project_from, suggestion, suggestion_for, suggestion_text,
+    import_project, project_from, suggestion, suggestion_for, suggestion_text, suggestion_within,
 };
 pub use cache::Cache;
 pub use commands::{Command, Menu};
@@ -59,6 +62,7 @@ pub use exporting::{
 pub use keys::{Key, Shortcut};
 pub use photos::{Filter, PhotoInfo, PhotoItem, photo_info, photo_list, used_photos};
 pub use prefs_store::{PREFS_FILE, PrefsStore, config_dir};
+pub use presets::{PRESETS_FILE, Preset, PresetError, PresetsStore, builtin_presets};
 pub use relink::{
     Found, RELINK_LATER, not_found_message, relinked_message, search_folder, search_near,
 };

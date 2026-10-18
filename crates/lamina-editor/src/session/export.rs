@@ -52,6 +52,7 @@ impl Session {
                 .into_iter()
                 .filter(|name| folder.join(name).exists())
                 .collect(),
+            album: self.page_warning(),
         })
     }
 }

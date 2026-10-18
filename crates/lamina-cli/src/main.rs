@@ -78,6 +78,8 @@ enum Command {
     /// Conferência: monta o álbum e desenha as lâminas num SVG (specs auto-build, renderizacao,
     /// exportacao).
     Auto(auto::AutoArgs),
+    /// Lista os presets: os do Lâmina e os salvos na janela (spec presets).
+    Presets,
     /// Mostra o plano de lâminas: quais fotos vão em cada lâmina (spec plano-de-laminas).
     Plano {
         /// Pasta com as fotos.
@@ -114,6 +116,7 @@ fn main() -> ExitCode {
 fn run(command: Command) -> Result<()> {
     match command {
         Command::Spec(args) => spec::print_spec(&args.album.to_spec()?, args.laminas),
+        Command::Presets => spec::print_presets(),
         Command::Build(args) => build::run(&args)?,
         Command::Exportar(args) => reabrir::run(&args)?,
         Command::Auto(args) => auto::run(&args)?,

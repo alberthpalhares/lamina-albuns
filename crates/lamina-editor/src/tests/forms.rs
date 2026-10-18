@@ -6,8 +6,8 @@ use lamina_core::{Mm, Rgb};
 
 use super::tl_common::{editor_at, three_spreads};
 use crate::forms::{
-    BORDER_FIRST, ExportForm, LookField, SpecText, album_name_error, decimal, mm_text,
-    replace_question,
+    BORDER_FIRST, ExportForm, LookField, SpecText, album_name_error, decimal, format_index,
+    limits_text, mm_text, parse_limits, replace_question,
 };
 use crate::{Command, SpecFields};
 
@@ -101,4 +101,34 @@ fn dica_conforme_a_selecao() {
     assert!(editor.hint().starts_with("Delete tira a foto"));
     assert!(editor.run(Command::CropMode));
     assert!(editor.hint().starts_with("Roda do mouse"));
+}
+
+#[test]
+fn faixa_de_paginas_e_preferencias_da_exportacao() {
+    use lamina_core::{OutputFormat, PageLimits};
+    let limits = parse_limits("20", " 80 ").unwrap();
+    assert_eq!((limits.min, limits.max), (Some(20), Some(80)));
+    assert_eq!(limits_text(limits), ("20".to_owned(), "80".to_owned()));
+    assert_eq!(parse_limits("", "").unwrap(), PageLimits::default());
+    assert_eq!(
+        parse_limits("50", "20").unwrap_err(),
+        "O mínimo de páginas passa do máximo."
+    );
+    assert_eq!(
+        parse_limits("vinte", "").unwrap_err(),
+        "Páginas mínimas: digite um número inteiro maior que zero."
+    );
+    assert_eq!(format_index(OutputFormat::Tiff), 2);
+    let form = ExportForm {
+        quality: 95,
+        all_spreads: true,
+        range: String::new(),
+        pages: true,
+        format: crate::exporting::ExportFormat::Pdf,
+        crop_marks: false,
+        space: lamina_core::ColorSpace::AdobeRgb,
+    };
+    let prefs = form.prefs();
+    assert_eq!(prefs.format, OutputFormat::Pdf);
+    assert!(prefs.pages);
 }

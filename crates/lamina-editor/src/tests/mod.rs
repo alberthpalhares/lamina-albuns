@@ -15,6 +15,7 @@ mod jp_session;
 mod jp_speed;
 mod jp_view;
 mod pn;
+mod pr;
 mod rc;
 mod tl_change;
 mod tl_common;
