@@ -8,6 +8,12 @@ ignore = [
     # `ttf-parser` sem manutenção (não é falha de segurança). Chega pelo winit (decorações de
     # janela no Wayland), dentro do Slint; sai quando o Slint atualizar o winit (ADR 0002).
     { id = "RUSTSEC-2026-0192", reason = "transitivo do Slint/winit; revisar a cada versão do Slint" },
+    # `zbus_names`, `zvariant` e `zvariant_derive` viraram módulos do `zbus` 6 (não é falha de
+    # segurança). Chegam pela acessibilidade do Slint no Linux (accesskit/atspi) e pelo rfd; saem
+    # quando eles passarem para o `zbus` 6 (ADR 0002).
+    { id = "RUSTSEC-2026-0370", reason = "transitivo do Slint/rfd; revisar a cada versão do Slint" },
+    { id = "RUSTSEC-2026-0371", reason = "transitivo do Slint/rfd; revisar a cada versão do Slint" },
+    { id = "RUSTSEC-2026-0372", reason = "transitivo do Slint/rfd; revisar a cada versão do Slint" },
 ]
 
 [licenses]
