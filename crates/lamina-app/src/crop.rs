@@ -75,7 +75,16 @@ pub fn refresh_spread(app: &mut App) {
     sync_original(app, &project, index);
     let images = app.images.spread(&project, index, &app.cache);
     let image = |id: PhotoId| images.get(&id).cloned();
-    w.set_current(spread_data(&project, index, &missing, &image, warning));
+    let mut data = spread_data(
+        &project,
+        index,
+        &missing,
+        &image,
+        (warning, crate::texts::BIG),
+    );
+    data.snaps = crate::hand::snap_boxes(app, &project);
+    data.frames = crate::hand::stable_frames(&data.frames);
+    w.set_current(data);
     w.set_current_index(i32::try_from(index).unwrap_or(0));
     let as_i32 = |f: Option<usize>| f.and_then(|f| i32::try_from(f).ok()).unwrap_or(-1);
     w.set_selected_frame(as_i32(app.editor.selected_frame()));
@@ -131,9 +140,15 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     window.on_frame_double(move |i| {
         let mut app = a.borrow_mut();
-        if let Ok(frame) = usize::try_from(i)
-            && app.editor.enter_crop(frame)
-        {
+        let Ok(frame) = usize::try_from(i) else {
+            return;
+        };
+        // Duplo clique num texto põe o cursor no campo do texto (spec TX).
+        app.editor.select_frame(Some(frame));
+        if app.editor.selected_text().is_some() {
+            app.refresh_current();
+            crate::frame_panel::focus_text(&app);
+        } else if app.editor.enter_crop(frame) {
             app.refresh_current();
         }
     });

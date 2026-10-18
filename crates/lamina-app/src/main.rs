@@ -11,6 +11,8 @@ mod crop;
 mod drag;
 mod export;
 mod files;
+mod frame_panel;
+mod hand;
 mod history;
 mod images;
 mod input;
@@ -21,6 +23,7 @@ mod presets;
 mod relink;
 mod spec_dialog;
 mod state;
+mod texts;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -68,6 +71,8 @@ fn connect(window: &AppWindow, app: &Shared) {
     drag::connect(window, app);
     crop::connect(window, app);
     look::connect(window, app);
+    hand::connect(window, app);
+    frame_panel::connect(window, app);
     history::connect(window, app);
 }
 

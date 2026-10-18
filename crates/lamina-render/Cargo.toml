@@ -13,7 +13,9 @@ publish = false
 lamina-core = { workspace = true }
 fast_image_resize = { workspace = true }
 image = { workspace = true }
+parley = { workspace = true }
 rayon = { workspace = true }
+skrifa = { workspace = true }
 thiserror = { workspace = true }
 tiny-skia = { workspace = true }
 

@@ -7,11 +7,11 @@ use std::rc::Rc;
 use lamina_core::PageSide;
 use lamina_editor::forms::{LookField, mm_text};
 use lamina_editor::{BAD_COLOR, PALETTE, color_hex, parse_color};
-use slint::Color;
+use slint::{Color, ComponentHandle};
 
 use crate::convert::model;
 use crate::state::App;
-use crate::{AppWindow, Swatch};
+use crate::{AppWindow, LookUi, Swatch};
 
 type Shared = Rc<RefCell<App>>;
 
@@ -30,17 +30,25 @@ pub fn refresh(app: &App) {
             name: (*name).into(),
         })
         .collect();
-    w.set_palette(model(palette));
-    w.set_look_gap(mm_text(look.gap.get()).into());
-    w.set_look_border(mm_text(look.border.width.get()).into());
-    w.set_look_radius(mm_text(look.radius.get()).into());
-    w.set_look_split(look.split);
-    w.set_look_left(color(look.left));
-    w.set_look_right(color(look.right));
-    w.set_look_border_color(color(look.border.color));
-    w.set_look_only_frame(look.only_frame);
-    if w.get_look_hex_error().is_empty() {
-        w.set_look_hex(color_hex(look.left).into());
+    let ui = w.global::<LookUi>();
+    ui.set_palette(model(palette));
+    ui.set_gap(mm_text(look.gap.get()).into());
+    ui.set_border(mm_text(look.border.width.get()).into());
+    ui.set_radius(mm_text(look.radius.get()).into());
+    ui.set_split(look.split);
+    ui.set_left(color(look.left));
+    ui.set_right(color(look.right));
+    ui.set_border_color(color(look.border.color));
+    ui.set_only_frame(look.only_frame);
+    let manual = app.editor.session().is_some_and(|s| {
+        s.project()
+            .spreads
+            .get(s.current())
+            .is_some_and(|sp| sp.manual)
+    });
+    ui.set_manual(manual);
+    if ui.get_hex_error().is_empty() {
+        ui.set_hex(color_hex(look.left).into());
     }
 }
 
@@ -60,14 +68,15 @@ fn step(app: &Shared, field: LookField, delta: i32) {
 }
 
 pub fn connect(window: &AppWindow, app: &Shared) {
+    let ui = window.global::<LookUi>();
     let a = app.clone();
-    window.on_look_gap_step(move |d| step(&a, LookField::Gap, d));
+    ui.on_gap_step(move |d| step(&a, LookField::Gap, d));
     let a = app.clone();
-    window.on_look_border_step(move |d| step(&a, LookField::Border, d));
+    ui.on_border_step(move |d| step(&a, LookField::Border, d));
     let a = app.clone();
-    window.on_look_radius_step(move |d| step(&a, LookField::Radius, d));
+    ui.on_radius_step(move |d| step(&a, LookField::Radius, d));
     let a = app.clone();
-    window.on_look_background(move |i, side| {
+    ui.on_background(move |i, side| {
         let mut app = a.borrow_mut();
         let Some((_, c)) = usize::try_from(i).ok().and_then(|i| PALETTE.get(i)) else {
             return;
@@ -81,22 +90,22 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         after(&mut app, None);
     });
     let a = app.clone();
-    window.on_look_background_hex(move |text| {
+    ui.on_background_hex(move |text| {
         let mut app = a.borrow_mut();
         let Some(w) = app.window.upgrade() else {
             return;
         };
         match parse_color(&text) {
             Some(c) => {
-                w.set_look_hex_error("".into());
+                w.global::<LookUi>().set_hex_error("".into());
                 app.editor.set_background(c, None);
                 after(&mut app, None);
             }
-            None => w.set_look_hex_error(BAD_COLOR.into()),
+            None => w.global::<LookUi>().set_hex_error(BAD_COLOR.into()),
         }
     });
     let a = app.clone();
-    window.on_look_split_changed(move |on| {
+    ui.on_split_changed(move |on| {
         let mut app = a.borrow_mut();
         let Some(look) = app.editor.look() else {
             return;
@@ -106,7 +115,7 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         after(&mut app, None);
     });
     let a = app.clone();
-    window.on_look_border_pick(move |i| {
+    ui.on_border_pick(move |i| {
         let mut app = a.borrow_mut();
         let Some((_, c)) = usize::try_from(i).ok().and_then(|i| PALETTE.get(i)) else {
             return;
@@ -115,7 +124,7 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         after(&mut app, None);
     });
     let a = app.clone();
-    window.on_look_apply_all(move || {
+    ui.on_apply_all(move || {
         let mut app = a.borrow_mut();
         app.editor.style_all();
         after(&mut app, None);

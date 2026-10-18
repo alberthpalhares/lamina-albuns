@@ -14,6 +14,7 @@ mod asserts;
 mod docs;
 mod espelho;
 mod esquema;
+mod fontes;
 mod layers;
 mod portao;
 mod sala_limpa;

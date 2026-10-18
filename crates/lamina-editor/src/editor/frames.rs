@@ -91,7 +91,7 @@ impl Editor {
     }
 
     /// Edição na lâmina atual com rótulo; `true` = mudou.
-    fn change(
+    pub(super) fn change(
         &mut self,
         label: &str,
         f: impl FnOnce(&mut Project, usize) -> Result<(), EditorError>,

@@ -3,10 +3,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use lamina_editor::frame_form::page_at;
 use lamina_editor::{Command, Key, Shortcut};
 
 use crate::state::{App, Pending};
-use crate::{AppWindow, export, files, relink, spec_dialog};
+use crate::{AppWindow, export, files, frame_panel, relink, spec_dialog};
 
 type Shared = Rc<RefCell<App>>;
 
@@ -35,6 +36,7 @@ pub fn run_command(app: &Shared, command: Command) {
                 w.set_show_about(true);
             }
         }
+        Command::NewText => new_text(&mut a),
         _ => {
             // Navegar e as guias só mudam a lâmina mostrada; o resto edita o álbum e muda também
             // a faixa, a timeline e os usos no navegador.
@@ -57,6 +59,19 @@ pub fn run_command(app: &Shared, command: Command) {
                 }
             }
         }
+    }
+}
+
+/// T: texto novo na página sob o mouse, com o cursor no campo do texto (spec TX, regra 11).
+fn new_text(app: &mut App) {
+    let fx = app.window.upgrade().map_or(-1.0, |w| w.get_hover_fx());
+    let side = app
+        .editor
+        .session()
+        .and_then(|s| page_at(s.project(), f64::from(fx)));
+    if app.editor.new_text(side) {
+        app.refresh_all();
+        frame_panel::focus_text(app);
     }
 }
 
@@ -104,6 +119,12 @@ pub fn connect(window: &AppWindow, app: &Shared) {
             alt,
             key,
         };
+        // Alt+setas movem o quadro selecionado (spec TX); sem quadro, seguem como atalho.
+        let nudged = a.borrow_mut().editor.nudge_key(shortcut);
+        if nudged {
+            a.borrow_mut().refresh_all();
+            return true;
+        }
         let Some(command) = Command::from_shortcut(shortcut) else {
             return false;
         };

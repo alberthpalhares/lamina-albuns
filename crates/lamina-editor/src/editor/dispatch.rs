@@ -32,7 +32,9 @@ impl Editor {
             Command::NextRight | Command::PreviousRight => self.can_step(Part::Right),
             Command::Mirror => self.can_mirror(),
             Command::Favorite | Command::Reject => self.panel(Part::Spread).in_use.is_some(),
-            Command::ClearFrame => self.can_clear(),
+            Command::ClearFrame => self.selected_content().is_some(),
+            Command::NewText | Command::NewPhotoFrame => true,
+            Command::BringForward | Command::SendBackward => self.can_reorder(),
             Command::Deselect => {
                 self.selected_frame.is_some()
                     || !self.selection.is_empty()
@@ -91,7 +93,11 @@ impl Editor {
             Command::Mirror => self.mirror(),
             Command::Favorite => self.favorite(),
             Command::Reject => self.reject(),
-            Command::ClearFrame => self.clear_selected(),
+            Command::ClearFrame => self.delete_selected(),
+            Command::NewText => self.new_text(None),
+            Command::NewPhotoFrame => self.new_photo_frame(None),
+            Command::BringForward => self.reorder_selected(true),
+            Command::SendBackward => self.reorder_selected(false),
             Command::Deselect => {
                 self.selected_frame = None;
                 self.selection.clear();

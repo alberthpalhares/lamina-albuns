@@ -24,6 +24,8 @@ export struct FrameData {
     ch: int,
     missing: bool,
     label: string,
+    // Texto vazio (spec TX, regra 4): só o contorno e "Digite o texto", que não saem impressos.
+    blank: bool,
     // Cantos (cima-esquerda, cima-direita, baixo-direita, baixo-esquerda) e borda (spec AP).
     tl: float,
     tr: float,
@@ -48,7 +50,11 @@ export struct SpreadData {
     inactive: [BoxData],
     frames: [FrameData],
     warning: bool,
+    // Linhas das guias que pegaram no ímã (spec TX, regra 7).
+    snaps: [BoxData],
 }
+
+import { Handles } from "handles.slint";
 
 export component SpreadCanvas inherits Rectangle {
     in property <SpreadData> data;
@@ -70,6 +76,13 @@ export component SpreadCanvas inherits Rectangle {
     callback crop-end();
     // Quanto a roda girou, em pixels (um entalhe da roda costuma valer 120).
     callback crop-wheel(float);
+    // Quadros à mão (spec TX): segurar uma alça (ou um texto), arrastar e soltar. O último
+    // número de `grab` é a largura da lâmina em pixels, para o Rust converter em mm.
+    callback grab(int, int, length, length, length);
+    callback grab-move(length, length, bool);
+    callback grab-end();
+    // Onde o mouse está na lâmina, em frações da largura (o T cria o texto naquela página).
+    in-out property <float> hover-fx: -1;
     background: root.data.bg;
     clip: true;
 
@@ -79,6 +92,10 @@ export component SpreadCanvas inherits Rectangle {
         width: root.width - self.x;
         height: root.height;
         background: root.data.bg-right;
+    }
+
+    if root.interactive: TouchArea {
+        changed mouse-x => { root.hover-fx = self.mouse-x / root.width; }
     }
 
     // Prévia do recorte: a foto inteira, apagada, por baixo dos quadros.
@@ -102,7 +119,7 @@ export component SpreadCanvas inherits Rectangle {
         border-top-right-radius: f.tr * root.width;
         border-bottom-right-radius: f.br * root.width;
         border-bottom-left-radius: f.bl * root.width;
-        background: f.has-img ? transparent : #8a8a8a;
+        background: f.kind == 2 || f.has-img ? transparent : #8a8a8a;
         if f.has-img: Image {
             width: parent.width;
             height: parent.height;
@@ -113,6 +130,11 @@ export component SpreadCanvas inherits Rectangle {
             source-clip-width: f.cw;
             source-clip-height: f.ch;
         }
+        if f.blank && !root.small: Rectangle {
+            border-width: 1px;
+            border-color: #80808099;
+            Text { text: "Digite o texto"; color: #808080; font-size: 12px; }
+        }
         if f.missing && !root.small: Text {
             width: parent.width - 16px;
             text: "Foto não encontrada\n" + f.label;
@@ -122,12 +144,30 @@ export component SpreadCanvas inherits Rectangle {
             wrap: word-wrap;
         }
         if root.interactive: TouchArea {
-            mouse-cursor: f.has-img ? move : default;
+            mouse-cursor: f.kind == 2 || f.has-img ? move : default;
             double-clicked => { root.frame-double(i); }
             moved => {
-                root.frame-move(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                if (f.kind != 2) {
+                    root.frame-move(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                }
+            }
+            changed mouse-x => {
+                root.hover-fx = (self.absolute-position.x + self.mouse-x - root.absolute-position.x) / root.width;
             }
             pointer-event(e) => {
+                // O texto não tem foto para arrastar: segurar o corpo dele move o quadro.
+                if (f.kind == 2) {
+                    if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                        root.grab(i, 0, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, root.width);
+                    }
+                    if (e.kind == PointerEventKind.move && self.pressed) {
+                        root.grab-move(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, e.modifiers.alt);
+                    }
+                    if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                        root.grab-end();
+                    }
+                    return;
+                }
                 if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
                     root.frame-down(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
                 }
@@ -136,7 +176,7 @@ export component SpreadCanvas inherits Rectangle {
                 }
             }
         }
-        if i == root.selected: Rectangle {
+        if i == root.selected && i == root.cropping: Rectangle {
             border-width: 3px;
             border-color: i == root.cropping ? #e3b341 : #4fc3f7;
         }
@@ -212,6 +252,26 @@ export component SpreadCanvas inherits Rectangle {
             border-width: 1px;
             border-color: #4fc3f799;
         }
+    }
+
+    // Linhas do ímã durante o gesto.
+    for b in root.data.snaps: Rectangle {
+        x: b.x * root.width;
+        y: b.y * root.width;
+        width: max(1px, b.w * root.width);
+        height: max(1px, b.h * root.width);
+        background: #ff4fd8;
+    }
+
+    // Alças do quadro selecionado (fora do modo recorte).
+    if root.interactive && !root.small && root.cropping < 0 && root.selected >= 0 && root.selected < root.data.frames.length: Handles {
+        fx: root.data.frames[root.selected].x * root.width;
+        fy: root.data.frames[root.selected].y * root.width;
+        fw: root.data.frames[root.selected].w * root.width;
+        fh: root.data.frames[root.selected].h * root.width;
+        grab(n, x, y) => { root.grab(root.selected, n, x, y, root.width); }
+        drag(x, y, alt) => { root.grab-move(x, y, alt); }
+        release => { root.grab-end(); }
     }
 
     // Quadro em modo recorte: por cima de tudo (inclusive das guias, que senão ficam com a roda

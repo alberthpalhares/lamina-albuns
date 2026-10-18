@@ -34,6 +34,14 @@ pub enum WarningKind {
     EmptyFrame,
     /// Quadro fora da zona segura sem encostar no corte, a `distance` dele.
     NearCut { photo: String, distance: Mm },
+    /// O texto passa da altura do quadro (spec TX, regra 3).
+    TextOverflow { text: String },
+    /// O texto sai da zona segura ou atravessa a dobra.
+    TextOutsideSafe { text: String },
+    /// A fonte do texto não tem o caractere.
+    MissingChar { char: char },
+    /// A fonte do projeto não existe nesta versão; o texto sai na padrão.
+    UnknownFont { font: String },
 }
 
 impl fmt::Display for Warning {
@@ -53,6 +61,23 @@ impl fmt::Display for Warning {
                 f,
                 "Lâmina {n}: a foto {photo} está fora da zona segura, a {} mm do corte.",
                 millimeters(distance.get())
+            ),
+            WarningKind::TextOverflow { text } => {
+                write!(f, "Lâmina {n}: o texto \"{text}\" não cabe no quadro.")
+            }
+            WarningKind::TextOutsideSafe { text } => {
+                write!(
+                    f,
+                    "Lâmina {n}: o texto \"{text}\" está fora da zona segura."
+                )
+            }
+            WarningKind::MissingChar { char } => {
+                write!(f, "Lâmina {n}: a fonte não tem o caractere \"{char}\".")
+            }
+            WarningKind::UnknownFont { font } => write!(
+                f,
+                "Lâmina {n}: a fonte \"{font}\" não existe nesta versão; o texto usa {}.",
+                lamina_core::DEFAULT_FONT
             ),
         }
     }
@@ -87,8 +112,12 @@ pub fn preflight(project: &Project, spreads: &[usize]) -> Vec<Warning> {
 }
 
 fn check(project: &Project, frame: &Frame) -> Vec<WarningKind> {
-    let FrameContent::Photo { photo, .. } = &frame.content else {
-        return vec![WarningKind::EmptyFrame];
+    let photo = match &frame.content {
+        FrameContent::Photo { photo, .. } => photo,
+        FrameContent::Text(text) => {
+            return crate::preflight_text::text_warnings(project, text, project.frame_rect(frame));
+        }
+        FrameContent::Empty => return vec![WarningKind::EmptyFrame],
     };
     // Foto que não existe no projeto: a validação do projeto já recusa isso ao abrir.
     let Ok(photo) = project.photo(*photo) else {

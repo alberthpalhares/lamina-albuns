@@ -3,7 +3,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use super::{FrameId, PhotoId, SpreadId};
+use super::{FrameId, PhotoId, SpreadId, TextBox};
 use crate::{CoreError, Mm, PageSide, RelRect};
 
 /// Cor RGB de 8 bits (sRGB).
@@ -138,12 +138,8 @@ pub enum FrameContent {
         #[serde(default)]
         crop: Crop,
     },
-    Text {
-        text: String,
-        /// Tamanho da fonte em pontos tipográficos.
-        size_pt: f64,
-        color: Rgb,
-    },
+    /// Quadro de texto (spec TX).
+    Text(TextBox),
 }
 
 /// Borda desenhada para dentro do quadro (spec AP, regra 4). Largura 0 = sem borda.
@@ -189,6 +185,10 @@ pub struct Spread {
     #[serde(default)]
     pub gap: Option<Mm>,
     pub frames: Vec<Frame>,
+    /// Quadros de foto mexidos à mão (spec TX, regra 8): o espaço entre fotos e a troca da
+    /// especificação não refazem o desenho desta lâmina.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub manual: bool,
 }
 
 impl Spread {

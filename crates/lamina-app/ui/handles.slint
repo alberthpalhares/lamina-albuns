@@ -1,0 +1,90 @@
+// As alças do quadro selecionado (spec TX, seção 3): 8 de tamanho e a de mover, acima do quadro.
+// Os números das alças: 0 = mover; 1 a 8 = canto de cima à esquerda e depois no sentido do
+// relógio (cima, canto de cima à direita, direita, canto de baixo à direita, baixo, canto de
+// baixo à esquerda, esquerda). As contas são do editor.
+
+import { Theme } from "theme.slint";
+
+export struct Grip {
+    gx: float,
+    gy: float,
+}
+
+component Knob inherits Rectangle {
+    in property <int> grip;
+    in property <MouseCursor> cursor;
+    callback grab(int, length, length);
+    callback drag(length, length, bool);
+    callback release();
+    area := TouchArea {
+        mouse-cursor: root.cursor;
+        pointer-event(e) => {
+            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                root.grab(root.grip, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+            }
+            if (e.kind == PointerEventKind.move && self.pressed) {
+                root.drag(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, e.modifiers.alt);
+            }
+            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                root.release();
+            }
+        }
+    }
+}
+
+export component Handles inherits Rectangle {
+    // O quadro em pixels da lâmina.
+    in property <length> fx;
+    in property <length> fy;
+    in property <length> fw;
+    in property <length> fh;
+    callback grab(int, length, length);
+    callback drag(length, length, bool);
+    callback release();
+    property <[Grip]> grips: [
+        { gx: 0, gy: 0 }, { gx: 0.5, gy: 0 }, { gx: 1, gy: 0 }, { gx: 1, gy: 0.5 },
+        { gx: 1, gy: 1 }, { gx: 0.5, gy: 1 }, { gx: 0, gy: 1 }, { gx: 0, gy: 0.5 },
+    ];
+    property <[MouseCursor]> cursors: [
+        MouseCursor.nwse-resize, MouseCursor.ns-resize, MouseCursor.nesw-resize, MouseCursor.ew-resize,
+        MouseCursor.nwse-resize, MouseCursor.ns-resize, MouseCursor.nesw-resize, MouseCursor.ew-resize,
+    ];
+
+    Rectangle {
+        x: root.fx;
+        y: root.fy;
+        width: root.fw;
+        height: root.fh;
+        border-width: 2px;
+        border-color: Theme.selected;
+    }
+    for g[i] in root.grips: Knob {
+        x: root.fx + g.gx * root.fw - 5px;
+        y: root.fy + g.gy * root.fh - 5px;
+        width: 10px;
+        height: 10px;
+        background: white;
+        border-width: 1px;
+        border-color: Theme.selected;
+        grip: i + 1;
+        cursor: root.cursors[i];
+        grab(n, x, y) => { root.grab(n, x, y); }
+        drag(x, y, alt) => { root.drag(x, y, alt); }
+        release => { root.release(); }
+    }
+    // Alça de mover: acima do quadro, ou dentro dele quando não há espaço em cima.
+    Knob {
+        x: root.fx + root.fw / 2 - 9px;
+        y: root.fy >= 26px ? root.fy - 24px : root.fy + 6px;
+        width: 18px;
+        height: 18px;
+        border-radius: 9px;
+        background: Theme.selected;
+        grip: 0;
+        cursor: MouseCursor.move;
+        grab(n, x, y) => { root.grab(n, x, y); }
+        drag(x, y, alt) => { root.drag(x, y, alt); }
+        release => { root.release(); }
+        Text { text: "✥"; color: white; font-size: 12px; }
+    }
+}

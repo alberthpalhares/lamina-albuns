@@ -2,16 +2,20 @@
 //!
 //! Renderizador único (ADR 0006): a mesma cena gera a prévia na tela e o arquivo de
 //! impressão (spec `renderizacao`). Tela de desenho com `tiny-skia`; fotos reduzidas com
-//! `fast_image_resize`. Texto e bordas chegam nos Marcos 2 e 3.
+//! `fast_image_resize`; texto com `parley` e `skrifa`, só com as fontes embutidas (spec TX).
 
 mod place;
 mod render;
 mod style;
+mod text;
 mod types;
 
 pub use place::{Bled, PixelBox, Scale, bleed, pixels, region};
 pub use render::{render_spread, render_spread_with};
 pub use style::Fill;
+pub use text::{
+    FAMILIES, Family, TextCheck, check_text, family, known_families, text_image, text_lines,
+};
 pub use types::{MIN_PREVIEW, PhotoSource, RenderError, RenderTarget};
 
 use lamina_core::AlbumSpec;
@@ -80,3 +84,7 @@ mod tests {
 #[cfg(test)]
 #[path = "tests/rd.rs"]
 mod rd;
+
+#[cfg(test)]
+#[path = "tests/tx.rs"]
+mod tx;

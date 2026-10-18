@@ -115,19 +115,27 @@ impl Editor {
             .is_ok()
     }
 
-    /// O projeto como a janela mostra: com o recorte provisório aplicado.
+    /// O projeto como a janela mostra: com o recorte provisório e o quadro do gesto (spec TX)
+    /// onde estão agora.
     pub fn view_project(&self) -> Option<Cow<'_, Project>> {
         let s = self.session.as_ref()?;
-        let (Some(frame), Some(crop)) = (self.crop_frame, self.pending_crop) else {
+        let pending = self.crop_frame.zip(self.pending_crop);
+        let gesture = self.gesture_rect();
+        if pending.is_none() && gesture.is_none() {
             return Some(Cow::Borrowed(s.project()));
-        };
+        }
         let mut project = s.project().clone();
-        if let Some(FrameContent::Photo { crop: c, .. }) = project.spreads[s.current()]
-            .frames
-            .get_mut(frame)
-            .map(|f| &mut f.content)
+        if let Some((frame, crop)) = pending
+            && let Some(FrameContent::Photo { crop: c, .. }) = project.spreads[s.current()]
+                .frames
+                .get_mut(frame)
+                .map(|f| &mut f.content)
         {
             *c = crop;
+        }
+        if let Some((frame, rect)) = gesture {
+            // O retângulo do gesto já foi preso ao corte; erro aqui só deixa o quadro onde estava.
+            let _ = crate::hand::set_rect(&mut project, s.current(), frame, rect);
         }
         Some(Cow::Owned(project))
     }

@@ -2,7 +2,7 @@
 //! sangria, outras pontas. Cada lâmina é refeita na proporção nova com o mesmo desenho
 //! (`design_key`), as mesmas fotos e os mesmos centros de recorte, como ao mudar o espaço (AP).
 
-use lamina_core::{AlbumSpec, PageLimits, Project};
+use lamina_core::{AlbumSpec, FrameContent, PageLimits, Project};
 use lamina_layout::design_key;
 
 use crate::edits::{layout_with, spread_photos};
@@ -32,6 +32,16 @@ pub fn respec(project: &mut Project, spec: AlbumSpec) -> Result<Vec<usize>, Edit
     for (index, design) in designs.into_iter().enumerate() {
         let photos = spread_photos(project, index);
         if photos.is_empty() {
+            continue;
+        }
+        // Lâmina à mão: os quadros ficam como estão; só os recortes voltam ao zoom 1, com os
+        // mesmos centros (spec TX, regra 8).
+        if project.spreads[index].manual {
+            for frame in &mut project.spreads[index].frames {
+                if let FrameContent::Photo { crop, .. } = &mut frame.content {
+                    *crop = crate::suggestions::keep_center(*crop);
+                }
+            }
             continue;
         }
         let kept = match selection(project, index, Part::Spread) {

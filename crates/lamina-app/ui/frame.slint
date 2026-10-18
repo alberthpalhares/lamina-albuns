@@ -1,0 +1,176 @@
+// A aba Quadro (spec TX, seção 3): medidas do quadro selecionado em mm e, num quadro de texto, o
+// texto e os campos dele. Só desenho: os valores e as edições vêm do editor.
+
+import { Button, CheckBox, ComboBox, LineEdit, ScrollView, TextEdit } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { LookUi, Swatches } from "look.slint";
+
+export global FrameUi {
+    in property <bool> has-frame;
+    in property <bool> is-text;
+    in-out property <string> x;
+    in-out property <string> y;
+    in-out property <string> w;
+    in-out property <string> h;
+    in property <string> rect-error;
+    in-out property <string> text;
+    in property <[string]> fonts;
+    in-out property <int> font: -1;
+    in-out property <string> size;
+    in property <string> size-error;
+    in-out property <bool> bold;
+    in-out property <bool> italic;
+    in property <bool> can-bold;
+    in property <bool> can-italic;
+    in property <color> color;
+    in property <int> align;
+    in property <int> valign;
+    in-out property <string> spacing;
+    in property <string> spacing-error;
+    // Sobe a cada pedido de pôr o cursor no texto (T e duplo clique num texto).
+    in property <int> focus-count;
+    callback rect-accepted();
+    callback text-edited(string);
+    callback font-picked(int);
+    callback size-accepted(string);
+    callback bold-toggled(bool);
+    callback italic-toggled(bool);
+    callback color-picked(int);
+    callback align-picked(int);
+    callback valign-picked(int);
+    callback spacing-accepted(string);
+}
+
+component Label inherits Text {
+    color: Theme.muted;
+    font-size: 12px;
+    vertical-alignment: center;
+}
+
+component Error inherits Text {
+    color: Theme.warning;
+    font-size: 12px;
+    wrap: word-wrap;
+}
+
+// Três botões em que um fica marcado (alinhamento).
+component Choice inherits HorizontalLayout {
+    in property <[string]> labels;
+    in property <int> chosen;
+    callback picked(int);
+    spacing: 4px;
+    for t[i] in root.labels: Button {
+        text: t;
+        primary: i == root.chosen;
+        clicked => { root.picked(i); }
+    }
+}
+
+// Com rolagem: o painel não pode crescer a ponto de aumentar a janela.
+export component FramePanel inherits ScrollView {
+    // Depois de um clique, o teclado volta para a lâmina.
+    callback done();
+    property <int> focus-count: FrameUi.focus-count;
+    changed focus-count => { if (FrameUi.is-text) { editor.focus(); } }
+    // Saiu de um texto: o campo escondido não pode ficar com o teclado.
+    property <bool> text-on: FrameUi.is-text;
+    changed text-on => { if (!root.text-on) { root.done(); } }
+    VerticalLayout {
+        width: root.visible-width;
+        spacing: 8px;
+
+        if !FrameUi.has-frame: Text {
+            text: "Clique num quadro para ver as medidas dele. T cria um texto.";
+            color: Theme.muted;
+            wrap: word-wrap;
+        }
+        if FrameUi.has-frame: Label { text: "Posição e tamanho (mm, a partir do corte)"; }
+        if FrameUi.has-frame: GridLayout {
+            spacing: 6px;
+            Row {
+                Label { text: "X"; }
+                LineEdit { width: 84px; text <=> FrameUi.x; accepted => { FrameUi.rect-accepted(); } }
+                Label { text: "Y"; }
+                LineEdit { width: 84px; text <=> FrameUi.y; accepted => { FrameUi.rect-accepted(); } }
+            }
+            Row {
+                Label { text: "Larg."; }
+                LineEdit { width: 84px; text <=> FrameUi.w; accepted => { FrameUi.rect-accepted(); } }
+                Label { text: "Alt."; }
+                LineEdit { width: 84px; text <=> FrameUi.h; accepted => { FrameUi.rect-accepted(); } }
+            }
+        }
+        if FrameUi.rect-error != "": Error { text: FrameUi.rect-error; }
+
+        if FrameUi.is-text: Label { text: "Texto"; }
+        editor := TextEdit {
+            visible: FrameUi.is-text;
+            height: FrameUi.is-text ? 90px : 0px;
+            text <=> FrameUi.text;
+            wrap: word-wrap;
+            edited(t) => { FrameUi.text-edited(t); }
+            init => { if (FrameUi.is-text && FrameUi.focus-count > 0) { self.focus(); } }
+        }
+        if FrameUi.is-text: Label { text: "Fonte"; }
+        if FrameUi.is-text: ComboBox {
+            model: FrameUi.fonts;
+            current-index <=> FrameUi.font;
+            selected => { FrameUi.font-picked(self.current-index); root.done(); }
+        }
+        if FrameUi.is-text: HorizontalLayout {
+            spacing: 8px;
+            Label { text: "Tamanho (pt)"; }
+            LineEdit {
+                width: 64px;
+                text <=> FrameUi.size;
+                accepted(t) => { FrameUi.size-accepted(t); }
+            }
+            Rectangle { horizontal-stretch: 1; }
+        }
+        if FrameUi.is-text: HorizontalLayout {
+            spacing: 8px;
+            CheckBox {
+                text: "Negrito";
+                enabled: FrameUi.can-bold;
+                checked <=> FrameUi.bold;
+                toggled => { FrameUi.bold-toggled(self.checked); root.done(); }
+            }
+            CheckBox {
+                text: "Itálico";
+                enabled: FrameUi.can-italic;
+                checked <=> FrameUi.italic;
+                toggled => { FrameUi.italic-toggled(self.checked); root.done(); }
+            }
+        }
+        if FrameUi.is-text && FrameUi.size-error != "": Error { text: FrameUi.size-error; }
+        if FrameUi.is-text: Label { text: "Cor"; }
+        if FrameUi.is-text: Swatches {
+            palette: LookUi.palette;
+            chosen: FrameUi.color;
+            pick(i) => { FrameUi.color-picked(i); root.done(); }
+        }
+        if FrameUi.is-text: Label { text: "Alinhamento"; }
+        if FrameUi.is-text: Choice {
+            labels: ["Esquerda", "Centro", "Direita"];
+            chosen: FrameUi.align;
+            picked(i) => { FrameUi.align-picked(i); root.done(); }
+        }
+        if FrameUi.is-text: Choice {
+            labels: ["Topo", "Meio", "Base"];
+            chosen: FrameUi.valign;
+            picked(i) => { FrameUi.valign-picked(i); root.done(); }
+        }
+        if FrameUi.is-text: HorizontalLayout {
+            spacing: 8px;
+            Label { text: "Entrelinha"; }
+            LineEdit {
+                width: 64px;
+                text <=> FrameUi.spacing;
+                accepted(t) => { FrameUi.spacing-accepted(t); }
+            }
+            Rectangle { horizontal-stretch: 1; }
+        }
+        if FrameUi.is-text && FrameUi.spacing-error != "": Error { text: FrameUi.spacing-error; }
+        Rectangle { vertical-stretch: 1; }
+    }
+}

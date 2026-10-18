@@ -27,7 +27,9 @@ Diagramador de álbuns fotográficos em Rust, para Windows, macOS e Linux. Proje
 ## Compilar\n\n\
 ```bash\ncargo run --release -p lamina-app   # a janela\ncargo xtask verify                  # formatação, lint, testes e checagens\n```\n\n\
 No Linux, a janela precisa de `libfontconfig1-dev`, `libxkbcommon-dev` e `libwayland-dev`.\n\n\
-## Licença\n\nApache-2.0 (arquivo `LICENSE`). A interface usa o Slint sob a licença Royalty-free 2.0.\n";
+## Licença\n\nApache-2.0 (arquivo `LICENSE`). A interface usa o Slint sob a licença Royalty-free 2.0. \
+As fontes em `crates/lamina-render/fonts/` têm a licença SIL OFL 1.1 (o `OFL.txt` fica na pasta \
+de cada uma).\n";
 
 /// Caminhos de `CODE` relativos à raiz, arquivo por arquivo (sem `target`).
 pub fn files(root: &Path) -> Vec<PathBuf> {
