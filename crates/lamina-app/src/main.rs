@@ -13,10 +13,13 @@ mod export;
 mod files;
 mod history;
 mod images;
+mod input;
 mod look;
 mod new_album;
 mod panel;
+mod presets;
 mod relink;
+mod spec_dialog;
 mod state;
 
 use std::cell::RefCell;
@@ -25,8 +28,8 @@ use std::sync::mpsc::channel;
 use std::time::Duration;
 
 use lamina_editor::{
-    Cache, Command, Editor, Filter, Key, PREFS_FILE, Part, PrefsStore, STRIPS_FILE, Shortcut,
-    StripsStore, config_dir,
+    Cache, Command, Editor, Filter, PREFS_FILE, PRESETS_FILE, Part, PrefsStore, PresetsStore,
+    STRIPS_FILE, StripsStore, config_dir,
 };
 use slint::{CloseRequestResponse, ComponentHandle, Timer, TimerMode};
 
@@ -49,80 +52,8 @@ pub use ui::*;
 
 type Shared = Rc<RefCell<App>>;
 
-/// Roda um comando do registro (menu, botões e teclado passam por aqui).
-fn run_command(app: &Shared, command: Command) {
-    let mut a = app.borrow_mut();
-    // O menu também obedece: no meio de um trabalho em segundo plano, nada além de "Sobre".
-    if !a.editor.available(command) {
-        return;
-    }
-    match command {
-        Command::NewAlbum => files::request(&mut a, Pending::NewAlbum),
-        Command::Open => files::request(&mut a, Pending::Open),
-        Command::Save => {
-            files::save(&mut a, false);
-        }
-        Command::SaveAs => {
-            files::save(&mut a, true);
-        }
-        Command::Export => export::start(&mut a),
-        Command::FindMissing => relink::find(&mut a),
-        Command::About => {
-            if let Some(w) = a.window.upgrade() {
-                w.set_show_about(true);
-            }
-        }
-        _ => {
-            // Navegar e as guias só mudam a lâmina mostrada; o resto edita o álbum e muda também
-            // a faixa, a timeline e os usos no navegador.
-            let only_view = matches!(
-                command,
-                Command::NextSpread
-                    | Command::PreviousSpread
-                    | Command::FirstSpread
-                    | Command::LastSpread
-                    | Command::ToggleGuides
-                    | Command::ToggleSpreads
-                    | Command::ToggleTimeline
-                    | Command::TogglePhotos
-            );
-            if a.editor.run(command) {
-                if only_view {
-                    a.refresh_current();
-                } else {
-                    a.refresh_all();
-                }
-            }
-        }
-    }
-}
-
 fn connect(window: &AppWindow, app: &Shared) {
-    let a = app.clone();
-    window.on_command(move |name| {
-        if let Some(command) = Command::from_name(&name) {
-            run_command(&a, command);
-        }
-    });
-    let a = app.clone();
-    window.on_key(move |name, ctrl, shift, alt| {
-        let Some(key) = Key::from_name(&name) else {
-            return false;
-        };
-        let shortcut = Shortcut {
-            ctrl,
-            shift,
-            alt,
-            key,
-        };
-        let Some(command) = Command::from_shortcut(shortcut) else {
-            return false;
-        };
-        if a.borrow().editor.available(command) {
-            run_command(&a, command);
-        }
-        true
-    });
+    input::connect(window, app);
     let a = app.clone();
     window.on_go_to(move |index| {
         let mut app = a.borrow_mut();
@@ -206,6 +137,7 @@ fn connect_dialogs(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     window.on_confirm(move |choice| files::answer(&mut a.borrow_mut(), choice));
     connect_export(window, app);
+    presets::connect(window, app);
     let a = app.clone();
     window.window().on_close_requested(move || {
         let mut app = a.borrow_mut();
@@ -248,6 +180,13 @@ fn main() -> anyhow::Result<()> {
     let mut editor = Editor::with_prefs(prefs);
     editor.set_strips(StripsStore::load(&config_dir().join(STRIPS_FILE)));
     let app: Shared = Rc::new(RefCell::new(App::new(&window, Cache::system(), editor, tx)));
+    {
+        let mut a = app.borrow_mut();
+        a.presets = PresetsStore::load(&config_dir().join(PRESETS_FILE));
+        if let Some(warning) = a.presets.warning.take() {
+            a.notice = warning;
+        }
+    }
     connect(&window, &app);
     app.borrow_mut().refresh_all();
     // `lamina-app projeto.lamina` abre o projeto direto (e, no futuro, o duplo clique no arquivo).

@@ -54,7 +54,14 @@ pub struct BuildArgs {
 }
 
 pub fn run(args: &BuildArgs) -> Result<()> {
-    let project = imported(args)?;
+    let preset = args.album.preset()?;
+    let (mut limits, prefs) = crate::spec::preset_extras(preset.as_ref());
+    if let Some(min) = args.paginas_minimas.and_then(|m| u32::try_from(m).ok()) {
+        limits.min = Some(min);
+    }
+    let mut project = imported(args, preset.as_ref())?;
+    project.page_limits = limits;
+    project.export = prefs;
     let spreads = spreads_for(args, &project);
     let options = BuildOptions {
         reuse: parse_reuse(&args.reutilizacao)?,
@@ -63,15 +70,21 @@ pub fn run(args: &BuildArgs) -> Result<()> {
     let built = auto_build(&project, spreads, &options)?;
     print_build_report(&built);
     warn_min_pages(args, &built);
-    let (format, crop_marks) = args.saida_formato.options()?;
+    if args.paginas_minimas.is_none() {
+        let pages = built.project.spec.edges().page_count(built.report.len());
+        if let Some(warning) = built.project.page_limits.warning(pages) {
+            println!("{warning}");
+        }
+    }
+    let (format, crop_marks) = args.saida_formato.options_with(prefs)?;
     let export = ExportOptions {
         quality: args.qualidade,
         range: None,
-        pages: args.paginas,
+        pages: args.paginas || prefs.pages,
         overwrite: args.sobrescrever,
         format,
         crop_marks,
-        space: args.saida_formato.space(),
+        space: args.saida_formato.space_with(prefs),
     };
     // Tudo validado antes de gravar qualquer coisa (regra 5): nomes de saída e opções.
     let file = project_file_name(&built.project.name)?;
@@ -92,9 +105,9 @@ pub fn run(args: &BuildArgs) -> Result<()> {
 
 /// Importa a pasta e monta o projeto, com o nome pedido ou o da pasta: o mesmo caminho do
 /// "Novo álbum" da janela (spec JP, regra 3).
-fn imported(args: &BuildArgs) -> Result<Project> {
+fn imported(args: &BuildArgs, preset: Option<&lamina_editor::Preset>) -> Result<Project> {
     let cache = cache_at(args.cache.clone());
-    let spec = args.album.to_spec()?;
+    let spec = args.album.fields(preset).to_spec()?;
     let name = args.nome.as_deref();
     let imported = import_project(&args.pasta, name, spec, &cache, false, &|_| {})?;
     for (path, reason) in &imported.failures {

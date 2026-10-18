@@ -23,9 +23,12 @@ pub fn start(app: &mut App) {
     w.set_ex_all(true);
     w.set_ex_range("".into());
     w.set_ex_pages(false);
-    w.set_ex_format(0);
+    // As preferências do projeto (spec PR, regra 5).
+    let prefs = session.export_prefs();
+    w.set_ex_format(lamina_editor::forms::format_index(prefs.format));
+    w.set_ex_pages(prefs.pages);
     w.set_ex_marks(false);
-    w.set_ex_adobe(false);
+    w.set_ex_adobe(prefs.space == ColorSpace::AdobeRgb);
     w.set_ex_quality(i32::from(DEFAULT_QUALITY));
     w.set_ex_step(0);
     app.export_check = None;
@@ -35,6 +38,10 @@ pub fn start(app: &mut App) {
 
 /// As opções como estão na janela.
 fn options(w: &AppWindow, overwrite: bool) -> ExportOptions {
+    form(w).options(overwrite)
+}
+
+fn form(w: &AppWindow) -> ExportForm {
     ExportForm {
         quality: w.get_ex_quality(),
         all_spreads: w.get_ex_all(),
@@ -52,7 +59,6 @@ fn options(w: &AppWindow, overwrite: bool) -> ExportOptions {
             ColorSpace::Srgb
         },
     }
-    .options(overwrite)
 }
 
 fn folder(w: &AppWindow) -> PathBuf {
@@ -99,7 +105,8 @@ pub fn export(app: &mut App) {
     };
     match session.check_export(&folder(&w), &options(&w, false)) {
         Ok(check) => {
-            let warned = !check.warnings.is_empty();
+            let warned = !check.warnings.is_empty() || check.album.is_some();
+            w.set_ex_album(check.album.clone().unwrap_or_default().into());
             app.export_check = Some(check);
             if warned {
                 show_warnings(app);
@@ -179,6 +186,8 @@ pub fn run(app: &mut App, overwrite: bool) {
     };
     let (folder, options) = (folder(&w), options(&w, overwrite));
     session.set_export_folder(&folder);
+    // O que foi escolhido passa a ser a preferência do projeto (spec PR, regra 5).
+    session.set_export_prefs(form(&w).prefs());
     let project = session.project().clone();
     w.set_show_export(false);
     w.set_busy_text("Exportando…".into());

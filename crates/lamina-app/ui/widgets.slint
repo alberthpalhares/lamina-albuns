@@ -1,4 +1,5 @@
-// Peças pequenas usadas em mais de uma tela: o botão da barra e a aba de filtro.
+// Peças pequenas usadas em mais de uma tela: o botão da barra, a aba de filtro, o fundo e o
+// painel dos diálogos e a linha de campo com rótulo.
 
 import { Theme } from "theme.slint";
 
@@ -27,4 +28,29 @@ export component FilterTab inherits BarButton {
         height: 2px;
         background: root.active ? Theme.selected : transparent;
     }
+}
+
+// Fundo escuro que bloqueia os cliques na janela de baixo.
+export component Shade inherits Rectangle {
+    background: #000000a0;
+    TouchArea { }
+}
+
+export component Panel inherits Rectangle {
+    background: Theme.panel;
+    border-radius: 8px;
+    drop-shadow-blur: 24px;
+    drop-shadow-color: #000000a0;
+}
+
+export component Field inherits HorizontalLayout {
+    in property <string> label;
+    spacing: 8px;
+    Text {
+        text: root.label;
+        width: 200px;
+        color: Theme.text;
+        vertical-alignment: center;
+    }
+    @children
 }

@@ -3,7 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
-use lamina_core::{History, PhotoId, Project};
+use lamina_core::{ExportPrefs, History, PhotoId, Project};
 use lamina_export::{Warning, preflight, read_project, save_project};
 
 use crate::EditorError;
@@ -32,6 +32,9 @@ pub struct Session {
     opened: bool,
     /// Última pasta de exportação usada nesta sessão (spec EI, seção 3).
     export_folder: Option<PathBuf>,
+    /// Preferências de exportação do projeto: mudam sem entrar no histórico e vão para o arquivo
+    /// ao salvar (spec PR, regra 5).
+    export: ExportPrefs,
 }
 
 impl Session {
@@ -49,6 +52,7 @@ impl Session {
 
     fn with(project: Project, file: Option<PathBuf>, saved: bool) -> Self {
         let missing = missing_of(&project);
+        let export = project.export;
         let warnings = warnings_of(&project);
         Session {
             saved: saved.then(|| project.clone()),
@@ -59,6 +63,7 @@ impl Session {
             warnings,
             opened: saved,
             export_folder: None,
+            export,
         }
     }
 
@@ -71,7 +76,30 @@ impl Session {
     }
 
     pub fn is_dirty(&self) -> bool {
-        self.saved.as_ref() != Some(self.project())
+        self.saved.as_ref() != Some(&self.for_disk())
+    }
+
+    /// O projeto como vai para o arquivo: o atual com as preferências de exportação.
+    fn for_disk(&self) -> Project {
+        let mut project = self.project().clone();
+        project.export = self.export;
+        project
+    }
+
+    /// Formato, cor e páginas soltas do projeto (a janela Exportar abre com elas).
+    pub fn export_prefs(&self) -> ExportPrefs {
+        self.export
+    }
+
+    pub fn set_export_prefs(&mut self, prefs: ExportPrefs) {
+        self.export = prefs;
+    }
+
+    /// "O álbum tem 18 páginas; o mínimo é 20." fora da faixa do laboratório (spec PR, regra 4).
+    pub fn page_warning(&self) -> Option<String> {
+        let project = self.project();
+        let pages = project.spec.edges().page_count(project.spreads.len());
+        project.page_limits.warning(pages)
     }
 
     /// Nome do projeto, para o título da janela.
@@ -157,8 +185,9 @@ impl Session {
         let file = std::path::absolute(file).unwrap_or_else(|_| file.to_path_buf());
         let folder = file.parent().unwrap_or(Path::new("."));
         let name = file_name(&file);
-        let saved = save_project(self.project(), folder, &name)?;
-        self.saved = Some(self.project().clone());
+        let disk = self.for_disk();
+        let saved = save_project(&disk, folder, &name)?;
+        self.saved = Some(disk);
         self.file = Some(saved.clone());
         Ok(saved)
     }

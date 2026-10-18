@@ -19,6 +19,8 @@ fn jp_b13_abrir_e_navegar_rapido() {
         spreads: Some(10),
         reuse: Reuse::Medium,
         preferences: lamina_layout::Preferences::default(),
+        limits: lamina_core::PageLimits::default(),
+        export: lamina_core::ExportPrefs::default(),
     };
     // Monta uma vez: deixa miniaturas e imagens de tela no cache.
     let (built, _) = create_album(&new, &cache, &|_| {}).unwrap();

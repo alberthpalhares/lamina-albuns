@@ -2,31 +2,8 @@
 
 import { Button, LineEdit, CheckBox, ComboBox, SpinBox } from "std-widgets.slint";
 import { Theme } from "theme.slint";
-
-// Fundo escuro que bloqueia os cliques na janela de baixo.
-export component Shade inherits Rectangle {
-    background: #000000a0;
-    TouchArea { }
-}
-
-export component Panel inherits Rectangle {
-    background: Theme.panel;
-    border-radius: 8px;
-    drop-shadow-blur: 24px;
-    drop-shadow-color: #000000a0;
-}
-
-export component Field inherits HorizontalLayout {
-    in property <string> label;
-    spacing: 8px;
-    Text {
-        text: root.label;
-        width: 200px;
-        color: Theme.text;
-        vertical-alignment: center;
-    }
-    @children
-}
+import { Shade, Panel, Field } from "widgets.slint";
+import { SpecForm, PresetUi } from "spec.slint";
 
 export component NewAlbumDialog inherits Shade {
     in property <string> folder;
@@ -49,8 +26,8 @@ export component NewAlbumDialog inherits Shade {
     callback cancel();
 
     Panel {
-        width: 560px;
-        height: 600px;
+        width: 600px;
+        height: 680px;
         VerticalLayout {
             padding: 24px;
             spacing: 10px;
@@ -69,33 +46,22 @@ export component NewAlbumDialog inherits Shade {
                 label: "Nome";
                 LineEdit { text <=> root.name; edited => { root.changed(); } }
             }
-            Field {
-                label: "Página (largura × altura, cm)";
-                LineEdit { text <=> root.width-cm; input-type: decimal; edited => { root.changed(); } }
-                LineEdit { text <=> root.height-cm; input-type: decimal; edited => { root.changed(); } }
-            }
-            Field {
-                label: "DPI";
-                LineEdit { text <=> root.dpi; input-type: number; edited => { root.changed(); } }
-            }
-            Field {
-                label: "Sangria e zona segura (mm)";
-                LineEdit { text <=> root.bleed-mm; input-type: decimal; edited => { root.changed(); } }
-                LineEdit { text <=> root.safe-mm; input-type: decimal; edited => { root.changed(); } }
-            }
-            Field {
-                label: "Zona segura na lombada (mm)";
-                LineEdit {
-                    text <=> root.spine-mm;
-                    placeholder-text: "igual à zona segura";
-                    input-type: decimal;
-                    edited => { root.changed(); }
-                }
-            }
-            HorizontalLayout {
-                spacing: 16px;
-                CheckBox { text: "Começa com página simples"; checked <=> root.starts-single; toggled => { root.changed(); } }
-                CheckBox { text: "Termina com página simples"; checked <=> root.ends-single; toggled => { root.changed(); } }
+            SpecForm {
+                presets: PresetUi.presets;
+                preset <=> PresetUi.new-preset;
+                width-cm <=> root.width-cm;
+                height-cm <=> root.height-cm;
+                dpi <=> root.dpi;
+                bleed-mm <=> root.bleed-mm;
+                safe-mm <=> root.safe-mm;
+                spine-mm <=> root.spine-mm;
+                starts-single <=> root.starts-single;
+                ends-single <=> root.ends-single;
+                min-pages <=> PresetUi.new-min;
+                max-pages <=> PresetUi.new-max;
+                changed => { root.changed(); }
+                picked(i) => { PresetUi.picked(0, i); }
+                save-preset => { PresetUi.save-as(0); }
             }
             Field {
                 label: "Número de lâminas";

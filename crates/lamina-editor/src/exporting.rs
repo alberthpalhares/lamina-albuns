@@ -16,6 +16,8 @@ use crate::{Editor, EditorError};
 pub struct ExportCheck {
     pub warnings: Vec<Warning>,
     pub existing: Vec<String>,
+    /// Aviso do álbum inteiro: fora da faixa de páginas do laboratório (spec PR, regra 4).
+    pub album: Option<String>,
 }
 
 impl ExportCheck {

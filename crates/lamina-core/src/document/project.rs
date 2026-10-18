@@ -6,7 +6,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    Border, Frame, FrameContent, FrameId, Photo, PhotoId, Rgb, Spread, SpreadId, migration,
+    Border, ExportPrefs, Frame, FrameContent, FrameId, PageLimits, Photo, PhotoId, Rgb, Spread,
+    SpreadId, migration,
 };
 use crate::{AlbumSpec, CoreError, Mm, Rect, RelRect};
 
@@ -32,6 +33,12 @@ pub struct Project {
     pub gap: Mm,
     pub photos: Vec<Photo>,
     pub spreads: Vec<Spread>,
+    /// Mínimo e máximo de páginas do laboratório (spec PR; opcional no arquivo).
+    #[serde(default, skip_serializing_if = "PageLimits::is_empty")]
+    pub page_limits: PageLimits,
+    /// Formato, cor e páginas soltas que o laboratório pede (spec PR; opcional no arquivo).
+    #[serde(default, skip_serializing_if = "ExportPrefs::is_default")]
+    pub export: ExportPrefs,
     /// Próximo identificador livre (compartilhado por fotos, lâminas e quadros).
     next_id: u64,
 }
@@ -45,6 +52,8 @@ impl Project {
             gap: DEFAULT_GAP,
             photos: Vec::new(),
             spreads: Vec::new(),
+            page_limits: PageLimits::default(),
+            export: ExportPrefs::default(),
             next_id: 1,
         }
     }

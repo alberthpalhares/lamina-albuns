@@ -9,11 +9,12 @@ import { LayoutsPanel, LayoutItem } from "layouts.slint";
 import { LookPanel, Swatch } from "look.slint";
 import { HistoryPanel, HistoryItem } from "history.slint";
 import { ExportDialog } from "export.slint";
+import { SpecDialog, PresetNameDialog, PresetsDialog, PresetUi } from "spec.slint";
 import { StripHeader, SpreadStrip, TimelineStrip, PhotoStrip, PhotoData, TimelineItem } from "strips.slint";
 import { BarButton, FilterTab } from "widgets.slint";
 import { PanelTabs, InfoPanel } from "side.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem }
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -83,6 +84,7 @@ export component AppWindow inherits Window {
     in property <string> ex-error;
     in property <int> ex-step;
     in property <[string]> ex-warnings;
+    in property <string> ex-album;
     in property <string> ex-replace-text;
     callback ex-pick-folder();
     callback ex-changed();
@@ -93,6 +95,8 @@ export component AppWindow inherits Window {
     callback ex-replace();
     callback ex-back();
     in property <bool> has-missing;
+    // Fora da faixa de páginas do laboratório (spec PR): ao lado do contador.
+    in property <string> counter-warning;
     // Faixas de baixo (spec PN): o resumo de cada uma e se está aberta.
     in property <string> strip-spreads;
     in property <string> strip-timeline;
@@ -212,6 +216,9 @@ export component AppWindow inherits Window {
             MenuSeparator { }
             MenuItem { title: "Exportar…  (Ctrl+E)"; enabled: root.has-project; activated => { root.command("arquivo.exportar"); } }
             MenuItem { title: "Procurar fotos ausentes…"; enabled: root.has-missing; activated => { root.command("arquivo.procurar-fotos"); } }
+            MenuSeparator { }
+            MenuItem { title: "Especificação do álbum…"; enabled: root.has-project; activated => { root.command("arquivo.especificacao"); } }
+            MenuItem { title: "Presets…"; activated => { root.command("arquivo.presets"); } }
         }
         Menu {
             title: "Editar";
@@ -255,21 +262,10 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(event) => {
-            if (root.show-new || root.show-confirm || root.show-message || root.show-about || root.show-export || root.busy-text != "") {
+            if (root.show-new || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || root.busy-text != "") {
                 return reject;
             }
-            if (event.text == Key.PageDown) { return root.key("PageDown", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
-            if (event.text == Key.PageUp) { return root.key("PageUp", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
-            if (event.text == Key.Home) { return root.key("Home", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
-            if (event.text == Key.End) { return root.key("End", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
-            if (event.text == Key.LeftArrow) { return root.key("Left", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
-            if (event.text == Key.RightArrow) { return root.key("Right", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
-            if (event.text == Key.Delete) { return root.key("Delete", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
-            if (event.text == Key.Backspace) { return root.key("Backspace", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
-            if (event.text == Key.Escape) { return root.key("Escape", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
-            if (event.text == Key.Return) { return root.key("Enter", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
-            if (event.text == Key.UpArrow) { return root.key("Up", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
-            if (event.text == Key.DownArrow) { return root.key("Down", event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject; }
+            // Teclas especiais chegam como o caractere do Slint; o Rust traduz o nome.
             root.key(event.text, event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject
         }
 
@@ -290,6 +286,7 @@ export component AppWindow inherits Window {
                         vertical-alignment: center;
                     }
                     Text { text: root.counter; color: Theme.muted; vertical-alignment: center; }
+                    if root.counter-warning != "": Text { text: root.counter-warning; color: Theme.warning; vertical-alignment: center; }
                     Rectangle { horizontal-stretch: 1; }
                     BarButton { text: "Novo"; clicked => { root.command("arquivo.novo"); } }
                     BarButton { text: "Abrir"; clicked => { root.command("arquivo.abrir"); } }
@@ -550,6 +547,7 @@ export component AppWindow inherits Window {
         error: root.ex-error;
         step: root.ex-step;
         warnings: root.ex-warnings;
+        album-warning: root.ex-album;
         replace-text: root.ex-replace-text;
         pick-folder => { root.ex-pick-folder(); }
         changed => { root.ex-changed(); }
@@ -564,6 +562,9 @@ export component AppWindow inherits Window {
             root.focus-main();
         }
     }
+    if PresetUi.show-spec: SpecDialog { }
+    if PresetUi.show-list: PresetsDialog { }
+    if PresetUi.show-name: PresetNameDialog { }
     if root.show-message: MessageDialog {
         title: root.message-title;
         message: root.message-text;

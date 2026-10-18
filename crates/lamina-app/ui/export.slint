@@ -3,7 +3,7 @@
 
 import { Button, LineEdit, CheckBox, SpinBox, ListView, ComboBox } from "std-widgets.slint";
 import { Theme } from "theme.slint";
-import { Shade, Panel, Field } from "dialogs.slint";
+import { Shade, Panel, Field } from "widgets.slint";
 
 export component ExportDialog inherits Shade {
     in property <string> folder;
@@ -20,6 +20,8 @@ export component ExportDialog inherits Shade {
     // 0 = opções, 1 = avisos da pré-impressão, 2 = substituir arquivos.
     in property <int> step;
     in property <[string]> warnings;
+    // Aviso do álbum inteiro (faixa de páginas do laboratório; spec PR).
+    in property <string> album-warning;
     in property <string> replace-text;
     callback pick-folder();
     callback changed();
@@ -129,6 +131,7 @@ export component ExportDialog inherits Shade {
             padding: 24px;
             spacing: 12px;
             Text { text: "Pré-impressão"; font-size: 20px; font-weight: 700; color: Theme.text; }
+            if root.album-warning != "": Text { text: root.album-warning; color: Theme.warning; wrap: word-wrap; }
             Text {
                 text: root.warnings.length == 0
                     ? "Todos os avisos foram ignorados."

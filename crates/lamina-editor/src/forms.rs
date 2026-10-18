@@ -4,7 +4,7 @@
 
 use std::path::Path;
 
-use lamina_core::{ColorSpace, Mm, Project, Rgb};
+use lamina_core::{ColorSpace, ExportPrefs, Mm, OutputFormat, PageLimits, Project, Rgb};
 
 use crate::Editor;
 use crate::album::SpecFields;
@@ -82,6 +82,43 @@ impl SpecText {
     }
 }
 
+/// A faixa de páginas como o fotógrafo digitou ("" = sem limite; spec PR).
+pub fn parse_limits(min: &str, max: &str) -> Result<PageLimits, String> {
+    let field = |text: &str, name: &str| -> Result<Option<u32>, String> {
+        let text = text.trim();
+        if text.is_empty() {
+            return Ok(None);
+        }
+        match text.parse::<u32>() {
+            Ok(n) if n > 0 => Ok(Some(n)),
+            _ => Err(format!("{name}: digite um número inteiro maior que zero.")),
+        }
+    };
+    let limits = PageLimits {
+        min: field(min, "Páginas mínimas")?,
+        max: field(max, "Páginas máximas")?,
+    };
+    match (limits.min, limits.max) {
+        (Some(a), Some(b)) if a > b => Err("O mínimo de páginas passa do máximo.".to_owned()),
+        _ => Ok(limits),
+    }
+}
+
+/// Os dois campos da faixa de páginas ("" = sem limite).
+pub fn limits_text(limits: PageLimits) -> (String, String) {
+    let text = |v: Option<u32>| v.map(|n| n.to_string()).unwrap_or_default();
+    (text(limits.min), text(limits.max))
+}
+
+/// Posição do formato no campo Formato da janela Exportar (JPEG, PDF, TIFF).
+pub fn format_index(format: OutputFormat) -> i32 {
+    match format {
+        OutputFormat::Jpeg => 0,
+        OutputFormat::Pdf => 1,
+        OutputFormat::Tiff => 2,
+    }
+}
+
 /// "Dê um nome ao álbum." quando o nome está vazio.
 pub fn album_name_error(name: &str) -> Option<&'static str> {
     name.trim().is_empty().then_some("Dê um nome ao álbum.")
@@ -103,6 +140,19 @@ pub struct ExportForm {
 }
 
 impl ExportForm {
+    /// O que o projeto passa a lembrar desta exportação (spec PR, regra 5).
+    pub fn prefs(&self) -> ExportPrefs {
+        ExportPrefs {
+            format: match self.format {
+                ExportFormat::Pdf => OutputFormat::Pdf,
+                ExportFormat::Tiff => OutputFormat::Tiff,
+                _ => OutputFormat::Jpeg,
+            },
+            space: self.space,
+            pages: self.pages,
+        }
+    }
+
     /// As opções da exportação; a qualidade fica entre 1 e 100, e as marcas de corte só valem
     /// no PDF (no JPEG a janela nem mostra a opção).
     pub fn options(&self, overwrite: bool) -> ExportOptions {
