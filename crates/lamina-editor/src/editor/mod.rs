@@ -17,12 +17,15 @@ use crate::{EditorError, Session};
 mod crop;
 mod dispatch;
 mod frames;
+mod hand;
 mod layouts;
 mod style;
+mod text_edit;
 
 pub use crop::ZOOM_STEP;
 pub use layouts::Panel;
 pub use style::Look;
+pub use text_edit::TextChange;
 
 /// Resposta à pergunta "Salvar as alterações?".
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -54,6 +57,8 @@ pub struct Editor {
     busy: bool,
     /// As faixas de baixo e o arquivo delas (spec PN).
     strips: StripsStore,
+    /// Quadro sendo movido ou redimensionado (spec TX).
+    gesture: Option<hand::Gesture>,
 }
 
 impl Default for Editor {
@@ -86,6 +91,7 @@ impl Editor {
             pending_crop: None,
             busy: false,
             strips: StripsStore::default(),
+            gesture: None,
         }
     }
 

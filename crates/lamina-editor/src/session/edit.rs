@@ -21,7 +21,31 @@ impl Session {
         };
         self.history.try_apply(label, change)?;
         self.warnings = warnings_of(self.history.present());
+        self.merge = None;
         Ok(())
+    }
+
+    /// Como [`Session::edit`], mas emenda a edição anterior quando ela tem a mesma `key` e nada
+    /// aconteceu no meio: digitar ou mover aos poucos vira um passo só (spec TX, regra 10).
+    pub fn edit_merging<E>(
+        &mut self,
+        label: &str,
+        key: &str,
+        change: impl FnOnce(&mut Project) -> Result<(), E>,
+    ) -> Result<(), E> {
+        if self.merge.as_deref() == Some(key) && self.history.can_undo() {
+            self.history.try_amend(change)?;
+            self.warnings = warnings_of(self.history.present());
+            return Ok(());
+        }
+        self.edit(label, change)?;
+        self.merge = Some(key.to_owned());
+        Ok(())
+    }
+
+    /// A próxima edição não emenda a anterior (trocou de campo, de quadro ou de comando).
+    pub fn end_merge(&mut self) {
+        self.merge = None;
     }
 
     pub fn can_undo(&self) -> bool {
@@ -49,6 +73,7 @@ impl Session {
     }
 
     pub(super) fn after_step(&mut self, before: &Project) {
+        self.merge = None;
         let now = self.history.present();
         let changed = (0..now.spreads.len().max(before.spreads.len()))
             .find(|&i| now.spreads.get(i) != before.spreads.get(i));

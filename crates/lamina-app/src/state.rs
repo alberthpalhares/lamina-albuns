@@ -16,6 +16,7 @@ use slint::{ComponentHandle, Image};
 use crate::AppWindow;
 use crate::convert::{model, photo_data, spread_data};
 use crate::images::Images;
+use crate::texts::SMALL;
 
 /// O que fazer depois da pergunta "Salvar as alterações?".
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -202,7 +203,15 @@ impl App {
         let count = session.spread_count();
         let frames = project.spreads.get(index).map_or(0, |s| s.frames.len());
         w.set_info_album(album_info(&project).into());
-        w.set_info_spread(format!("Lâmina {} de {count} · {frames} quadros", index + 1).into());
+        let manual = project.spreads.get(index).is_some_and(|s| s.manual);
+        let by_hand = if manual { " · montada à mão" } else { "" };
+        w.set_info_spread(
+            format!(
+                "Lâmina {} de {count} · {frames} quadros{by_hand}",
+                index + 1
+            )
+            .into(),
+        );
         w.set_info_warnings(warnings.join("\n").into());
 
         crate::crop::refresh_spread(self);
@@ -213,6 +222,7 @@ impl App {
         crate::panel::refresh(self);
         crate::look::refresh(self);
         crate::history::refresh(self);
+        crate::frame_panel::refresh(self);
     }
 
     /// As miniaturas de todas as fotos (miniaturas do painel de layouts).
@@ -237,7 +247,7 @@ impl App {
         let spreads = warned
             .iter()
             .enumerate()
-            .map(|(i, warning)| spread_data(&project, i, &missing, &image, *warning))
+            .map(|(i, warning)| spread_data(&project, i, &missing, &image, (*warning, SMALL)))
             .collect();
         w.set_spreads(model(spreads));
         crate::drag::refresh_timeline(self);

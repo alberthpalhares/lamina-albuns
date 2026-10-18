@@ -1,5 +1,5 @@
-// O painel da direita: as abas (Layouts, Aparência, Histórico, Informações) e a aba de
-// informações. As outras abas moram em layouts.slint, look.slint e history.slint.
+// O painel da direita: as abas (Layouts, Aparência, Quadro, Histórico, Informações) e a aba de
+// informações. As outras abas moram em layouts.slint, look.slint, frame.slint e history.slint.
 
 import { Theme } from "theme.slint";
 
@@ -11,21 +11,23 @@ component Tab inherits Rectangle {
     width: label.preferred-width;
     label := Text {
         text: root.text;
+        font-size: 12px;
         color: root.active ? Theme.selected : Theme.muted;
         font-weight: root.active ? 700 : 400;
     }
     TouchArea { clicked => { root.clicked(); } }
 }
 
-// A ordem na tela não é a dos números: 0 = Layouts, 2 = Aparência, 3 = Histórico,
+// A ordem na tela não é a dos números: 0 = Layouts, 2 = Aparência, 4 = Quadro, 3 = Histórico,
 // 1 = Informações (os números ficaram da ordem em que as abas chegaram).
 export component PanelTabs inherits HorizontalLayout {
     in-out property <int> tab;
-    spacing: 16px;
+    spacing: 10px;
     Tab { text: "Layouts"; active: root.tab == 0; clicked => { root.tab = 0; } }
     Tab { text: "Aparência"; active: root.tab == 2; clicked => { root.tab = 2; } }
+    Tab { text: "Quadro"; active: root.tab == 4; clicked => { root.tab = 4; } }
     Tab { text: "Histórico"; active: root.tab == 3; clicked => { root.tab = 3; } }
-    Tab { text: "Informações"; active: root.tab == 1; clicked => { root.tab = 1; } }
+    Tab { text: "Info"; active: root.tab == 1; clicked => { root.tab = 1; } }
     Rectangle { horizontal-stretch: 1; }
 }
 

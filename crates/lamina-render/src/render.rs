@@ -83,6 +83,7 @@ pub fn render_spread_with(
             }
         }
     }
+    crate::text::draw_texts(&mut pixmap, project, spread, scene.scale);
     RgbaImage::from_raw(width, height, pixmap.take()).ok_or(RenderError::Canvas { width, height })
 }
 

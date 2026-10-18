@@ -29,6 +29,8 @@ pub mod editor;
 pub mod edits;
 pub mod exporting;
 pub mod forms;
+pub mod frame_form;
+pub mod hand;
 pub mod keys;
 pub mod photos;
 pub mod prefs_store;
@@ -37,6 +39,7 @@ pub mod relink;
 pub mod respec;
 pub mod screens;
 pub mod session;
+pub mod snap;
 pub mod spreads;
 pub mod strips;
 pub mod suggestions;
@@ -53,13 +56,14 @@ pub use album::{
 };
 pub use cache::Cache;
 pub use commands::{Command, Menu};
-pub use editor::{Editor, Leave, Panel};
+pub use editor::{Editor, Leave, Panel, TextChange};
 pub use error::EditorError;
 pub use exporting::{
     DEFAULT_QUALITY, ExportCheck, ExportFormat, ExportOptions, Warning, export_progress,
     export_project, export_summary,
 };
 pub use keys::{Key, Shortcut};
+pub use lamina_render::text_image;
 pub use photos::{Filter, PhotoInfo, PhotoItem, photo_info, photo_list, used_photos};
 pub use prefs_store::{PREFS_FILE, PrefsStore, config_dir};
 pub use presets::{PRESETS_FILE, Preset, PresetError, PresetsStore, builtin_presets};
@@ -68,6 +72,7 @@ pub use relink::{
 };
 pub use screens::{ScreenImages, load_original, prepare_images};
 pub use session::{HistoryList, HistoryStep, Session};
+pub use snap::{Grip, SnapLine};
 pub use strips::{STRIPS_FILE, STRIPS_UNREADABLE, Strip, Strips, StripsStore, strip_titles};
 pub use suggestions::{List, Part, Unavailable};
 pub use text::{

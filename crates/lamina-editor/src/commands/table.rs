@@ -131,7 +131,7 @@ impl Command {
             ),
             C::ClearFrame => (
                 "editar.tirar-foto",
-                "Tirar foto",
+                "Tirar foto ou apagar quadro",
                 Menu::Edit,
                 k(Key::Delete),
             ),
@@ -211,6 +211,20 @@ impl Command {
             ),
             C::TogglePhotos => ("ver.fotos", "Fotos", Menu::View, Some(S::alt('3'))),
             C::About => ("ajuda.sobre", "Sobre o Lâmina", Menu::Help, None),
+            C::NewText => (
+                "lamina.novo-texto",
+                "Novo texto",
+                Menu::Spread,
+                k(Key::Char('t')),
+            ),
+            C::NewPhotoFrame => (
+                "lamina.novo-quadro",
+                "Novo quadro de foto",
+                Menu::Spread,
+                None,
+            ),
+            C::BringForward => ("lamina.frente", "Trazer para a frente", Menu::Spread, None),
+            C::SendBackward => ("lamina.tras", "Enviar para trás", Menu::Spread, None),
         }
     }
 }

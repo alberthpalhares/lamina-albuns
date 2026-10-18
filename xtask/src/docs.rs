@@ -158,13 +158,20 @@ fn sources(dir: &Path, out: &mut Vec<(String, String)>) {
 }
 
 pub fn run() -> bool {
+    // Fonte embutida sem a licença ao lado (spec TX): vale também no repositório público.
+    let mut problems: Vec<String> = crate::fontes::without_license(Path::new("crates"))
+        .into_iter()
+        .map(|d| format!("{d}: fonte embutida sem o OFL.txt ao lado (ADR 0008)"))
+        .collect();
     // No repositório público (só o código) não há documentos: a checagem roda só no privado.
     if !Path::new("AGENTS.md").exists() {
         println!("  documentos: sem AGENTS.md (repositório só de código), checagem pulada");
-        return true;
+        for p in &problems {
+            eprintln!("  ✘ {p}");
+        }
+        return problems.is_empty();
     }
     let read = |p: &str| fs::read_to_string(p).unwrap_or_default();
-    let mut problems = Vec::new();
     for dep in deps_missing_in(&read("AGENTS.md"), &workspace_deps(&read("Cargo.toml"))) {
         problems.push(format!(
             "AGENTS.md não cita a dependência `{dep}` (seção Stack)"

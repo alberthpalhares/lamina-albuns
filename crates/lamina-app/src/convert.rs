@@ -7,6 +7,7 @@ use lamina_core::{PhotoId, Project, Rgb};
 use lamina_editor::{Area, FrameKind, PhotoItem, PxRect, spread_view};
 use slint::{Color, Image, ModelRc, VecModel};
 
+use crate::texts::{picture, pixels};
 use crate::{BoxData, FrameData, PhotoData, SpreadData};
 
 /// Proporção altura ÷ largura da lâmina com a sangria.
@@ -41,13 +42,14 @@ fn clip(f: f64, side: u32) -> i32 {
 }
 
 /// A lâmina `index` em frações da largura da lâmina (a tela escala sozinha), com as imagens
-/// que `image` der (imagem de tela na lâmina grande, miniatura na faixa).
+/// que `image` der (imagem de tela na lâmina grande, miniatura na faixa) e os textos desenhados
+/// para uma lâmina de `text_px` pixels de largura (spec TX).
 pub fn spread_data(
     project: &Project,
     index: usize,
     missing: &[PhotoId],
     image: &dyn Fn(PhotoId) -> Option<Image>,
-    warning: bool,
+    (warning, text_px): (bool, f64),
 ) -> SpreadData {
     let a = f64::from(aspect(project));
     let area = Area {
@@ -81,7 +83,20 @@ pub fn spread_data(
             };
             match &f.kind {
                 FrameKind::Empty => {}
-                FrameKind::Text => data.kind = 2,
+                FrameKind::Text { text, size_mm } => {
+                    data.kind = 2;
+                    data.blank = text.is_blank();
+                    let px = (
+                        pixels(f.rect.width, text_px),
+                        pixels(f.rect.height, text_px),
+                    );
+                    if let Some(img) = picture(text, *size_mm, px) {
+                        data.cw = i32::try_from(px.0).unwrap_or(1);
+                        data.ch = i32::try_from(px.1).unwrap_or(1);
+                        data.img = img;
+                        data.has_img = true;
+                    }
+                }
                 FrameKind::Photo {
                     id,
                     source,
@@ -121,6 +136,7 @@ pub fn spread_data(
         inactive: ModelRc::from(Rc::new(VecModel::from(inactive))),
         frames: ModelRc::from(Rc::new(VecModel::from(frames))),
         warning,
+        snaps: ModelRc::default(),
     }
 }
 

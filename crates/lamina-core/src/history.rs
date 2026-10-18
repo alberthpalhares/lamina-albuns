@@ -69,6 +69,23 @@ impl<T: Clone> History<T> {
         Ok(result)
     }
 
+    /// Emenda a última edição: muda o estado atual sem criar passo novo (digitar ou mover aos
+    /// poucos vira uma edição só; spec TX, regra 10). Sem edição para emendar, nada muda e
+    /// devolve `Ok(None)`.
+    pub fn try_amend<R, E>(
+        &mut self,
+        edit: impl FnOnce(&mut T) -> Result<R, E>,
+    ) -> Result<Option<R>, E> {
+        if self.past.is_empty() {
+            return Ok(None);
+        }
+        let mut next = T::clone(&self.present);
+        let result = edit(&mut next)?;
+        self.present = Arc::new(next);
+        self.future.clear();
+        Ok(Some(result))
+    }
+
     /// Aplica uma edição que não falha.
     pub fn apply<R>(&mut self, label: impl Into<String>, edit: impl FnOnce(&mut T) -> R) -> R {
         match self.try_apply(label, |state| {
@@ -183,6 +200,30 @@ impl<T: Clone> History<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn emendar_muda_o_ultimo_passo_sem_criar_outro() {
+        let mut history = History::new(String::new());
+        assert_eq!(
+            history.try_amend(|s| {
+                s.push('x');
+                Ok::<(), ()>(())
+            }),
+            Ok(None)
+        );
+        assert_eq!(history.present(), "");
+        history.apply("digitar", |s| s.push('a'));
+        history
+            .try_amend(|s| {
+                s.push('b');
+                Ok::<(), ()>(())
+            })
+            .unwrap();
+        assert_eq!(history.present(), "ab");
+        assert_eq!(history.len(), 1);
+        assert_eq!(history.undo(), Some("digitar"));
+        assert_eq!(history.present(), "");
+    }
 
     #[test]
     fn desfaz_e_refaz() {

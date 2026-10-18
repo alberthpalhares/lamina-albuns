@@ -237,6 +237,7 @@ pub fn apply(
         kept.chain(new).collect()
     };
     for (rect, content) in ordered {
+        let text = matches!(content, FrameContent::Text(_));
         let (border, radius) = style_of(match &content {
             FrameContent::Photo { photo, .. } => Some(*photo),
             _ => None,
@@ -246,10 +247,15 @@ pub fn apply(
             .spreads
             .get_mut(index)
             .and_then(|s| s.frames.last_mut())
+            .filter(|_| !text)
         {
             frame.border = border;
             frame.radius = radius;
         }
+    }
+    // Um layout do motor tira a marca de lâmina à mão (spec TX, regra 8).
+    if let Some(spread) = project.spreads.get_mut(index) {
+        spread.manual = false;
     }
     Ok(())
 }

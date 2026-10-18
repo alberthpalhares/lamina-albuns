@@ -35,6 +35,8 @@ pub struct Session {
     /// Preferências de exportação do projeto: mudam sem entrar no histórico e vão para o arquivo
     /// ao salvar (spec PR, regra 5).
     export: ExportPrefs,
+    /// Chave da última edição que aceita emenda (mesmo campo do mesmo quadro; spec TX, regra 10).
+    merge: Option<String>,
 }
 
 impl Session {
@@ -64,6 +66,7 @@ impl Session {
             opened: saved,
             export_folder: None,
             export,
+            merge: None,
         }
     }
 

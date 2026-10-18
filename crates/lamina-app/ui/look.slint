@@ -25,7 +25,7 @@ component Stepper inherits HorizontalLayout {
 }
 
 // 12 cores em duas linhas de 6.
-component Swatches inherits Rectangle {
+export component Swatches inherits Rectangle {
     in property <[Swatch]> palette;
     in property <color> chosen;
     callback pick(int);
@@ -48,7 +48,8 @@ component Label inherits Text {
     font-size: 12px;
 }
 
-export component LookPanel inherits VerticalLayout {
+// O estado da aba fica num global, como o dos presets (`app.slint` estava grande demais).
+export global LookUi {
     in property <[Swatch]> palette;
     in property <string> gap;
     in property <string> border;
@@ -68,59 +69,72 @@ export component LookPanel inherits VerticalLayout {
     callback split-changed(bool);
     callback border-pick(int);
     callback apply-all();
+    // Lâmina à mão (spec TX, regra 8): o espaço entre fotos não mexe nos quadros dela.
+    in property <bool> manual;
+}
+
+export component LookPanel inherits VerticalLayout {
+    // Depois de um clique, o teclado volta para a lâmina.
+    callback done();
     spacing: 8px;
 
     Label { text: "Espaço entre fotos"; }
-    Stepper { value: root.gap; step(d) => { root.gap-step(d); } }
+    Stepper { value: LookUi.gap; step(d) => { LookUi.gap-step(d); root.done(); } }
+    if LookUi.manual: Text {
+        text: "Esta lâmina está à mão: o espaço entre fotos não muda os quadros dela.";
+        color: Theme.muted;
+        font-size: 12px;
+        wrap: word-wrap;
+    }
 
     HorizontalLayout {
         Label { text: "Fundo"; vertical-alignment: center; }
         Rectangle { horizontal-stretch: 1; }
         CheckBox {
             text: "Por página";
-            checked: root.split;
-            toggled => { root.split-changed(self.checked); }
+            checked: LookUi.split;
+            toggled => { LookUi.split-changed(self.checked); root.done(); }
         }
     }
-    if !root.split: Swatches {
-        palette: root.palette;
-        chosen: root.left;
-        pick(i) => { root.background(i, -1); }
+    if !LookUi.split: Swatches {
+        palette: LookUi.palette;
+        chosen: LookUi.left;
+        pick(i) => { LookUi.background(i, -1); root.done(); }
     }
-    if root.split: Label { text: "Página esquerda"; }
-    if root.split: Swatches {
-        palette: root.palette;
-        chosen: root.left;
-        pick(i) => { root.background(i, 0); }
+    if LookUi.split: Label { text: "Página esquerda"; }
+    if LookUi.split: Swatches {
+        palette: LookUi.palette;
+        chosen: LookUi.left;
+        pick(i) => { LookUi.background(i, 0); root.done(); }
     }
-    if root.split: Label { text: "Página direita"; }
-    if root.split: Swatches {
-        palette: root.palette;
-        chosen: root.right;
-        pick(i) => { root.background(i, 1); }
+    if LookUi.split: Label { text: "Página direita"; }
+    if LookUi.split: Swatches {
+        palette: LookUi.palette;
+        chosen: LookUi.right;
+        pick(i) => { LookUi.background(i, 1); root.done(); }
     }
     HorizontalLayout {
         spacing: 6px;
         LineEdit {
-            text <=> root.hex;
+            text <=> LookUi.hex;
             placeholder-text: "#F5F0E6";
-            accepted(t) => { root.background-hex(t); }
+            accepted(t) => { LookUi.background-hex(t); }
         }
-        Button { text: "Usar"; clicked => { root.background-hex(root.hex); } }
+        Button { text: "Usar"; clicked => { LookUi.background-hex(LookUi.hex); } }
     }
-    if root.hex-error != "": Text { text: root.hex-error; color: Theme.warning; font-size: 12px; }
+    if LookUi.hex-error != "": Text { text: LookUi.hex-error; color: Theme.warning; font-size: 12px; }
 
-    Label { text: root.only-frame ? "Borda (quadro selecionado)" : "Borda (todas as fotos da lâmina)"; }
-    Stepper { value: root.border; step(d) => { root.border-step(d); } }
+    Label { text: LookUi.only-frame ? "Borda (quadro selecionado)" : "Borda (todas as fotos da lâmina)"; }
+    Stepper { value: LookUi.border; step(d) => { LookUi.border-step(d); root.done(); } }
     Swatches {
-        palette: root.palette;
-        chosen: root.border-color;
-        pick(i) => { root.border-pick(i); }
+        palette: LookUi.palette;
+        chosen: LookUi.border-color;
+        pick(i) => { LookUi.border-pick(i); root.done(); }
     }
 
-    Label { text: root.only-frame ? "Cantos (quadro selecionado)" : "Cantos (todas as fotos da lâmina)"; }
-    Stepper { value: root.radius; step(d) => { root.radius-step(d); } }
+    Label { text: LookUi.only-frame ? "Cantos (quadro selecionado)" : "Cantos (todas as fotos da lâmina)"; }
+    Stepper { value: LookUi.radius; step(d) => { LookUi.radius-step(d); root.done(); } }
 
     Rectangle { vertical-stretch: 1; }
-    Button { text: "Aplicar a todas as lâminas"; clicked => { root.apply-all(); } }
+    Button { text: "Aplicar a todas as lâminas"; clicked => { LookUi.apply-all(); root.done(); } }
 }

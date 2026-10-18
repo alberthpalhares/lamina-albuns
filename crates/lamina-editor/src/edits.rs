@@ -132,7 +132,12 @@ pub fn layout_with(
             .ok_or(EditorError::NoFrame)?;
         frames = photos.iter().copied().zip(first.frames).collect();
     }
-    project.spread_mut(id)?.frames.clear();
+    // Os textos ficam; a lâmina volta ao motor (spec TX, regras 8 e 9).
+    let spread = project.spread_mut(id)?;
+    spread
+        .frames
+        .retain(|f| matches!(f.content, FrameContent::Text(_)));
+    spread.manual = false;
     for (photo, rect) in frames {
         let content = FrameContent::Photo {
             photo,

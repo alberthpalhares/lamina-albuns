@@ -2862,7 +2862,9 @@ dependencies = [
  "fast_image_resize",
  "image",
  "lamina-core",
+ "parley",
  "rayon",
+ "skrifa",
  "thiserror 2.0.21",
  "tiny-skia 0.12.0",
 ]

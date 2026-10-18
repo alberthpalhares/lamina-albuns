@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 
 use std::borrow::Cow;
 
-use lamina_core::{ColorSpace, Project};
+use lamina_core::{ColorSpace, FrameContent, Project};
 use lamina_render::PhotoSource;
 use rayon::prelude::*;
 
@@ -134,6 +134,9 @@ fn colors_in(project: &Project, space: ColorSpace) -> Cow<'_, Project> {
         spread.background_right = spread.background_right.map(|c| space.from_srgb(c));
         for frame in &mut spread.frames {
             frame.border.color = space.from_srgb(frame.border.color);
+            if let FrameContent::Text(text) = &mut frame.content {
+                text.color = space.from_srgb(text.color);
+            }
         }
     }
     Cow::Owned(copy)

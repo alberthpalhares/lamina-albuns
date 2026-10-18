@@ -59,13 +59,17 @@ pub enum Command {
     ToggleTimeline,
     TogglePhotos,
     About,
+    NewText,
+    NewPhotoFrame,
+    BringForward,
+    SendBackward,
 }
 
 /// Nome, rótulo, menu e atalho de um comando.
 type Info = (&'static str, &'static str, Menu, Option<Shortcut>);
 
 impl Command {
-    pub const ALL: [Command; 41] = [
+    pub const ALL: [Command; 45] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
@@ -107,6 +111,10 @@ impl Command {
         Command::ToggleTimeline,
         Command::TogglePhotos,
         Command::About,
+        Command::NewText,
+        Command::NewPhotoFrame,
+        Command::BringForward,
+        Command::SendBackward,
     ];
 
     /// Nome estável, para testes e para a linha de comando.

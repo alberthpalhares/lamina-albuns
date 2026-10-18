@@ -6,7 +6,8 @@ import { Theme } from "theme.slint";
 import { SpreadCanvas, SpreadData, FrameData, BoxData } from "canvas.slint";
 import { NewAlbumDialog, ConfirmDialog, MessageDialog, BusyOverlay } from "dialogs.slint";
 import { LayoutsPanel, LayoutItem } from "layouts.slint";
-import { LookPanel, Swatch } from "look.slint";
+import { LookPanel, LookUi, Swatch } from "look.slint";
+import { FramePanel, FrameUi } from "frame.slint";
 import { HistoryPanel, HistoryItem } from "history.slint";
 import { ExportDialog } from "export.slint";
 import { SpecDialog, PresetNameDialog, PresetsDialog, PresetUi } from "spec.slint";
@@ -14,7 +15,7 @@ import { StripHeader, SpreadStrip, TimelineStrip, PhotoStrip, PhotoData, Timelin
 import { BarButton, FilterTab } from "widgets.slint";
 import { PanelTabs, InfoPanel } from "side.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi }
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -148,26 +149,6 @@ export component AppWindow inherits Window {
     in property <string> undo-text;
     in property <string> redo-text;
     callback history-go(int);
-    // Aparência (spec AP).
-    in property <[Swatch]> palette;
-    in property <string> look-gap;
-    in property <string> look-border;
-    in property <string> look-radius;
-    in property <bool> look-split;
-    in property <color> look-left;
-    in property <color> look-right;
-    in property <color> look-border-color;
-    in property <bool> look-only-frame;
-    in-out property <string> look-hex;
-    in property <string> look-hex-error;
-    callback look-gap-step(int);
-    callback look-border-step(int);
-    callback look-radius-step(int);
-    callback look-background(int, int);
-    callback look-background-hex(string);
-    callback look-split-changed(bool);
-    callback look-border-pick(int);
-    callback look-apply-all();
     // Recorte (spec RC).
     in property <int> crop-frame: -1;
     in property <bool> has-preview;
@@ -179,6 +160,11 @@ export component AppWindow inherits Window {
     callback crop-drag(float, float);
     callback crop-end();
     callback crop-wheel(float);
+    // Quadros à mão (spec TX): alças e arrasto do texto; o mouse na lâmina para o T.
+    callback frame-grab(int, int, length, length, length);
+    callback frame-drag(length, length, bool);
+    callback frame-release();
+    in-out property <float> hover-fx: -1;
     // Dica embaixo da lâmina: o que dá para fazer com o quadro selecionado.
     in property <string> hint;
     callback photo-pressed(int, bool, bool);
@@ -332,6 +318,10 @@ export component AppWindow inherits Window {
                         crop-drag(dx, dy) => { root.crop-drag(dx, dy); }
                         crop-end() => { root.crop-end(); root.focus-main(); }
                         crop-wheel(n) => { root.crop-wheel(n); }
+                        grab(i, n, x, y, w) => { root.frame-grab(i, n, x, y, w); }
+                        grab-move(x, y, alt) => { root.frame-drag(x, y, alt); }
+                        grab-end => { root.frame-release(); root.focus-main(); }
+                        hover-fx <=> root.hover-fx;
                         visible: root.has-project;
                         width: area.canvas-width;
                         height: area.canvas-width * root.current.aspect;
@@ -403,25 +393,11 @@ export component AppWindow inherits Window {
                         }
                         if root.panel-tab == 2: LookPanel {
                             vertical-stretch: 1;
-                            palette: root.palette;
-                            gap: root.look-gap;
-                            border: root.look-border;
-                            radius: root.look-radius;
-                            split: root.look-split;
-                            left: root.look-left;
-                            right: root.look-right;
-                            border-color: root.look-border-color;
-                            only-frame: root.look-only-frame;
-                            hex <=> root.look-hex;
-                            hex-error: root.look-hex-error;
-                            gap-step(d) => { root.look-gap-step(d); root.focus-main(); }
-                            border-step(d) => { root.look-border-step(d); root.focus-main(); }
-                            radius-step(d) => { root.look-radius-step(d); root.focus-main(); }
-                            background(i, side) => { root.look-background(i, side); root.focus-main(); }
-                            background-hex(t) => { root.look-background-hex(t); }
-                            split-changed(on) => { root.look-split-changed(on); root.focus-main(); }
-                            border-pick(i) => { root.look-border-pick(i); root.focus-main(); }
-                            apply-all() => { root.look-apply-all(); root.focus-main(); }
+                            done => { root.focus-main(); }
+                        }
+                        if root.panel-tab == 4: FramePanel {
+                            vertical-stretch: 1;
+                            done => { root.focus-main(); }
                         }
                         if root.panel-tab == 3: HistoryPanel {
                             vertical-stretch: 1;

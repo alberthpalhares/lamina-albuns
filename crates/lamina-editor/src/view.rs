@@ -2,7 +2,7 @@
 //! que cabe, com cada quadro onde vai sair impresso e a mesma parte da foto que a renderização
 //! usa (as funções `bleed` e `region` do `lamina-render`).
 
-use lamina_core::{FrameContent, PageSide, PhotoId, Project, Rect, Rgb};
+use lamina_core::{FrameContent, PageSide, PhotoId, Project, Rect, Rgb, TextBox};
 use lamina_render::{bleed, region};
 
 /// Retângulo em pixels da tela (com fração: a janela desenha sem arredondar).
@@ -25,7 +25,12 @@ pub enum FrameKind {
         /// A foto não está no caminho salvo (regra 11).
         missing: bool,
     },
-    Text,
+    /// Quadro de texto: a janela pede a imagem dele ao `lamina-render` (spec TX).
+    Text {
+        text: TextBox,
+        /// Largura e altura do quadro em mm.
+        size_mm: (f64, f64),
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -118,7 +123,10 @@ pub fn spread_view(
             let bled = bleed(spec, rect);
             let kind = match &frame.content {
                 FrameContent::Empty => FrameKind::Empty,
-                FrameContent::Text { .. } => FrameKind::Text,
+                FrameContent::Text(text) => FrameKind::Text {
+                    text: text.clone(),
+                    size_mm: (rect.width.get(), rect.height.get()),
+                },
                 FrameContent::Photo { photo, crop } => {
                     let size = project
                         .photo(*photo)
@@ -137,7 +145,9 @@ pub fn spread_view(
                     }
                 }
             };
-            let at = px(bled.rect);
+            // O texto não cresce até a sangria (só as fotos; spec TX, regra 6).
+            let is_text = matches!(kind, FrameKind::Text { .. });
+            let at = if is_text { px(rect) } else { px(bled.rect) };
             let r = (frame.radius.get() * scale)
                 .min(at.width.min(at.height) / 2.0)
                 .max(0.0);
@@ -184,10 +194,17 @@ pub fn frame_at(project: &Project, index: usize, x: f64, y: f64) -> Option<usize
         margin: 0.0,
     };
     let view = spread_view(project, index, area, &[])?;
-    view.frames.iter().position(|f| {
+    let hit = |f: &FrameView| {
         let r = f.rect;
         x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height
-    })
+    };
+    // O que está por cima ganha: os textos, depois as fotos da última para a primeira (TX).
+    let text = |f: &FrameView| matches!(f.kind, FrameKind::Text { .. });
+    let n = view.frames.len();
+    (0..n)
+        .rev()
+        .find(|&i| text(&view.frames[i]) && hit(&view.frames[i]))
+        .or_else(|| (0..n).rev().find(|&i| hit(&view.frames[i])))
 }
 
 /// A foto inteira do quadro, na escala e na posição em que o recorte a coloca: a prévia do

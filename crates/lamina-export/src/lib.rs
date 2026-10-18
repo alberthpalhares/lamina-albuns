@@ -11,6 +11,7 @@ mod jpeg;
 mod once;
 mod pdf;
 mod preflight;
+mod preflight_text;
 mod previews;
 mod project_file;
 mod range;
@@ -134,3 +135,6 @@ mod ex;
 #[cfg(test)]
 #[path = "tests/pd.rs"]
 mod pd;
+#[cfg(test)]
+#[path = "tests/tx.rs"]
+mod tx;
