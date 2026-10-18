@@ -225,6 +225,13 @@ impl Command {
             ),
             C::BringForward => ("lamina.frente", "Trazer para a frente", Menu::Spread, None),
             C::SendBackward => ("lamina.tras", "Enviar para trás", Menu::Spread, None),
+            C::SaveModel => (
+                "lamina.salvar-modelo",
+                "Salvar como modelo…",
+                Menu::Spread,
+                None,
+            ),
+            C::Models => ("lamina.modelos", "Meus modelos…", Menu::Spread, None),
         }
     }
 }

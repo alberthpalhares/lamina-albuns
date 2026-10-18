@@ -17,14 +17,14 @@ pub mod prefs;
 pub use build::{AutoBuild, BuildError, BuildOptions, Reuse, SpreadReport, auto_build};
 pub use layouts::{
     Align, Arrangement, Breathing, DEFAULT_GAP, Family, FamilyKind, LayoutCandidate, LayoutError,
-    LayoutLists, LayoutOptions, MAX_PER_PAGE, PageLayout, Scope, Score, SupportSide,
-    layout_candidates, layout_options,
+    LayoutLists, LayoutOptions, MAX_PER_PAGE, ModelLook, ModelSlot, ModelText, PageLayout, Scope,
+    Score, SpreadModel, SupportSide, add_models, assign, layout_candidates, layout_options,
 };
 pub use plan::{
     PHOTOS_PER_SPREAD, PlanError, PlanOptions, SpreadPlan, SpreadRole, plan_spreads,
     suggest_spreads, validate as validate_plan,
 };
-pub use prefs::{FAVORITE_BONUS, Preferences, Preferred, apply_preferences, design_key};
+pub use prefs::{FAVORITE_BONUS, Preferences, Preferred, apply_preferences, design_key, model_key};
 
 use lamina_core::{CoreError, RelRect};
 

@@ -1,10 +1,10 @@
 //! Sugestões de layout da lâmina atual e as edições que trocam ou espelham o layout (spec TL,
 //! regras 1 a 5). Funções puras sobre o projeto: o [`crate::Editor`] guarda o cache e chama.
 
-use lamina_core::{
-    ActivePages, Border, CoreError, Crop, Frame, FrameContent, Mm, PhotoId, Project, RelRect,
-};
+use lamina_core::{ActivePages, CoreError, Frame, FrameContent, Mm, PhotoId, Project, RelRect};
 use lamina_layout::{LayoutCandidate, LayoutError, LayoutLists, LayoutOptions, layout_options};
+
+pub use crate::applying::{apply, keep_center};
 
 /// Folga para dizer que dois quadros estão no mesmo lugar: 0,1 mm (regra 2).
 const SAME_MM: f64 = 0.1;
@@ -84,7 +84,7 @@ fn on_part(r: &RelRect, part: Part) -> bool {
     }
 }
 
-fn photo_of(frame: &Frame) -> Option<PhotoId> {
+pub(crate) fn photo_of(frame: &Frame) -> Option<PhotoId> {
     match &frame.content {
         FrameContent::Photo { photo, .. } => Some(*photo),
         _ => None,
@@ -175,95 +175,6 @@ pub fn is_in_use(project: &Project, index: usize, sel: &Selection, c: &LayoutCan
             .iter()
             .any(|f| photo_of(f) == Some(*photo) && close(&f.rect, rect))
     })
-}
-
-/// Troca o layout da `part` da lâmina `index` pelo candidato: as fotos da seleção vão para os
-/// quadros do candidato (na ordem original), com o recorte no centro; o resto fica (regra 3 e 4).
-pub fn apply(
-    project: &mut Project,
-    index: usize,
-    sel: &Selection,
-    c: &LayoutCandidate,
-) -> Result<(), CoreError> {
-    let Some(spread) = project.spreads.get_mut(index) else {
-        return Ok(());
-    };
-    let id = spread.id;
-    let centers: Vec<(PhotoId, Crop)> = spread
-        .frames
-        .iter()
-        .filter_map(|f| match &f.content {
-            FrameContent::Photo { photo, crop } => Some((*photo, keep_center(*crop))),
-            _ => None,
-        })
-        .collect();
-    // Borda e cantos ficam com a foto; foto nova herda o estilo da lâmina (o do primeiro quadro
-    // com foto). Antes, trocar o layout ou o espaço apagava os dois (auditoria do Marco 2, M7).
-    let styles: Vec<(PhotoId, Border, Mm)> = spread
-        .frames
-        .iter()
-        .filter_map(|f| photo_of(f).map(|p| (p, f.border, f.radius)))
-        .collect();
-    let common = styles
-        .first()
-        .map_or((Border::default(), Mm(0.0)), |(_, b, r)| (*b, *r));
-    let style_of = |photo: Option<PhotoId>| {
-        photo
-            .and_then(|p| styles.iter().find(|(q, _, _)| *q == p))
-            .map_or(common, |(_, b, r)| (*b, *r))
-    };
-    let kept: Vec<Frame> = std::mem::take(&mut spread.frames)
-        .into_iter()
-        .filter(|f| !photo_of(f).is_some_and(|p| sel.photos.contains(&p)))
-        .filter(|f| !(sel.whole && f.content == FrameContent::Empty))
-        .collect();
-    let new = sel.photos.iter().zip(&c.frames).map(|(photo, rect)| {
-        let crop = centers
-            .iter()
-            .find(|(p, _)| p == photo)
-            .map_or_else(Crop::default, |(_, c)| *c);
-        let content = FrameContent::Photo {
-            photo: *photo,
-            crop,
-        };
-        (*rect, content)
-    });
-    let kept = kept.into_iter().map(|f| (f.rect, f.content));
-    // Ordem dos quadros: página esquerda, depois a direita (a ordem em que o TL lê as fotos).
-    let only_left = sel.active.left && !sel.active.right;
-    let ordered: Vec<(RelRect, FrameContent)> = if only_left {
-        new.chain(kept).collect()
-    } else {
-        kept.chain(new).collect()
-    };
-    for (rect, content) in ordered {
-        let text = matches!(content, FrameContent::Text(_));
-        let (border, radius) = style_of(match &content {
-            FrameContent::Photo { photo, .. } => Some(*photo),
-            _ => None,
-        });
-        project.add_frame(id, rect, content)?;
-        if let Some(frame) = project
-            .spreads
-            .get_mut(index)
-            .and_then(|s| s.frames.last_mut())
-            .filter(|_| !text)
-        {
-            frame.border = border;
-            frame.radius = radius;
-        }
-    }
-    // Um layout do motor tira a marca de lâmina à mão (spec TX, regra 8).
-    if let Some(spread) = project.spreads.get_mut(index) {
-        spread.manual = false;
-    }
-    Ok(())
-}
-
-/// A mesma foto num quadro de outra proporção: mantém o centro do recorte e volta o zoom a 1
-/// (spec RC, regra 8).
-pub fn keep_center(crop: Crop) -> Crop {
-    Crop { zoom: 1.0, ..crop }
 }
 
 /// Espelha a lâmina: cada quadro vai para a posição espelhada, com a mesma foto (regra 5).

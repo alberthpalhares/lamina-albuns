@@ -9,7 +9,9 @@ use lamina_core::{CoreError, Crop, FrameContent, PhotoId, Project};
 use rayon::prelude::*;
 use thiserror::Error;
 
-use crate::layouts::{Family, LayoutCandidate, LayoutError, LayoutOptions, layout_options};
+use crate::layouts::{
+    Family, LayoutCandidate, LayoutError, LayoutOptions, add_models, layout_options,
+};
 use crate::plan::{PlanError, PlanOptions, SpreadPlan, SpreadRole, plan_spreads};
 use crate::prefs::{Preferences, design_key};
 use window::{WINDOW, Window, window};
@@ -32,6 +34,8 @@ pub struct BuildOptions {
     pub plan: PlanOptions,
     /// Favoritos e rejeitados do fotógrafo (spec TL, regra 8). Vazio = escolha de sempre.
     pub preferences: Preferences,
+    /// Modelos do fotógrafo que entram na disputa de cada lâmina (spec MD, regra 9).
+    pub models: Vec<crate::layouts::SpreadModel>,
 }
 
 /// Uma linha do relatório: o que foi escolhido para a lâmina e por quê.
@@ -89,7 +93,7 @@ pub fn auto_build(
     }
     let edges = project.spec.edges();
     let plan = plan_spreads(&project.photos, spreads, edges, &options.plan)?;
-    let suggestions = suggestions(project, &plan, &options.preferences)?;
+    let suggestions = suggestions(project, &plan, options)?;
     let mut out = project.clone();
     out.spreads.clear();
     let mut chosen: Vec<Family> = Vec::with_capacity(plan.len());
@@ -128,8 +132,9 @@ pub fn auto_build(
 fn suggestions(
     project: &Project,
     plan: &[SpreadPlan],
-    prefs: &Preferences,
+    build: &BuildOptions,
 ) -> Result<Vec<Window>, BuildError> {
+    let prefs = &build.preferences;
     let edges = project.spec.edges();
     let options = LayoutOptions {
         max_candidates: if prefs.favorites.is_empty() {
@@ -150,7 +155,9 @@ fn suggestions(
                 .map(|id| Ok(project.photo(*id)?.aspect_ratio()))
                 .collect::<Result<Vec<f64>, CoreError>>()?;
             let active = edges.active_pages(i, plan.len());
-            let lists = layout_options(&project.spec, active, &aspects, &options)?;
+            let mut lists = layout_options(&project.spec, active, &aspects, &options)?;
+            let at = (active, project.gap);
+            add_models(&mut lists, &project.spec, at, &aspects, &build.models)?;
             Ok(window(lists.in_order, &aspects, prefs))
         })
         .collect();
@@ -171,6 +178,32 @@ fn place(
             crop: Crop::default(),
         };
         project.add_frame(spread, *rect, content)?;
+    }
+    if let Some(look) = &candidate.model {
+        dress(project, spread, look)?;
+        if let (Family::Model { name, mirrored }, Some(s)) =
+            (&candidate.family, project.spreads.last_mut())
+        {
+            s.model = Some(crate::prefs::model_key(name, *mirrored));
+        }
+    }
+    Ok(())
+}
+
+/// Borda, cantos e textos de um modelo na lâmina recém-montada (spec MD, regra 6).
+fn dress(
+    project: &mut Project,
+    spread: lamina_core::SpreadId,
+    look: &crate::layouts::ModelLook,
+) -> Result<(), BuildError> {
+    if let Some(s) = project.spreads.iter_mut().find(|s| s.id == spread) {
+        for (frame, (border, radius)) in s.frames.iter_mut().zip(&look.styles) {
+            frame.border = *border;
+            frame.radius = *radius;
+        }
+    }
+    for t in &look.texts {
+        project.add_frame(spread, t.rect, FrameContent::Text(t.text.clone()))?;
     }
     Ok(())
 }

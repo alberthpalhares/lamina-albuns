@@ -7,6 +7,7 @@ mod families;
 mod fill;
 mod hero;
 mod justified;
+mod model;
 mod orders;
 mod rank;
 mod rotation;
@@ -19,6 +20,7 @@ use lamina_core::{ActivePages, AlbumSpec, Mm};
 use rayon::prelude::*;
 
 use area::{Ctx, MARGIN_LEVELS, Raw, aligned};
+pub use model::{ModelLook, ModelSlot, ModelText, SpreadModel, assign};
 use rank::{Limits, Sequence, Sort};
 pub use types::*;
 
@@ -103,6 +105,37 @@ pub fn layout_options(
         in_order,
         reordered,
     })
+}
+
+/// Junta às listas os modelos do fotógrafo que casam com as fotos (spec MD, regras 2 e 3): cada
+/// um entra na posição da nota.
+pub fn add_models(
+    lists: &mut LayoutLists,
+    spec: &AlbumSpec,
+    (active, gap): (ActivePages, Mm),
+    aspects: &[f64],
+    models: &[SpreadModel],
+) -> Result<(), LayoutError> {
+    if models.is_empty() {
+        return Ok(());
+    }
+    let ctx = context(spec, active, aspects, gap)?;
+    let (in_order, reordered) = model::candidates(&ctx, aspects, models);
+    for c in in_order {
+        insert_by_score(&mut lists.in_order, c);
+    }
+    for c in reordered {
+        insert_by_score(&mut lists.reordered, c);
+    }
+    Ok(())
+}
+
+fn insert_by_score(list: &mut Vec<LayoutCandidate>, c: LayoutCandidate) {
+    let at = list
+        .iter()
+        .position(|x| x.score.total < c.score.total)
+        .unwrap_or(list.len());
+    list.insert(at, c);
 }
 
 /// Todas as famílias para as fotos na sequência `order`.

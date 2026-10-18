@@ -189,6 +189,10 @@ pub struct Spread {
     /// especificação não refazem o desenho desta lâmina.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub manual: bool,
+    /// A chave do modelo do fotógrafo em uso (spec MD, regra 8): o espaço entre fotos e a troca
+    /// da especificação mantêm os quadros dele.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
 }
 
 impl Spread {

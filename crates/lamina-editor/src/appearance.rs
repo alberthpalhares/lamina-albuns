@@ -17,7 +17,10 @@ const GAP_STEP: f64 = 0.5;
 /// 0,5 mm. Devolve o espaço que ficou (regra 1).
 pub fn regap(project: &mut Project, index: usize, gap: Mm) -> Result<Mm, EditorError> {
     let gap = Mm(gap.get().clamp(0.0, MAX_GAP.get()));
-    let manual = project.spreads.get(index).is_some_and(|s| s.manual);
+    let manual = project
+        .spreads
+        .get(index)
+        .is_some_and(|s| s.manual || s.model.is_some());
     // Lâmina à mão: o espaço fica guardado, mas não mexe nos quadros (spec TX, regra 8).
     let old = match selection(project, index, Part::Spread) {
         Ok(old) if !manual => old,

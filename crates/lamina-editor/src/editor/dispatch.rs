@@ -13,7 +13,11 @@ impl Editor {
         let Some(s) = &self.session else {
             return matches!(
                 command,
-                Command::NewAlbum | Command::Open | Command::About | Command::Presets
+                Command::NewAlbum
+                    | Command::Open
+                    | Command::About
+                    | Command::Presets
+                    | Command::Models
             );
         };
         let last = s.spread_count().saturating_sub(1);
@@ -33,7 +37,8 @@ impl Editor {
             Command::Mirror => self.can_mirror(),
             Command::Favorite | Command::Reject => self.panel(Part::Spread).in_use.is_some(),
             Command::ClearFrame => self.selected_content().is_some(),
-            Command::NewText | Command::NewPhotoFrame => true,
+            Command::NewText | Command::NewPhotoFrame | Command::Models => true,
+            Command::SaveModel => self.can_save_model(),
             Command::BringForward | Command::SendBackward => self.can_reorder(),
             Command::Deselect => {
                 self.selected_frame.is_some()

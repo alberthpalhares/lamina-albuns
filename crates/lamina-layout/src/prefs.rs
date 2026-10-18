@@ -50,6 +50,10 @@ pub struct Preferred {
 
 /// Identificador do desenho: "HHV|paginas:E=L2;D=L1|m0c".
 pub fn design_key(candidate: &LayoutCandidate, aspects: &[f64]) -> String {
+    // O modelo tem chave pelo nome: renomear leva as marcas junto (spec MD, regra 5).
+    if let Family::Model { name, mirrored } = &candidate.family {
+        return model_key(name, *mirrored);
+    }
     let orientations: String = candidate
         .order
         .iter()
@@ -72,6 +76,12 @@ pub fn design_key(candidate: &LayoutCandidate, aspects: &[f64]) -> String {
         family_text(&candidate.family),
         b.margin_level
     )
+}
+
+/// Chave do desenho de um modelo: "modelo:<nome>", com ":e" no espelho.
+pub fn model_key(name: &str, mirrored: bool) -> String {
+    let e = if mirrored { ":e" } else { "" };
+    format!("modelo:{name}{e}")
 }
 
 fn layout_text(layout: &PageLayout) -> String {
@@ -130,6 +140,7 @@ fn family_text(family: &Family) -> String {
         Family::Mosaic { scope, layout } => {
             format!("mosaico:{}:{}", scope_text(*scope), layout_text(layout))
         }
+        Family::Model { name, mirrored } => model_key(name, *mirrored),
     }
 }
 

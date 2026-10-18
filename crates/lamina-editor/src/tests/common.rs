@@ -68,6 +68,7 @@ impl Base {
             spreads,
             reuse: Reuse::Medium,
             preferences: lamina_layout::Preferences::default(),
+            models: Vec::new(),
             limits: lamina_core::PageLimits::default(),
             export: lamina_core::ExportPrefs::default(),
         }

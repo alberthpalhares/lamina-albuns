@@ -138,6 +138,7 @@ pub fn layout_with(
         .frames
         .retain(|f| matches!(f.content, FrameContent::Text(_)));
     spread.manual = false;
+    spread.model = None;
     for (photo, rect) in frames {
         let content = FrameContent::Photo {
             photo,

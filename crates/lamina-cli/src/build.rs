@@ -5,7 +5,10 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result, bail};
 use clap::Args;
 use lamina_core::Project;
-use lamina_editor::{import_project, suggestion, suggestion_text};
+use lamina_editor::{
+    MODELS_FILE, ModelsStore, PREFS_FILE, PrefsStore, config_dir, import_project, suggestion,
+    suggestion_text,
+};
 use lamina_export::{ExportOptions, output_names, preflight, project_file_name, save_project};
 use lamina_layout::{AutoBuild, BuildOptions, auto_build};
 use lamina_media::original_source_in;
@@ -51,6 +54,10 @@ pub struct BuildArgs {
     /// Pasta do catálogo e das miniaturas (padrão: cache do sistema).
     #[arg(long)]
     pub cache: Option<PathBuf>,
+    /// Usa no Auto Build os modelos do fotógrafo e os favoritos dele (os mesmos da janela;
+    /// spec MD). Sem a opção, o álbum não depende da máquina.
+    #[arg(long)]
+    pub modelos: bool,
 }
 
 pub fn run(args: &BuildArgs) -> Result<()> {
@@ -63,8 +70,15 @@ pub fn run(args: &BuildArgs) -> Result<()> {
     project.page_limits = limits;
     project.export = prefs;
     let spreads = spreads_for(args, &project);
+    let (models, preferences) = if args.modelos {
+        models_and_prefs()
+    } else {
+        Default::default()
+    };
     let options = BuildOptions {
         reuse: parse_reuse(&args.reutilizacao)?,
+        models,
+        preferences,
         ..BuildOptions::default()
     };
     let built = auto_build(&project, spreads, &options)?;
@@ -105,6 +119,17 @@ pub fn run(args: &BuildArgs) -> Result<()> {
 
 /// Importa a pasta e monta o projeto, com o nome pedido ou o da pasta: o mesmo caminho do
 /// "Novo álbum" da janela (spec JP, regra 3).
+/// Os modelos e os favoritos do fotógrafo, da pasta de configuração (spec MD, regra 9).
+fn models_and_prefs() -> (Vec<lamina_layout::SpreadModel>, lamina_layout::Preferences) {
+    let dir = config_dir();
+    let mut models = ModelsStore::load(&dir.join(MODELS_FILE));
+    if let Some(warning) = models.warning.take() {
+        println!("{warning}");
+    }
+    let prefs = PrefsStore::load(&dir.join(PREFS_FILE));
+    (models.all().to_vec(), prefs.prefs)
+}
+
 fn imported(args: &BuildArgs, preset: Option<&lamina_editor::Preset>) -> Result<Project> {
     let cache = cache_at(args.cache.clone());
     let spec = args.album.fields(preset).to_spec()?;

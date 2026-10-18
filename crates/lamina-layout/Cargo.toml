@@ -12,6 +12,7 @@ publish = false
 [dependencies]
 lamina-core = { workspace = true }
 rayon = { workspace = true }
+serde = { workspace = true }
 thiserror = { workspace = true }
 
 [lints]

@@ -65,6 +65,8 @@ pub enum Family {
     },
     /// Células que enchem a área sem sobra, com recorte pequeno.
     Mosaic { scope: Scope, layout: PageLayout },
+    /// Um modelo salvo pelo fotógrafo (spec MD), talvez espelhado.
+    Model { name: String, mirrored: bool },
 }
 
 /// Família sem os detalhes, usada no rodízio (spec VL, regra 6).
@@ -77,6 +79,7 @@ pub enum FamilyKind {
     Mirrored,
     BleedPage,
     Mosaic,
+    Model,
 }
 
 impl Family {
@@ -89,6 +92,7 @@ impl Family {
             Family::Mirrored(_) => FamilyKind::Mirrored,
             Family::BleedPage { .. } => FamilyKind::BleedPage,
             Family::Mosaic { .. } => FamilyKind::Mosaic,
+            Family::Model { .. } => FamilyKind::Model,
         }
     }
 }
@@ -141,6 +145,8 @@ pub struct LayoutCandidate {
     /// Área dos quadros ÷ área útil das páginas ativas (no máximo 1).
     pub coverage: f64,
     pub score: Score,
+    /// Borda, cantos e textos, quando o candidato é um modelo do fotógrafo (spec MD).
+    pub model: Option<super::ModelLook>,
 }
 
 /// Opções da variedade de layouts.
