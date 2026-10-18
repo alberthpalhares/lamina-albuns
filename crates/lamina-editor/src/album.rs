@@ -202,7 +202,7 @@ pub fn check_spreads(photos: usize, spreads: usize, spec: &AlbumSpec) -> Result<
     validate_plan(photos, spreads, spec.edges(), &PlanOptions::default())
 }
 
-/// Quantas fotos que o Lâmina lê há na pasta (e subpastas), sem decodificar nenhuma.
+/// Quantas fotos que o Lamina lê há na pasta (e subpastas), sem decodificar nenhuma.
 pub fn count_photos(folder: &Path) -> Result<usize, EditorError> {
     if !folder.is_dir() {
         return Err(EditorError::MissingFolder(folder.display().to_string()));

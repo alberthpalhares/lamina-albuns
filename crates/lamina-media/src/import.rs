@@ -158,7 +158,7 @@ fn process(
     })
 }
 
-/// Pasta de cache padrão do sistema para o Lâmina (catálogo e miniaturas).
+/// Pasta de cache padrão do sistema para o Lamina (catálogo e miniaturas).
 pub fn default_cache_dir() -> PathBuf {
     let env = |name| std::env::var_os(name).map(PathBuf::from);
     let base = if cfg!(target_os = "windows") {

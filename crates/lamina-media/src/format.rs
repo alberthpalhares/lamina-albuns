@@ -4,7 +4,7 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-/// Formatos de imagem que o Lâmina importa.
+/// Formatos de imagem que o Lamina importa.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImageFormat {
     Jpeg,
@@ -27,7 +27,7 @@ impl ImageFormat {
         }
     }
 
-    /// `true` se o Lâmina já sabe decodificar este formato.
+    /// `true` se o Lamina já sabe decodificar este formato.
     pub fn is_decodable(self) -> bool {
         !matches!(self, ImageFormat::Heic)
     }

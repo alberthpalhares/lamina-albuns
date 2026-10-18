@@ -22,7 +22,7 @@ pub const CODE: &[&str] = &[
 ];
 
 /// O README do público: o mínimo (o README completo é do privado).
-pub const PUBLIC_README: &str = "# Lâmina\n\n\
+pub const PUBLIC_README: &str = "# Lamina\n\n\
 Diagramador de álbuns fotográficos em Rust, para Windows, macOS e Linux. Projeto acadêmico.\n\n\
 ## Compilar\n\n\
 ```bash\ncargo run --release -p lamina-app   # a janela\ncargo xtask verify                  # formatação, lint, testes e checagens\n```\n\n\

@@ -10,7 +10,7 @@ use lamina_core::CaptureTime;
 
 use crate::MediaError;
 
-/// O que o Lâmina precisa saber de uma foto antes de diagramar.
+/// O que o Lamina precisa saber de uma foto antes de diagramar.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PhotoMetadata {
     /// Largura e altura em pixels, **já com a rotação EXIF aplicada**.

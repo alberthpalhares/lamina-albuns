@@ -1,4 +1,4 @@
-# Lâmina
+# Lamina
 
 Diagramador de álbuns fotográficos em Rust, para Windows, macOS e Linux. Projeto acadêmico.
 

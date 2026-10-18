@@ -1,4 +1,4 @@
-//! Interface gráfica do Lâmina (spec `janela-principal`; ADR 0002).
+//! Interface gráfica do Lamina (spec `janela-principal`; ADR 0002).
 //!
 //! Este binário só traduz (regra 1): as telas estão em `ui/*.slint` e toda decisão vem do
 //! `lamina-editor`. O trabalho longo roda em outras linhas e volta por um canal, lido a cada

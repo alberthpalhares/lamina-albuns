@@ -9,7 +9,7 @@ use slint::ComponentHandle;
 use crate::new_album;
 use crate::state::{App, Pending};
 
-const FILTER_NAME: &str = "Projeto do Lâmina";
+const FILTER_NAME: &str = "Projeto do Lamina";
 const EXT: &str = "lamina";
 
 pub fn show_error(app: &App, title: &str, message: &str) {

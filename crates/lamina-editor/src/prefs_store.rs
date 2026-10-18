@@ -28,7 +28,7 @@ pub struct PrefsStore {
     pub warning: Option<String>,
 }
 
-/// Pasta de configuração do Lâmina no sistema.
+/// Pasta de configuração do Lamina no sistema.
 pub fn config_dir() -> PathBuf {
     let env = |name| std::env::var_os(name).map(PathBuf::from);
     let base = if cfg!(target_os = "windows") {

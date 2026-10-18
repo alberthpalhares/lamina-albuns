@@ -19,7 +19,14 @@ pub const LAYERS: &[(&str, u8)] = &[
 
 /// Dependências externas que os binários (camada 4) podem ter: eles só traduzem entrada e
 /// saída (regra 1). O resto vem pelas bibliotecas (auditoria do Marco 1, M4).
-pub const BINARY_EXTERNALS: &[&str] = &["anyhow", "clap", "rfd", "slint", "slint-build"];
+pub const BINARY_EXTERNALS: &[&str] = &[
+    "anyhow",
+    "clap",
+    "rfd",
+    "slint",
+    "slint-build",
+    "winresource",
+];
 
 /// Camada dos binários.
 const BINARY_LAYER: u8 = 4;

@@ -1,6 +1,6 @@
 //! # lamina-core
 //!
-//! Modelo de domínio do Lâmina. Este crate não faz IO nem sabe nada de interface:
+//! Modelo de domínio do Lamina. Este crate não faz IO nem sabe nada de interface:
 //! tudo aqui é lógica pura, testável com `cargo test -p lamina-core`.
 //!
 //! - [`units`]: milímetros, DPI e conversão para pixels.
