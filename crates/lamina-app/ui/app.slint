@@ -8,6 +8,7 @@ import { NewAlbumDialog, ConfirmDialog, MessageDialog, BusyOverlay } from "dialo
 import { LayoutsPanel, LayoutItem } from "layouts.slint";
 import { LookPanel, LookUi, Swatch } from "look.slint";
 import { FramePanel, FrameUi } from "frame.slint";
+import { ModelNameDialog, ModelsDialog, ModelUi } from "models.slint";
 import { HistoryPanel, HistoryItem } from "history.slint";
 import { ExportDialog } from "export.slint";
 import { SpecDialog, PresetNameDialog, PresetsDialog, PresetUi } from "spec.slint";
@@ -15,7 +16,7 @@ import { StripHeader, SpreadStrip, TimelineStrip, PhotoStrip, PhotoData, Timelin
 import { BarButton, FilterTab } from "widgets.slint";
 import { PanelTabs, InfoPanel } from "side.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi }
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -217,6 +218,14 @@ export component AppWindow inherits Window {
             MenuItem { title: "Lâmina anterior  (Page Up)"; enabled: root.can-prev; activated => { root.command("lamina.anterior"); } }
             MenuItem { title: "Primeira lâmina  (Home)"; enabled: root.can-prev; activated => { root.command("lamina.primeira"); } }
             MenuItem { title: "Última lâmina  (End)"; enabled: root.can-next; activated => { root.command("lamina.ultima"); } }
+            MenuSeparator { }
+            MenuItem { title: "Novo texto  (T)"; enabled: root.has-project; activated => { root.command("lamina.novo-texto"); } }
+            MenuItem { title: "Novo quadro de foto"; enabled: root.has-project; activated => { root.command("lamina.novo-quadro"); } }
+            MenuItem { title: "Trazer para a frente"; enabled: root.has-project; activated => { root.command("lamina.frente"); } }
+            MenuItem { title: "Enviar para trás"; enabled: root.has-project; activated => { root.command("lamina.tras"); } }
+            MenuSeparator { }
+            MenuItem { title: "Salvar como modelo…"; enabled: root.has-project; activated => { root.command("lamina.salvar-modelo"); } }
+            MenuItem { title: "Meus modelos…"; activated => { root.command("lamina.modelos"); } }
         }
         Menu {
             title: "Layout";
@@ -248,7 +257,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(event) => {
-            if (root.show-new || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || root.busy-text != "") {
+            if (root.show-new || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || root.busy-text != "") {
                 return reject;
             }
             // Teclas especiais chegam como o caractere do Slint; o Rust traduz o nome.
@@ -541,6 +550,8 @@ export component AppWindow inherits Window {
     if PresetUi.show-spec: SpecDialog { }
     if PresetUi.show-list: PresetsDialog { }
     if PresetUi.show-name: PresetNameDialog { }
+    if ModelUi.show-name: ModelNameDialog { }
+    if ModelUi.show-list: ModelsDialog { }
     if root.show-message: MessageDialog {
         title: root.message-title;
         message: root.message-text;

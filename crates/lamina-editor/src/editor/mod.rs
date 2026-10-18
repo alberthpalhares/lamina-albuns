@@ -19,6 +19,7 @@ mod dispatch;
 mod frames;
 mod hand;
 mod layouts;
+mod models;
 mod style;
 mod text_edit;
 
@@ -59,6 +60,8 @@ pub struct Editor {
     strips: StripsStore,
     /// Quadro sendo movido ou redimensionado (spec TX).
     gesture: Option<hand::Gesture>,
+    /// Modelos do fotógrafo (spec MD).
+    models: crate::models::ModelsStore,
 }
 
 impl Default for Editor {
@@ -92,6 +95,7 @@ impl Editor {
             busy: false,
             strips: StripsStore::default(),
             gesture: None,
+            models: crate::models::ModelsStore::default(),
         }
     }
 

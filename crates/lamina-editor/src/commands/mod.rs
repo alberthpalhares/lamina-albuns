@@ -63,13 +63,15 @@ pub enum Command {
     NewPhotoFrame,
     BringForward,
     SendBackward,
+    SaveModel,
+    Models,
 }
 
 /// Nome, rótulo, menu e atalho de um comando.
 type Info = (&'static str, &'static str, Menu, Option<Shortcut>);
 
 impl Command {
-    pub const ALL: [Command; 45] = [
+    pub const ALL: [Command; 47] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
@@ -115,6 +117,8 @@ impl Command {
         Command::NewPhotoFrame,
         Command::BringForward,
         Command::SendBackward,
+        Command::SaveModel,
+        Command::Models,
     ];
 
     /// Nome estável, para testes e para a linha de comando.

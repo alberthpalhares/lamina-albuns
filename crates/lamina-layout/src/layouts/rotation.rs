@@ -56,6 +56,8 @@ impl Family {
                     layout: b,
                 },
             ) => s1 == s2 && kind(a) == kind(b),
+            // O mesmo modelo, espelhado ou não, é o mesmo desenho (spec MD, MD-B8).
+            (Family::Model { name: a, .. }, Family::Model { name: b, .. }) => a == b,
             _ => false,
         }
     }

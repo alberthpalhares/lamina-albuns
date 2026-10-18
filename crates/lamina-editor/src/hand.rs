@@ -101,7 +101,9 @@ pub fn add_empty_frame(
         page.height.get() / 3.0,
     );
     let at = push(project, index, rect, FrameContent::Empty)?;
-    spread_mut(project, index)?.manual = true;
+    let spread = spread_mut(project, index)?;
+    spread.manual = true;
+    spread.model = None;
     Ok(at)
 }
 
@@ -118,6 +120,7 @@ pub fn remove_frame(project: &mut Project, index: usize, frame: usize) -> Result
     let removed = spread.frames.remove(frame);
     if !is_text(&removed.content) {
         spread.manual = true;
+        spread.model = None;
     }
     Ok(())
 }
@@ -136,6 +139,7 @@ pub fn set_rect(
     f.rect = rel;
     if !is_text(&f.content) {
         spread.manual = true;
+        spread.model = None;
     }
     Ok(())
 }

@@ -92,6 +92,7 @@ impl Project {
             gap: None,
             frames: Vec::new(),
             manual: false,
+            model: None,
         });
         id
     }

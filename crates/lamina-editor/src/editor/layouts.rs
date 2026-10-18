@@ -2,7 +2,7 @@
 //! preferências. As contas estão em [`crate::suggestions`]; aqui fica o estado.
 
 use lamina_core::Project;
-use lamina_layout::{LayoutCandidate, LayoutLists, apply_preferences, design_key};
+use lamina_layout::{LayoutCandidate, LayoutLists, add_models, apply_preferences, design_key};
 
 use super::Editor;
 use crate::suggestions::{
@@ -36,11 +36,19 @@ impl Editor {
     fn cached_lists(&self, project: &Project, sel: &Selection) -> LayoutLists {
         let mut bits: Vec<u64> = sel.aspects.iter().map(|a| a.to_bits()).collect();
         bits.push(sel.gap.get().to_bits());
+        bits.push(u64::from(sel.whole));
         let key = (bits, sel.active.left, sel.active.right);
         if let Some(found) = self.lists.borrow().get(&key) {
             return found.clone();
         }
-        let computed = lists(project, sel).unwrap_or_default();
+        let mut computed = lists(project, sel).unwrap_or_default();
+        // Os modelos do fotógrafo valem para a lâmina inteira (spec MD; uma página só fica sem
+        // fase). Sem lista do motor (erro), não há onde pôr.
+        if sel.whole && !computed.in_order.is_empty() {
+            let at = (sel.active, sel.gap);
+            let models = self.models.all();
+            let _ = add_models(&mut computed, &project.spec, at, &sel.aspects, models);
+        }
         self.lists.borrow_mut().insert(key, computed.clone());
         computed
     }

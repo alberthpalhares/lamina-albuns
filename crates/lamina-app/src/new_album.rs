@@ -139,6 +139,7 @@ pub fn create(app: &mut App) {
             _ => Reuse::Medium,
         },
         preferences: app.editor.preferences().clone(),
+        models: app.editor.models().to_vec(),
         limits,
         export: app.new_export,
     };

@@ -134,6 +134,10 @@ pub fn family_name(family: &Family) -> String {
         Family::Mosaic { scope, layout: p } => {
             format!("mosaico {}, {}", scope_name(*scope), layout(p))
         }
+        Family::Model { name, mirrored } => {
+            let e = if *mirrored { ", espelhado" } else { "" };
+            format!("modelo {name}{e}")
+        }
     }
 }
 

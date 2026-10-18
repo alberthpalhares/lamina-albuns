@@ -1,7 +1,7 @@
 //! Textos do painel de layouts: o nome da família e a nota explicada (spec TL, seção 4).
 
 use lamina_core::Project;
-use lamina_layout::{FamilyKind, Score};
+use lamina_layout::{Family, FamilyKind, Score};
 
 /// Aviso do painel quando todas as opções estão rejeitadas (spec TL, regra 7).
 pub const ALL_REJECTED: &str = "Todas as opções desta seleção foram rejeitadas.";
@@ -16,6 +16,19 @@ pub fn family_name(kind: FamilyKind) -> &'static str {
         FamilyKind::Mirrored => "Espelhado",
         FamilyKind::BleedPage => "Página sangrada",
         FamilyKind::Mosaic => "Mosaico",
+        FamilyKind::Model => "Modelo",
+    }
+}
+
+/// Título da opção no painel: o nome da família, ou "Modelo · <nome>" (com "· espelhado") para um
+/// modelo do fotógrafo (spec MD, seção 4).
+pub fn option_title(family: &Family) -> String {
+    match family {
+        Family::Model { name, mirrored } => {
+            let e = if *mirrored { " · espelhado" } else { "" };
+            format!("Modelo · {name}{e}")
+        }
+        other => family_name(other.kind()).to_owned(),
     }
 }
 

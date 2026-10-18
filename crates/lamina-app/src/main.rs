@@ -17,6 +17,7 @@ mod history;
 mod images;
 mod input;
 mod look;
+mod models;
 mod new_album;
 mod panel;
 mod presets;
@@ -31,8 +32,8 @@ use std::sync::mpsc::channel;
 use std::time::Duration;
 
 use lamina_editor::{
-    Cache, Command, Editor, Filter, PREFS_FILE, PRESETS_FILE, Part, PrefsStore, PresetsStore,
-    STRIPS_FILE, StripsStore, config_dir,
+    Cache, Command, Editor, Filter, MODELS_FILE, ModelsStore, PREFS_FILE, PRESETS_FILE, Part,
+    PrefsStore, PresetsStore, STRIPS_FILE, StripsStore, config_dir,
 };
 use slint::{CloseRequestResponse, ComponentHandle, Timer, TimerMode};
 
@@ -73,6 +74,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     look::connect(window, app);
     hand::connect(window, app);
     frame_panel::connect(window, app);
+    models::connect(window, app);
     history::connect(window, app);
 }
 
@@ -188,6 +190,8 @@ fn main() -> anyhow::Result<()> {
     {
         let mut a = app.borrow_mut();
         a.presets = PresetsStore::load(&config_dir().join(PRESETS_FILE));
+        let models = ModelsStore::load(&config_dir().join(MODELS_FILE));
+        a.editor.set_models(models);
         if let Some(warning) = a.presets.warning.take() {
             a.notice = warning;
         }

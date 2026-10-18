@@ -86,6 +86,7 @@ pub fn finish(
                 crop: m.crop,
                 coverage: m.coverage,
                 score: m.score,
+                model: None,
             })
         })
         .collect()

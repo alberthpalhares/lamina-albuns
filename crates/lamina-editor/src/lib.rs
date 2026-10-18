@@ -23,6 +23,7 @@
 
 pub mod album;
 pub mod appearance;
+mod applying;
 pub mod cache;
 pub mod commands;
 pub mod editor;
@@ -32,6 +33,7 @@ pub mod forms;
 pub mod frame_form;
 pub mod hand;
 pub mod keys;
+pub mod models;
 pub mod photos;
 pub mod prefs_store;
 pub mod presets;
@@ -64,6 +66,7 @@ pub use exporting::{
 };
 pub use keys::{Key, Shortcut};
 pub use lamina_render::text_image;
+pub use models::{MODELS_FILE, ModelError, ModelsStore, model_from_spread};
 pub use photos::{Filter, PhotoInfo, PhotoItem, photo_info, photo_list, used_photos};
 pub use prefs_store::{PREFS_FILE, PrefsStore, config_dir};
 pub use presets::{PRESETS_FILE, Preset, PresetError, PresetsStore, builtin_presets};
@@ -76,7 +79,8 @@ pub use snap::{Grip, SnapLine};
 pub use strips::{STRIPS_FILE, STRIPS_UNREADABLE, Strip, Strips, StripsStore, strip_titles};
 pub use suggestions::{List, Part, Unavailable};
 pub use text::{
-    BAD_COLOR, PALETTE, color_hex, family_name, frame_dpi_text, parse_color, score_text,
+    BAD_COLOR, PALETTE, color_hex, family_name, frame_dpi_text, option_title, parse_color,
+    score_text,
 };
 pub use view::{
     Area, FrameKind, FrameView, PxRect, SpreadView, frame_at, photo_extent, spread_view,

@@ -23,7 +23,9 @@ pub fn pick(
 ) -> Pick {
     // Ritmo: num destaque, só concorrem as famílias de foto grande (se houver alguma).
     let rhythm = wants_big(spread) && list.iter().any(|c| is_big(&c.family));
-    let eligible = |c: &LayoutCandidate| !rhythm || is_big(&c.family);
+    // Um modelo do fotógrafo concorre sempre: é um desenho escolhido por ele (spec MD).
+    let eligible =
+        |c: &LayoutCandidate| !rhythm || is_big(&c.family) || c.family.kind() == FamilyKind::Model;
     let repeats_previous = |c: &LayoutCandidate| {
         reuse != Reuse::High && used.last().is_some_and(|p| p.same_outline(&c.family))
     };
@@ -161,6 +163,7 @@ mod tests {
                 total,
                 ..Score::default()
             },
+            model: None,
         }
     }
 

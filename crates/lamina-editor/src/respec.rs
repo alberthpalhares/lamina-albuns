@@ -36,7 +36,7 @@ pub fn respec(project: &mut Project, spec: AlbumSpec) -> Result<Vec<usize>, Edit
         }
         // Lâmina à mão: os quadros ficam como estão; só os recortes voltam ao zoom 1, com os
         // mesmos centros (spec TX, regra 8).
-        if project.spreads[index].manual {
+        if project.spreads[index].manual || project.spreads[index].model.is_some() {
             for frame in &mut project.spreads[index].frames {
                 if let FrameContent::Photo { crop, .. } = &mut frame.content {
                     *crop = crate::suggestions::keep_center(*crop);

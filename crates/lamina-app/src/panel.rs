@@ -3,7 +3,7 @@
 
 use lamina_core::PhotoId;
 use lamina_editor::text::ALL_REJECTED;
-use lamina_editor::{Command, Part, family_name, score_text};
+use lamina_editor::{Command, Part, option_title, score_text};
 
 use crate::LayoutItem;
 use crate::convert::{model, spread_data};
@@ -40,7 +40,7 @@ pub fn refresh(app: &mut App) {
             let preview = app.editor.preview(&panel, i)?;
             Some(LayoutItem {
                 data: spread_data(&preview, index, &missing, &image, (false, SMALL)),
-                title: family_name(c.family.kind()).into(),
+                title: option_title(&c.family).into(),
                 score: format!("nota {:.0}", c.score.total).into(),
                 favorite: panel.favorite.get(i).copied().unwrap_or(false),
             })
