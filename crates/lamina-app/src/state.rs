@@ -6,10 +6,10 @@ use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 
 use lamina_core::{PhotoId, Project};
-use lamina_editor::forms::{album_info, photo_text};
+use lamina_editor::forms::photo_text;
 use lamina_editor::{
-    Cache, Command, Editor, ExportCheck, Filter, Found, PhotoItem, Session, Step, photo_info,
-    photo_list, prepare_images, strip_titles,
+    Cache, Editor, ExportCheck, Filter, Found, PhotoItem, Session, Step, photo_info, photo_list,
+    prepare_images,
 };
 use slint::{ComponentHandle, Image};
 
@@ -66,7 +66,7 @@ pub struct App {
     /// Para onde vai o preset salvo (0 = novo álbum, 1 = especificação) e se o nome repetido
     /// já foi confirmado.
     pub preset_target: i32,
-    pub name_confirm: bool,
+    pub name_guard: lamina_editor::naming::ReplaceGuard,
     pub(crate) images: Images,
     /// Foto original sendo carregada para o modo recorte.
     pub(crate) loading: Option<PhotoId>,
@@ -93,7 +93,7 @@ impl App {
             new_export: lamina_core::ExportPrefs::default(),
             spec_export: lamina_core::ExportPrefs::default(),
             preset_target: 0,
-            name_confirm: false,
+            name_guard: lamina_editor::naming::ReplaceGuard::default(),
             images: Images::default(),
             loading: None,
             crop_timer: crate::crop::timer(),
@@ -157,72 +157,6 @@ impl App {
         self.refresh_strip();
         self.refresh_photos();
         self.refresh_current();
-    }
-
-    /// Título, contador, comandos disponíveis e a lâmina atual com o painel dela.
-    pub fn refresh_current(&mut self) {
-        let Some(w) = self.window.upgrade() else {
-            return;
-        };
-        w.set_has_project(self.session().is_some());
-        w.set_can_save(self.editor.available(Command::Save));
-        w.set_has_missing(self.editor.available(Command::FindMissing));
-        let strips = self.editor.strips();
-        w.set_spreads_open(strips.spreads);
-        w.set_timeline_open(strips.timeline);
-        w.set_photos_open(strips.photos);
-        w.set_can_prev(self.editor.available(Command::PreviousSpread));
-        w.set_can_next(self.editor.available(Command::NextSpread));
-        w.set_guides(self.editor.guides());
-        w.set_notice(self.notice.clone().into());
-        let Some(session) = self.editor.session() else {
-            w.set_window_title("Lâmina".into());
-            w.set_project_title("".into());
-            w.set_counter("".into());
-            return;
-        };
-        let dirty = if session.is_dirty() { "• " } else { "" };
-        let title = format!("{dirty}{}", session.title());
-        w.set_window_title(format!("{title} — Lâmina").into());
-        w.set_project_title(title.into());
-        w.set_counter(session.counter().into());
-        w.set_counter_warning(session.page_warning().unwrap_or_default().into());
-        // "Lâminas · 4 lâminas (8 páginas)": o nome fica no cabeçalho, aqui vai só o resumo.
-        let [spreads, timeline, photos] = strip_titles(session)
-            .map(|t| t.split_once(" · ").map_or(t.clone(), |(_, s)| s.to_owned()));
-        w.set_strip_spreads(spreads.into());
-        w.set_strip_timeline(timeline.into());
-        w.set_strip_photos(photos.into());
-        let index = session.current();
-        let warnings: Vec<String> = session
-            .warnings_for(index)
-            .iter()
-            .map(ToString::to_string)
-            .collect();
-        let project = session.project().clone();
-        let count = session.spread_count();
-        let frames = project.spreads.get(index).map_or(0, |s| s.frames.len());
-        w.set_info_album(album_info(&project).into());
-        let manual = project.spreads.get(index).is_some_and(|s| s.manual);
-        let by_hand = if manual { " · montada à mão" } else { "" };
-        w.set_info_spread(
-            format!(
-                "Lâmina {} de {count} · {frames} quadros{by_hand}",
-                index + 1
-            )
-            .into(),
-        );
-        w.set_info_warnings(warnings.join("\n").into());
-
-        crate::crop::refresh_spread(self);
-        if let Some(notice) = self.editor.take_notice() {
-            self.notice = notice;
-            w.set_notice(self.notice.clone().into());
-        }
-        crate::panel::refresh(self);
-        crate::look::refresh(self);
-        crate::history::refresh(self);
-        crate::frame_panel::refresh(self);
     }
 
     /// As miniaturas de todas as fotos (miniaturas do painel de layouts).

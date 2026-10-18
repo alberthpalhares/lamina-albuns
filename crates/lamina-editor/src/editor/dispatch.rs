@@ -63,6 +63,13 @@ impl Editor {
         if !self.available(command) {
             return false;
         }
+        // Um comando no meio do arrasto de um quadro descarta o gesto: soltar depois gravaria o
+        // quadro na lâmina errada (auditoria do Marco 3, M2). E encerra a emenda do histórico:
+        // digitar depois de um comando é uma edição nova (spec TX, regra 10).
+        self.gesture = None;
+        if let Some(s) = self.session.as_mut() {
+            s.end_merge();
+        }
         // Qualquer outro comando fecha o modo recorte, gravando o gesto (spec RC, regra 1).
         let crop_command = matches!(
             command,
@@ -139,6 +146,7 @@ impl Editor {
     /// andamento é gravado antes.
     pub fn go_to_step(&mut self, step: usize) -> bool {
         self.exit_crop();
+        self.gesture = None;
         self.selected_frame = None;
         self.session.as_mut().is_some_and(|s| s.go_to_step(step))
     }

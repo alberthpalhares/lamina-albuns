@@ -95,6 +95,20 @@ impl RelRect {
         Ok(rect)
     }
 
+    /// O mesmo retângulo preso à área (`0..=1`): o tamanho passa a no máximo 1 e a posição anda
+    /// para dentro. `None` se não tem tamanho ou não é finito (um arquivo editado à mão; spec MD,
+    /// seção 6).
+    pub fn clamped(&self) -> Option<Self> {
+        let finite = [self.x, self.y, self.width, self.height]
+            .iter()
+            .all(|v| v.is_finite());
+        if !finite || self.width <= 0.0 || self.height <= 0.0 {
+            return None;
+        }
+        let (w, h) = (self.width.min(1.0), self.height.min(1.0));
+        RelRect::new(self.x.clamp(0.0, 1.0 - w), self.y.clamp(0.0, 1.0 - h), w, h).ok()
+    }
+
     /// A área de referência inteira.
     pub fn full() -> Self {
         RelRect {

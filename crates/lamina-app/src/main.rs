@@ -21,6 +21,7 @@ mod models;
 mod new_album;
 mod panel;
 mod presets;
+mod refresh;
 mod relink;
 mod spec_dialog;
 mod state;

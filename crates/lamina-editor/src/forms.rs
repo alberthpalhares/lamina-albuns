@@ -2,15 +2,14 @@
 //! Marco 2, M4): os campos do "Novo álbum" e da "Exportar", os passos do painel de aparência, a
 //! dica da barra de baixo e os textos do painel de informações.
 
-use std::path::Path;
-
-use lamina_core::{ColorSpace, ExportPrefs, Mm, OutputFormat, PageLimits, Project, Rgb};
+use lamina_core::{PageLimits, Project};
 
 use crate::Editor;
 use crate::album::SpecFields;
-use crate::editor::Look;
-use crate::exporting::{DEFAULT_QUALITY, ExportFormat, ExportOptions};
 use crate::photos::PhotoInfo;
+
+pub use crate::export_form::{ExportForm, format_index, replace_question};
+pub use crate::look_form::{BORDER_FIRST, LookField};
 
 /// Número com no máximo uma casa e vírgula: 30 → "30", 2,5 → "2,5".
 pub fn decimal(v: f64) -> String {
@@ -110,141 +109,12 @@ pub fn limits_text(limits: PageLimits) -> (String, String) {
     (text(limits.min), text(limits.max))
 }
 
-/// Posição do formato no campo Formato da janela Exportar (JPEG, PDF, TIFF).
-pub fn format_index(format: OutputFormat) -> i32 {
-    match format {
-        OutputFormat::Jpeg => 0,
-        OutputFormat::Pdf => 1,
-        OutputFormat::Tiff => 2,
-    }
-}
-
 /// "Dê um nome ao álbum." quando o nome está vazio.
 pub fn album_name_error(name: &str) -> Option<&'static str> {
     name.trim().is_empty().then_some("Dê um nome ao álbum.")
 }
 
-/// Os campos da janela "Exportar" (spec EI, seção 3).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExportForm {
-    pub quality: i32,
-    pub all_spreads: bool,
-    pub range: String,
-    pub pages: bool,
-    /// JPEG, PDF (spec PD) ou TIFF (spec CT).
-    pub format: ExportFormat,
-    /// Marcas de corte; só valem no PDF.
-    pub crop_marks: bool,
-    /// sRGB ou Adobe RGB (spec CT).
-    pub space: ColorSpace,
-}
-
-impl ExportForm {
-    /// O que o projeto passa a lembrar desta exportação (spec PR, regra 5).
-    pub fn prefs(&self) -> ExportPrefs {
-        ExportPrefs {
-            format: match self.format {
-                ExportFormat::Pdf => OutputFormat::Pdf,
-                ExportFormat::Tiff => OutputFormat::Tiff,
-                _ => OutputFormat::Jpeg,
-            },
-            space: self.space,
-            pages: self.pages,
-        }
-    }
-
-    /// As opções da exportação; a qualidade fica entre 1 e 100, e as marcas de corte só valem
-    /// no PDF (no JPEG a janela nem mostra a opção).
-    pub fn options(&self, overwrite: bool) -> ExportOptions {
-        ExportOptions {
-            quality: u8::try_from(self.quality.clamp(1, 100)).unwrap_or(DEFAULT_QUALITY),
-            range: (!self.all_spreads).then(|| self.range.trim().to_owned()),
-            pages: self.pages,
-            overwrite,
-            format: self.format,
-            crop_marks: self.format == ExportFormat::Pdf && self.crop_marks,
-            space: self.space,
-        }
-    }
-}
-
-/// A pergunta antes de substituir arquivos que já existem (spec EI, regra 4).
-pub fn replace_question(existing: usize, folder: &Path) -> String {
-    let files = if existing == 1 {
-        "1 arquivo desta exportação".to_owned()
-    } else {
-        format!("{existing} arquivos desta exportação")
-    };
-    format!(
-        "Já existem {files} em {}. Substituindo, os arquivos lamina-NN.jpg e pagina-NN.jpg que \
-         não fizerem parte desta exportação também saem da pasta; os outros arquivos ficam.",
-        folder.display()
-    )
-}
-
-/// O que os botões − e + do painel de aparência mudam (spec AP, seção 3).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LookField {
-    Gap,
-    Border,
-    Radius,
-}
-
-impl LookField {
-    /// Passo de cada clique e o máximo, em mm.
-    pub fn step_and_max(self) -> (f64, f64) {
-        match self {
-            LookField::Gap => (0.5, 20.0),
-            LookField::Border => (0.5, 5.0),
-            LookField::Radius => (1.0, 10.0),
-        }
-    }
-
-    fn value(self, look: &Look) -> f64 {
-        match self {
-            LookField::Gap => look.gap.get(),
-            LookField::Border => look.border.width.get(),
-            LookField::Radius => look.radius.get(),
-        }
-    }
-}
-
-/// Borda que uma cor escolhida sem espessura ganha, em mm.
-pub const BORDER_FIRST: f64 = 1.0;
-
 impl Editor {
-    /// Um clique em − (`delta` < 0) ou + do painel de aparência. Devolve o aviso do editor (o
-    /// espaço reduzido para caber), se houver.
-    pub fn step_look(&mut self, field: LookField, delta: i32) -> Option<String> {
-        let look = self.look()?;
-        let (step, max) = field.step_and_max();
-        let value = Mm((field.value(&look) + f64::from(delta) * step).clamp(0.0, max));
-        match field {
-            LookField::Gap => self.set_gap(value),
-            LookField::Border => {
-                self.set_border(value, look.border.color);
-                None
-            }
-            LookField::Radius => {
-                self.set_radius(value);
-                None
-            }
-        }
-    }
-
-    /// Escolher a cor da borda: sem espessura ainda, a borda ganha [`BORDER_FIRST`].
-    pub fn pick_border_color(&mut self, color: Rgb) -> bool {
-        let Some(look) = self.look() else {
-            return false;
-        };
-        let width = if look.border.width.get() > 0.0 {
-            look.border.width
-        } else {
-            Mm(BORDER_FIRST)
-        };
-        self.set_border(width, color)
-    }
-
     /// A dica da barra de baixo, conforme o que está selecionado.
     pub fn hint(&self) -> &'static str {
         if self.crop_mode().is_some() {

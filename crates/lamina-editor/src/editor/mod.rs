@@ -139,9 +139,11 @@ impl Editor {
         self.session = Some(Session::new_unsaved(project));
     }
 
-    /// Outro projeto na tela: nada do anterior sobra (quadro, seleção, modo recorte e o gesto
-    /// pendente, que não pode virar edição no projeto novo; auditoria do Marco 2, M2).
+    /// Outro projeto na tela: nada do anterior sobra (quadro, seleção, modo recorte e os gestos
+    /// pendentes, de recorte e de quadro, que não podem virar edição no projeto novo; auditorias
+    /// dos Marcos 2 e 3, M2).
     fn forget_view(&mut self) {
+        self.gesture = None;
         self.selected_frame = None;
         self.selection.clear();
         self.anchor = None;
@@ -190,6 +192,7 @@ impl Editor {
             return false;
         }
         self.exit_crop();
+        self.gesture = None;
         self.selected_frame = None;
         self.session.as_mut().is_some_and(|s| s.go_to(index))
     }

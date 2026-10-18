@@ -71,6 +71,18 @@ impl Album {
         };
         export(&self.project, folder, &source, options, &|_, _| {})
     }
+
+    /// A lâmina `spread` renderizada para impressão, sem passar pela exportação.
+    pub fn print(&self, spread: usize) -> RgbaImage {
+        let source = |p: &Photo, _: (u32, u32)| {
+            self.images
+                .get(&p.path)
+                .cloned()
+                .ok_or_else(|| "arquivo sumiu".to_owned())
+        };
+        let target = lamina_render::RenderTarget::Print;
+        lamina_render::render_spread(&self.project, spread, target, &source).unwrap()
+    }
 }
 
 pub fn solid(w: u32, h: u32, c: [u8; 3]) -> RgbaImage {

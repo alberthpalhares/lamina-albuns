@@ -133,3 +133,94 @@ fn tx_b16_texto_rapido() {
     }
     assert!(extra < budget(300), "os textos custaram {extra:?} a mais");
 }
+
+/// As faixas de linhas com tinta, em frações da altura: (começo, fim) de cada linha de texto.
+fn bands(img: &RgbaImage) -> Vec<(f64, f64)> {
+    let h = f64::from(img.height());
+    let inked = |y: u32| (0..img.width()).any(|x| img.get_pixel(x, y)[3] > 127);
+    let mut out = Vec::new();
+    let mut start = None;
+    for y in 0..img.height() {
+        match (inked(y), start) {
+            (true, None) => start = Some(y),
+            (false, Some(s)) => {
+                out.push((f64::from(s) / h, f64::from(y) / h));
+                start = None;
+            }
+            _ => {}
+        }
+    }
+    if let Some(s) = start {
+        out.push((f64::from(s) / h, 1.0));
+    }
+    out
+}
+
+#[test]
+fn tx_b2_cada_linha_no_mesmo_lugar_nas_duas_escalas() {
+    let t = TextBox {
+        align: TextAlign::Left,
+        valign: TextVAlign::Top,
+        line_spacing: 1.6,
+        ..text(FRASE, "Inter", 14.0)
+    };
+    let size_mm = (100.0, 60.0);
+    let screen = bands(&text_image(&t, size_mm, (400, 240)).unwrap());
+    let print = bands(&text_image(&t, size_mm, (1181, 709)).unwrap());
+    assert_eq!(screen.len(), print.len(), "{screen:?} × {print:?}");
+    assert_eq!(screen.len(), text_lines(&t, size_mm).len());
+    let px = 1.5 / 240.0;
+    for (s, p) in screen.iter().zip(&print) {
+        assert!(
+            (s.0 - p.0).abs() < px && (s.1 - p.1).abs() < px,
+            "{s:?} × {p:?}"
+        );
+    }
+}
+
+/// Uma lâmina 30 × 30 sem foto, só com o texto no quadro `rect`, em prévia de 1200 pixels.
+fn render_text(rect: [f64; 4], t: TextBox) -> (RgbaImage, lamina_core::Rect, f64) {
+    let mut project = spread_with_texts(0);
+    let id = project.spreads[0].id;
+    let rel = RelRect::new(rect[0], rect[1], rect[2], rect[3]).unwrap();
+    project.add_frame(id, rel, FrameContent::Text(t)).unwrap();
+    let none = |_: &lamina_core::Photo, _: (u32, u32)| Err("sem fotos".to_owned());
+    let img = render_spread(&project, 0, RenderTarget::Preview { max_side: 1200 }, &none).unwrap();
+    let r = rel.to_absolute(&project.spec.trim_rect());
+    let k = f64::from(img.width()) / project.spec.canvas_rect().width.get();
+    (img, r, k)
+}
+
+// Medidas de tela: alguns milhares de pixels, cabem em u32.
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+fn px(v: f64) -> u32 {
+    v.round().max(0.0) as u32
+}
+
+#[test]
+fn tx_b4_a_exportacao_corta_o_texto_na_borda_do_quadro() {
+    let t = text("Ana\nPedro\nSempre\nJuntos", "Inter", 40.0);
+    let (img, r, k) = render_text([0.3, 0.3, 0.2, 0.05], t);
+    let below = px((r.y.get() + r.height.get()) * k) + 2;
+    let ink = (px(r.x.get() * k)..px((r.x.get() + r.width.get()) * k))
+        .flat_map(|x| (below..below + 40).map(move |y| (x, y)))
+        .any(|(x, y)| img.get_pixel(x, y)[0] < 200);
+    assert!(!ink, "o texto vazou abaixo do quadro");
+}
+
+#[test]
+fn texto_encostado_no_corte_nao_pinta_a_sangria() {
+    let t = TextBox {
+        align: TextAlign::Left,
+        ..text("Ana & Pedro", "Inter", 30.0)
+    };
+    let (img, r, k) = render_text([0.0, 0.4, 0.2, 0.1], t);
+    let left = px(r.x.get() * k);
+    let ink = (0..left.saturating_sub(1))
+        .flat_map(|x| {
+            (px(r.y.get() * k)..px((r.y.get() + r.height.get()) * k)).map(move |y| (x, y))
+        })
+        .any(|(x, y)| img.get_pixel(x, y)[0] < 200);
+    assert!(left > 2, "precisa de sangria no teste");
+    assert!(!ink, "o texto entrou na sangria");
+}

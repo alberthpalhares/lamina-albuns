@@ -3,6 +3,7 @@
 
 mod ap;
 mod auditoria;
+mod auditoria_m3;
 mod common;
 mod ct;
 mod ei;
@@ -15,6 +16,7 @@ mod jp_session;
 mod jp_speed;
 mod jp_view;
 mod md;
+mod md_more;
 mod pn;
 mod pr;
 mod rc;

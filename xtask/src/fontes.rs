@@ -21,7 +21,11 @@ fn walk(dir: &Path, out: &mut Vec<String>) {
         p.extension()
             .is_some_and(|e| e.eq_ignore_ascii_case("ttf") || e.eq_ignore_ascii_case("otf"))
     });
-    if has_font && !dir.join("OFL.txt").is_file() {
+    // A licença precisa ser a OFL de verdade, com o copyright da família (auditoria do Marco 3,
+    // M9): um arquivo vazio ou de outra licença não vale.
+    let license = fs::read_to_string(dir.join("OFL.txt")).unwrap_or_default();
+    let ok = license.contains("SIL Open Font License") && license.contains("Copyright");
+    if has_font && !ok {
         out.push(dir.display().to_string());
     }
     for p in paths.iter().filter(|p| p.is_dir()) {
@@ -44,8 +48,11 @@ mod tests {
         fs::create_dir_all(&a).unwrap();
         fs::create_dir_all(&b).unwrap();
         fs::write(a.join("A.ttf"), b"x").unwrap();
-        fs::write(a.join("OFL.txt"), b"licen\xc3\xa7a").unwrap();
+        let ofl = "Copyright 2020 Fulano\nSIL Open Font License, Version 1.1";
+        fs::write(a.join("OFL.txt"), ofl).unwrap();
         fs::write(b.join("B.ttf"), b"x").unwrap();
+        // Proveta do M9 do Marco 3: um OFL.txt vazio não vale.
+        fs::write(b.join("OFL.txt"), "").unwrap();
         assert_eq!(without_license(dir.path()), [b.display().to_string()]);
     }
 }

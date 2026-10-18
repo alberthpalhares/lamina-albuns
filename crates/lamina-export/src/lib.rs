@@ -1,8 +1,8 @@
 //! # lamina-export
 //!
 //! Exportação para impressão (spec `exportacao`): JPEG por lâmina ou por página, com sangria,
-//! perfil sRGB e DPI, nomes ordenáveis e pré-impressão; PDF/X-4 do álbum inteiro (spec PD). TIFF
-//! e Adobe RGB chegam no Marco 3 (spec CT).
+//! perfil de cor e DPI, nomes ordenáveis e pré-impressão; PDF/X-4 do álbum inteiro (spec PD);
+//! TIFF sem perda e saída em sRGB ou Adobe RGB (spec CT).
 
 mod clean;
 mod export;

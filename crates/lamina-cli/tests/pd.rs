@@ -48,6 +48,13 @@ fn pd_b10_erros_das_opcoes_do_pdf() {
         text(&marks.stderr).trim(),
         "Erro: marcas de corte só existem no PDF (use --formato pdf)."
     );
+    // No build, o erro das marcas vem antes até do erro da pasta de fotos que não existe.
+    let build = base.lamina(&["build", "nada", "--saida", "s", "--marcas-de-corte"]);
+    assert_eq!(build.status.code(), Some(1));
+    assert_eq!(
+        text(&build.stderr).trim(),
+        "Erro: marcas de corte só existem no PDF (use --formato pdf)."
+    );
     let png = base.lamina(&["exportar", "x.lamina", "--saida", "s", "--formato", "png"]);
     assert_eq!(png.status.code(), Some(1));
     assert_eq!(
