@@ -1,5 +1,5 @@
 //! Presets (spec PR): especificações prontas, com a faixa de páginas e o que o laboratório pede na
-//! exportação. Os do Lâmina vêm do programa (tamanhos comuns, sem nome de laboratório: regra 6 do
+//! exportação. Os do Lamina vêm do programa (tamanhos comuns, sem nome de laboratório: regra 6 do
 //! AGENTS); os do fotógrafo ficam em `presets.json`, na pasta de configuração.
 
 use std::io::Write as _;
@@ -28,7 +28,7 @@ pub struct Preset {
     pub export: ExportPrefs,
 }
 
-/// Os seis presets do Lâmina (regra 1): 300 DPI, 3 mm de sangria, 10 mm de zona segura, 20 a 80
+/// Os seis presets do Lamina (regra 1): 300 DPI, 3 mm de sangria, 10 mm de zona segura, 20 a 80
 /// páginas, JPEG em sRGB.
 pub fn builtin_presets() -> Vec<Preset> {
     [
@@ -61,7 +61,7 @@ pub fn builtin_presets() -> Vec<Preset> {
 pub enum PresetError {
     #[error("Dê um nome ao preset.")]
     EmptyName,
-    #[error("Esse nome é de um preset do Lâmina; escolha outro.")]
+    #[error("Esse nome é de um preset do Lamina; escolha outro.")]
     Builtin,
     #[error("O mínimo de páginas passa do máximo.")]
     LimitsOrder,
@@ -110,7 +110,7 @@ impl PresetsStore {
         store
     }
 
-    /// Os do Lâmina e depois os do fotógrafo, na ordem em que foram salvos.
+    /// Os do Lamina e depois os do fotógrafo, na ordem em que foram salvos.
     pub fn all(&self) -> Vec<Preset> {
         let mut all = builtin_presets();
         all.extend(self.user.iter().cloned());
@@ -121,7 +121,7 @@ impl PresetsStore {
         &self.user
     }
 
-    /// O preset de nome `name`, do Lâmina ou do fotógrafo.
+    /// O preset de nome `name`, do Lamina ou do fotógrafo.
     pub fn find(&self, name: &str) -> Option<Preset> {
         self.all().into_iter().find(|p| p.name == name)
     }

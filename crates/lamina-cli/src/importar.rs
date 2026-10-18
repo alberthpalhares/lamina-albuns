@@ -1,4 +1,4 @@
-//! Comando `lamina importar`: importa uma pasta e mostra o que o Lâmina entendeu de cada foto.
+//! Comando `lamina importar`: importa uma pasta e mostra o que o Lamina entendeu de cada foto.
 
 use std::path::{Path, PathBuf};
 use std::time::Instant;

@@ -56,7 +56,7 @@ pub fn edge(single: bool) -> AlbumEdge {
     }
 }
 
-/// Os presets do Lâmina e os do fotógrafo (o mesmo arquivo da janela).
+/// Os presets do Lamina e os do fotógrafo (o mesmo arquivo da janela).
 pub fn presets() -> PresetsStore {
     PresetsStore::load(&config_dir().join(PRESETS_FILE))
 }

@@ -122,7 +122,7 @@ fn pr_b3_salvar_ler_de_novo_e_apagar() {
     );
     assert_eq!(
         PresetError::Builtin.to_string(),
-        "Esse nome é de um preset do Lâmina; escolha outro."
+        "Esse nome é de um preset do Lamina; escolha outro."
     );
     assert_eq!(store.save(custom("  ")), Err(PresetError::EmptyName));
     let mut backwards = custom("Ao contrário");
@@ -142,7 +142,7 @@ fn pr_b4_arquivo_de_presets_ilegivel() {
     let file = dir.path().join("presets.json");
     std::fs::write(&file, "isto não é json").unwrap();
     let store = PresetsStore::load(&file);
-    assert_eq!(store.all().len(), 6, "só os do Lâmina");
+    assert_eq!(store.all().len(), 6, "só os do Lamina");
     assert!(
         store
             .warning

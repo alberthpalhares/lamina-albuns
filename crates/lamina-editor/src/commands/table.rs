@@ -210,7 +210,7 @@ impl Command {
                 Some(S::alt('2')),
             ),
             C::TogglePhotos => ("ver.fotos", "Fotos", Menu::View, Some(S::alt('3'))),
-            C::About => ("ajuda.sobre", "Sobre o Lâmina", Menu::Help, None),
+            C::About => ("ajuda.sobre", "Sobre o Lamina", Menu::Help, None),
             C::NewText => (
                 "lamina.novo-texto",
                 "Novo texto",

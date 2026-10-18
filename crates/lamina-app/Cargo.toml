@@ -1,6 +1,6 @@
 [package]
 name = "lamina-app"
-description = "Interface gráfica do Lâmina, em Slint (ADR 0002)."
+description = "Interface gráfica do Lamina, em Slint (ADR 0002)."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -19,6 +19,9 @@ rfd = { workspace = true }
 
 [build-dependencies]
 slint-build = { workspace = true }
+
+[target.'cfg(windows)'.build-dependencies]
+winresource = { workspace = true }
 
 # Os lints do workspace, com uma diferença: `unsafe_code` é `deny` (e não `forbid`) para o módulo
 # `ui`, gerado pelo Slint, poder liberar o `unsafe` dele. O nosso código continua sem `unsafe`

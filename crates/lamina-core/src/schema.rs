@@ -24,7 +24,7 @@ mod tests {
     use super::*;
     use crate::{AlbumSpec, Dpi, Mm, RelRect};
 
-    /// Um projeto com foto, lâmina e quadro, como o Lâmina grava.
+    /// Um projeto com foto, lâmina e quadro, como o Lamina grava.
     fn saved() -> Value {
         let spec = AlbumSpec::new(Mm(300.0), Mm(300.0), Dpi::new(300).unwrap()).unwrap();
         let mut project = Project::new("teste", spec);

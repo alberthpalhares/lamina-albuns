@@ -1,6 +1,6 @@
 [package]
 name = "lamina-core"
-description = "Modelo de domínio do Lâmina: unidades, especificação do álbum, lâminas, quadros e histórico."
+description = "Modelo de domínio do Lamina: unidades, especificação do álbum, lâminas, quadros e histórico."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

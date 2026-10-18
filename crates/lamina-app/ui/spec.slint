@@ -7,7 +7,7 @@ import { Theme } from "theme.slint";
 import { Shade, Panel, Field } from "widgets.slint";
 
 export global PresetUi {
-    // Os nomes: os do Lâmina, os do fotógrafo e, por último, "Personalizado".
+    // Os nomes: os do Lamina, os do fotógrafo e, por último, "Personalizado".
     in property <[string]> presets;
     // Novo álbum: o preset escolhido e a faixa de páginas.
     in-out property <int> new-preset;
@@ -192,7 +192,7 @@ export component PresetsDialog inherits Shade {
             Text {
                 text: PresetUi.user-presets.length == 0
                     ? "Nenhum preset salvo. Use \"Salvar como preset…\" no novo álbum ou na especificação."
-                    : "Os presets do Lâmina não aparecem aqui: não dá para mudá-los.";
+                    : "Os presets do Lamina não aparecem aqui: não dá para mudá-los.";
                 color: Theme.muted;
                 wrap: word-wrap;
             }

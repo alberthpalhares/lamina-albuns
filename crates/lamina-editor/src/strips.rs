@@ -1,6 +1,6 @@
 //! As faixas de baixo da janela (spec PN): lâminas, linha do tempo e fotos, cada uma com título e
 //! recolhível. Quais estão recolhidas fica em `janela.json`, na pasta de configuração, e vale na
-//! próxima vez que o Lâmina abrir.
+//! próxima vez que o Lamina abrir.
 
 use std::io::Write as _;
 use std::path::{Path, PathBuf};

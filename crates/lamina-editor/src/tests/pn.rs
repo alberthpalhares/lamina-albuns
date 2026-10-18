@@ -34,7 +34,7 @@ fn pn_b2_mesmo_comando_pelo_menu_e_pelo_atalho() {
     ];
     for (key, command, label) in expected {
         assert_eq!(Command::from_shortcut(Shortcut::alt(key)), Some(command));
-        // Ctrl+1/2/3 são do ZoomIt (PowerToys): não chegam ao Lâmina e não são das faixas.
+        // Ctrl+1/2/3 são do ZoomIt (PowerToys): não chegam ao Lamina e não são das faixas.
         assert_eq!(Command::from_shortcut(Shortcut::ctrl(key)), None);
         assert_eq!(command.label(), label);
         assert_eq!(command.menu(), Menu::View);

@@ -1,4 +1,4 @@
-// Janela principal do Lâmina (spec `janela-principal`). Só desenho: os dados e as decisões vêm
+// Janela principal do Lamina (spec `janela-principal`). Só desenho: os dados e as decisões vêm
 // do lamina-editor, pelo Rust (src/).
 
 import { Button, ScrollView } from "std-widgets.slint";
@@ -8,6 +8,7 @@ import { NewAlbumDialog, ConfirmDialog, MessageDialog, BusyOverlay } from "dialo
 import { LayoutsPanel, LayoutItem } from "layouts.slint";
 import { LookPanel, LookUi, Swatch } from "look.slint";
 import { FramePanel, FrameUi } from "frame.slint";
+import { AboutDialog } from "about.slint";
 import { ModelNameDialog, ModelsDialog, ModelUi } from "models.slint";
 import { HistoryPanel, HistoryItem } from "history.slint";
 import { ExportDialog } from "export.slint";
@@ -20,6 +21,7 @@ export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoD
 
 export component AppWindow inherits Window {
     title: root.window-title;
+    icon: @image-url("../icons/lamina-256.png");
     min-width: 800px;
     min-height: 600px;
     preferred-width: 1400px;
@@ -27,7 +29,7 @@ export component AppWindow inherits Window {
     background: Theme.background;
     forward-focus: keys;
 
-    in property <string> window-title: "Lâmina";
+    in property <string> window-title: "Lamina";
     in property <string> project-title;
     in property <string> counter;
     in property <bool> has-project;
@@ -251,7 +253,7 @@ export component AppWindow inherits Window {
         }
         Menu {
             title: "Ajuda";
-            MenuItem { title: "Sobre o Lâmina"; activated => { root.command("ajuda.sobre"); } }
+            MenuItem { title: "Sobre o Lamina"; activated => { root.command("ajuda.sobre"); } }
         }
     }
 
@@ -366,7 +368,7 @@ export component AppWindow inherits Window {
                     if !root.has-project: VerticalLayout {
                         alignment: center;
                         spacing: 16px;
-                        Text { text: "Lâmina"; font-size: 40px; font-weight: 700; color: Theme.text; horizontal-alignment: center; }
+                        Image { source: @image-url("../icons/lamina-logo-escuro.svg"); height: 64px; image-fit: contain; }
                         Text { text: "Diagramação de álbuns de fotos"; color: Theme.muted; horizontal-alignment: center; }
                         HorizontalLayout {
                             alignment: center;
@@ -562,9 +564,8 @@ export component AppWindow inherits Window {
             root.focus-main();
         }
     }
-    if root.show-about: MessageDialog {
-        title: "Sobre o Lâmina";
-        message: "Lâmina " + root.version + "\nDiagramação de álbuns de fotos, em Rust.\nLicença Apache-2.0.\n\nFeito com Slint (slint.dev).";
+    if root.show-about: AboutDialog {
+        version: root.version;
         close => {
             root.show-about = false;
             root.focus-main();

@@ -1,6 +1,6 @@
 [package]
 name = "lamina-cli"
-description = "Lâmina sem interface: importar, diagramar e exportar pela linha de comando."
+description = "Lamina sem interface: importar, diagramar e exportar pela linha de comando."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

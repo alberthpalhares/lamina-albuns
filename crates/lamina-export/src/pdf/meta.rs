@@ -44,8 +44,8 @@ pub fn info(id: Ref, title: &str) -> Chunk {
         .indirect(id)
         .start::<DocumentInfo>()
         .title(TextStr(title))
-        .creator(TextStr("Lâmina"))
-        .producer(TextStr("Lâmina"))
+        .creator(TextStr("Lamina"))
+        .producer(TextStr("Lamina"))
         .creation_date(date())
         .modified_date(date())
         .trapped(pdf_writer::types::TrappingStatus::NotTrapped)
@@ -99,8 +99,8 @@ fn xmp(title: &str, id: &str) -> String {
    <xmp:CreateDate>{DATE}</xmp:CreateDate>
    <xmp:ModifyDate>{DATE}</xmp:ModifyDate>
    <xmp:MetadataDate>{DATE}</xmp:MetadataDate>
-   <xmp:CreatorTool>Lâmina</xmp:CreatorTool>
-   <pdf:Producer>Lâmina</pdf:Producer>
+   <xmp:CreatorTool>Lamina</xmp:CreatorTool>
+   <pdf:Producer>Lamina</pdf:Producer>
    <pdf:Trapped>False</pdf:Trapped>
    <xmpMM:DocumentID>{id}</xmpMM:DocumentID>
    <xmpMM:InstanceID>{id}</xmpMM:InstanceID>

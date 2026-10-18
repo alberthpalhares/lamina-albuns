@@ -1,4 +1,4 @@
-//! `lamina`: o Lâmina pela linha de comando.
+//! `lamina`: o Lamina pela linha de comando.
 //!
 //! Serve para testar o núcleo sem interface e para demonstrações. A entrega do Marco 1 é o
 //! `lamina build` (importar → Auto Build → projeto → exportar).
@@ -78,7 +78,7 @@ enum Command {
     /// Conferência: monta o álbum e desenha as lâminas num SVG (specs auto-build, renderizacao,
     /// exportacao).
     Auto(auto::AutoArgs),
-    /// Lista os presets: os do Lâmina e os salvos na janela (spec presets).
+    /// Lista os presets: os do Lamina e os salvos na janela (spec presets).
     Presets,
     /// Mostra o plano de lâminas: quais fotos vão em cada lâmina (spec plano-de-laminas).
     Plano {

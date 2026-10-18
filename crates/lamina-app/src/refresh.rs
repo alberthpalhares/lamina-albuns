@@ -24,14 +24,14 @@ impl App {
         w.set_guides(self.editor.guides());
         w.set_notice(self.notice.clone().into());
         let Some(session) = self.editor.session() else {
-            w.set_window_title("Lâmina".into());
+            w.set_window_title("Lamina".into());
             w.set_project_title("".into());
             w.set_counter("".into());
             return;
         };
         let dirty = if session.is_dirty() { "• " } else { "" };
         let title = format!("{dirty}{}", session.title());
-        w.set_window_title(format!("{title} — Lâmina").into());
+        w.set_window_title(format!("{title} — Lamina").into());
         w.set_project_title(title.into());
         w.set_counter(session.counter().into());
         w.set_counter_warning(session.page_warning().unwrap_or_default().into());

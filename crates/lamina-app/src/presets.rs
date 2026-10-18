@@ -20,7 +20,7 @@ const NEW: i32 = 0;
 
 use lamina_editor::naming::{CUSTOM_PRESET as CUSTOM, Named};
 
-/// Os nomes na lista (os do Lâmina, os do fotógrafo e "Personalizado") e a lista dos do fotógrafo.
+/// Os nomes na lista (os do Lamina, os do fotógrafo e "Personalizado") e a lista dos do fotógrafo.
 pub fn refresh(app: &App) {
     let Some(w) = app.window.upgrade() else {
         return;

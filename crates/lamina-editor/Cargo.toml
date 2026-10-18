@@ -1,6 +1,6 @@
 [package]
 name = "lamina-editor"
-description = "Lógica do aplicativo do Lâmina, sem janela: sessão, comandos, visão da lâmina e navegador de fotos."
+description = "Lógica do aplicativo do Lamina, sem janela: sessão, comandos, visão da lâmina e navegador de fotos."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
