@@ -1,7 +1,9 @@
 //! Pastas permitidas (spec IA, regra 5): a IA só lê pastas novas e só grava dentro delas. O
 //! caminho é conferido depois de resolver `..` e atalhos, para "A\..\C" não escapar de A.
 
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
+
+use lamina_core::lexical_path;
 
 use super::ToolError;
 
@@ -45,18 +47,7 @@ impl AllowedRoots {
 
 /// O caminho absoluto com `.` e `..` resolvidos pelo texto, sem tocar o disco.
 fn lexical(path: &Path) -> PathBuf {
-    let absolute = std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf());
-    let mut out = PathBuf::new();
-    for part in absolute.components() {
-        match part {
-            Component::CurDir => {}
-            Component::ParentDir => {
-                out.pop();
-            }
-            other => out.push(other),
-        }
-    }
-    out
+    lexical_path(&std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf()))
 }
 
 /// O caminho resolvido: o maior pedaço que existe passa por `canonicalize` (atalhos e
