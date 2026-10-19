@@ -43,8 +43,10 @@ jobs:
         run: |
           pre=""
           if [ "${{ steps.v.outputs.beta }}" = true ]; then pre="--prerelease"; fi
-          gh release create "$GITHUB_REF_NAME" --draft $pre \
-            --title "Lamina ${{ steps.v.outputs.version }}" --notes-file notas.md
+          # Uma tag refeita depois de uma falha reaproveita o rascunho que ficou.
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || \
+            gh release create "$GITHUB_REF_NAME" --draft $pre \
+              --title "Lamina ${{ steps.v.outputs.version }}" --notes-file notas.md
       - uses: actions/upload-artifact@v4
         with:
           name: notas
@@ -79,7 +81,8 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libfontconfig1-dev libxkbcommon-dev libwayland-dev libfuse2 xvfb
+          # libxkbcommon-x11-0: um desktop Linux já tem; a máquina do CI, não (o AppImage abre sob X11).
+          sudo apt-get install -y libfontconfig1-dev libxkbcommon-dev libxkbcommon-x11-0 libwayland-dev libfuse2 xvfb
 
       - name: Compilar (Windows e Linux)
         if: runner.os != 'macOS'
