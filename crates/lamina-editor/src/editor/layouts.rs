@@ -132,7 +132,7 @@ impl Editor {
         match session.edit("Trocar layout", |p| apply(p, index, &sel, &c)) {
             Ok(()) => true,
             Err(e) => {
-                self.notice = Some(e.to_string());
+                self.report(&e);
                 false
             }
         }

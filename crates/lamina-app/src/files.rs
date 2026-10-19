@@ -3,7 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
-use lamina_editor::Leave;
+use lamina_editor::{Human, HumanMessage, Leave};
 use slint::ComponentHandle;
 
 use crate::new_album;
@@ -12,10 +12,14 @@ use crate::state::{App, Pending};
 const FILTER_NAME: &str = "Projeto do Lamina";
 const EXT: &str = "lamina";
 
-pub fn show_error(app: &App, title: &str, message: &str) {
+/// O diálogo de erro com a mensagem humana: a frase, o que fazer e o detalhe em "Mostrar
+/// detalhes" (spec EH). Toda mensagem mostrada vai para o registro (spec SR, regra 5).
+pub fn show_error(app: &App, message: &HumanMessage) {
+    app.editor.record(message);
     if let Some(w) = app.window.upgrade() {
-        w.set_message_title(title.into());
-        w.set_message_text(message.into());
+        w.set_message_title(message.title.as_str().into());
+        w.set_message_text(message.what_to_do.as_str().into());
+        w.set_message_details(message.details.as_str().into());
         w.set_message_folder("".into());
         w.set_show_message(true);
     }
@@ -60,7 +64,7 @@ pub fn save(app: &mut App, as_new: bool) -> bool {
     match result {
         Ok(_) => true,
         Err(e) => {
-            show_error(app, "Não foi possível salvar", &e.to_string());
+            show_error(app, &e.human());
             false
         }
     }
@@ -136,6 +140,6 @@ pub fn open_file(app: &mut App, file: &Path) {
             app.project_changed();
             crate::relink::near(app);
         }
-        Err(e) => show_error(app, "Não foi possível abrir o projeto", &e.to_string()),
+        Err(e) => show_error(app, &e.human()),
     }
 }

@@ -8,8 +8,8 @@ use std::sync::mpsc::Sender;
 use lamina_core::{PhotoId, Project};
 use lamina_editor::forms::photo_text;
 use lamina_editor::{
-    Cache, Editor, ExportCheck, Filter, Found, PhotoItem, Session, Step, photo_info, photo_list,
-    prepare_images,
+    Cache, Editor, ExportCheck, Filter, Found, HumanMessage, PhotoItem, Session, Step, guarded,
+    photo_info, photo_list, prepare_images,
 };
 use slint::{ComponentHandle, Image};
 
@@ -32,13 +32,13 @@ pub enum Pending {
 #[derive(Debug)]
 pub enum Msg {
     Step(Step),
-    Album(Result<(Project, usize), String>),
+    Album(Result<(Project, usize), HumanMessage>),
     ImagesReady,
     /// A foto original do quadro em modo recorte (spec RC, regra 9).
     Original(PhotoId, std::sync::Arc<lamina_editor::screens::Rgba>),
     /// Andamento e fim da exportação (spec EI): o resumo ou o erro, e a pasta.
     Exporting(usize, usize),
-    Exported(Result<String, String>, PathBuf),
+    Exported(Result<String, HumanMessage>, PathBuf),
     /// Andamento e resultado da procura de fotos ausentes (spec EI). `file` é o projeto em que a
     /// procura começou; `folder`, a pasta escolhida (nenhuma = a procura ao abrir).
     Searching(usize, usize),
@@ -49,6 +49,8 @@ pub enum Msg {
     },
     /// A resposta de uma checagem ou download da atualização (spec DS).
     Update(lamina_editor::updates::Outcome),
+    /// Uma tarefa em segundo plano entrou em pânico (spec EH, regra 6): a janela se libera.
+    Failed(HumanMessage),
 }
 
 pub struct App {
@@ -131,7 +133,8 @@ impl App {
             let project = session.project().clone();
             let (cache, tx) = (self.cache.clone(), self.tx.clone());
             std::thread::spawn(move || {
-                prepare_images(&project, 0, &cache);
+                // Uma falha inesperada vai para o registro; a janela segue com o que tem.
+                let _ = guarded(|| prepare_images(&project, 0, &cache));
                 // Se a janela já fechou, não há a quem avisar.
                 let _ = tx.send(Msg::ImagesReady);
             });

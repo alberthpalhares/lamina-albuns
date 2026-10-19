@@ -64,6 +64,8 @@ pub(super) fn is_dialog(command: Command) -> bool {
             | C::CheckUpdates
             | C::ToggleAutoUpdates
             | C::ToggleBeta
+            | C::SendFeedback
+            | C::OpenLogs
     )
 }
 

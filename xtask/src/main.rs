@@ -5,6 +5,7 @@
 //! - `size`: alerta de tamanho de arquivo (nunca reprova).
 //! - `specs`: toda spec implementada tem um teste por cenário BDD.
 //! - `asserts`: nenhuma assertiva frouxa (`is_err()` sem conferir o erro) nos testes.
+//! - `erros`: nenhum erro chega à janela sem a frase de fotógrafo (spec EH).
 //! - `sala-limpa`: nada da marca ou dos arquivos do software de referência no produto.
 //! - `espelho [--trazer] <pasta>`: copia só o código para o clone do público (`lamina-albuns`).
 //! - `esquema`: grava o JSON Schema do formato do projeto em `docs/formato/` (spec EI).
@@ -15,6 +16,7 @@
 
 mod asserts;
 mod docs;
+mod erros;
 mod espelho;
 mod esquema;
 mod fases;
@@ -43,6 +45,7 @@ fn main() -> ExitCode {
         "specs" => specs::run(),
         "sala-limpa" => sala_limpa::run(),
         "asserts" => asserts::run(),
+        "erros" => erros::run(),
         "docs" => docs::run(),
         "esquema" => esquema::run(),
         "espelho" => espelho::run(&std::env::args().skip(2).collect::<Vec<_>>()),
@@ -52,7 +55,7 @@ fn main() -> ExitCode {
         "mcpb" => mcpb::run(&std::env::args().skip(2).collect::<Vec<_>>()),
         _ => {
             eprintln!(
-                "uso: cargo xtask <verify | layers | size | specs | asserts | sala-limpa | esquema | portao | fotos | versao | mcpb>"
+                "uso: cargo xtask <verify | layers | size | specs | asserts | erros | sala-limpa | esquema | portao | fotos | versao | mcpb>"
             );
             false
         }
@@ -97,10 +100,11 @@ fn verify() -> bool {
     if !step("testes de velocidade", speed::run) {
         return false;
     }
-    let checks: [Check; 5] = [
+    let checks: [Check; 6] = [
         ("camadas", layers::run),
         ("specs", specs::run),
         ("assertivas", asserts::run),
+        ("erros", erros::run),
         ("sala limpa", sala_limpa::run),
         ("documentos", docs::run),
     ];

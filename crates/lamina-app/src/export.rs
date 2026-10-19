@@ -6,7 +6,8 @@ use std::path::{Path, PathBuf};
 use lamina_core::ColorSpace;
 use lamina_editor::forms::{ExportForm, replace_question};
 use lamina_editor::{
-    DEFAULT_QUALITY, ExportFormat, ExportOptions, export_progress, export_project, export_summary,
+    DEFAULT_QUALITY, ExportFormat, ExportOptions, Human, export_progress, export_project,
+    export_summary, guarded,
 };
 
 use crate::AppWindow;
@@ -73,7 +74,7 @@ pub fn changed(app: &mut App) {
     let error = session
         .check_export(&folder(&w), &options(&w, false))
         .err()
-        .map(|e| e.to_string())
+        .map(|e| e.human().line())
         .unwrap_or_default();
     w.set_ex_error(error.into());
 }
@@ -115,7 +116,7 @@ pub fn export(app: &mut App) {
                 proceed(app);
             }
         }
-        Err(e) => w.set_ex_error(e.to_string().into()),
+        Err(e) => w.set_ex_error(e.human().line().into()),
     }
 }
 
@@ -198,9 +199,13 @@ pub fn run(app: &mut App, overwrite: bool) {
             // Se a janela já fechou, não há a quem avisar.
             let _ = tx.send(Msg::Exporting(done, total));
         };
-        let result = export_project(&project, &folder, &options, &progress)
-            .map(|report| export_summary(&report, &folder))
-            .map_err(|e| e.to_string());
+        // Uma falha inesperada também libera a janela (spec EH, regra 6).
+        let result = guarded(|| {
+            export_project(&project, &folder, &options, &progress)
+                .map(|report| export_summary(&report, &folder))
+                .map_err(|e| e.human())
+        })
+        .and_then(|r| r);
         let _ = tx.send(Msg::Exported(result, folder));
     });
 }
@@ -219,10 +224,11 @@ pub fn message(app: &mut App, msg: Msg) {
                 Ok(summary) => {
                     w.set_message_title("Exportação concluída".into());
                     w.set_message_text(summary.into());
+                    w.set_message_details("".into());
                     w.set_message_folder(folder.display().to_string().into());
                     w.set_show_message(true);
                 }
-                Err(e) => show_error(app, "Não foi possível exportar", &e),
+                Err(e) => show_error(app, &e),
             }
         }
         _ => {}
@@ -234,15 +240,6 @@ pub fn open_folder(app: &App) {
     let Some(w) = app.window.upgrade() else {
         return;
     };
-    let folder = w.get_message_folder().to_string();
-    let opener = if cfg!(windows) {
-        "explorer"
-    } else if cfg!(target_os = "macos") {
-        "open"
-    } else {
-        "xdg-open"
-    };
-    if let Err(e) = std::process::Command::new(opener).arg(&folder).spawn() {
-        show_error(app, "Não foi possível abrir a pasta", &e.to_string());
-    }
+    let folder = PathBuf::from(w.get_message_folder().as_str());
+    crate::help::open_folder(app, &folder);
 }

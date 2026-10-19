@@ -8,6 +8,7 @@ use std::sync::{Arc, Mutex};
 use lamina_editor::updates::{
     Channel, Job, Outcome, Step, UpdateError, Updater, Version, restart_args, run,
 };
+use lamina_editor::{HumanMessage, UPDATES_FILE, Updates, UpdatesStore, config_dir, guarded};
 use velopack::sources::{GithubSource, NoneSource};
 use velopack::{UpdateCheck, UpdateInfo, UpdateManager, UpdateOptions};
 
@@ -38,6 +39,19 @@ fn channel_name(channel: Channel) -> String {
 pub fn installed_version() -> Option<Version> {
     let manager = UpdateManager::new(NoneSource {}, None, None).ok()?;
     Version::parse(&manager.get_current_version_as_string())
+}
+
+/// A versão que roda e se veio de um instalador (regra 8).
+pub fn state() -> Updates {
+    let store = UpdatesStore::load(&config_dir().join(UPDATES_FILE));
+    match installed_version() {
+        Some(version) => Updates::new(store, version, true),
+        None => Updates::new(
+            store,
+            Version::parse(env!("CARGO_PKG_VERSION")).unwrap_or_default(),
+            false,
+        ),
+    }
 }
 
 fn manager(channel: Channel) -> Result<UpdateManager, UpdateError> {
@@ -132,9 +146,11 @@ fn spawn(app: &App, job: Job) {
         let Ok(mut updater) = updater.lock() else {
             return;
         };
-        let outcome = run(&mut *updater, &job, &current);
-        // A janela pode ter fechado no meio: aí não há quem receba.
-        let _ = tx.send(Msg::Update(outcome));
+        // Uma falha inesperada fica só no registro: a atualização nunca interrompe (spec DS).
+        if let Ok(outcome) = guarded(|| run(&mut *updater, &job, &current)) {
+            // A janela pode ter fechado no meio: aí não há quem receba.
+            let _ = tx.send(Msg::Update(outcome));
+        }
     });
 }
 
@@ -207,11 +223,12 @@ pub fn restart(app: &mut App) {
     };
     if result.is_err() {
         app.updates.cancel_restart();
-        crate::files::show_error(
-            app,
-            "Não foi possível atualizar",
-            "A versão nova não pôde ser aplicada agora. Ela entra quando o Lamina for fechado.",
+        let message = HumanMessage::new(
+            "Não foi possível atualizar agora.",
+            "A versão nova entra quando o Lamina for fechado.",
+            "",
         );
+        crate::files::show_error(app, &message);
     }
     show(app);
 }

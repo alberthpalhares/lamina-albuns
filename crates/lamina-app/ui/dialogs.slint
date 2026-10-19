@@ -1,6 +1,6 @@
 // Janelas sobre a janela principal: novo álbum, pergunta antes de sair, erro, sobre e andamento.
 
-import { Button, LineEdit, CheckBox, ComboBox, SpinBox } from "std-widgets.slint";
+import { Button, LineEdit, CheckBox, ComboBox, SpinBox, TextEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Shade, Panel, Field } from "widgets.slint";
 import { SpecForm, PresetUi } from "spec.slint";
@@ -117,23 +117,33 @@ export component ConfirmDialog inherits Shade {
 }
 
 export component MessageDialog inherits Shade {
+    // Erro: a frase (title), o que fazer (message) e o detalhe técnico, recolhido (spec EH).
     in property <string> title;
     in property <string> message;
+    in property <string> details;
     // Pasta para o botão "Abrir a pasta" (resumo da exportação, spec EI); vazia = sem botão.
     in property <string> folder;
+    property <bool> expanded;
     callback close();
     callback open-folder();
+    callback send-problem();
     Panel {
-        width: 480px;
-        height: 250px;
+        width: 560px;
+        height: root.expanded ? 440px : 250px;
         VerticalLayout {
             padding: 24px;
             spacing: 12px;
-            Text { text: root.title; font-size: 16px; font-weight: 600; color: Theme.text; }
-            Text { text: root.message; color: Theme.text; wrap: word-wrap; vertical-stretch: 1; }
+            Text { text: root.title; font-size: 16px; font-weight: 600; color: Theme.text; wrap: word-wrap; }
+            Text { text: root.message; color: Theme.text; wrap: word-wrap; vertical-stretch: root.expanded ? 0 : 1; }
+            if root.expanded: TextEdit { text: root.details; read-only: true; wrap: word-wrap; vertical-stretch: 1; }
             HorizontalLayout {
-                alignment: end;
                 spacing: 8px;
+                if root.details != "": Button {
+                    text: root.expanded ? "Esconder detalhes" : "Mostrar detalhes";
+                    clicked => { root.expanded = !root.expanded; }
+                }
+                Rectangle { horizontal-stretch: 1; }
+                if root.details != "": Button { text: "Enviar problema…"; clicked => { root.send-problem(); } }
                 if root.folder != "": Button { text: "Abrir a pasta"; clicked => { root.open-folder(); } }
                 Button { text: "OK"; primary: true; clicked => { root.close(); } }
             }

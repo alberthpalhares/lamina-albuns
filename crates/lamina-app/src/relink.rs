@@ -4,7 +4,8 @@
 use std::path::PathBuf;
 
 use lamina_editor::{
-    Found, RELINK_LATER, not_found_message, relinked_message, search_folder, search_near,
+    Found, HumanMessage, RELINK_LATER, guarded, not_found_message, relinked_message, search_folder,
+    search_near,
 };
 
 use crate::files::show_error;
@@ -23,12 +24,15 @@ pub fn near(app: &App) {
     let file = session.file().map(std::path::Path::to_path_buf);
     let (cache, tx) = (app.cache.clone(), app.tx.clone());
     std::thread::spawn(move || {
-        let found = search_near(&project, &missing, file.as_deref(), &cache);
+        let found = guarded(|| search_near(&project, &missing, file.as_deref(), &cache));
         // Se a janela já fechou, não há a quem avisar.
-        let _ = tx.send(Msg::Relinked {
-            file,
-            found,
-            folder: None,
+        let _ = tx.send(match found {
+            Ok(found) => Msg::Relinked {
+                file,
+                found,
+                folder: None,
+            },
+            Err(problem) => Msg::Failed(problem),
         });
     });
 }
@@ -56,11 +60,14 @@ pub fn find(app: &mut App) {
         let progress = |done: usize, total: usize| {
             let _ = tx.send(Msg::Searching(done, total));
         };
-        let found = search_folder(&project, &missing, &folder, &progress);
-        let _ = tx.send(Msg::Relinked {
-            file,
-            found,
-            folder: Some(folder),
+        let found = guarded(|| search_folder(&project, &missing, &folder, &progress));
+        let _ = tx.send(match found {
+            Ok(found) => Msg::Relinked {
+                file,
+                found,
+                folder: Some(folder),
+            },
+            Err(problem) => Msg::Failed(problem),
         });
     });
 }
@@ -122,10 +129,10 @@ fn relinked(app: &mut App, file: Option<PathBuf>, found: &[Found], folder: Optio
         app.notice = relinked_message(changed, still).unwrap_or_default();
         app.refresh_current();
     } else if let Some(folder) = folder {
+        let message = not_found_message(before, &folder);
         show_error(
             app,
-            "Procurar fotos ausentes",
-            &not_found_message(before, &folder),
+            &HumanMessage::new("Nenhuma foto ausente foi encontrada.", message, ""),
         );
     }
 }
