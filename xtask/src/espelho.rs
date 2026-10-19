@@ -1,4 +1,4 @@
-//! Espelho do código no repositório público `lamina-codigo`: só o código vai; estudo, specs e
+//! Espelho do código no repositório público `lamina-albuns`: só o código vai; estudo, specs e
 //! documentos ficam no privado. `cargo xtask espelho <pasta>` copia o código para a pasta (um
 //! clone do público); `cargo xtask espelho --trazer <pasta>` traz o código de volta.
 
@@ -29,7 +29,7 @@ pub const SLINT_BADGE: &str = "[![Made with Slint](https://raw.githubusercontent
 /// O README do público: o mínimo (o README completo é do privado).
 pub const PUBLIC_README: &str = "# Lamina\n\n\
 Diagramador de álbuns fotográficos em Rust, para Windows, macOS e Linux. Projeto acadêmico.\n\n\
-## Instalar\n\nBaixe o instalador do seu sistema na [página de versões](https://github.com/alberthpalhares/lamina-codigo/releases)\n(`Lamina-win-Setup.exe`, `Lamina-osx-Setup.pkg` ou `Lamina.AppImage`). Depois de instalado, o\nLamina avisa sozinho quando há versão nova.\n\nPelo terminal, sem o aviso de segurança do Windows e do Mac (o Lamina não é assinado; o aviso\nsó não aparece, e o antivírus continua examinando):\n\n| Sistema | Comando |\n|---|---|\n| Windows (PowerShell) | `irm https://raw.githubusercontent.com/alberthpalhares/lamina-codigo/main/crates/lamina-app/dist/instalar.ps1 \\| iex` |\n| Mac e Linux | `curl -fsSL https://github.com/alberthpalhares/lamina-codigo/releases/latest/download/instalar.sh \\| sh` |\n\nPara a versão de teste mais nova: `$env:LAMINA_BETA = 1` antes do comando no Windows, ou\n`sh -s -- --beta` no lugar de `sh` no Mac e no Linux.\n\n\
+## Instalar\n\nBaixe o instalador do seu sistema na [página de versões](https://github.com/alberthpalhares/lamina-albuns/releases)\n(`Lamina-win-Setup.exe`, `Lamina-osx-Setup.pkg` ou `Lamina.AppImage`). Depois de instalado, o\nLamina avisa sozinho quando há versão nova.\n\nPelo terminal, sem o aviso de segurança do Windows e do Mac (o Lamina não é assinado; o aviso\nsó não aparece, e o antivírus continua examinando):\n\n| Sistema | Comando |\n|---|---|\n| Windows (PowerShell) | `irm https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.ps1 \\| iex` |\n| Mac e Linux | `curl -fsSL https://github.com/alberthpalhares/lamina-albuns/releases/latest/download/instalar.sh \\| sh` |\n\nPara a versão de teste mais nova: `$env:LAMINA_BETA = 1` antes do comando no Windows, ou\n`sh -s -- --beta` no lugar de `sh` no Mac e no Linux.\n\n\
 ## Usar com o Claude Desktop\n\nBaixe `Lamina-Windows.mcpb` ou `Lamina-macOS.mcpb` na mesma página e dê dois cliques: o Claude\nDesktop instala o Lamina e pergunta as pastas dos álbuns. **Com \"Permitir que a IA veja as\nfotos\" ligada, as prévias das lâminas e as miniaturas das fotos vão para o provedor da IA** (no\nClaude, a Anthropic). São fotos de clientes (LGPD): desligue a opção se o contrato pedir; a IA\ncontinua só com os dados das fotos e das lâminas.\n\n\
 ## Compilar\n\n\
 ```bash\ncargo run --release -p lamina-app   # a janela\ncargo xtask verify                  # formatação, lint, testes e checagens\n```\n\n\
@@ -114,7 +114,7 @@ pub fn run(args: &[String]) -> bool {
         [flag, folder] if flag == "--trazer" => (true, folder),
         [folder] => (false, folder),
         _ => {
-            eprintln!("uso: cargo xtask espelho [--trazer] <pasta do clone do lamina-codigo>");
+            eprintln!("uso: cargo xtask espelho [--trazer] <pasta do clone do público>");
             return false;
         }
     };

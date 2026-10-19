@@ -127,7 +127,10 @@ jobs:
         run: |
           mkdir releases
           # A versão anterior do mesmo canal, para o pacote de diferença (na primeira, não há).
-          vpk download github --repoUrl "$REPO_URL" --channel "$CHANNEL" --token "$GH_TOKEN" -o releases || true
+          # Nas betas, a anterior é uma pre-release: sem o --pre, o vpk não a vê e não há diferença.
+          pre=""
+          if [ "${{ needs.confere.outputs.beta }}" = true ]; then pre="--pre"; fi
+          vpk download github --repoUrl "$REPO_URL" --channel "$CHANNEL" --token "$GH_TOKEN" $pre -o releases || true
           ls releases > anteriores.txt
           case "${{ matrix.sistema }}" in
             win)   extra=(--runtime win-x64 --icon crates/lamina-app/icons/lamina.ico -e lamina-app.exe) ;;
