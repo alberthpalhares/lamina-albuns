@@ -6,6 +6,30 @@
 /// As notas de cada versão, em linguagem simples.
 pub const NOTES_FILE: &str = "crates/lamina-app/dist/novidades.md";
 
+/// O guia de instalação para leigos (spec PC, regra 7), publicado no repositório público.
+pub const GUIDE_URL: &str =
+    "https://github.com/alberthpalhares/lamina-albuns/blob/main/crates/lamina-app/dist/instalar.md";
+
+/// As notas de qualquer versão terminam com o guia e o caminho do formulário (spec PC, regra 9).
+pub fn with_guide(notes: &str) -> String {
+    format!(
+        "{notes}\n\n**Primeira vez?** Veja como instalar: {GUIDE_URL}\n\nAchou um problema ou tem uma \
+         ideia? No Lamina, use Ajuda → Enviar sugestão ou problema.\n"
+    )
+}
+
+/// A versão só sai com o endereço de verdade do formulário de sugestões (spec SR, seção 8).
+pub fn form_ready(form: &str) -> Result<(), String> {
+    if form.contains("a-definir") {
+        Err(format!(
+            "o formulário de sugestões ainda não tem endereço ({form}): ponha o link do Tally em \
+             FEEDBACK_FORM (lamina-editor/src/feedback.rs)"
+        ))
+    } else {
+        Ok(())
+    }
+}
+
 /// A versão de `[workspace.package]` no `Cargo.toml`.
 pub fn workspace_version(cargo_toml: &str) -> Option<String> {
     let mut in_package = false;
@@ -66,10 +90,12 @@ pub fn run(args: &[String]) -> bool {
         }
     };
     let read = |p: &str| std::fs::read_to_string(p).unwrap_or_default();
-    match check(tag, &read("Cargo.toml"), &read(NOTES_FILE)) {
+    let checked = form_ready(lamina_editor::FEEDBACK_FORM)
+        .and_then(|()| check(tag, &read("Cargo.toml"), &read(NOTES_FILE)));
+    match checked {
         Ok(text) => {
             if let Some(file) = out
-                && let Err(e) = std::fs::write(file, text)
+                && let Err(e) = std::fs::write(file, with_guide(&text))
             {
                 eprintln!("  ✘ versao: não deu para gravar {file}: {e}");
                 return false;
@@ -116,5 +142,29 @@ mod tests {
         let log = "## [0.3.0-beta.1]\n\n- Teste.\n";
         assert_eq!(check("v0.3.0-beta.1", &beta, log).unwrap(), "- Teste.");
         assert_eq!(notes("## [0.3.0]\n\n## [0.2.0]\n- x\n", "0.3.0"), None);
+    }
+
+    #[test]
+    fn pc_b7_as_notas_de_toda_versao_terminam_com_o_guia() {
+        let text = with_guide("- Teste.");
+        let lines: Vec<&str> = text.lines().filter(|l| !l.trim().is_empty()).collect();
+        let tail = &lines[lines.len() - 2..];
+        assert_eq!(
+            tail[0],
+            format!("**Primeira vez?** Veja como instalar: {GUIDE_URL}")
+        );
+        assert!(
+            tail[1].ends_with("use Ajuda → Enviar sugestão ou problema."),
+            "{}",
+            tail[1]
+        );
+        assert!(text.starts_with("- Teste.\n"), "{text}");
+    }
+
+    #[test]
+    fn versao_nao_sai_sem_o_formulario() {
+        let err = form_ready("https://tally.so/r/a-definir").unwrap_err();
+        assert!(err.contains("FEEDBACK_FORM"), "{err}");
+        assert_eq!(form_ready("https://tally.so/r/abc123"), Ok(()));
     }
 }

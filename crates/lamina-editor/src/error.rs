@@ -30,4 +30,8 @@ pub enum EditorError {
     NoProject,
     #[error("O projeto ainda não tem arquivo: use Salvar como.")]
     NoFile,
+    #[error("O álbum de exemplo não está em {0}.")]
+    NoExample(String),
+    #[error("Não foi possível copiar o álbum de exemplo para {path}: {reason}.")]
+    CopyExample { path: String, reason: String },
 }

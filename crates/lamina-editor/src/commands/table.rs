@@ -30,6 +30,12 @@ impl Command {
                 Menu::File,
                 Some(S::ctrl('e')),
             ),
+            C::OpenExample => (
+                "arquivo.exemplo",
+                "Abrir o álbum de exemplo",
+                Menu::File,
+                None,
+            ),
             C::FindMissing => (
                 "arquivo.procurar-fotos",
                 "Procurar fotos ausentes…",

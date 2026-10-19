@@ -1,5 +1,5 @@
-//! Cenários da spec `distribuicao` (DS) que precisam do executável: os ganchos da instalação e a
-//! verificação escondida do teste de fumaça.
+//! Cenários das specs `distribuicao` (DS) e `primeiro-contato` (PC) que precisam do executável: os
+//! ganchos da instalação e a verificação escondida do teste de fumaça, também com o álbum de exemplo.
 
 #![allow(clippy::unwrap_used, clippy::panic)]
 
@@ -13,8 +13,14 @@ const APP: &str = env!("CARGO_BIN_EXE_lamina-app");
 
 /// Roda o app e espera no máximo `limit`; devolve o código de saída e a mensagem de erro.
 fn run(args: &[&str], limit: Duration) -> (Option<i32>, String) {
+    run_env(args, &[], limit)
+}
+
+/// Como [`run`], com variáveis de ambiente a mais.
+fn run_env(args: &[&str], env: &[(&str, &str)], limit: Duration) -> (Option<i32>, String) {
     let mut child = Command::new(APP)
         .args(args)
+        .envs(env.iter().copied())
         .stderr(std::process::Stdio::piped())
         .spawn()
         .unwrap();
@@ -105,6 +111,28 @@ fn ds_b15_verificacao_escondida() {
             &["--verificar", good.to_str().unwrap()],
             Duration::from_secs(60),
         );
+        assert_eq!(code, Some(0), "{err}");
+    }
+}
+
+/// PC-B8 (spec `primeiro-contato`): `--verificar exemplo` abre o álbum de exemplo que veio com o
+/// programa; no `cargo test`, o do repositório.
+#[test]
+fn pc_b8_verificar_o_exemplo() {
+    let dir = tempfile::tempdir().unwrap();
+    let empty = dir.path().join("sem-exemplo");
+    let (code, err) = run_env(
+        &["--verificar", "exemplo"],
+        &[("LAMINA_EXEMPLO", empty.to_str().unwrap())],
+        Duration::from_secs(30),
+    );
+    assert_eq!(code, Some(1));
+    assert!(
+        err.contains("O álbum de exemplo não veio com esta instalação."),
+        "{err:?}"
+    );
+    if has_display() {
+        let (code, err) = run(&["--verificar", "exemplo"], Duration::from_secs(60));
         assert_eq!(code, Some(0), "{err}");
     }
 }

@@ -70,13 +70,14 @@ pub enum Command {
     ToggleBeta,
     SendFeedback,
     OpenLogs,
+    OpenExample,
 }
 
 /// Nome, rótulo, menu e atalho de um comando.
 type Info = (&'static str, &'static str, Menu, Option<Shortcut>);
 
 impl Command {
-    pub const ALL: [Command; 52] = [
+    pub const ALL: [Command; 53] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
@@ -129,6 +130,7 @@ impl Command {
         Command::ToggleBeta,
         Command::SendFeedback,
         Command::OpenLogs,
+        Command::OpenExample,
     ];
 
     /// Nome estável, para testes e para a linha de comando.

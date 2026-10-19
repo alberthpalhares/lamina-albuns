@@ -12,6 +12,10 @@ publish = false
 lamina-core = { workspace = true }
 # O catálogo das ferramentas da IA, de onde sai o manifesto do pacote do Claude Desktop (spec IA).
 lamina-editor = { workspace = true }
+# Ler as fotos do álbum de exemplo já viradas e em sRGB (spec PC, `cargo xtask exemplo`).
+lamina-media = { workspace = true }
+# Montar o álbum de exemplo com a montagem automática (spec PC).
+lamina-layout = { workspace = true }
 image = { workspace = true }
 serde_json = { workspace = true }
 

@@ -119,6 +119,7 @@ fn proceed(app: &mut App, action: Pending) {
         Pending::Open => open(app),
         Pending::NewAlbum => new_album::start(app),
         Pending::Update => crate::updates::restart(app),
+        Pending::Example => crate::welcome::open_example(app),
     }
 }
 

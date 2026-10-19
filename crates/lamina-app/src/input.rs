@@ -22,6 +22,7 @@ pub fn run_command(app: &Shared, command: Command) {
     match command {
         Command::NewAlbum => files::request(&mut a, Pending::NewAlbum),
         Command::Open => files::request(&mut a, Pending::Open),
+        Command::OpenExample => files::request(&mut a, Pending::Example),
         Command::Save => {
             files::save(&mut a, false);
         }

@@ -11,6 +11,7 @@
 //! - `esquema`: grava o JSON Schema do formato do projeto em `docs/formato/` (spec EI).
 //! - `portao <termos>`: lista o que foi alocado para a fase que está abrindo.
 //! - `fotos <pasta> [quantas]`: fotos sintéticas para o teste de fumaça da release.
+//! - `exemplo <pasta>`: prepara as fotos do álbum de exemplo (spec PC).
 //! - `versao <tag> [--notas <arquivo>]`: a tag da release bate com o `Cargo.toml` e as novidades.
 //! - `mcpb <windows|macos> <binário> <pasta>`: a pasta do pacote do Claude Desktop (spec IA).
 
@@ -19,6 +20,8 @@ mod docs;
 mod erros;
 mod espelho;
 mod esquema;
+mod exemplo;
+mod exemplo_album;
 mod fases;
 mod fontes;
 mod fotos;
@@ -51,11 +54,12 @@ fn main() -> ExitCode {
         "espelho" => espelho::run(&std::env::args().skip(2).collect::<Vec<_>>()),
         "portao" => portao::run(&std::env::args().skip(2).collect::<Vec<_>>()),
         "fotos" => fotos::run(&std::env::args().skip(2).collect::<Vec<_>>()),
+        "exemplo" => exemplo::run(&std::env::args().skip(2).collect::<Vec<_>>()),
         "versao" => versao::run(&std::env::args().skip(2).collect::<Vec<_>>()),
         "mcpb" => mcpb::run(&std::env::args().skip(2).collect::<Vec<_>>()),
         _ => {
             eprintln!(
-                "uso: cargo xtask <verify | layers | size | specs | asserts | erros | sala-limpa | esquema | portao | fotos | versao | mcpb>"
+                "uso: cargo xtask <verify | layers | size | specs | asserts | erros | sala-limpa | esquema | portao | fotos | exemplo | versao | mcpb>"
             );
             false
         }
