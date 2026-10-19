@@ -18,11 +18,11 @@ mod range;
 mod tiff_out;
 mod write;
 
-pub use clean::{is_export_name, leftovers};
+pub use clean::is_export_name;
 pub use export::{DEFAULT_QUALITY, ExportOptions, ExportReport, export, output_names};
 pub use jpeg::{embedded_profile as color_profile, srgb_profile};
 pub use preflight::{Warning, WarningKind, preflight};
-pub use previews::{preview_png, write_previews};
+pub use previews::write_previews;
 pub use project_file::{
     PROJECT_EXT, ProjectFileError, open_project, project_file_name, read_project, save_project,
 };

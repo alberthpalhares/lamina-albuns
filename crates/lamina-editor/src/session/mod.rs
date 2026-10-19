@@ -37,8 +37,6 @@ pub struct Session {
     export: ExportPrefs,
     /// Chave da última edição que aceita emenda (mesmo campo do mesmo quadro; spec TX, regra 10).
     merge: Option<String>,
-    /// Começo do rótulo das edições: "IA: " enquanto uma ferramenta da IA roda (spec IA, regra 4).
-    label_prefix: &'static str,
 }
 
 impl Session {
@@ -69,7 +67,6 @@ impl Session {
             export_folder: None,
             export,
             merge: None,
-            label_prefix: "",
         }
     }
 

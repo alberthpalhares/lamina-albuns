@@ -16,7 +16,6 @@ mod build;
 mod formato;
 mod importar;
 mod layouts;
-mod mcp;
 mod plano;
 mod reabrir;
 mod relatorio;
@@ -81,9 +80,6 @@ enum Command {
     Auto(auto::AutoArgs),
     /// Lista os presets: os do Lamina e os salvos na janela (spec presets).
     Presets,
-    /// Controle por IA: servidor MCP pela entrada e saída padrão, para o Claude e outros clientes
-    /// (spec controle-por-ia).
-    Mcp(mcp::McpArgs),
     /// Mostra o plano de lâminas: quais fotos vão em cada lâmina (spec plano-de-laminas).
     Plano {
         /// Pasta com as fotos.
@@ -121,7 +117,6 @@ fn run(command: Command) -> Result<()> {
     match command {
         Command::Spec(args) => spec::print_spec(&args.album.to_spec()?, args.laminas),
         Command::Presets => spec::print_presets(),
-        Command::Mcp(args) => mcp::run(args)?,
         Command::Build(args) => build::run(&args)?,
         Command::Exportar(args) => reabrir::run(&args)?,
         Command::Auto(args) => auto::run(&args)?,

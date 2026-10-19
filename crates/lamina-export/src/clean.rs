@@ -20,15 +20,20 @@ pub fn is_export_name(name: &str) -> bool {
     number.len() >= 2 && number.bytes().all(|b| b.is_ascii_digit())
 }
 
-/// Os arquivos de `folder` (sem entrar nas subpastas) com o nosso padrão de nome e a extensão
-/// `ext` que não estão em `keep`, em ordem: o que a limpeza apagaria. Pasta que não existe não tem
-/// nenhum. O controle por IA recusa em vez de apagar (spec IA, regra 6).
-pub fn leftovers(folder: &Path, keep: &[String], ext: &str) -> Result<Vec<PathBuf>, ExportError> {
-    if !folder.exists() {
-        return Ok(Vec::new());
-    }
-    let mut found: Vec<PathBuf> = std::fs::read_dir(folder)
-        .map_err(|e| remove_failed(folder, &e))?
+/// Apaga de `folder` (sem entrar nas subpastas) os arquivos com o nosso padrão de nome e a
+/// extensão `ext` desta exportação que não estão em `keep`: substituir em TIFF não apaga os JPEGs
+/// da mesma pasta, nem o contrário (auditoria do Marco 3, D1). Devolve os apagados, em ordem.
+pub fn remove_leftovers(
+    folder: &Path,
+    keep: &[String],
+    ext: &str,
+) -> Result<Vec<PathBuf>, ExportError> {
+    let fail = |path: &Path, e: std::io::Error| ExportError::Remove {
+        path: path.display().to_string(),
+        reason: e.to_string(),
+    };
+    let mut leftovers: Vec<PathBuf> = std::fs::read_dir(folder)
+        .map_err(|e| fail(folder, e))?
         .filter_map(Result::ok)
         .filter(|entry| entry.file_type().is_ok_and(|t| t.is_file()))
         .filter_map(|entry| {
@@ -37,29 +42,11 @@ pub fn leftovers(folder: &Path, keep: &[String], ext: &str) -> Result<Vec<PathBu
             (ours && !keep.contains(&name)).then(|| entry.path())
         })
         .collect();
-    found.sort();
-    Ok(found)
-}
-
-/// Apaga de `folder` os arquivos de [`leftovers`]: substituir em TIFF não apaga os JPEGs da mesma
-/// pasta, nem o contrário (auditoria do Marco 3, D1). Devolve os apagados, em ordem.
-pub fn remove_leftovers(
-    folder: &Path,
-    keep: &[String],
-    ext: &str,
-) -> Result<Vec<PathBuf>, ExportError> {
-    let found = leftovers(folder, keep, ext)?;
-    for path in &found {
-        std::fs::remove_file(path).map_err(|e| remove_failed(path, &e))?;
+    leftovers.sort();
+    for path in &leftovers {
+        std::fs::remove_file(path).map_err(|e| fail(path, e))?;
     }
-    Ok(found)
-}
-
-fn remove_failed(path: &Path, e: &std::io::Error) -> ExportError {
-    ExportError::Remove {
-        path: path.display().to_string(),
-        reason: e.to_string(),
-    }
+    Ok(leftovers)
 }
 
 #[cfg(test)]
@@ -80,19 +67,6 @@ mod tests {
         let removed = remove_leftovers(dir.path(), &["lamina-01.tif".into()], ".tif").unwrap();
         assert_eq!(removed, [dir.path().join("lamina-09.tif")]);
         assert!(dir.path().join("lamina-02.jpg").exists());
-    }
-
-    #[test]
-    fn listar_as_sobras_nao_apaga_nada() {
-        let dir = tempfile::tempdir().unwrap();
-        for name in ["lamina-01.jpg", "lamina-09.jpg", "notas.txt"] {
-            std::fs::write(dir.path().join(name), b"x").unwrap();
-        }
-        let found = leftovers(dir.path(), &["lamina-01.jpg".into()], ".jpg").unwrap();
-        assert_eq!(found, [dir.path().join("lamina-09.jpg")]);
-        assert!(dir.path().join("lamina-09.jpg").exists());
-        let missing = leftovers(&dir.path().join("nao-existe"), &[], ".jpg").unwrap();
-        assert!(missing.is_empty());
     }
 
     #[test]

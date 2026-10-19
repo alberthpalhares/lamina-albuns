@@ -4,7 +4,7 @@ members = ["crates/*", "xtask"]
 exclude = ["spikes"]
 
 [workspace.package]
-version = "0.1.0-beta.1"
+version = "0.1.0-beta.2"
 edition = "2024"
 rust-version = "1.99"
 license = "Apache-2.0"
@@ -19,7 +19,6 @@ lamina-layout = { path = "crates/lamina-layout" }
 lamina-render = { path = "crates/lamina-render" }
 lamina-export = { path = "crates/lamina-export" }
 lamina-editor = { path = "crates/lamina-editor" }
-lamina-mcp = { path = "crates/lamina-mcp" }
 
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
@@ -58,12 +57,6 @@ slint-build = "1.18"
 # 2026: as seguintes saíram há menos de duas semanas.
 winresource = "=0.1.31"
 rfd = "0.17"
-# Controle por IA (spec IA; ADR 0010): o SDK oficial do MCP e o runtime dele, só no `lamina-mcp`.
-# Versão presa: a mais nova com mais de duas semanas em 2026-10-19.
-rmcp = { version = "=3.5.0", default-features = false, features = ["server", "transport-io"] }
-tokio = { version = "1", features = ["rt", "io-std", "macros", "sync"] }
-# As imagens vão em base64 nas respostas do MCP (a mesma versão que o resto do lock já usa).
-base64 = "0.23"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

@@ -14,11 +14,10 @@ impl Session {
         label: &str,
         change: impl FnOnce(&mut Project) -> Result<(), E>,
     ) -> Result<(), E> {
-        let prefix = self.label_prefix;
         let label = if label.contains(" · ") {
-            format!("{prefix}{label}")
+            label.to_owned()
         } else {
-            format!("{prefix}{label} · lâmina {}", self.current + 1)
+            format!("{label} · lâmina {}", self.current + 1)
         };
         self.history.try_apply(label, change)?;
         self.warnings = warnings_of(self.history.present());
@@ -46,12 +45,6 @@ impl Session {
 
     /// A próxima edição não emenda a anterior (trocou de campo, de quadro ou de comando).
     pub fn end_merge(&mut self) {
-        self.merge = None;
-    }
-
-    /// As próximas edições começam o rótulo com `prefix` ("IA: "; "" volta ao normal).
-    pub fn set_label_prefix(&mut self, prefix: &'static str) {
-        self.label_prefix = prefix;
         self.merge = None;
     }
 

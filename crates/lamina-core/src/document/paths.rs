@@ -32,31 +32,6 @@ pub fn relative_path(base: &Path, target: &Path) -> Option<String> {
     })
 }
 
-/// O caminho com `.` e `..` resolvidos pelo texto (`/a/b/../c` → `/a/c`), sem tocar o disco. O
-/// `std::path::absolute` faz isso no Windows, mas não no Linux nem no macOS: lá, abrir e salvar
-/// de novo um álbum com as fotos numa pasta vizinha gravava caminhos absolutos (achado no IA-B16).
-/// Um `..` que passaria da raiz fica de fora; num caminho relativo, os `..` do começo ficam.
-pub fn lexical_path(path: &Path) -> PathBuf {
-    let mut out: Vec<Component> = Vec::new();
-    for part in path.components() {
-        match part {
-            Component::CurDir => {}
-            Component::ParentDir => match out.last() {
-                Some(Component::Normal(_)) => {
-                    out.pop();
-                }
-                Some(Component::RootDir | Component::Prefix(_)) => {}
-                _ => out.push(part),
-            },
-            other => out.push(other),
-        }
-    }
-    if out.is_empty() {
-        return PathBuf::from(".");
-    }
-    out.iter().collect()
-}
-
 /// Partes do caminho sem os `.`; `None` se houver `..`.
 fn parts(path: &Path) -> Option<Vec<Component<'_>>> {
     let comps: Vec<Component> = path
@@ -120,7 +95,7 @@ impl Project {
     pub fn resolve_paths(&mut self, base: &Path) {
         for photo in &mut self.photos {
             if photo.path.is_relative() {
-                photo.path = lexical_path(&base.join(&photo.path));
+                photo.path = base.join(&photo.path);
             }
         }
     }

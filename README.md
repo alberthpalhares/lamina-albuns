@@ -31,3 +31,5 @@ No Linux, a janela precisa de `libfontconfig1-dev`, `libxkbcommon-dev` e `libway
 ## Licença
 
 Apache-2.0 (arquivo `LICENSE`). A interface usa o Slint sob a licença Royalty-free 2.0. As fontes em `crates/lamina-render/fonts/` têm a licença SIL OFL 1.1 (o `OFL.txt` fica na pasta de cada uma).
+
+[![Made with Slint](https://raw.githubusercontent.com/slint-ui/slint/master/logo/MadeWithSlint-logo-whitebg.png)](https://slint.dev)

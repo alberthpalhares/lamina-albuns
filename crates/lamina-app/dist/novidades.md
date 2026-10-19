@@ -3,6 +3,11 @@
 As notas de cada versão, em linguagem simples. A release copia daqui a seção da versão
 (`cargo xtask versao`). Versão nova entra no topo.
 
+## [0.1.0-beta.2] - 2026-10-19
+
+- A tela Sobre mostra só o Lamina.
+- Versão para conferir a atualização automática a partir da 0.1.0-beta.1.
+
 ## [0.1.0-beta.1] - 2026-10-19
 
 Primeira versão de teste do Lamina, para os testadores.

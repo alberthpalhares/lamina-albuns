@@ -34,6 +34,8 @@ jobs:
         id: v
         run: |
           cargo xtask versao "$GITHUB_REF_NAME" --notas notas.md
+          # A atribuição do Slint na página de download (licença royalty-free, opção 2b; ADR 0002).
+          printf '\n\n[![Made with Slint](https://raw.githubusercontent.com/slint-ui/slint/master/logo/MadeWithSlint-logo-whitebg.png)](https://slint.dev)\n' >> notas.md
           version="${GITHUB_REF_NAME#v}"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           case "$version" in *-*) echo "beta=true" >> "$GITHUB_OUTPUT" ;; *) echo "beta=false" >> "$GITHUB_OUTPUT" ;; esac

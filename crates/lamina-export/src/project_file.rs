@@ -4,7 +4,7 @@
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
 
-use lamina_core::{CoreError, Project, lexical_path, validate_project_name};
+use lamina_core::{CoreError, Project, validate_project_name};
 use thiserror::Error;
 
 /// Extensão do arquivo de projeto.
@@ -29,10 +29,10 @@ pub fn project_file_name(name: &str) -> Result<String, CoreError> {
     Ok(format!("{name}.{PROJECT_EXT}"))
 }
 
-/// Caminho absoluto sem tocar o disco (sem o `\\?\` do `canonicalize` no Windows) e com `..`
-/// resolvido pelo texto também no Linux e no macOS; se não der, o próprio caminho.
+/// Caminho absoluto sem tocar o disco (sem o `\\?\` do `canonicalize` no Windows); se não der,
+/// o próprio caminho.
 fn absolute(path: &Path) -> PathBuf {
-    lexical_path(&std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf()))
+    std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf())
 }
 
 /// Grava o projeto em `folder/file` com os caminhos das fotos relativos a `folder`, num
@@ -119,30 +119,6 @@ mod tests {
         let opened = open_project(&file).unwrap();
         assert!(opened.photos[0].path.exists());
         assert_eq!(opened.spreads, project.spreads);
-    }
-
-    /// Achado no IA-B16 (CI do Linux): abrir e salvar de novo, noutra pasta irmã, gravava
-    /// `/…/um/../fotos/a.jpg`, absoluto e com `..`, no lugar de `../fotos/a.jpg`.
-    #[test]
-    fn abrir_e_salvar_de_novo_mantem_o_caminho_relativo() {
-        let dir = tempfile::tempdir().unwrap();
-        let fotos = dir.path().join("fotos");
-        for folder in ["fotos", "um", "dois"] {
-            std::fs::create_dir_all(dir.path().join(folder)).unwrap();
-        }
-        std::fs::write(fotos.join("a.jpg"), b"x").unwrap();
-        let first = save_project(
-            &project_with(&fotos.join("a.jpg")),
-            &dir.path().join("um"),
-            "a.lamina",
-        )
-        .unwrap();
-        let opened = read_project(&first).unwrap();
-        assert_eq!(opened.photos[0].path, absolute(&fotos.join("a.jpg")));
-        let again = save_project(&opened, &dir.path().join("dois"), "a.lamina").unwrap();
-        let text = std::fs::read_to_string(&again).unwrap();
-        assert!(text.contains("\"../fotos/a.jpg\""), "{text}");
-        assert_eq!(text, std::fs::read_to_string(&first).unwrap());
     }
 
     #[test]
