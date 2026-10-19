@@ -1,7 +1,8 @@
-// Ajuda → Sobre o Lamina: o logo, a versão, a licença e o AboutSlint, a atribuição que a licença
-// royalty-free do Slint pede numa tela Sobre (ADR 0002).
+// Ajuda → Sobre o Lamina: o logo, a versão e a licença. A atribuição que a licença
+// royalty-free do Slint pede fica no selo "Made with Slint" da página de download (README do
+// repositório público e notas de cada versão), a opção 2b da licença (ADR 0002, adendo).
 
-import { AboutSlint, Button } from "std-widgets.slint";
+import { Button } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Shade, Panel } from "widgets.slint";
 
@@ -10,7 +11,7 @@ export component AboutDialog inherits Shade {
     callback close();
     Panel {
         width: 460px;
-        height: 420px;
+        height: 300px;
         VerticalLayout {
             padding: 28px;
             spacing: 14px;
@@ -26,7 +27,6 @@ export component AboutDialog inherits Shade {
                 color: Theme.text;
                 wrap: word-wrap;
             }
-            AboutSlint { height: 120px; }
             HorizontalLayout {
                 alignment: end;
                 Button { text: "OK"; primary: true; clicked => { root.close(); } }

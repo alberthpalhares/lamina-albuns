@@ -21,6 +21,11 @@ pub const CODE: &[&str] = &[
     ".gitattributes",
 ];
 
+/// O selo "Made with Slint" na página de onde se baixa o Lamina: é a atribuição que a licença
+/// royalty-free do Slint pede (opção 2b; ADR 0002, adendo). Vai no README do público e nas
+/// notas de cada versão (`release.yml`).
+pub const SLINT_BADGE: &str = "[![Made with Slint](https://raw.githubusercontent.com/slint-ui/slint/master/logo/MadeWithSlint-logo-whitebg.png)](https://slint.dev)";
+
 /// O README do público: o mínimo (o README completo é do privado).
 pub const PUBLIC_README: &str = "# Lamina\n\n\
 Diagramador de álbuns fotográficos em Rust, para Windows, macOS e Linux. Projeto acadêmico.\n\n\
@@ -31,6 +36,11 @@ No Linux, a janela precisa de `libfontconfig1-dev`, `libxkbcommon-dev` e `libway
 ## Licença\n\nApache-2.0 (arquivo `LICENSE`). A interface usa o Slint sob a licença Royalty-free 2.0. \
 As fontes em `crates/lamina-render/fonts/` têm a licença SIL OFL 1.1 (o `OFL.txt` fica na pasta \
 de cada uma).\n";
+
+/// O README do público como vai para o clone: o texto e o selo do Slint no fim.
+pub fn public_readme() -> String {
+    format!("{PUBLIC_README}\n{SLINT_BADGE}\n")
+}
 
 /// Caminhos de `CODE` relativos à raiz, arquivo por arquivo (sem `target`).
 pub fn files(root: &Path) -> Vec<PathBuf> {
@@ -126,7 +136,7 @@ pub fn run(args: &[String]) -> bool {
         copy_code(there, here)
     } else {
         copy_code(here, there)
-            .and_then(|n| fs::write(there.join("README.md"), PUBLIC_README).map(|()| n))
+            .and_then(|n| fs::write(there.join("README.md"), public_readme()).map(|()| n))
     };
     match result {
         Ok(n) => {
@@ -156,6 +166,13 @@ mod tests {
         fs::create_dir_all(dir.path().join("specs")).unwrap();
         fs::write(dir.path().join("STATUS.md"), "x").unwrap();
         assert_eq!(strays(dir.path()), ["STATUS.md", "specs"]);
+    }
+
+    /// Trava da atribuição do Slint (ADR 0002, adendo): o selo não pode sumir do README.
+    #[test]
+    fn readme_publico_tem_o_selo_do_slint() {
+        assert!(public_readme().ends_with(&format!("\n{SLINT_BADGE}\n")));
+        assert!(SLINT_BADGE.contains("MadeWithSlint") && SLINT_BADGE.contains("slint.dev"));
     }
 
     /// Proveta: documento nunca vai para o público; código apagado some de lá.

@@ -29,7 +29,7 @@ env:
 jobs:
   testes:
     name: Testes (${{ matrix.os }})
-    if: github.repository == 'alberthpalhares/lamina-codigo'
+    if: github.repository == 'alberthpalhares/lamina-albuns'
     strategy:
       fail-fast: true
       matrix:
@@ -51,7 +51,7 @@ jobs:
 
   licencas:
     name: Licenças e avisos de segurança
-    if: github.repository == 'alberthpalhares/lamina-codigo'
+    if: github.repository == 'alberthpalhares/lamina-albuns'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
