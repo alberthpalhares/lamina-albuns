@@ -39,9 +39,9 @@ const JARGON: [&str; 21] = [
 #[test]
 fn eh_b1_todo_erro_tem_frase_o_que_fazer_e_detalhe() {
     let all = samples();
-    // 75 variantes: núcleo 13, fotos 4 (duas de Io), render 6, layout 13, exportação 13,
-    // arquivo 4, editor 11, modelos 5 e presets 6.
-    assert!(all.len() >= 75, "{} exemplos", all.len());
+    // 77 variantes: núcleo 13, fotos 4 (duas de Io), render 6, layout 13, exportação 13,
+    // arquivo 4, editor 13, modelos 5 e presets 6.
+    assert!(all.len() >= 77, "{} exemplos", all.len());
     for sample in all {
         let m = &sample.message;
         let first = m.title.chars().next().unwrap();

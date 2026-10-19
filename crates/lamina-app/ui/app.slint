@@ -17,6 +17,7 @@ import { StripHeader, SpreadStrip, TimelineStrip, PhotoStrip, PhotoData, Timelin
 import { BarButton, FilterTab } from "widgets.slint";
 import { PanelTabs, InfoPanel } from "side.slint";
 import { UpdateBar } from "update_bar.slint";
+import { WelcomeScreen } from "welcome.slint";
 
 export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi }
 
@@ -212,6 +213,7 @@ export component AppWindow inherits Window {
             title: "Arquivo";
             MenuItem { title: "Novo álbum…  (Ctrl+N)"; activated => { root.command("arquivo.novo"); } }
             MenuItem { title: "Abrir…  (Ctrl+O)"; activated => { root.command("arquivo.abrir"); } }
+            MenuItem { title: "Abrir o álbum de exemplo"; activated => { root.command("arquivo.exemplo"); } }
             MenuSeparator { }
             MenuItem { title: "Salvar  (Ctrl+S)"; enabled: root.can-save; activated => { root.command("arquivo.salvar"); } }
             MenuItem { title: "Salvar como…  (Ctrl+Shift+S)"; enabled: root.can-save; activated => { root.command("arquivo.salvar-como"); } }
@@ -391,17 +393,8 @@ export component AppWindow inherits Window {
                             root.focus-main();
                         }
                     }
-                    if !root.has-project: VerticalLayout {
-                        alignment: center;
-                        spacing: 16px;
-                        Image { source: @image-url("../icons/lamina-logo-escuro.svg"); height: 64px; image-fit: contain; }
-                        Text { text: "Diagramação de álbuns de fotos"; color: Theme.muted; horizontal-alignment: center; }
-                        HorizontalLayout {
-                            alignment: center;
-                            spacing: 12px;
-                            Button { text: "Novo álbum a partir de uma pasta…"; primary: true; clicked => { root.command("arquivo.novo"); } }
-                            Button { text: "Abrir projeto…"; clicked => { root.command("arquivo.abrir"); } }
-                        }
+                    if !root.has-project: WelcomeScreen {
+                        command(name) => { root.command(name); }
                     }
                 }
 

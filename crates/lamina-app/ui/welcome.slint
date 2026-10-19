@@ -1,0 +1,36 @@
+// Tela de boas-vindas (spec PC): aparece sempre que não há álbum aberto. Cada botão chama um
+// comando do registro; as decisões ficam no Rust.
+
+import { Button } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+
+export component WelcomeScreen inherits VerticalLayout {
+    callback command(string);
+    alignment: center;
+    spacing: 16px;
+    Image { source: @image-url("../icons/lamina-logo-escuro.svg"); height: 64px; image-fit: contain; }
+    Text { text: "Diagramação de álbuns de fotos"; color: Theme.muted; horizontal-alignment: center; }
+    HorizontalLayout {
+        alignment: center;
+        Button { text: "Experimentar com o álbum de exemplo"; primary: true; clicked => { root.command("arquivo.exemplo"); } }
+    }
+    HorizontalLayout {
+        alignment: center;
+        spacing: 12px;
+        Button { text: "Novo álbum com minhas fotos…"; clicked => { root.command("arquivo.novo"); } }
+        Button { text: "Abrir um álbum…"; clicked => { root.command("arquivo.abrir"); } }
+    }
+    HorizontalLayout {
+        alignment: center;
+        padding-top: 8px;
+        Text {
+            text: "Enviar sugestão ou problema";
+            color: link.has-hover ? Theme.text : Theme.muted;
+            font-size: 12px;
+            link := TouchArea {
+                mouse-cursor: pointer;
+                clicked => { root.command("ajuda.enviar-sugestao"); }
+            }
+        }
+    }
+}

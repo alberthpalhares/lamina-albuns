@@ -30,6 +30,7 @@ mod state;
 mod texts;
 mod updates;
 mod verify;
+mod welcome;
 
 use std::cell::RefCell;
 use std::rc::Rc;

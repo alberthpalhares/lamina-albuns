@@ -1,0 +1,680 @@
+{
+  "schema_version": 3,
+  "name": "exemplo",
+  "spec": {
+    "page_width": 150.0,
+    "page_height": 150.0,
+    "dpi": 300,
+    "bleed": {
+      "outer": 3.0,
+      "top_bottom": 3.0,
+      "inner": 3.0
+    },
+    "safe_margins": {
+      "outer": 10.0,
+      "top_bottom": 10.0,
+      "inner": 10.0
+    },
+    "mode": "spread",
+    "edges": {
+      "start": "full_spread",
+      "end": "full_spread"
+    }
+  },
+  "gap": 2.822222222222222,
+  "photos": [
+    {
+      "id": 1,
+      "path": "fotos/exemplo-01.jpg",
+      "width_px": 1600,
+      "height_px": 1205,
+      "fingerprint": "0a95aa8b76ed036b9de267b77e2e96dd"
+    },
+    {
+      "id": 2,
+      "path": "fotos/exemplo-02.jpg",
+      "width_px": 1600,
+      "height_px": 1205,
+      "fingerprint": "ee8de0c7ad6a9920b9a8b1460ea69f18"
+    },
+    {
+      "id": 3,
+      "path": "fotos/exemplo-03.jpg",
+      "width_px": 1600,
+      "height_px": 1205,
+      "fingerprint": "0c229130ad9e6fd30addd3e47cdcc448"
+    },
+    {
+      "id": 4,
+      "path": "fotos/exemplo-04.jpg",
+      "width_px": 1600,
+      "height_px": 1205,
+      "fingerprint": "1de28679d3240488c8cce6747ab1bac6"
+    },
+    {
+      "id": 5,
+      "path": "fotos/exemplo-05.jpg",
+      "width_px": 1205,
+      "height_px": 1600,
+      "fingerprint": "af3474d5d6dbd1713303fdf54ad73655"
+    },
+    {
+      "id": 6,
+      "path": "fotos/exemplo-06.jpg",
+      "width_px": 1205,
+      "height_px": 1600,
+      "fingerprint": "1566263c16961711447a7f2261ed2c0d"
+    },
+    {
+      "id": 7,
+      "path": "fotos/exemplo-07.jpg",
+      "width_px": 1205,
+      "height_px": 1600,
+      "fingerprint": "5278b56304cbc116fb7f4f15a880cbb2"
+    },
+    {
+      "id": 8,
+      "path": "fotos/exemplo-08.jpg",
+      "width_px": 1600,
+      "height_px": 1205,
+      "fingerprint": "aa9c2c1ef8c3905b100af37e335ce54a"
+    },
+    {
+      "id": 9,
+      "path": "fotos/exemplo-09.jpg",
+      "width_px": 1600,
+      "height_px": 1205,
+      "fingerprint": "1ddd955f9b725c8e0f1ae96b1db49f69"
+    },
+    {
+      "id": 10,
+      "path": "fotos/exemplo-10.jpg",
+      "width_px": 1600,
+      "height_px": 1205,
+      "fingerprint": "a560904e9b3f054abb1b6efdb302eac2"
+    },
+    {
+      "id": 11,
+      "path": "fotos/exemplo-11.jpg",
+      "width_px": 1600,
+      "height_px": 1205,
+      "fingerprint": "da21707c73f54d2cc39f60d0b06b4689"
+    },
+    {
+      "id": 12,
+      "path": "fotos/exemplo-12.jpg",
+      "width_px": 1600,
+      "height_px": 1205,
+      "fingerprint": "8e57e2f960a0f593291b6943ea918fea"
+    },
+    {
+      "id": 13,
+      "path": "fotos/exemplo-13.jpg",
+      "width_px": 1205,
+      "height_px": 1600,
+      "fingerprint": "3ec55ecdd26a9ba7b28d3ab39183e1fa"
+    },
+    {
+      "id": 14,
+      "path": "fotos/exemplo-14.jpg",
+      "width_px": 1600,
+      "height_px": 1205,
+      "fingerprint": "c13852661802906e191d600d5ebb305e"
+    },
+    {
+      "id": 15,
+      "path": "fotos/exemplo-15.jpg",
+      "width_px": 1600,
+      "height_px": 1205,
+      "fingerprint": "641a1b612f5fcbacfce340d037d68c8b"
+    },
+    {
+      "id": 16,
+      "path": "fotos/exemplo-16.jpg",
+      "width_px": 1600,
+      "height_px": 1205,
+      "fingerprint": "7644a53d7d3e8fa98044da0394948627"
+    }
+  ],
+  "spreads": [
+    {
+      "id": 17,
+      "background": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "background_right": null,
+      "gap": null,
+      "frames": [
+        {
+          "id": 18,
+          "rect": {
+            "x": 0.03333333333333333,
+            "y": 0.15208414351851848,
+            "width": 0.461962962962963,
+            "height": 0.6958317129629631
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 1,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        },
+        {
+          "id": 19,
+          "rect": {
+            "x": 0.5047037037037038,
+            "y": 0.15208414351851848,
+            "width": 0.461962962962963,
+            "height": 0.6958317129629631
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 2,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        },
+        {
+          "id": 51,
+          "rect": {
+            "x": 0.5333333333333333,
+            "y": 0.8466666666666667,
+            "width": 0.43333333333333335,
+            "height": 0.07333333333333333
+          },
+          "content": {
+            "kind": "text",
+            "text": "Álbum de exemplo",
+            "size_pt": 20.0,
+            "color": {
+              "r": 58,
+              "g": 58,
+              "b": 58
+            },
+            "font": "Playfair Display",
+            "bold": false,
+            "italic": false,
+            "align": "center",
+            "valign": "middle",
+            "line_spacing": 1.2
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "background": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "background_right": null,
+      "gap": null,
+      "frames": [
+        {
+          "id": 39,
+          "rect": {
+            "x": 0.10927770093745198,
+            "y": 0.06666666666666667,
+            "width": 0.28144459812509603,
+            "height": 0.42392592592592593
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 3,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        },
+        {
+          "id": 40,
+          "rect": {
+            "x": 0.10927770093745198,
+            "y": 0.5094074074074074,
+            "width": 0.28144459812509603,
+            "height": 0.42392592592592593
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 4,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        },
+        {
+          "id": 41,
+          "rect": {
+            "x": 0.5868229166666666,
+            "y": 0.06666666666666667,
+            "width": 0.32635416666666667,
+            "height": 0.8666666666666667
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 5,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "background": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "background_right": null,
+      "gap": null,
+      "frames": [
+        {
+          "id": 42,
+          "rect": {
+            "x": 0.03333333333333333,
+            "y": 0.21855540187490397,
+            "width": 0.21196296296296296,
+            "height": 0.5628891962501921
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 6,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        },
+        {
+          "id": 43,
+          "rect": {
+            "x": 0.2547037037037037,
+            "y": 0.21855540187490397,
+            "width": 0.21196296296296296,
+            "height": 0.5628891962501921
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 7,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        },
+        {
+          "id": 44,
+          "rect": {
+            "x": 0.5333333333333333,
+            "y": 0.17364583333333333,
+            "width": 0.43333333333333335,
+            "height": 0.6527083333333333
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 8,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "background": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "background_right": null,
+      "gap": null,
+      "frames": [
+        {
+          "id": 45,
+          "rect": {
+            "x": 0.03333333333333333,
+            "y": 0.17364583333333333,
+            "width": 0.43333333333333335,
+            "height": 0.6527083333333333
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 9,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        },
+        {
+          "id": 46,
+          "rect": {
+            "x": 0.609277700937452,
+            "y": 0.06666666666666667,
+            "width": 0.28144459812509603,
+            "height": 0.42392592592592593
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 10,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        },
+        {
+          "id": 47,
+          "rect": {
+            "x": 0.609277700937452,
+            "y": 0.5094074074074074,
+            "width": 0.28144459812509603,
+            "height": 0.42392592592592593
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 11,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "background": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "background_right": null,
+      "gap": null,
+      "frames": [
+        {
+          "id": 48,
+          "rect": {
+            "x": 0.03333333333333333,
+            "y": 0.17364583333333333,
+            "width": 0.43333333333333335,
+            "height": 0.6527083333333333
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 12,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        },
+        {
+          "id": 49,
+          "rect": {
+            "x": 0.5333333333333333,
+            "y": 0.29628013654322066,
+            "width": 0.15342652216588695,
+            "height": 0.4074397269135587
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 13,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        },
+        {
+          "id": 50,
+          "rect": {
+            "x": 0.6961672629066277,
+            "y": 0.29628013654322066,
+            "width": 0.27049940376003895,
+            "height": 0.4074397269135587
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 14,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "background": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "background_right": null,
+      "gap": null,
+      "frames": [
+        {
+          "id": 37,
+          "rect": {
+            "x": 0.03333333333333333,
+            "y": 0.17364583333333333,
+            "width": 0.43333333333333335,
+            "height": 0.6527083333333333
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 15,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        },
+        {
+          "id": 38,
+          "rect": {
+            "x": 0.5333333333333333,
+            "y": 0.17364583333333333,
+            "width": 0.43333333333333335,
+            "height": 0.6527083333333333
+          },
+          "content": {
+            "kind": "photo",
+            "photo": 16,
+            "crop": {
+              "zoom": 1.0,
+              "center_x": 0.5,
+              "center_y": 0.5
+            }
+          },
+          "border": {
+            "width": 0.0,
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            }
+          },
+          "radius": 0.0
+        }
+      ]
+    }
+  ],
+  "next_id": 52
+}

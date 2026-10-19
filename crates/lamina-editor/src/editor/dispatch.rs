@@ -20,6 +20,7 @@ impl Editor {
                 command,
                 Command::NewAlbum
                     | Command::Open
+                    | Command::OpenExample
                     | Command::About
                     | Command::Presets
                     | Command::Models
@@ -33,6 +34,7 @@ impl Editor {
         let last = s.spread_count().saturating_sub(1);
         match command {
             Command::NewAlbum | Command::Open | Command::Save | Command::SaveAs => true,
+            Command::OpenExample => true,
             Command::Export | Command::Specification | Command::Presets => true,
             Command::FindMissing => !s.missing().is_empty(),
             Command::ToggleGuides | Command::About | Command::ToggleReordered => true,

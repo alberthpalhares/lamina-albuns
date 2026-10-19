@@ -6679,6 +6679,8 @@ dependencies = [
  "image",
  "lamina-core",
  "lamina-editor",
+ "lamina-layout",
+ "lamina-media",
  "serde_json",
  "tempfile",
 ]

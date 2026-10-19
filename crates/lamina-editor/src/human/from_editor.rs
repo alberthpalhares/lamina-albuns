@@ -24,6 +24,16 @@ impl Human for EditorError {
                 "Este álbum ainda não foi salvo.".to_owned(),
                 "Use Arquivo → Salvar como… para escolher onde guardar.".to_owned(),
             ),
+            EditorError::NoExample(_) => (
+                "O álbum de exemplo não veio com esta instalação.".to_owned(),
+                "Instale o Lamina de novo pelo guia, ou crie um álbum com as suas fotos em Novo \
+                 álbum…"
+                    .to_owned(),
+            ),
+            EditorError::CopyExample { .. } => (
+                "Não foi possível preparar o álbum de exemplo.".to_owned(),
+                CHECK_DISK.to_owned(),
+            ),
             EditorError::NoFrame => return bug(details),
             EditorError::Media(e) => return e.human(),
             EditorError::Build(e) => return e.human(),

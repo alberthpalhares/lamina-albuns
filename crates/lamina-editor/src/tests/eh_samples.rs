@@ -212,6 +212,11 @@ fn editor() -> Vec<Sample> {
         EditorError::NoFrame,
         EditorError::NoProject,
         EditorError::NoFile,
+        EditorError::NoExample("/programa/exemplo".into()),
+        EditorError::CopyExample {
+            path: "/config/Álbum de exemplo".into(),
+            reason: "disco cheio".into(),
+        },
     ];
     let models = vec![
         ModelError::EmptyName,

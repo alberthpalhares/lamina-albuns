@@ -26,6 +26,8 @@ pub enum Pending {
     NewAlbum,
     /// "Reiniciar e atualizar" (spec DS, regra 5).
     Update,
+    /// O álbum de exemplo (spec PC, regra 4).
+    Example,
 }
 
 /// Mensagens do trabalho em segundo plano para a linha da janela.

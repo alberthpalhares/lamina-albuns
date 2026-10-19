@@ -1,4 +1,4 @@
-//! Frases dos erros do plano, dos layouts e do Auto Build (`lamina-layout`).
+//! Frases dos erros do plano, dos layouts e da montagem automática (`auto_build`, `lamina-layout`).
 
 use lamina_layout::{BuildError, LayoutError, PlanError};
 

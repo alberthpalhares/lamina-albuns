@@ -33,6 +33,7 @@ pub mod commands;
 pub mod editor;
 pub mod edits;
 pub mod error_log;
+pub mod example;
 mod export_form;
 pub mod exporting;
 pub mod feedback;
@@ -72,6 +73,7 @@ pub use commands::{Command, Menu};
 pub use editor::{Editor, Leave, Panel, TextChange};
 pub use error::EditorError;
 pub use error_log::ErrorLog;
+pub use example::{EXAMPLE_DIR, EXAMPLE_FILE, example_target, prepare_example};
 pub use exporting::{
     DEFAULT_QUALITY, ExportCheck, ExportFormat, ExportOptions, Warning, export_progress,
     export_project, export_summary,

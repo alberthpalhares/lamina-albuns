@@ -98,6 +98,8 @@ jobs:
           mkdir publish
           cp target/release/lamina-app* publish/
           rm -f publish/*.d publish/*.pdb
+          # O álbum de exemplo vai ao lado do programa (spec PC, regra 8).
+          cp -r crates/lamina-app/exemplo publish/
 
       - name: Compilar (macOS universal)
         if: runner.os == 'macOS'
@@ -110,6 +112,8 @@ jobs:
           lipo -create -output publish/lamina-app \
             target/aarch64-apple-darwin/release/lamina-app target/x86_64-apple-darwin/release/lamina-app
           lipo -archs publish/lamina-app
+          # O álbum de exemplo vai ao lado do programa, dentro do .app (spec PC, regra 8).
+          cp -r crates/lamina-app/exemplo publish/
           # O `lamina` universal vai no pacote do Claude Desktop (fora do instalador; spec DS).
           mkdir cli-universal
           lipo -create -output cli-universal/lamina \
@@ -196,6 +200,12 @@ jobs:
           Get-Content erro.txt -ErrorAction SilentlyContinue
           "verificar saiu com $($p.ExitCode)"
           if ($p.ExitCode -ne 0) { exit 1 }
+          # O álbum de exemplo que veio no pacote abre (spec PC, regra 8).
+          $p = Start-Process $app -ArgumentList '--verificar', 'exemplo' -PassThru -RedirectStandardError erro-exemplo.txt
+          if (-not $p.WaitForExit(120000)) { $p.Kill(); "verificar exemplo passou de 2 min"; exit 1 }
+          Get-Content erro-exemplo.txt -ErrorAction SilentlyContinue
+          "verificar exemplo saiu com $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { exit 1 }
           # O gancho da instalação registrou o .lamina (spec DS, regra 10).
           $tipo = (Get-ItemProperty 'HKCU:\Software\Classes\.lamina').'(default)'
           "associação: $tipo"
@@ -210,6 +220,9 @@ jobs:
           codesign -dv "$app" 2>&1 | grep -E "Signature|Format" || true
           lipo -archs "$app/Contents/MacOS/lamina-app"
           "$app/Contents/MacOS/lamina-app" --verificar "$PWD/fumaca/album/fotos.lamina"
+          # O exemplo dentro do .app e a assinatura com ele (spec PC, regra 8).
+          codesign --verify --deep --strict "$app" && echo "assinatura ok" || echo "ATENÇÃO: assinatura"
+          "$app/Contents/MacOS/lamina-app" --verificar exemplo
 
       - name: Teste de fumaça (Linux)
         if: runner.os == 'Linux'
@@ -217,6 +230,7 @@ jobs:
         run: |
           LAMINA_FONTE="$PWD/releases" sh crates/lamina-app/dist/instalar.sh
           xvfb-run -a "$HOME/.local/bin/Lamina.AppImage" --verificar "$PWD/fumaca/album/fotos.lamina"
+          xvfb-run -a "$HOME/.local/bin/Lamina.AppImage" --verificar exemplo
 
       - name: Enviar ao rascunho
         shell: bash

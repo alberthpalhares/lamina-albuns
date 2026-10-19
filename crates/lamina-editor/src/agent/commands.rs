@@ -52,6 +52,7 @@ pub(super) fn is_dialog(command: Command) -> bool {
         command,
         C::NewAlbum
             | C::Open
+            | C::OpenExample
             | C::Save
             | C::SaveAs
             | C::Export
