@@ -10,7 +10,7 @@
 //! - `esquema`: grava o JSON Schema do formato do projeto em `docs/formato/` (spec EI).
 //! - `portao <termos>`: lista o que foi alocado para a fase que está abrindo.
 //! - `fotos <pasta> [quantas]`: fotos sintéticas para o teste de fumaça da release.
-//! - `versao <tag> [--notas <arquivo>]`: a tag da release bate com o `Cargo.toml` e o CHANGELOG.
+//! - `versao <tag> [--notas <arquivo>]`: a tag da release bate com o `Cargo.toml` e as novidades.
 
 mod asserts;
 mod docs;
