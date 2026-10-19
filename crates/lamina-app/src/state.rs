@@ -24,6 +24,8 @@ pub enum Pending {
     Close,
     Open,
     NewAlbum,
+    /// "Reiniciar e atualizar" (spec DS, regra 5).
+    Update,
 }
 
 /// Mensagens do trabalho em segundo plano para a linha da janela.
@@ -45,6 +47,8 @@ pub enum Msg {
         found: Vec<Found>,
         folder: Option<PathBuf>,
     },
+    /// A resposta de uma checagem ou download da atualização (spec DS).
+    Update(lamina_editor::updates::Outcome),
 }
 
 pub struct App {
@@ -67,6 +71,9 @@ pub struct App {
     /// já foi confirmado.
     pub preset_target: i32,
     pub name_guard: lamina_editor::naming::ReplaceGuard,
+    /// A atualização automática (spec DS): o estado e o instalador.
+    pub updates: lamina_editor::Updates,
+    pub updater: crate::updates::Shared,
     pub(crate) images: Images,
     /// Foto original sendo carregada para o modo recorte.
     pub(crate) loading: Option<PhotoId>,
@@ -94,6 +101,12 @@ impl App {
             spec_export: lamina_core::ExportPrefs::default(),
             preset_target: 0,
             name_guard: lamina_editor::naming::ReplaceGuard::default(),
+            updates: lamina_editor::Updates::new(
+                lamina_editor::UpdatesStore::default(),
+                lamina_editor::updates::Version::default(),
+                false,
+            ),
+            updater: crate::updates::Shared::default(),
             images: Images::default(),
             loading: None,
             crop_timer: crate::crop::timer(),

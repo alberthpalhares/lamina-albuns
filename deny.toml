@@ -14,6 +14,15 @@ ignore = [
     { id = "RUSTSEC-2026-0370", reason = "transitivo do Slint/rfd; revisar a cada versão do Slint" },
     { id = "RUSTSEC-2026-0371", reason = "transitivo do Slint/rfd; revisar a cada versão do Slint" },
     { id = "RUSTSEC-2026-0372", reason = "transitivo do Slint/rfd; revisar a cada versão do Slint" },
+    # `zip` 8.6, preso pelo Velopack (spec DS, decisão 2 do dono; ADR 0009). Os três alertas são
+    # de `ZipArchive::extract` (bits SUID e links simbólicos); o Velopack não usa essa função:
+    # grava arquivo por arquivo com `by_index`, sem permissões nem links, e confere o SHA de cada
+    # pacote. Saem quando o Velopack passar para o `zip` 9.
+    { id = "RUSTSEC-2026-0367", reason = "transitivo do Velopack; função afetada não é usada; revisar a cada versão do Velopack" },
+    { id = "RUSTSEC-2026-0368", reason = "transitivo do Velopack; função afetada não é usada; revisar a cada versão do Velopack" },
+    { id = "RUSTSEC-2026-0369", reason = "transitivo do Velopack; função afetada não é usada; revisar a cada versão do Velopack" },
+    # `derivative` sem manutenção (não é falha de segurança): macro de compilação do Velopack.
+    { id = "RUSTSEC-2024-0388", reason = "macro de compilação do Velopack; revisar a cada versão do Velopack" },
 ]
 
 [licenses]
@@ -99,3 +108,10 @@ allow-wildcard-paths = true
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
+
+# A lista de certificados raiz da Mozilla, que o HTTPS da atualização automática usa (o `ureq`
+# do Velopack). Licença de dados permissiva, fora da lista geral: exceção nomeada (spec DS,
+# decisão 1 do dono; ADR 0009).
+[[licenses.exceptions]]
+crate = "webpki-roots"
+allow = ["CDLA-Permissive-2.0"]

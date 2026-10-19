@@ -18,6 +18,9 @@ impl Editor {
                     | Command::About
                     | Command::Presets
                     | Command::Models
+                    | Command::CheckUpdates
+                    | Command::ToggleAutoUpdates
+                    | Command::ToggleBeta
             );
         };
         let last = s.spread_count().saturating_sub(1);
@@ -38,6 +41,7 @@ impl Editor {
             Command::Favorite | Command::Reject => self.panel(Part::Spread).in_use.is_some(),
             Command::ClearFrame => self.selected_content().is_some(),
             Command::NewText | Command::NewPhotoFrame | Command::Models => true,
+            Command::CheckUpdates | Command::ToggleAutoUpdates | Command::ToggleBeta => true,
             Command::SaveModel => self.can_save_model(),
             Command::BringForward | Command::SendBackward => self.can_reorder(),
             Command::Deselect => {

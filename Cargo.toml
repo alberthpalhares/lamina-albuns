@@ -4,7 +4,7 @@ members = ["crates/*", "xtask"]
 exclude = ["spikes"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.0-beta.1"
 edition = "2024"
 rust-version = "1.99"
 license = "Apache-2.0"
@@ -41,6 +41,8 @@ skrifa = "0.44"
 # Perfil de cor sRGB embutido nos JPEGs de impressão (ADR 0007).
 moxcms = "0.8"
 tempfile = "3"
+# Instalador e atualização automática (ADR 0009). Versão presa: o spike provou esta.
+velopack = "=1.2.161"
 # Esquema JSON do formato do projeto, gerado dos tipos (spec EI, regra 9).
 schemars = "1"
 # PDF de impressão (spec PD; ADR 0007, plano B) e a leitura dele nos testes.

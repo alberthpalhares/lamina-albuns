@@ -69,6 +69,8 @@ pub fn run() -> bool {
     }
     let mut sources = String::new();
     rust_sources(Path::new("crates"), &mut sources);
+    // As travas do próprio xtask também são cenários (ex.: DS-B16, `cargo xtask versao`).
+    rust_sources(Path::new("xtask"), &mut sources);
     let mut specs: Vec<PathBuf> = fs::read_dir("specs")
         .map(|d| d.flatten().map(|e| e.path()).collect())
         .unwrap_or_default();

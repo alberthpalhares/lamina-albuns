@@ -49,6 +49,7 @@ pub mod spreads;
 pub mod strips;
 pub mod suggestions;
 pub mod text;
+pub mod updates;
 pub mod view;
 
 mod error;
@@ -85,6 +86,7 @@ pub use text::{
     BAD_COLOR, PALETTE, color_hex, family_name, frame_dpi_text, option_title, parse_color,
     score_text,
 };
+pub use updates::{UPDATES_FILE, Updates, UpdatesStore};
 pub use view::{
     Area, FrameKind, FrameView, PxRect, SpreadView, frame_at, photo_extent, spread_view,
 };

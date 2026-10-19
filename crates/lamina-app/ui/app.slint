@@ -16,6 +16,7 @@ import { SpecDialog, PresetNameDialog, PresetsDialog, PresetUi } from "spec.slin
 import { StripHeader, SpreadStrip, TimelineStrip, PhotoStrip, PhotoData, TimelineItem } from "strips.slint";
 import { BarButton, FilterTab } from "widgets.slint";
 import { PanelTabs, InfoPanel } from "side.slint";
+import { UpdateBar } from "update_bar.slint";
 
 export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi }
 
@@ -49,6 +50,12 @@ export component AppWindow inherits Window {
     in property <string> info-photo;
     in property <string> notice;
     in property <string> version;
+    // Atualização automática (spec DS): o texto da barra e as marcas do menu Ajuda.
+    in property <string> update-bar;
+    in property <bool> auto-updates: true;
+    in property <bool> beta-updates;
+    callback update-restart();
+    callback update-dismiss();
     in property <bool> can-undo;
     in property <bool> can-redo;
     in property <bool> can-layout;
@@ -253,6 +260,10 @@ export component AppWindow inherits Window {
         }
         Menu {
             title: "Ajuda";
+            MenuItem { title: "Verificar atualizações agora"; activated => { root.command("ajuda.verificar-atualizacoes"); } }
+            MenuItem { title: (root.auto-updates ? "✓ " : "    ") + "Verificar atualizações automaticamente"; activated => { root.command("ajuda.atualizar-automaticamente"); } }
+            MenuItem { title: (root.beta-updates ? "✓ " : "    ") + "Receber versões de teste (beta)"; activated => { root.command("ajuda.versoes-de-teste"); } }
+            MenuSeparator { }
             MenuItem { title: "Sobre o Lamina"; activated => { root.command("ajuda.sobre"); } }
         }
     }
@@ -290,6 +301,12 @@ export component AppWindow inherits Window {
                     BarButton { text: "Salvar"; enabled: root.can-save; clicked => { root.command("arquivo.salvar"); } }
                     BarButton { text: "Exportar"; enabled: root.has-project; clicked => { root.command("arquivo.exportar"); } }
                 }
+            }
+
+            if root.update-bar != "": UpdateBar {
+                text: root.update-bar;
+                restart => { root.update-restart(); }
+                dismiss => { root.update-dismiss(); }
             }
 
             if root.notice != "": Rectangle {

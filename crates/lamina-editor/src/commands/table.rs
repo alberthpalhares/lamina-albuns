@@ -232,6 +232,24 @@ impl Command {
                 None,
             ),
             C::Models => ("lamina.modelos", "Meus modelos…", Menu::Spread, None),
+            C::CheckUpdates => (
+                "ajuda.verificar-atualizacoes",
+                "Verificar atualizações agora",
+                Menu::Help,
+                None,
+            ),
+            C::ToggleAutoUpdates => (
+                "ajuda.atualizar-automaticamente",
+                "Verificar atualizações automaticamente",
+                Menu::Help,
+                None,
+            ),
+            C::ToggleBeta => (
+                "ajuda.versoes-de-teste",
+                "Receber versões de teste (beta)",
+                Menu::Help,
+                None,
+            ),
         }
     }
 }
