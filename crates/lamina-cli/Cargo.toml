@@ -22,10 +22,12 @@ lamina-media = { workspace = true }
 lamina-render = { workspace = true }
 lamina-export = { workspace = true }
 lamina-editor = { workspace = true }
+lamina-mcp = { workspace = true }
 
 [dev-dependencies]
 image = { workspace = true }
 rayon = { workspace = true }
+serde_json = { workspace = true }
 tempfile = { workspace = true }
 tiff = { workspace = true }
 

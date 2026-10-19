@@ -49,8 +49,13 @@ pub fn score_text(score: &Score) -> String {
     let crop = points(-score.crop);
     format!(
         "Nota {} = aproveitamento {c} + menor foto {s} + equilíbrio {b} − recorte {crop}",
-        c + s + b - crop
+        score_total(score)
     )
+}
+
+/// A nota mostrada: a soma das partes arredondadas, a mesma de [`score_text`] (TL-B10).
+pub fn score_total(score: &Score) -> i64 {
+    points(score.coverage) + points(score.smallest) + points(score.balance) - points(-score.crop)
 }
 
 /// "#F5F0E6" → a cor; `None` se não for "#" e seis dígitos hexadecimais (spec AP, seção 6).

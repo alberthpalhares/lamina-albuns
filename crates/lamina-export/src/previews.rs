@@ -40,6 +40,22 @@ pub fn write_previews(
     results.into_iter().collect()
 }
 
+/// A prévia de uma lâmina (`index` a partir de 0) em PNG, na memória (maior lado `max_side`): a
+/// imagem que o controle por IA mostra (spec IA, seção 4).
+pub fn preview_png(
+    project: &Project,
+    index: usize,
+    max_side: u32,
+    photos: &dyn PhotoSource,
+) -> Result<Vec<u8>, ExportError> {
+    let image = render_spread(project, index, RenderTarget::Preview { max_side }, photos)?;
+    let mut bytes = std::io::Cursor::new(Vec::new());
+    image
+        .write_to(&mut bytes, image::ImageFormat::Png)
+        .map_err(|e| ExportError::Encode(e.to_string()))?;
+    Ok(bytes.into_inner())
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
@@ -63,5 +79,24 @@ mod tests {
         assert!(files[0].ends_with("lamina-01.png") && files[1].ends_with("lamina-02.png"));
         let first = image::open(&files[0]).unwrap();
         assert_eq!((first.width(), first.height()), (2000, 1000));
+    }
+
+    #[test]
+    fn previa_em_png_na_memoria_tem_o_tamanho_pedido() {
+        let spec =
+            AlbumSpec::new(Mm::from_cm(30.0), Mm::from_cm(30.0), Dpi::new(300).unwrap()).unwrap();
+        let mut project = Project::new("teste", spec);
+        project.add_spread();
+        let source = |_: &Photo, _: (u32, u32)| Err::<Arc<RgbaImage>, String>("sem fotos".into());
+        let bytes = preview_png(&project, 0, 1024, &source).unwrap();
+        let image = image::load_from_memory_with_format(&bytes, image::ImageFormat::Png).unwrap();
+        assert_eq!((image.width(), image.height()), (1024, 512));
+        assert!(matches!(
+            preview_png(&project, 3, 1024, &source),
+            Err(ExportError::Render(lamina_render::RenderError::NoSpread {
+                number: 4,
+                count: 1
+            }))
+        ));
     }
 }

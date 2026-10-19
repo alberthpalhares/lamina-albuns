@@ -20,7 +20,9 @@
 //! - [`exporting`]: exportar pela janela, com a pré-impressão antes (spec EI).
 //! - [`relink`]: reencontrar fotos que mudaram de pasta (spec EI).
 //! - [`screens`]: as imagens de tela na memória, só da lâmina atual e das vizinhas.
+//! - [`agent`]: o controle por IA, as ferramentas que o servidor MCP oferece (spec IA).
 
+pub mod agent;
 pub mod album;
 pub mod appearance;
 mod applying;

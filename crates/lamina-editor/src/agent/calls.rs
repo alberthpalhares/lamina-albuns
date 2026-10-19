@@ -1,0 +1,196 @@
+//! Os parâmetros de cada ferramenta (spec IA, seção 3). Os nomes dos campos são os que a IA vê,
+//! em português e sem acento, como as opções da linha de comando. Lâmina, quadro, foto e opção
+//! contam a partir de 1, como na tela.
+
+use schemars::JsonSchema;
+use serde::Deserialize;
+
+/// Sem parâmetros.
+#[derive(Debug, Clone, Default, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct NoArgs {}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct OpenAlbum {
+    /// Caminho do arquivo .lamina.
+    pub caminho: String,
+    /// Abrir mesmo que o álbum atual tenha alterações não salvas (elas se perdem).
+    #[serde(default)]
+    pub descartar: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct NewAlbumCall {
+    /// Pasta com as fotos (as subpastas entram também).
+    pub pasta_fotos: String,
+    /// Onde gravar o álbum novo (arquivo .lamina).
+    pub salvar_em: String,
+    /// Nome de um preset, como "Quadrado 30 × 30" (lista em resumo_do_album). Sem preset, a
+    /// especificação padrão do Novo álbum.
+    pub preset: Option<String>,
+    /// Número de lâminas; sem ele, a sugestão do Lamina (cerca de 4 fotos por lâmina).
+    pub laminas: Option<usize>,
+    /// Criar mesmo que o álbum atual tenha alterações não salvas (elas se perdem).
+    #[serde(default)]
+    pub descartar: bool,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SaveAlbum {
+    /// Salvar como este arquivo .lamina; sem ele, o arquivo do álbum.
+    pub caminho: Option<String>,
+    /// Gravar por cima de outro arquivo que já existe nesse caminho.
+    #[serde(default)]
+    pub substituir: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ViewSpread {
+    /// Número da lâmina, a partir de 1.
+    pub lamina: usize,
+    /// Mandar a prévia da lâmina em PNG (padrão: sim, se as imagens estiverem ligadas).
+    #[serde(default = "yes")]
+    pub imagem: bool,
+}
+
+fn yes() -> bool {
+    true
+}
+
+/// Quais fotos listar.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum PhotoFilter {
+    #[default]
+    Todas,
+    Usadas,
+    SemUso,
+    Faltando,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ListPhotos {
+    #[serde(default)]
+    pub filtro: PhotoFilter,
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ViewPhotos {
+    /// Números das fotos (até 24), como em listar_fotos.
+    pub fotos: Vec<u64>,
+}
+
+/// Que parte da lâmina troca de layout.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum PartArg {
+    #[default]
+    Lamina,
+    Esquerda,
+    Direita,
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SuggestLayouts {
+    pub lamina: usize,
+    /// A lâmina inteira (padrão) ou só uma página.
+    #[serde(default)]
+    pub parte: PartArg,
+    /// Quantas opções mandar (padrão 6, até 24).
+    pub quantas: Option<usize>,
+    /// Mandar a prévia das 6 primeiras opções.
+    #[serde(default)]
+    pub imagens: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ApplyLayout {
+    pub lamina: usize,
+    #[serde(default)]
+    pub parte: PartArg,
+    /// Número da opção na última lista de sugerir_layouts desta lâmina e parte.
+    pub opcao: usize,
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SpreadArg {
+    pub lamina: usize,
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct PlacePhoto {
+    pub lamina: usize,
+    /// Número do quadro na lâmina, como em ver_lamina.
+    pub quadro: usize,
+    /// Número da foto, como em listar_fotos.
+    pub foto: u64,
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SwapPhotos {
+    pub lamina: usize,
+    pub quadro_a: usize,
+    pub quadro_b: usize,
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct FrameArg {
+    pub lamina: usize,
+    pub quadro: usize,
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct BuildSpread {
+    /// Números das fotos da lâmina nova, na ordem.
+    pub fotos: Vec<u64>,
+    /// Posição da lâmina nova (padrão: no fim).
+    pub posicao: Option<usize>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Position {
+    /// Posição da lâmina nova (padrão: no fim).
+    pub posicao: Option<usize>,
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct MoveSpread {
+    pub lamina: usize,
+    /// Nova posição da lâmina.
+    pub para: usize,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Steps {
+    /// Quantos passos (padrão 1).
+    pub passos: Option<usize>,
+}
+
+pub use super::export::{ColorArg, ExportCall, FormatArg};
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RunCommand {
+    /// Nome estável do comando, como "layout.proximo" (lista em lamina://comandos).
+    pub comando: String,
+    /// Lâmina onde rodar (padrão: a atual).
+    pub lamina: Option<usize>,
+    /// Quadro selecionado antes de rodar (para "editar.tirar-foto", por exemplo).
+    pub quadro: Option<usize>,
+}
