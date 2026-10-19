@@ -195,11 +195,32 @@ fn ia_b15_substituir_com_sobras_recusa_sem_apagar() {
     assert_eq!(read(&out.join("lamina-09.jpg")), b"antigo");
 }
 
+/// A primeira linha em que dois `.lamina` diferem, para a mensagem do teste.
+fn first_difference(a: &[u8], b: &[u8]) -> String {
+    let (a, b) = (String::from_utf8_lossy(a), String::from_utf8_lossy(b));
+    let mut lines = a.lines().zip(b.lines()).enumerate();
+    match lines.find(|(_, (x, y))| x != y) {
+        Some((n, (x, y))) => format!("linha {}: {x:?} × {y:?}", n + 1),
+        None => format!("tamanhos {} × {}", a.len(), b.len()),
+    }
+}
+
+/// Regra 12 no álbum de teste: montado duas vezes (importar e Auto Build), dá o mesmo arquivo.
+#[test]
+fn album_de_teste_montado_duas_vezes_e_o_mesmo() {
+    let base = Base::with_photos(30, (600, 400));
+    let first = read(&base.save(album_project(&base), "um/album.lamina"));
+    let second = read(&base.save(album_project(&base), "dois/album.lamina"));
+    assert!(first == second, "{}", first_difference(&first, &second));
+}
+
 #[test]
 fn ia_b16_mesma_sequencia_mesmo_arquivo() {
     let base = Base::with_photos(30, (600, 400));
     let first = base.save(album_project(&base), "um/album.lamina");
-    let second = base.save(album_project(&base), "dois/album.lamina");
+    let second = base.path("dois/album.lamina");
+    std::fs::create_dir_all(base.path("dois")).unwrap();
+    std::fs::copy(&first, &second).unwrap();
     let mut saved = Vec::new();
     for file in [&first, &second] {
         let mut lab = Lab::new(&base, vec![base.dir.path().to_path_buf()], true);
@@ -229,5 +250,9 @@ fn ia_b16_mesma_sequencia_mesmo_arquivo() {
         lab.ok("salvar_album", json!({}));
         saved.push(read(file));
     }
-    assert!(saved[0] == saved[1], "os dois .lamina diferem");
+    assert!(
+        saved[0] == saved[1],
+        "os dois .lamina diferem: {}",
+        first_difference(&saved[0], &saved[1])
+    );
 }
