@@ -2,7 +2,7 @@
 # Instala o Lamina no Mac ou no Linux pelo terminal (spec DS, regra 14), sem senha e sem
 # administrador, só na pasta do usuário:
 #
-#   curl -fsSL https://github.com/alberthpalhares/lamina-codigo/releases/latest/download/instalar.sh | sh
+#   curl -fsSL https://github.com/alberthpalhares/lamina-albuns/releases/latest/download/instalar.sh | sh
 #   curl -fsSL .../instalar.sh | sh -s -- --beta      (a versão de teste mais nova)
 #
 # O que o terminal baixa não ganha a marca de "baixado da internet", então o Mac não mostra o
@@ -13,7 +13,7 @@
 
 set -eu
 
-REPO="alberthpalhares/lamina-codigo"
+REPO="alberthpalhares/lamina-albuns"
 BETA=0
 for arg in "$@"; do
     case "$arg" in

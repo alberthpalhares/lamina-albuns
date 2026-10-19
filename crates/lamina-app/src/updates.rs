@@ -14,7 +14,7 @@ use velopack::{UpdateCheck, UpdateInfo, UpdateManager, UpdateOptions};
 use crate::state::{App, Msg};
 
 /// Onde as versões são publicadas (regra 11).
-const REPO: &str = "https://github.com/alberthpalhares/lamina-codigo";
+const REPO: &str = "https://github.com/alberthpalhares/lamina-albuns";
 
 /// Espera depois de a janela aparecer, para a checagem não disputar com a abertura (regra 2).
 pub const CHECK_DELAY: std::time::Duration = std::time::Duration::from_secs(4);
