@@ -1,7 +1,7 @@
 name: CI
 
 # Plano de economia de minutos (2026-10-16, decisão do dono): o CI roda só no repositório
-# público (lamina-codigo). Em PR e na main, só Linux; Windows e macOS só à mão (Actions → CI →
+# público (lamina-albuns). Em PR e na main, só Linux; Windows e macOS só à mão (Actions → CI →
 # Run workflow), antes de fechar um marco. O Windows também é coberto pelo `cargo xtask verify`
 # local, que roda antes de todo PR.
 on:
