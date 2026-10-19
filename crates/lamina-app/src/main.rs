@@ -16,6 +16,7 @@ mod hand;
 mod history;
 mod images;
 mod input;
+mod install;
 mod look;
 mod models;
 mod new_album;
@@ -26,6 +27,8 @@ mod relink;
 mod spec_dialog;
 mod state;
 mod texts;
+mod updates;
+mod verify;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -34,7 +37,8 @@ use std::time::Duration;
 
 use lamina_editor::{
     Cache, Command, Editor, Filter, MODELS_FILE, ModelsStore, PREFS_FILE, PRESETS_FILE, Part,
-    PrefsStore, PresetsStore, STRIPS_FILE, StripsStore, config_dir,
+    PrefsStore, PresetsStore, STRIPS_FILE, StripsStore, UPDATES_FILE, Updates, UpdatesStore,
+    config_dir,
 };
 use slint::{CloseRequestResponse, ComponentHandle, Timer, TimerMode};
 
@@ -147,6 +151,15 @@ fn connect_dialogs(window: &AppWindow, app: &Shared) {
     connect_export(window, app);
     presets::connect(window, app);
     let a = app.clone();
+    window.on_update_restart(move || {
+        let mut app = a.borrow_mut();
+        if app.updates.begin_restart() {
+            files::request(&mut app, Pending::Update);
+        }
+    });
+    let a = app.clone();
+    window.on_update_dismiss(move || updates::dismiss(&mut a.borrow_mut()));
+    let a = app.clone();
     window.window().on_close_requested(move || {
         let mut app = a.borrow_mut();
         if app.editor.needs_confirmation() {
@@ -180,9 +193,46 @@ fn connect_export(window: &AppWindow, app: &Shared) {
     window.on_open_folder(move || export::open_folder(&a.borrow()));
 }
 
+/// Os ganchos do Velopack (spec DS, regra 10): instalar, atualizar e desinstalar chamam o
+/// Lamina com `--veloapp-*`, que responde e sai sem janela. Precisa ser o primeiro passo.
+fn velopack_hooks() {
+    let app = velopack::VelopackApp::build();
+    #[cfg(windows)]
+    let app = app
+        .on_after_install_fast_callback(|_| install::register())
+        .on_after_update_fast_callback(|_| install::register())
+        .on_before_uninstall_fast_callback(|_| install::unregister());
+    let mut app = app;
+    app.run();
+}
+
+/// A versão que roda e se veio de um instalador (regra 8).
+fn updates_state() -> Updates {
+    let store = UpdatesStore::load(&config_dir().join(UPDATES_FILE));
+    match updates::installed_version() {
+        Some(version) => Updates::new(store, version, true),
+        None => Updates::new(
+            store,
+            lamina_editor::updates::Version::parse(env!("CARGO_PKG_VERSION")).unwrap_or_default(),
+            false,
+        ),
+    }
+}
+
 fn main() -> anyhow::Result<()> {
+    velopack_hooks();
+    let verifying = verify::requested();
+    if let Some(album) = &verifying
+        && let Err(reason) = verify::check(album)
+    {
+        eprintln!("--verificar: {reason}");
+        std::process::exit(1);
+    }
+    #[cfg(target_os = "linux")]
+    if verifying.is_none() {
+        install::linux_desktop();
+    }
     let window = AppWindow::new()?;
-    window.set_version(env!("CARGO_PKG_VERSION").into());
     let (tx, rx) = channel();
     let prefs = PrefsStore::load(&config_dir().join(PREFS_FILE));
     let mut editor = Editor::with_prefs(prefs);
@@ -196,12 +246,30 @@ fn main() -> anyhow::Result<()> {
         if let Some(warning) = a.presets.warning.take() {
             a.notice = warning;
         }
+        a.updates = updates_state();
+        updates::show(&a);
     }
     connect(&window, &app);
     app.borrow_mut().refresh_all();
-    // `lamina-app projeto.lamina` abre o projeto direto (e, no futuro, o duplo clique no arquivo).
-    if let Some(file) = std::env::args_os().nth(1) {
+    // `lamina-app projeto.lamina` abre o projeto direto: o duplo clique no arquivo e a volta
+    // depois de atualizar (spec DS, regra 5).
+    let file = match &verifying {
+        Some(album) => Some(album.clone().into_os_string()),
+        None => std::env::args_os().nth(1),
+    };
+    if let Some(file) = file {
         files::open_file(&mut app.borrow_mut(), std::path::Path::new(&file));
+    }
+    let a = app.clone();
+    if verifying.is_some() {
+        Timer::single_shot(verify::SHOW_FOR, move || {
+            // Fechando: um erro aqui só deixa a janela aberta até o tempo limite do CI.
+            let _ = slint::quit_event_loop();
+        });
+    } else {
+        Timer::single_shot(updates::CHECK_DELAY, move || {
+            updates::on_open(&mut a.borrow_mut());
+        });
     }
 
     let a = app.clone();
@@ -213,5 +281,6 @@ fn main() -> anyhow::Result<()> {
     });
     window.invoke_focus_main();
     window.run()?;
+    updates::on_exit(&app.borrow());
     Ok(())
 }

@@ -25,6 +25,7 @@ pub const BINARY_EXTERNALS: &[&str] = &[
     "rfd",
     "slint",
     "slint-build",
+    "velopack",
     "winresource",
 ];
 

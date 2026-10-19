@@ -9,6 +9,8 @@
 //! - `espelho [--trazer] <pasta>`: copia só o código para o clone do `lamina-codigo` (público).
 //! - `esquema`: grava o JSON Schema do formato do projeto em `docs/formato/` (spec EI).
 //! - `portao <termos>`: lista o que foi alocado para a fase que está abrindo.
+//! - `fotos <pasta> [quantas]`: fotos sintéticas para o teste de fumaça da release.
+//! - `versao <tag> [--notas <arquivo>]`: a tag da release bate com o `Cargo.toml` e o CHANGELOG.
 
 mod asserts;
 mod docs;
@@ -16,12 +18,14 @@ mod espelho;
 mod esquema;
 mod fases;
 mod fontes;
+mod fotos;
 mod layers;
 mod portao;
 mod sala_limpa;
 mod size;
 mod specs;
 mod speed;
+mod versao;
 
 use std::process::{Command, ExitCode};
 
@@ -41,9 +45,11 @@ fn main() -> ExitCode {
         "esquema" => esquema::run(),
         "espelho" => espelho::run(&std::env::args().skip(2).collect::<Vec<_>>()),
         "portao" => portao::run(&std::env::args().skip(2).collect::<Vec<_>>()),
+        "fotos" => fotos::run(&std::env::args().skip(2).collect::<Vec<_>>()),
+        "versao" => versao::run(&std::env::args().skip(2).collect::<Vec<_>>()),
         _ => {
             eprintln!(
-                "uso: cargo xtask <verify | layers | size | specs | asserts | sala-limpa | esquema | portao>"
+                "uso: cargo xtask <verify | layers | size | specs | asserts | sala-limpa | esquema | portao | fotos | versao>"
             );
             false
         }

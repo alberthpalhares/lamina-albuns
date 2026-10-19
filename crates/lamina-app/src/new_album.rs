@@ -189,5 +189,6 @@ pub fn message(app: &mut App, msg: Msg) {
         Msg::Original(id, image) => crate::crop::original_ready(app, id, image),
         Msg::Exporting(..) | Msg::Exported(..) => crate::export::message(app, msg),
         Msg::Searching(..) | Msg::Relinked { .. } => crate::relink::message(app, msg),
+        Msg::Update(outcome) => crate::updates::message(app, outcome),
     }
 }

@@ -9,6 +9,7 @@ publish = false
 
 [dependencies]
 lamina-core = { workspace = true }
+image = { workspace = true }
 serde_json = { workspace = true }
 
 [lints]

@@ -1,0 +1,215 @@
+name: Release
+
+# Distribuição (spec DS, regras 11 a 14; ADR 0009). Roda na tag `v*` do repositório público:
+# `vX.Y.Z` é estável; `vX.Y.Z-beta.N` é versão de teste (pre-release, canal `<sistema>-beta`).
+#
+# 1. confere: a tag bate com o Cargo.toml e o CHANGELOG (`cargo xtask versao`) e abre a release
+#    em rascunho, com as notas da versão.
+# 2. pacote (Windows, macOS universal, Linux): compila, empacota com o vpk, instala pelo script
+#    do terminal e abre o álbum de fumaça (`--verificar`). Só então envia ao rascunho.
+# 3. publica: SHA256SUMS e os scripts de instalação, e tira do rascunho. Se qualquer sistema
+#    falhar, a release fica em rascunho (invisível) e nada é publicado.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  VPK: "1.2.161"
+  REPO_URL: https://github.com/${{ github.repository }}
+  BUNDLE_ID: io.github.alberthpalhares.lamina
+
+jobs:
+  confere:
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      beta: ${{ steps.v.outputs.beta }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Versão, CHANGELOG e notas
+        id: v
+        run: |
+          cargo xtask versao "$GITHUB_REF_NAME" --notas notas.md
+          version="${GITHUB_REF_NAME#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          case "$version" in *-*) echo "beta=true" >> "$GITHUB_OUTPUT" ;; *) echo "beta=false" >> "$GITHUB_OUTPUT" ;; esac
+      - name: Release em rascunho
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pre=""
+          if [ "${{ steps.v.outputs.beta }}" = true ]; then pre="--prerelease"; fi
+          gh release create "$GITHUB_REF_NAME" --draft $pre \
+            --title "Lamina ${{ steps.v.outputs.version }}" --notes-file notas.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: notas
+          path: notas.md
+
+  pacote:
+    name: Pacote (${{ matrix.os }})
+    needs: confere
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            sistema: win
+          - os: macos-latest
+            sistema: osx
+          - os: ubuntu-22.04
+            sistema: linux
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    env:
+      VERSION: ${{ needs.confere.outputs.version }}
+      CHANNEL: ${{ needs.confere.outputs.beta == 'true' && format('{0}-beta', matrix.sistema) || matrix.sistema }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: notas
+
+      - name: Dependências do Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfontconfig1-dev libxkbcommon-dev libwayland-dev libfuse2 xvfb
+
+      - name: Compilar (Windows e Linux)
+        if: runner.os != 'macOS'
+        shell: bash
+        run: |
+          cargo build --release -p lamina-app -p lamina-cli
+          mkdir publish
+          cp target/release/lamina-app* publish/
+          rm -f publish/*.d publish/*.pdb
+
+      - name: Compilar (macOS universal)
+        if: runner.os == 'macOS'
+        run: |
+          rustup target add aarch64-apple-darwin x86_64-apple-darwin
+          cargo build --release -p lamina-app --target aarch64-apple-darwin
+          cargo build --release -p lamina-app --target x86_64-apple-darwin
+          cargo build --release -p lamina-cli
+          mkdir publish
+          lipo -create -output publish/lamina-app \
+            target/aarch64-apple-darwin/release/lamina-app target/x86_64-apple-darwin/release/lamina-app
+          lipo -archs publish/lamina-app
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Instalar o vpk
+        run: dotnet tool install -g vpk --version ${{ env.VPK }}
+
+      - name: Empacotar
+        shell: bash
+        run: |
+          mkdir releases
+          # A versão anterior do mesmo canal, para o pacote de diferença (na primeira, não há).
+          vpk download github --repoUrl "$REPO_URL" --channel "$CHANNEL" --token "$GH_TOKEN" -o releases || true
+          ls releases > anteriores.txt
+          case "${{ matrix.sistema }}" in
+            win)   extra=(--runtime win-x64 --icon crates/lamina-app/icons/lamina.ico -e lamina-app.exe) ;;
+            osx)   extra=(--icon crates/lamina-app/icons/lamina.icns --bundleId "$BUNDLE_ID" -e lamina-app) ;;
+            linux) extra=(--runtime linux-x64 --icon crates/lamina-app/icons/lamina-512.png -e lamina-app) ;;
+          esac
+          vpk pack -u Lamina -v "$VERSION" -p publish --packTitle Lamina --packAuthors "Equipe Lamina" \
+            --channel "$CHANNEL" --releaseNotes notas.md -o releases "${extra[@]}"
+          # Só o que esta versão criou vai para a release (o que veio da anterior já está lá).
+          ls releases | grep -vxF -f anteriores.txt > novos.txt || true
+          grep -q "releases.$CHANNEL.json" novos.txt || echo "releases.$CHANNEL.json" >> novos.txt
+          echo "### Pacotes ($CHANNEL)" >> "$GITHUB_STEP_SUMMARY"
+          (cd releases && ls -la $(cat ../novos.txt)) | tee -a "$GITHUB_STEP_SUMMARY"
+          # O SHA256SUMS deste sistema, para o teste de fumaça usar o script do terminal.
+          cd releases
+          for f in *Setup.exe *Portable.zip *.AppImage; do
+            [ -f "$f" ] && { sha256sum "$f" 2>/dev/null || shasum -a 256 "$f"; }
+          done > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Álbum de fumaça
+        shell: bash
+        run: |
+          cargo xtask fotos fumaca/fotos 8
+          cargo run --release -q -p lamina-cli -- build fumaca/fotos --saida fumaca/album \
+            --laminas 2 --largura-cm 10 --altura-cm 10 --dpi 100
+
+      - name: Teste de fumaça (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        timeout-minutes: 10
+        run: |
+          $env:LAMINA_FONTE = "$PWD\releases"
+          pwsh -NoProfile -File crates/lamina-app/dist/instalar.ps1
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          Start-Sleep -Seconds 5
+          # O Setup abre o Lamina ao terminar (lição do spike): fechar antes de verificar.
+          Get-Process lamina-app -ErrorAction SilentlyContinue | Stop-Process -Force
+          $app = "$env:LOCALAPPDATA\Lamina\current\lamina-app.exe"
+          $p = Start-Process $app -ArgumentList '--verificar', "$PWD\fumaca\album\fotos.lamina" -PassThru -RedirectStandardError erro.txt
+          if (-not $p.WaitForExit(120000)) { $p.Kill(); "verificar passou de 2 min"; exit 1 }
+          Get-Content erro.txt -ErrorAction SilentlyContinue
+          "verificar saiu com $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { exit 1 }
+          # O gancho da instalação registrou o .lamina (spec DS, regra 10).
+          $tipo = (Get-ItemProperty 'HKCU:\Software\Classes\.lamina').'(default)'
+          "associação: $tipo"
+          if ($tipo -ne 'Lamina.Album') { exit 1 }
+
+      - name: Teste de fumaça (macOS)
+        if: runner.os == 'macOS'
+        timeout-minutes: 10
+        run: |
+          LAMINA_FONTE="$PWD/releases" sh crates/lamina-app/dist/instalar.sh
+          app="$HOME/Applications/Lamina.app"
+          codesign -dv "$app" 2>&1 | grep -E "Signature|Format" || true
+          lipo -archs "$app/Contents/MacOS/lamina-app"
+          "$app/Contents/MacOS/lamina-app" --verificar "$PWD/fumaca/album/fotos.lamina"
+
+      - name: Teste de fumaça (Linux)
+        if: runner.os == 'Linux'
+        timeout-minutes: 10
+        run: |
+          LAMINA_FONTE="$PWD/releases" sh crates/lamina-app/dist/instalar.sh
+          xvfb-run -a "$HOME/.local/bin/Lamina.AppImage" --verificar "$PWD/fumaca/album/fotos.lamina"
+
+      - name: Enviar ao rascunho
+        shell: bash
+        run: |
+          cd releases
+          gh release upload "$GITHUB_REF_NAME" $(cat ../novos.txt) --clobber
+
+  publica:
+    needs: [confere, pacote]
+    runs-on: ubuntu-22.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # Token de um robô do dono para abrir o pedido no microsoft/winget-pkgs (spec DS, seção 8).
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: SHA256SUMS e os scripts de instalação
+        run: |
+          mkdir pacotes && cd pacotes
+          gh release download "$GITHUB_REF_NAME" -p '*Setup.exe' -p '*Portable.zip' -p '*.AppImage' -p '*Setup.pkg'
+          sha256sum * > ../SHA256SUMS
+          cd ..
+          cat SHA256SUMS
+          gh release upload "$GITHUB_REF_NAME" SHA256SUMS \
+            crates/lamina-app/dist/instalar.sh crates/lamina-app/dist/instalar.ps1 --clobber
+      - name: Publicar
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false
+      - name: winget (só nas estáveis, com o token do dono)
+        if: needs.confere.outputs.beta == 'false' && env.WINGET_TOKEN != ''
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: Lamina.Lamina
+          installers-regex: 'win.*Setup\.exe$'
+          token: ${{ secrets.WINGET_TOKEN }}

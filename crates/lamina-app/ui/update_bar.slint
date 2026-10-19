@@ -1,0 +1,21 @@
+// A barra "Lamina X está pronta. · Reiniciar e atualizar · Agora não" (spec DS, seção 3):
+// discreta, no topo da área de trabalho, como os avisos. Só aparece com a versão já baixada.
+
+import { Theme } from "theme.slint";
+import { BarButton } from "widgets.slint";
+
+export component UpdateBar inherits Rectangle {
+    in property <string> text;
+    callback restart();
+    callback dismiss();
+    height: 30px;
+    background: #1f3a4a;
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 8px;
+        spacing: 12px;
+        Text { text: root.text; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+        BarButton { text: "Reiniciar e atualizar"; clicked => { root.restart(); } }
+        BarButton { text: "Agora não"; clicked => { root.dismiss(); } }
+    }
+}

@@ -16,6 +16,11 @@ lamina-layout = { workspace = true }
 anyhow = { workspace = true }
 slint = { workspace = true }
 rfd = { workspace = true }
+velopack = { workspace = true }
+
+[dev-dependencies]
+image = { workspace = true }
+tempfile = { workspace = true }
 
 [build-dependencies]
 slint-build = { workspace = true }

@@ -24,6 +24,7 @@ pub const CODE: &[&str] = &[
 /// O README do público: o mínimo (o README completo é do privado).
 pub const PUBLIC_README: &str = "# Lamina\n\n\
 Diagramador de álbuns fotográficos em Rust, para Windows, macOS e Linux. Projeto acadêmico.\n\n\
+## Instalar\n\nBaixe o instalador do seu sistema na [página de versões](https://github.com/alberthpalhares/lamina-codigo/releases)\n(`Lamina-win-Setup.exe`, `Lamina-osx-Setup.pkg` ou `Lamina.AppImage`). Depois de instalado, o\nLamina avisa sozinho quando há versão nova.\n\nPelo terminal, sem o aviso de segurança do Windows e do Mac (o Lamina não é assinado; o aviso\nsó não aparece, e o antivírus continua examinando):\n\n| Sistema | Comando |\n|---|---|\n| Windows (PowerShell) | `irm https://raw.githubusercontent.com/alberthpalhares/lamina-codigo/main/crates/lamina-app/dist/instalar.ps1 \\| iex` |\n| Mac e Linux | `curl -fsSL https://github.com/alberthpalhares/lamina-codigo/releases/latest/download/instalar.sh \\| sh` |\n\nPara a versão de teste mais nova: `$env:LAMINA_BETA = 1` antes do comando no Windows, ou\n`sh -s -- --beta` no lugar de `sh` no Mac e no Linux.\n\n\
 ## Compilar\n\n\
 ```bash\ncargo run --release -p lamina-app   # a janela\ncargo xtask verify                  # formatação, lint, testes e checagens\n```\n\n\
 No Linux, a janela precisa de `libfontconfig1-dev`, `libxkbcommon-dev` e `libwayland-dev`.\n\n\

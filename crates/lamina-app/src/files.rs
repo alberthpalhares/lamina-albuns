@@ -99,6 +99,8 @@ pub fn answer(app: &mut App, choice: i32) {
     };
     if go {
         proceed(app, action);
+    } else if action == Pending::Update {
+        crate::updates::restart_cancelled(app);
     }
 }
 
@@ -112,6 +114,7 @@ fn proceed(app: &mut App, action: Pending) {
         }
         Pending::Open => open(app),
         Pending::NewAlbum => new_album::start(app),
+        Pending::Update => crate::updates::restart(app),
     }
 }
 

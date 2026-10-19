@@ -7,7 +7,7 @@ use lamina_editor::frame_form::page_at;
 use lamina_editor::{Command, Key, Shortcut};
 
 use crate::state::{App, Pending};
-use crate::{AppWindow, export, files, frame_panel, models, relink, spec_dialog};
+use crate::{AppWindow, export, files, frame_panel, models, relink, spec_dialog, updates};
 
 type Shared = Rc<RefCell<App>>;
 
@@ -39,6 +39,9 @@ pub fn run_command(app: &Shared, command: Command) {
         Command::NewText => new_text(&mut a),
         Command::SaveModel => models::open_save(&mut a),
         Command::Models => models::open_list(&a),
+        Command::CheckUpdates => updates::check_now(&mut a),
+        Command::ToggleAutoUpdates => updates::toggle_automatic(&mut a),
+        Command::ToggleBeta => updates::toggle_beta(&mut a),
         _ => {
             // Navegar e as guias só mudam a lâmina mostrada; o resto edita o álbum e muda também
             // a faixa, a timeline e os usos no navegador.

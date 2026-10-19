@@ -6,6 +6,7 @@ mod auditoria;
 mod auditoria_m3;
 mod common;
 mod ct;
+mod ds;
 mod ei;
 mod forms;
 mod fq;
