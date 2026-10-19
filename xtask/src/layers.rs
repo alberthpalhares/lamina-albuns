@@ -13,11 +13,13 @@ pub const LAYERS: &[(&str, u8)] = &[
     ("lamina-render", 1),
     ("lamina-export", 2),
     ("lamina-editor", 3),
-    ("lamina-cli", 4),
-    ("lamina-app", 4),
+    // O protocolo do controle por IA: o `tokio` e o `rmcp` ficam presos aqui (ADR 0010).
+    ("lamina-mcp", 4),
+    ("lamina-cli", 5),
+    ("lamina-app", 5),
 ];
 
-/// Dependências externas que os binários (camada 4) podem ter: eles só traduzem entrada e
+/// Dependências externas que os binários (camada 5) podem ter: eles só traduzem entrada e
 /// saída (regra 1). O resto vem pelas bibliotecas (auditoria do Marco 1, M4).
 pub const BINARY_EXTERNALS: &[&str] = &[
     "anyhow",
@@ -30,7 +32,7 @@ pub const BINARY_EXTERNALS: &[&str] = &[
 ];
 
 /// Camada dos binários.
-const BINARY_LAYER: u8 = 4;
+const BINARY_LAYER: u8 = 5;
 
 fn layer_of(name: &str) -> Option<u8> {
     LAYERS.iter().find(|(n, _)| *n == name).map(|(_, l)| *l)
@@ -158,7 +160,22 @@ mod tests {
     fn nucleo_dependendo_da_interface_reprova() {
         let found = violations(&[krate("lamina-core", &["lamina-app"])]);
         assert_eq!(found.len(), 1);
-        assert!(found[0].contains("lamina-core (camada 0) depende de lamina-app (camada 4)"));
+        assert!(found[0].contains("lamina-core (camada 0) depende de lamina-app (camada 5)"));
+    }
+
+    /// Spec IA, seção 12: o servidor MCP é biblioteca, e nenhum binário leva `tokio` ou `rmcp`.
+    #[test]
+    fn servidor_mcp_e_biblioteca_e_os_binarios_nao_levam_o_protocolo() {
+        let crates = [
+            krate("lamina-mcp", &["lamina-editor", "rmcp", "tokio"]),
+            krate("lamina-cli", &["lamina-mcp"]),
+        ];
+        assert!(violations(&crates).is_empty());
+        assert!(binary_violations(&[krate("lamina-mcp", &["rmcp", "tokio"])]).is_empty());
+        let found = binary_violations(&[krate("lamina-cli", &["clap", "tokio", "rmcp"])]);
+        assert_eq!(found.len(), 2, "{found:?}");
+        let up = violations(&[krate("lamina-editor", &["lamina-mcp"])]);
+        assert_eq!(up.len(), 1, "o editor não pode depender do servidor");
     }
 
     #[test]
