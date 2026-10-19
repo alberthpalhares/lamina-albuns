@@ -19,6 +19,14 @@ só não aparece, e o antivírus continua examinando):
 Para a versão de teste mais nova: `$env:LAMINA_BETA = 1` antes do comando no Windows, ou
 `sh -s -- --beta` no lugar de `sh` no Mac e no Linux.
 
+## Usar com o Claude Desktop
+
+Baixe `Lamina-Windows.mcpb` ou `Lamina-macOS.mcpb` na mesma página e dê dois cliques: o Claude
+Desktop instala o Lamina e pergunta as pastas dos álbuns. **Com "Permitir que a IA veja as
+fotos" ligada, as prévias das lâminas e as miniaturas das fotos vão para o provedor da IA** (no
+Claude, a Anthropic). São fotos de clientes (LGPD): desligue a opção se o contrato pedir; a IA
+continua só com os dados das fotos e das lâminas.
+
 ## Compilar
 
 ```bash

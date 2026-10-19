@@ -1,104 +1,24 @@
-//! O catálogo das ferramentas (spec IA, seção 3): nome, descrição e esquema dos parâmetros de
-//! cada uma, numa fonte só. O servidor MCP e o manifesto do pacote do Claude Desktop saem daqui.
+//! A lista das ferramentas, na ordem da spec IA (seção 3): as do IA-M1 e depois as do IA-M2.
 
-use schemars::JsonSchema;
-use serde::Deserialize;
-use serde_json::Value;
-
-use super::ToolError;
-use super::calls::{
+use super::super::calls::{
     ApplyLayout, BuildSpread, ExportCall, FrameArg, ListPhotos, MoveSpread, NewAlbumCall, NoArgs,
     OpenAlbum, PlacePhoto, Position, RunCommand, SaveAlbum, SpreadArg, Steps, SuggestLayouts,
     SwapPhotos, ViewPhotos, ViewSpread,
 };
-
-/// Uma chamada de ferramenta, já com os parâmetros conferidos.
-#[derive(Debug, Clone, Deserialize)]
-#[serde(tag = "ferramenta", content = "parametros")]
-pub enum ToolCall {
-    #[serde(rename = "abrir_album")]
-    OpenAlbum(OpenAlbum),
-    #[serde(rename = "novo_album")]
-    NewAlbum(NewAlbumCall),
-    #[serde(rename = "salvar_album")]
-    SaveAlbum(SaveAlbum),
-    #[serde(rename = "resumo_do_album")]
-    Summary(NoArgs),
-    #[serde(rename = "ver_lamina")]
-    ViewSpread(ViewSpread),
-    #[serde(rename = "listar_fotos")]
-    ListPhotos(ListPhotos),
-    #[serde(rename = "ver_fotos")]
-    ViewPhotos(ViewPhotos),
-    #[serde(rename = "pre_impressao")]
-    Preflight(NoArgs),
-    #[serde(rename = "sugerir_layouts")]
-    SuggestLayouts(SuggestLayouts),
-    #[serde(rename = "aplicar_layout")]
-    ApplyLayout(ApplyLayout),
-    #[serde(rename = "espelhar")]
-    Mirror(SpreadArg),
-    #[serde(rename = "colocar_foto")]
-    PlacePhoto(PlacePhoto),
-    #[serde(rename = "trocar_fotos")]
-    SwapPhotos(SwapPhotos),
-    #[serde(rename = "tirar_foto")]
-    ClearFrame(FrameArg),
-    #[serde(rename = "montar_lamina")]
-    BuildSpread(BuildSpread),
-    #[serde(rename = "nova_lamina")]
-    NewSpread(Position),
-    #[serde(rename = "apagar_lamina")]
-    DeleteSpread(SpreadArg),
-    #[serde(rename = "mover_lamina")]
-    MoveSpread(MoveSpread),
-    #[serde(rename = "desfazer")]
-    Undo(Steps),
-    #[serde(rename = "refazer")]
-    Redo(Steps),
-    #[serde(rename = "historico")]
-    History(NoArgs),
-    #[serde(rename = "exportar")]
-    Export(ExportCall),
-    #[serde(rename = "executar_comando")]
-    RunCommand(RunCommand),
-}
-
-impl ToolCall {
-    /// A chamada da ferramenta `name` com os `args` do cliente (`null` = sem parâmetros).
-    pub fn parse(name: &str, args: Value) -> Result<ToolCall, ToolError> {
-        if !tools().iter().any(|t| t.name == name) {
-            return Err(ToolError::UnknownTool(name.to_owned()));
-        }
-        let args = if args.is_null() {
-            Value::Object(serde_json::Map::new())
-        } else {
-            args
-        };
-        let call = serde_json::json!({ "ferramenta": name, "parametros": args });
-        serde_json::from_value(call).map_err(|e| ToolError::BadArguments(e.to_string()))
-    }
-}
-
-/// Uma ferramenta do catálogo.
-#[derive(Debug, Clone)]
-pub struct ToolInfo {
-    pub name: &'static str,
-    pub description: &'static str,
-    /// Esquema JSON dos parâmetros.
-    pub schema: Value,
-}
-
-fn info<T: JsonSchema>(name: &'static str, description: &'static str) -> ToolInfo {
-    ToolInfo {
-        name,
-        description,
-        schema: schemars::schema_for!(T).to_value(),
-    }
-}
+use super::super::params::{
+    AddText, CropCall, EditText, LookCall, RelinkCall, RespecCall, SaveModel, UseModel,
+};
+use super::{ToolInfo, info};
 
 /// Todas as ferramentas, na ordem da spec.
 pub fn tools() -> Vec<ToolInfo> {
+    let mut all = first_part();
+    all.extend(second_part());
+    all
+}
+
+/// As ferramentas do IA-M1.
+fn first_part() -> Vec<ToolInfo> {
     vec![
         info::<OpenAlbum>(
             "abrir_album",
@@ -182,6 +102,53 @@ pub fn tools() -> Vec<ToolInfo> {
             "executar_comando",
             "Roda um comando sem diálogo pelo nome dos menus (setas de layout, favoritar, \
              rejeitar, frente e trás...) numa lâmina e num quadro.",
+        ),
+    ]
+}
+
+/// As ferramentas do IA-M2.
+fn second_part() -> Vec<ToolInfo> {
+    vec![
+        info::<CropCall>(
+            "recortar",
+            "Recorta a foto de um quadro como o modo recorte: zoom (1 = a foto cobre o quadro, até \
+             8) e o ponto da foto no centro do quadro (0 a 1).",
+        ),
+        info::<LookCall>(
+            "aparencia",
+            "Muda a aparência de uma lâmina como a aba Aparência: espaço entre fotos, fundo (da \
+             lâmina ou de uma página), borda e cantos; com todas: true, leva a aparência a todas \
+             as lâminas.",
+        ),
+        info::<AddText>(
+            "adicionar_texto",
+            "Cria um quadro de texto numa página da lâmina, com o texto, a fonte, o tamanho e o \
+             lugar (opcionais).",
+        ),
+        info::<EditText>(
+            "editar_texto",
+            "Muda um quadro de texto como a aba Quadro: texto, fonte, tamanho, negrito, itálico, \
+             cor, alinhamentos, entrelinha e lugar.",
+        ),
+        info::<UseModel>(
+            "usar_modelo",
+            "Aplica numa lâmina um modelo salvo pelo fotógrafo, se as fotos dela casam com os \
+             quadros dele.",
+        ),
+        info::<SaveModel>(
+            "salvar_modelo",
+            "Salva uma lâmina como modelo do fotógrafo, para usar em outras lâminas e álbuns.",
+        ),
+        info::<RespecCall>(
+            "trocar_especificacao",
+            "Troca a especificação do álbum (um preset ou as medidas: tamanho, DPI, sangria, zona \
+             segura, pontas e faixa de páginas) numa edição só; as lâminas são refeitas no \
+             tamanho novo.",
+        ),
+        info::<RelinkCall>(
+            "reencontrar_fotos",
+            "Procura as fotos faltando numa pasta pela impressão digital (mesmo com outro nome) e \
+             religa as que achar.",
         ),
     ]
 }

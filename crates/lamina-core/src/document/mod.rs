@@ -5,6 +5,7 @@
 //! arquivo se ele mudar de pasta.
 
 mod content;
+mod crop;
 mod ids;
 mod migration;
 mod paths;
@@ -13,7 +14,8 @@ mod print;
 mod project;
 mod text;
 
-pub use content::{Border, Crop, Frame, FrameContent, PixelRegion, Rgb, Spread};
+pub use content::{Border, Frame, FrameContent, Rgb, Spread};
+pub use crop::{Crop, PixelRegion};
 pub use ids::{FrameId, PhotoId, SpreadId};
 pub use paths::{lexical_path, relative_path, validate_project_name};
 pub use photo::{Orientation, Photo};

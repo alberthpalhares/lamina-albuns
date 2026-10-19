@@ -6678,6 +6678,7 @@ version = "0.1.0-beta.2"
 dependencies = [
  "image",
  "lamina-core",
+ "lamina-editor",
  "serde_json",
  "tempfile",
 ]

@@ -6,7 +6,9 @@ name: Release
 # 1. confere: a tag bate com o Cargo.toml e as novidades (`cargo xtask versao`) e abre a release
 #    em rascunho, com as notas da versão.
 # 2. pacote (Windows, macOS universal, Linux): compila, empacota com o vpk, instala pelo script
-#    do terminal e abre o álbum de fumaça (`--verificar`). Só então envia ao rascunho.
+#    do terminal e abre o álbum de fumaça (`--verificar`). No Windows e no macOS, também o pacote
+#    do Claude Desktop (`.mcpb`, spec IA, decisão 4), com o binário `lamina` dentro e o manifesto
+#    gerado do catálogo das ferramentas (`cargo xtask mcpb`). Só então envia ao rascunho.
 # 3. publica: SHA256SUMS e os scripts de instalação, e tira do rascunho. Se qualquer sistema
 #    falhar, a release fica em rascunho (invisível) e nada é publicado.
 on:
@@ -19,6 +21,8 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   VPK: "1.2.161"
+  # CLI oficial dos pacotes do Claude Desktop (ADR 0010, adendo), com a versão presa.
+  MCPB: "2.1.2"
   REPO_URL: https://github.com/${{ github.repository }}
   BUNDLE_ID: io.github.alberthpalhares.lamina
 
@@ -99,13 +103,18 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           rustup target add aarch64-apple-darwin x86_64-apple-darwin
-          cargo build --release -p lamina-app --target aarch64-apple-darwin
-          cargo build --release -p lamina-app --target x86_64-apple-darwin
+          cargo build --release -p lamina-app -p lamina-cli --target aarch64-apple-darwin
+          cargo build --release -p lamina-app -p lamina-cli --target x86_64-apple-darwin
           cargo build --release -p lamina-cli
           mkdir publish
           lipo -create -output publish/lamina-app \
             target/aarch64-apple-darwin/release/lamina-app target/x86_64-apple-darwin/release/lamina-app
           lipo -archs publish/lamina-app
+          # O `lamina` universal vai no pacote do Claude Desktop (fora do instalador; spec DS).
+          mkdir cli-universal
+          lipo -create -output cli-universal/lamina \
+            target/aarch64-apple-darwin/release/lamina target/x86_64-apple-darwin/release/lamina
+          lipo -archs cli-universal/lamina
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -138,6 +147,27 @@ jobs:
             [ -f "$f" ] && { sha256sum "$f" 2>/dev/null || shasum -a 256 "$f"; }
           done > SHA256SUMS
           cat SHA256SUMS
+
+      - uses: actions/setup-node@v4
+        if: runner.os != 'Linux'
+        with:
+          node-version: "20"
+      - name: Pacote do Claude Desktop (Windows e macOS)
+        # Não há Claude Desktop para Linux (spec IA, seção 10).
+        if: runner.os != 'Linux'
+        shell: bash
+        run: |
+          case "${{ matrix.sistema }}" in
+            win) bin=target/release/lamina.exe; sistema=windows; nome=Lamina-Windows.mcpb ;;
+            osx) bin=cli-universal/lamina; sistema=macos; nome=Lamina-macOS.mcpb ;;
+          esac
+          cargo xtask mcpb "$sistema" "$bin" pacote-mcpb
+          # Fumaça: o binário de dentro do pacote roda.
+          ./pacote-mcpb/server/$(basename "$bin") --version
+          npx -y "@anthropic-ai/mcpb@$MCPB" validate pacote-mcpb/manifest.json
+          npx -y "@anthropic-ai/mcpb@$MCPB" pack pacote-mcpb "releases/$nome"
+          npx -y "@anthropic-ai/mcpb@$MCPB" info "releases/$nome"
+          echo "$nome" >> novos.txt
 
       - name: Álbum de fumaça
         shell: bash
@@ -203,7 +233,7 @@ jobs:
       - name: SHA256SUMS e os scripts de instalação
         run: |
           mkdir pacotes && cd pacotes
-          gh release download "$GITHUB_REF_NAME" -p '*Setup.exe' -p '*Portable.zip' -p '*.AppImage' -p '*Setup.pkg'
+          gh release download "$GITHUB_REF_NAME" -p '*Setup.exe' -p '*Portable.zip' -p '*.AppImage' -p '*Setup.pkg' -p '*.mcpb'
           sha256sum * > ../SHA256SUMS
           cd ..
           cat SHA256SUMS

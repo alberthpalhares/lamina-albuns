@@ -71,6 +71,9 @@ fn tool_for(command: Command) -> Option<&'static str> {
         Command::Open => Some("abrir_album"),
         Command::Save | Command::SaveAs => Some("salvar_album"),
         Command::Export => Some("exportar"),
+        Command::FindMissing => Some("reencontrar_fotos"),
+        Command::Specification => Some("trocar_especificacao"),
+        Command::SaveModel => Some("salvar_modelo"),
         _ => None,
     }
 }

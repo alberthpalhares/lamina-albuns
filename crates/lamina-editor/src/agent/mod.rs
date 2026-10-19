@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use lamina_core::Spread;
-use serde_json::{Value, json};
+use serde_json::json;
 
 use crate::{Cache, Editor, Part, Preset};
 
@@ -19,18 +19,27 @@ mod album;
 mod calls;
 mod catalog;
 mod commands;
+mod crop;
 mod error;
 mod export;
 mod frames;
 mod layout;
 mod listing;
+mod look;
 mod lookup;
+mod models;
+mod params;
 mod paths;
 mod prompts;
 mod read;
+mod relink;
+mod reply;
+mod respec;
 mod roots;
 mod setup;
 mod spreads;
+mod texts;
+mod values;
 
 pub use calls::{
     ApplyLayout, BuildSpread, ColorArg, ExportCall, FormatArg, FrameArg, ListPhotos, MoveSpread,
@@ -40,40 +49,17 @@ pub use calls::{
 pub use catalog::{ToolCall, ToolInfo, tools};
 pub use error::ToolError;
 pub use listing::commands_data;
+pub use params::{
+    AddText, AlignArg, CropCall, EditText, LookCall, PageArg, PlaceMm, RelinkCall, RespecCall,
+    SaveModel, UseModel, VAlignArg,
+};
 pub use prompts::{READY_PROMPTS, ReadyPrompt, prompt_text};
+pub use reply::{Progress, ToolImage, ToolReply};
 pub use roots::AllowedRoots;
 pub use setup::photographer;
 
 /// O começo do rótulo das edições da IA no histórico (spec IA, seção 4).
 pub const AI_LABEL: &str = "IA: ";
-
-/// Uma imagem da resposta: PNG (prévias) ou JPEG (miniaturas).
-#[derive(Debug, Clone, PartialEq)]
-pub struct ToolImage {
-    pub mime: &'static str,
-    pub bytes: Vec<u8>,
-}
-
-/// A resposta de uma ferramenta: a frase em português, os dados e as imagens permitidas.
-#[derive(Debug, Clone, PartialEq)]
-pub struct ToolReply {
-    pub text: String,
-    pub data: Value,
-    pub images: Vec<ToolImage>,
-}
-
-impl ToolReply {
-    fn new(text: impl Into<String>, data: Value) -> Self {
-        ToolReply {
-            text: text.into(),
-            data,
-            images: Vec::new(),
-        }
-    }
-}
-
-/// Andamento das ferramentas demoradas: (feitos, total).
-pub type Progress<'a> = &'a (dyn Fn(usize, usize) + Sync);
 
 /// Como o servidor foi ligado (`lamina mcp`, ou o pacote do Claude Desktop).
 #[derive(Debug, Clone)]
@@ -174,6 +160,14 @@ impl Agent {
             ToolCall::History(_) => listing::history(editor),
             ToolCall::Export(a) => self.export(editor, &a, progress),
             ToolCall::RunCommand(a) => self.run_command(editor, &a),
+            ToolCall::Crop(a) => self.crop(editor, &a),
+            ToolCall::Look(a) => self.look(editor, &a),
+            ToolCall::AddText(a) => self.add_text(editor, &a),
+            ToolCall::EditText(a) => self.edit_text(editor, &a),
+            ToolCall::UseModel(a) => self.use_model(editor, &a),
+            ToolCall::SaveModel(a) => self.save_model(editor, &a),
+            ToolCall::Respec(a) => self.respec(editor, &a),
+            ToolCall::Relink(a) => self.relink(editor, &a, progress),
         }
     }
 

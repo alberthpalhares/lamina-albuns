@@ -95,6 +95,47 @@ pub enum ToolError {
     LastSpread,
     #[error("Não existe o preset {name}. Os presets são: {known}.")]
     NoPreset { name: String, known: String },
+    #[error(
+        "O quadro {frame} da lâmina {spread} está vazio. Ponha uma foto com colocar_foto antes de \
+         recortar."
+    )]
+    EmptyFrame { spread: usize, frame: usize },
+    #[error(
+        "O zoom vai de 1 (a foto cobre o quadro inteiro) a 8, e o centro vai de 0 a 1 (0,5 é o \
+         meio da foto)."
+    )]
+    BadCrop,
+    #[error("A cor {text} não existe. Use uma cor como #F5F0E6 ou um nome da paleta: {palette}.")]
+    BadColor { text: String, palette: String },
+    /// Um número fora da faixa da janela ("O espaço vai de 0 a 20 mm.").
+    #[error("{0}")]
+    OutOfRange(&'static str),
+    /// Uma chamada sem nada para mudar, com a lista do que dá para pedir.
+    #[error("{0}")]
+    NothingAsked(&'static str),
+    #[error(
+        "O quadro {frame} da lâmina {spread} não é de texto. Use ver_lamina para ver os quadros de \
+         texto, ou adicionar_texto."
+    )]
+    NotText { spread: usize, frame: usize },
+    #[error("Não existe a fonte {name}. As fontes são: {known}.")]
+    NoFont { name: String, known: String },
+    #[error("A fonte {font} não tem {style}.")]
+    NoStyle { font: String, style: &'static str },
+    #[error(
+        "O fotógrafo ainda não tem modelos. Use salvar_modelo para guardar uma lâmina como modelo."
+    )]
+    NoModels,
+    #[error("Não existe o modelo {name}. Os modelos são: {known}.")]
+    NoModel { name: String, known: String },
+    #[error(
+        "O modelo {name} não casa com a lâmina {spread}: as fotos dela não cabem nos quadros dele."
+    )]
+    ModelDoesNotFit { name: String, spread: usize },
+    #[error("Já existe o modelo {0}. Use substituir: true ou outro nome.")]
+    ModelExists(String),
+    #[error("Nenhuma foto do álbum está faltando.")]
+    NothingMissing,
     /// Uma parte da lâmina que não pode trocar de layout, ou outra recusa do editor já em
     /// português (spec TL, seção 6).
     #[error("{0}")]
@@ -106,6 +147,8 @@ pub enum ToolError {
     BadArguments(String),
     #[error(transparent)]
     Editor(#[from] EditorError),
+    #[error(transparent)]
+    Model(#[from] crate::ModelError),
     #[error(transparent)]
     Export(#[from] lamina_export::ExportError),
     #[error(transparent)]

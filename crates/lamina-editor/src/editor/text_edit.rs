@@ -45,7 +45,7 @@ impl TextChange {
         }
     }
 
-    fn apply(self, t: &mut TextBox) {
+    pub(crate) fn apply(self, t: &mut TextBox) {
         match self {
             TextChange::Text(s) => t.text = clean_text(&s),
             TextChange::Font(f) => t.font = f,
