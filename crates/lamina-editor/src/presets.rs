@@ -9,6 +9,7 @@ use lamina_core::{ExportPrefs, PageLimits};
 use serde::{Deserialize, Serialize};
 
 use crate::album::SpecFields;
+use crate::human::Human as _;
 
 /// Arquivo dos presets do fotógrafo, ao lado das preferências de layout.
 pub const PRESETS_FILE: &str = "presets.json";
@@ -67,6 +68,8 @@ pub enum PresetError {
     LimitsOrder,
     #[error("{0}")]
     Spec(String),
+    #[error("Já existe um preset chamado \"{0}\".")]
+    Exists(String),
     #[error("Não foi possível gravar os presets: {0}.")]
     Write(String),
 }
@@ -160,10 +163,7 @@ impl PresetsStore {
         preset.name = new.trim().to_owned();
         check(&preset)?;
         if self.exists(&preset.name) && preset.name != old {
-            return Err(PresetError::Spec(format!(
-                "Já existe um preset chamado \"{}\".",
-                preset.name
-            )));
+            return Err(PresetError::Exists(preset.name));
         }
         // Renomear deixa o preset no mesmo lugar da lista (auditoria do Marco 3, D5).
         if let Some(slot) = self.user.iter_mut().find(|p| p.name == old) {
@@ -201,7 +201,7 @@ fn check(preset: &Preset) -> Result<(), PresetError> {
         .fields
         .to_spec()
         .map(|_| ())
-        .map_err(|e| PresetError::Spec(e.to_string()))
+        .map_err(|e| PresetError::Spec(e.human().line()))
 }
 
 fn write(path: &Path, disk: &OnDisk) -> Result<(), String> {

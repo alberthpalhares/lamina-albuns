@@ -20,6 +20,7 @@ mod frames;
 mod hand;
 mod layouts;
 mod models;
+mod report;
 mod style;
 mod text_edit;
 
@@ -62,6 +63,8 @@ pub struct Editor {
     gesture: Option<hand::Gesture>,
     /// Modelos do fotógrafo (spec MD).
     models: crate::models::ModelsStore,
+    /// O registro de erros da janela (spec SR); nenhum nos testes e na linha de comando.
+    log: Option<crate::ErrorLog>,
 }
 
 impl Default for Editor {
@@ -96,6 +99,7 @@ impl Editor {
             strips: StripsStore::default(),
             gesture: None,
             models: crate::models::ModelsStore::default(),
+            log: None,
         }
     }
 

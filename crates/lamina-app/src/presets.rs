@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use lamina_editor::forms::{SpecText, limits_text, parse_limits};
-use lamina_editor::{Preset, SpecFields};
+use lamina_editor::{Human, Preset, SpecFields};
 use slint::{ComponentHandle, SharedString};
 
 use crate::convert::model;
@@ -166,7 +166,7 @@ fn name_save(app: &mut App) {
         return ui.set_name_message(text.into());
     }
     if let Err(e) = app.presets.save(preset) {
-        return ui.set_name_message(e.to_string().into());
+        return ui.set_name_message(e.human().line().into());
     }
     ui.set_show_name(false);
     refresh(app);

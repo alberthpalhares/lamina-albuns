@@ -3,8 +3,8 @@
 
 use lamina_editor::forms::{SpecText, album_name_error, parse_limits};
 use lamina_editor::{
-    NewAlbum, SpecFields, Step, check_spreads, count_photos, create_album, folder_name,
-    suggestion_text, suggestion_within,
+    EditorError, Human, NewAlbum, SpecFields, Step, check_spreads, count_photos, create_album,
+    folder_name, guarded, suggestion_text, suggestion_within,
 };
 use lamina_layout::Reuse;
 use slint::ComponentHandle;
@@ -23,12 +23,11 @@ pub fn start(app: &mut App) {
     };
     let photos = match count_photos(&folder) {
         Ok(0) => {
-            let message = format!("Nenhuma foto encontrada em {}.", folder.display());
-            show_error(app, "Novo álbum", &message);
-            return;
+            let none = EditorError::NoPhotos(folder.display().to_string());
+            return show_error(app, &none.human());
         }
         Ok(n) => n,
-        Err(e) => return show_error(app, "Novo álbum", &e.to_string()),
+        Err(e) => return show_error(app, &e.human()),
     };
     let Some(w) = app.window.upgrade() else {
         return;
@@ -72,7 +71,7 @@ pub fn suggest(app: &App) {
     };
     let ui = w.global::<PresetUi>();
     let limits = parse_limits(&ui.get_new_min(), &ui.get_new_max()).unwrap_or_default();
-    if let Ok(spec) = fields(&w).and_then(|f| f.to_spec().map_err(|e| e.to_string())) {
+    if let Ok(spec) = fields(&w).and_then(|f| f.to_spec().map_err(|e| e.human().line())) {
         let n = suggestion_within(app.new_photos, &spec, limits);
         w.set_na_spreads(i32::try_from(n).unwrap_or(1));
     }
@@ -103,11 +102,11 @@ pub fn changed(app: &mut App) {
     let ui = w.global::<PresetUi>();
     let limits = parse_limits(&ui.get_new_min(), &ui.get_new_max());
     let check = fields(&w)
-        .and_then(|f| f.to_spec().map_err(|e| e.to_string()))
+        .and_then(|f| f.to_spec().map_err(|e| e.human().line()))
         .and_then(|spec| {
             let suggested = suggestion_within(photos, &spec, limits.clone().unwrap_or_default());
             w.set_na_suggestion(suggestion_text(suggested).into());
-            check_spreads(photos, spreads, &spec).map_err(|e| e.to_string())
+            check_spreads(photos, spreads, &spec).map_err(|e| e.human().line())
         })
         .and_then(|()| limits.map(|_| ()));
     let name_error = album_name_error(&w.get_na_name()).map(str::to_owned);
@@ -122,7 +121,7 @@ pub fn create(app: &mut App) {
     };
     let ui = w.global::<PresetUi>();
     let parsed = fields(&w)
-        .and_then(|f| f.to_spec().map_err(|e| e.to_string()))
+        .and_then(|f| f.to_spec().map_err(|e| e.human().line()))
         .and_then(|spec| parse_limits(&ui.get_new_min(), &ui.get_new_max()).map(|l| (spec, l)));
     let (spec, limits) = match parsed {
         Ok(v) => v,
@@ -152,9 +151,13 @@ pub fn create(app: &mut App) {
             // Se a janela já fechou, não há a quem avisar.
             let _ = tx.send(Msg::Step(step));
         };
-        let result = create_album(&new, &cache, &progress)
-            .map(|(built, failures)| (built.project, failures.len()))
-            .map_err(|e| e.to_string());
+        // Uma falha inesperada também libera a janela (spec EH, regra 6).
+        let result = guarded(|| {
+            create_album(&new, &cache, &progress)
+                .map(|(built, failures)| (built.project, failures.len()))
+                .map_err(|e| e.human())
+        })
+        .and_then(|r| r);
         let _ = tx.send(Msg::Album(result));
     });
 }
@@ -182,7 +185,7 @@ pub fn message(app: &mut App, msg: Msg) {
                         app.refresh_current();
                     }
                 }
-                Err(e) => show_error(app, "Não foi possível criar o álbum", &e),
+                Err(e) => show_error(app, &e),
             }
         }
         Msg::ImagesReady => app.images_ready(),
@@ -190,5 +193,17 @@ pub fn message(app: &mut App, msg: Msg) {
         Msg::Exporting(..) | Msg::Exported(..) => crate::export::message(app, msg),
         Msg::Searching(..) | Msg::Relinked { .. } => crate::relink::message(app, msg),
         Msg::Update(outcome) => crate::updates::message(app, outcome),
+        Msg::Failed(problem) => failed(app, &problem),
     }
+}
+
+/// Uma tarefa em segundo plano quebrou: a janela volta a responder e mostra a mensagem (spec EH,
+/// regra 6).
+fn failed(app: &mut App, problem: &lamina_editor::HumanMessage) {
+    if let Some(w) = app.window.upgrade() {
+        w.set_busy_text("".into());
+    }
+    app.editor.set_busy(false);
+    app.loading = None;
+    show_error(app, problem);
 }

@@ -8,7 +8,9 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use lamina_core::{FrameContent, PhotoId, Project};
-use lamina_editor::{Area, FrameKind, frame_dpi_text, load_original, photo_extent, spread_view};
+use lamina_editor::{
+    Area, FrameKind, frame_dpi_text, guarded, load_original, photo_extent, spread_view,
+};
 use slint::{Timer, TimerMode};
 
 use crate::AppWindow;
@@ -45,10 +47,14 @@ fn sync_original(app: &mut App, project: &Project, index: usize) {
         Some(id) if app.images.original_id() != Some(id) && app.loading != Some(id) => {
             app.loading = Some(id);
             let (project, tx) = (project.clone(), app.tx.clone());
-            std::thread::spawn(move || {
-                if let Some(image) = load_original(&project, id) {
-                    // Se a janela já fechou, não há a quem avisar.
+            std::thread::spawn(move || match guarded(|| load_original(&project, id)) {
+                // Se a janela já fechou, não há a quem avisar.
+                Ok(Some(image)) => {
                     let _ = tx.send(Msg::Original(id, image));
+                }
+                Ok(None) => {}
+                Err(problem) => {
+                    let _ = tx.send(Msg::Failed(problem));
                 }
             });
         }

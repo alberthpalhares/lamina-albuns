@@ -13,6 +13,7 @@ mod export;
 mod files;
 mod frame_panel;
 mod hand;
+mod help;
 mod history;
 mod images;
 mod input;
@@ -37,8 +38,7 @@ use std::time::Duration;
 
 use lamina_editor::{
     Cache, Command, Editor, Filter, MODELS_FILE, ModelsStore, PREFS_FILE, PRESETS_FILE, Part,
-    PrefsStore, PresetsStore, STRIPS_FILE, StripsStore, UPDATES_FILE, Updates, UpdatesStore,
-    config_dir,
+    PrefsStore, PresetsStore, STRIPS_FILE, StripsStore, config_dir,
 };
 use slint::{CloseRequestResponse, ComponentHandle, Timer, TimerMode};
 
@@ -206,19 +206,6 @@ fn velopack_hooks() {
     app.run();
 }
 
-/// A versão que roda e se veio de um instalador (regra 8).
-fn updates_state() -> Updates {
-    let store = UpdatesStore::load(&config_dir().join(UPDATES_FILE));
-    match updates::installed_version() {
-        Some(version) => Updates::new(store, version, true),
-        None => Updates::new(
-            store,
-            lamina_editor::updates::Version::parse(env!("CARGO_PKG_VERSION")).unwrap_or_default(),
-            false,
-        ),
-    }
-}
-
 fn main() -> anyhow::Result<()> {
     velopack_hooks();
     let verifying = verify::requested();
@@ -237,6 +224,7 @@ fn main() -> anyhow::Result<()> {
     let prefs = PrefsStore::load(&config_dir().join(PREFS_FILE));
     let mut editor = Editor::with_prefs(prefs);
     editor.set_strips(StripsStore::load(&config_dir().join(STRIPS_FILE)));
+    editor.set_log(help::error_log());
     let app: Shared = Rc::new(RefCell::new(App::new(&window, Cache::system(), editor, tx)));
     {
         let mut a = app.borrow_mut();
@@ -246,7 +234,8 @@ fn main() -> anyhow::Result<()> {
         if let Some(warning) = a.presets.warning.take() {
             a.notice = warning;
         }
-        a.updates = updates_state();
+        a.updates = updates::state();
+        help::start(&a);
         updates::show(&a);
     }
     connect(&window, &app);

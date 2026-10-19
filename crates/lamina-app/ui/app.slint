@@ -80,6 +80,7 @@ export component AppWindow inherits Window {
     in-out property <bool> show-about;
     in property <string> message-title;
     in property <string> message-text;
+    in property <string> message-details;
     in property <string> message-folder;
     callback open-folder();
     // Janela Exportar (spec EI).
@@ -192,6 +193,11 @@ export component AppWindow inherits Window {
         keys.focus();
     }
 
+    // Abre o endereço no navegador do sistema (formulário de sugestões, spec SR).
+    public function open-url(url: string) -> bool {
+        return Platform.open-url(url);
+    }
+
     // Começa a arrastar só depois de 6 px, para um clique não virar arrasto.
     function far(x: length, y: length) -> bool {
         abs(x - root.press-x) > 6px || abs(y - root.press-y) > 6px
@@ -263,6 +269,9 @@ export component AppWindow inherits Window {
             MenuItem { title: "Verificar atualizações agora"; activated => { root.command("ajuda.verificar-atualizacoes"); } }
             MenuItem { title: (root.auto-updates ? "✓ " : "    ") + "Verificar atualizações automaticamente"; activated => { root.command("ajuda.atualizar-automaticamente"); } }
             MenuItem { title: (root.beta-updates ? "✓ " : "    ") + "Receber versões de teste (beta)"; activated => { root.command("ajuda.versoes-de-teste"); } }
+            MenuSeparator { }
+            MenuItem { title: "Enviar sugestão ou problema…"; activated => { root.command("ajuda.enviar-sugestao"); } }
+            MenuItem { title: "Abrir pasta de registros"; activated => { root.command("ajuda.abrir-registros"); } }
             MenuSeparator { }
             MenuItem { title: "Sobre o Lamina"; activated => { root.command("ajuda.sobre"); } }
         }
@@ -574,8 +583,10 @@ export component AppWindow inherits Window {
     if root.show-message: MessageDialog {
         title: root.message-title;
         message: root.message-text;
+        details: root.message-details;
         folder: root.message-folder;
         open-folder => { root.open-folder(); }
+        send-problem => { root.command("ajuda.enviar-sugestao"); }
         close => {
             root.show-message = false;
             root.focus-main();

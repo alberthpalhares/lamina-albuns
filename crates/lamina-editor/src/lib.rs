@@ -21,6 +21,8 @@
 //! - [`relink`]: reencontrar fotos que mudaram de pasta (spec EI).
 //! - [`screens`]: as imagens de tela na memória, só da lâmina atual e das vizinhas.
 //! - [`agent`]: o controle por IA, as ferramentas que o servidor MCP oferece (spec IA).
+//! - [`human`]: cada erro dito ao fotógrafo, com o que fazer e o detalhe (spec EH).
+//! - [`error_log`] e [`feedback`]: o registro de erros e o formulário de sugestões (spec SR).
 
 pub mod agent;
 pub mod album;
@@ -30,11 +32,14 @@ pub mod cache;
 pub mod commands;
 pub mod editor;
 pub mod edits;
+pub mod error_log;
 mod export_form;
 pub mod exporting;
+pub mod feedback;
 pub mod forms;
 pub mod frame_form;
 pub mod hand;
+pub mod human;
 pub mod keys;
 mod look_form;
 pub mod models;
@@ -66,10 +71,13 @@ pub use cache::Cache;
 pub use commands::{Command, Menu};
 pub use editor::{Editor, Leave, Panel, TextChange};
 pub use error::EditorError;
+pub use error_log::ErrorLog;
 pub use exporting::{
     DEFAULT_QUALITY, ExportCheck, ExportFormat, ExportOptions, Warning, export_progress,
     export_project, export_summary,
 };
+pub use feedback::{FEEDBACK_FORM, feedback_address};
+pub use human::{Human, HumanMessage, guarded};
 pub use keys::{Key, Shortcut};
 pub use lamina_render::text_image;
 pub use models::{MODELS_FILE, ModelError, ModelsStore, model_from_spread};

@@ -4,6 +4,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use lamina_editor::Human;
 use lamina_editor::naming::{Named, model_saved};
 use slint::{ComponentHandle, SharedString};
 
@@ -43,7 +44,7 @@ fn name_save(app: &mut App) {
             app.refresh_current();
             w.invoke_focus_main();
         }
-        Err(e) => ui.set_name_message(e.to_string().into()),
+        Err(e) => ui.set_name_message(e.human().line().into()),
     }
 }
 
@@ -100,7 +101,7 @@ fn list_change(app: &mut App, rename: bool) {
             refresh_list(app);
             app.refresh_current();
         }
-        Err(e) => ui.set_list_message(e.to_string().into()),
+        Err(e) => ui.set_list_message(e.human().line().into()),
     }
 }
 

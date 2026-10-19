@@ -103,7 +103,7 @@ impl Editor {
         match session.edit(label, |p| f(p, index)) {
             Ok(()) => true,
             Err(e) => {
-                self.notice = Some(e.to_string());
+                self.report(&e);
                 false
             }
         }

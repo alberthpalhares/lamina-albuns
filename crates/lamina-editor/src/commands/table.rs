@@ -250,6 +250,18 @@ impl Command {
                 Menu::Help,
                 None,
             ),
+            C::SendFeedback => (
+                "ajuda.enviar-sugestao",
+                "Enviar sugestão ou problema…",
+                Menu::Help,
+                None,
+            ),
+            C::OpenLogs => (
+                "ajuda.abrir-registros",
+                "Abrir pasta de registros",
+                Menu::Help,
+                None,
+            ),
         }
     }
 }

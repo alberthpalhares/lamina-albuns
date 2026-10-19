@@ -59,10 +59,12 @@ fn duplo_clique_na_foto_tambem_sai_do_recorte() {
 fn ocupado_so_deixa_o_sobre() {
     let mut editor = editor_at(three_spreads(), 0);
     editor.set_busy(true);
+    // A ajuda de sugestões e registros também fica: é quando algo trava que se relata (spec SR).
+    let help = [Command::About, Command::SendFeedback, Command::OpenLogs];
     for command in Command::ALL {
         assert_eq!(
             editor.available(command),
-            command == Command::About,
+            help.contains(&command),
             "{command:?}"
         );
     }

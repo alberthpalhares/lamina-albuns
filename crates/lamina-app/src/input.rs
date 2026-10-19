@@ -7,14 +7,15 @@ use lamina_editor::frame_form::page_at;
 use lamina_editor::{Command, Key, Shortcut};
 
 use crate::state::{App, Pending};
-use crate::{AppWindow, export, files, frame_panel, models, relink, spec_dialog, updates};
+use crate::{AppWindow, export, files, frame_panel, help, models, relink, spec_dialog, updates};
 
 type Shared = Rc<RefCell<App>>;
 
 /// Roda um comando do registro (menu, botões e teclado passam por aqui).
 pub fn run_command(app: &Shared, command: Command) {
     let mut a = app.borrow_mut();
-    // O menu também obedece: no meio de um trabalho em segundo plano, nada além de "Sobre".
+    // O menu também obedece: no meio de um trabalho em segundo plano, só o Sobre e a ajuda de
+    // sugestões e registros (spec SR, regra 2).
     if !a.editor.available(command) {
         return;
     }
@@ -42,6 +43,8 @@ pub fn run_command(app: &Shared, command: Command) {
         Command::CheckUpdates => updates::check_now(&mut a),
         Command::ToggleAutoUpdates => updates::toggle_automatic(&mut a),
         Command::ToggleBeta => updates::toggle_beta(&mut a),
+        Command::SendFeedback => help::send_feedback(&a),
+        Command::OpenLogs => help::open_logs(&a),
         _ => {
             // Navegar e as guias só mudam a lâmina mostrada; o resto edita o álbum e muda também
             // a faixa, a timeline e os usos no navegador.

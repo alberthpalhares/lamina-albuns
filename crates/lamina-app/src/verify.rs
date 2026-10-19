@@ -3,7 +3,7 @@
 
 use std::path::PathBuf;
 
-use lamina_editor::Editor;
+use lamina_editor::{Editor, Human};
 
 /// Tempo com a janela aberta, para a primeira lâmina chegar à tela.
 pub const SHOW_FOR: std::time::Duration = std::time::Duration::from_secs(3);
@@ -17,7 +17,15 @@ pub fn requested() -> Option<PathBuf> {
 /// Confere o álbum antes de abrir a janela: um arquivo que não é álbum sai com 1 sem janela.
 pub fn check(path: &std::path::Path) -> Result<(), String> {
     let mut editor = Editor::new();
-    editor.open(path).map_err(|e| e.to_string())?;
+    editor.open(path).map_err(|e| {
+        let message = e.human();
+        format!(
+            "{}
+{}",
+            message.line(),
+            message.details
+        )
+    })?;
     if editor.session().is_some_and(|s| s.spread_count() > 0) {
         Ok(())
     } else {

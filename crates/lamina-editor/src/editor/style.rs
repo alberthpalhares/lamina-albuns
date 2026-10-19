@@ -55,7 +55,9 @@ impl Editor {
             Ok::<(), crate::EditorError>(())
         });
         if let Err(e) = done {
-            return Some(e.to_string());
+            let line = self.report(&e);
+            self.notice = None;
+            return Some(line);
         }
         ((kept.get() - gap.get()).abs() > 1e-9).then(|| {
             let mm = format!("{}", (kept.get() * 10.0).round() / 10.0).replace('.', ",");

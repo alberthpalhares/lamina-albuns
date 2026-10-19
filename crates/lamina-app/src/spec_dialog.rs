@@ -4,8 +4,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use lamina_editor::SpecFields;
 use lamina_editor::forms::{limits_text, parse_limits};
+use lamina_editor::{Human, SpecFields};
 use slint::ComponentHandle;
 
 use crate::presets::{custom_index, fill_spec, refresh, spec_text};
@@ -39,7 +39,7 @@ pub(crate) fn spec_changed(app: &mut App) {
     let ui = w.global::<PresetUi>();
     let check = spec_text(&ui)
         .parse()
-        .and_then(|f| f.to_spec().map_err(|e| e.to_string()))
+        .and_then(|f| f.to_spec().map_err(|e| e.human().line()))
         .and_then(|_| parse_limits(&ui.get_spec_min(), &ui.get_spec_max()).map(|_| ()));
     ui.set_spec_error(check.err().unwrap_or_default().into());
 }
@@ -52,7 +52,7 @@ pub(crate) fn spec_apply(app: &mut App) {
     let ui = w.global::<PresetUi>();
     let parsed = spec_text(&ui)
         .parse()
-        .and_then(|f| f.to_spec().map_err(|e| e.to_string()))
+        .and_then(|f| f.to_spec().map_err(|e| e.human().line()))
         .and_then(|spec| parse_limits(&ui.get_spec_min(), &ui.get_spec_max()).map(|l| (spec, l)));
     let (spec, limits) = match parsed {
         Ok(v) => v,
@@ -68,7 +68,7 @@ pub(crate) fn spec_apply(app: &mut App) {
             app.project_changed();
             w.invoke_focus_main();
         }
-        Err(e) => ui.set_spec_error(e.to_string().into()),
+        Err(e) => ui.set_spec_error(e.human().line().into()),
     }
 }
 
@@ -104,7 +104,7 @@ pub(crate) fn list_rename(app: &mut App) {
             ui.set_list_selected(-1);
             refresh(app);
         }
-        Err(e) => ui.set_list_message(e.to_string().into()),
+        Err(e) => ui.set_list_message(e.human().line().into()),
     }
 }
 
@@ -123,7 +123,7 @@ pub(crate) fn list_delete(app: &mut App) {
             ui.set_list_name("".into());
             refresh(app);
         }
-        Err(e) => ui.set_list_message(e.to_string().into()),
+        Err(e) => ui.set_list_message(e.human().line().into()),
     }
 }
 

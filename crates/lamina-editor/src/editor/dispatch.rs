@@ -7,8 +7,13 @@ use crate::{Command, Session, Strip};
 impl Editor {
     /// O comando pode rodar agora? (menu e teclado obedecem; regra 10 do JP)
     pub fn available(&self, command: Command) -> bool {
+        // Durante uma tarefa longa, só o Sobre e a ajuda de sugestões e registros (spec SR,
+        // regra 2): é quando algo trava que o testador quer relatar.
         if self.busy {
-            return command == Command::About;
+            return matches!(
+                command,
+                Command::About | Command::SendFeedback | Command::OpenLogs
+            );
         }
         let Some(s) = &self.session else {
             return matches!(
@@ -21,6 +26,8 @@ impl Editor {
                     | Command::CheckUpdates
                     | Command::ToggleAutoUpdates
                     | Command::ToggleBeta
+                    | Command::SendFeedback
+                    | Command::OpenLogs
             );
         };
         let last = s.spread_count().saturating_sub(1);
@@ -42,6 +49,7 @@ impl Editor {
             Command::ClearFrame => self.selected_content().is_some(),
             Command::NewText | Command::NewPhotoFrame | Command::Models => true,
             Command::CheckUpdates | Command::ToggleAutoUpdates | Command::ToggleBeta => true,
+            Command::SendFeedback | Command::OpenLogs => true,
             Command::SaveModel => self.can_save_model(),
             Command::BringForward | Command::SendBackward => self.can_reorder(),
             Command::Deselect => {
