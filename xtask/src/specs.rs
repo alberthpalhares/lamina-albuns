@@ -23,6 +23,11 @@ pub fn is_implemented(spec: &str) -> bool {
         .is_some_and(|l| l.to_lowercase().contains("implementada"))
 }
 
+/// `#[test]`, ou o teste assíncrono do `tokio` (`#[tokio::test]`, nos testes do servidor MCP).
+fn is_test_attribute(line: &str) -> bool {
+    line.contains("#[test]") || line.contains("#[tokio::test")
+}
+
 /// Cenários sem teste: procura `fn <id_minúsculo>_` com `#[test]` entre os atributos de cima
 /// (pulando comentários de documentação). Um `#[ignore]` ali não conta: teste que não roda não
 /// cobre o cenário (auditoria do Marco 2, M3).
@@ -39,8 +44,8 @@ pub fn missing_tests(spec: &str, sources: &str) -> Vec<String> {
                     .filter(|l| !l.is_empty() && !l.starts_with("///"))
                     .take_while(|l| l.starts_with("#["))
                     .collect();
-                line.starts_with(&prefix)
-                    && attributes.iter().any(|l| l.contains("#[test]"))
+                line.trim_start_matches("async ").starts_with(&prefix)
+                    && attributes.iter().any(|l| is_test_attribute(l))
                     && !attributes.iter().any(|l| l.contains("#[ignore"))
             })
         })
@@ -136,6 +141,18 @@ mod tests {
         let with_doc =
             "/// doc\n#[test]\n#[allow(clippy::x)]\nfn pl_b1_x() {}\n#[test]\nfn pl_b2_y() {}";
         assert!(missing_tests(SPEC, with_doc).is_empty());
+    }
+
+    /// Os testes do servidor MCP são assíncronos (spec IA, IA-B17 e IA-B19).
+    #[test]
+    fn teste_assincrono_do_tokio_conta() {
+        let spec = "CENÁRIO IA-B17: protocolo\nCENÁRIO IA-B19: recursos";
+        let sources = "#[tokio::test]\nasync fn ia_b17_x() {}\n#[tokio::test(flavor = \"multi_thread\")]\nasync fn ia_b19_y() {}";
+        assert!(missing_tests(spec, sources).is_empty());
+        assert_eq!(
+            missing_tests(spec, "async fn ia_b17_x() {}"),
+            ["IA-B17", "IA-B19"]
+        );
     }
 
     #[test]

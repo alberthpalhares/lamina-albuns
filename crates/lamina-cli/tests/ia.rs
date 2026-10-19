@@ -69,6 +69,50 @@ fn ia_b18_saida_limpa() {
     assert!(base.path("ia/lamina-02.jpg").exists());
 }
 
+/// O pacote do Claude Desktop liga o servidor com os argumentos do manifesto (IA-B24) depois que
+/// o Claude Desktop troca as configurações: `--imagens false` e `--permitir` seguido de todas as
+/// pastas escolhidas. O resumo diz "imagens desligadas" e mostra as duas pastas.
+#[test]
+fn pacote_do_claude_desktop_liga_o_servidor() {
+    let base = Base::with_photos(6, (300, 200));
+    let out = base.build("saida", &["--laminas", "2", "--nome", "album"]);
+    assert!(out.status.success(), "{}", text(&out.stderr));
+    let other = tempfile::tempdir().unwrap();
+    let mut child = Command::new(env!("CARGO_BIN_EXE_lamina"))
+        .args(["mcp", "--imagens", "false", "--permitir"])
+        .arg(base.path(""))
+        .arg(other.path())
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let album = base.path("saida/album.lamina");
+    let messages = [
+        json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+            "protocolVersion": "2025-06-18", "capabilities": {},
+            "clientInfo": { "name": "teste", "version": "1" } } }),
+        json!({ "jsonrpc": "2.0", "method": "notifications/initialized" }),
+        json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {
+            "name": "abrir_album", "arguments": { "caminho": album } } }),
+        json!({ "jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {
+            "name": "resumo_do_album", "arguments": {} } }),
+    ];
+    let mut stdin = child.stdin.take().unwrap();
+    for message in &messages {
+        writeln!(stdin, "{message}").unwrap();
+    }
+    let output = wait_for_answers(child, stdin);
+    let summary = output
+        .lines()
+        .filter_map(|l| serde_json::from_str::<Value>(l).ok())
+        .find(|m| m["id"] == 3)
+        .unwrap();
+    let data = &summary["result"]["structuredContent"];
+    assert_eq!(data["imagens"], "desligadas", "{summary}");
+    assert_eq!(data["pastas_permitidas"].as_array().unwrap().len(), 2);
+}
+
 /// Lê o stdout até as três respostas chegarem, fecha a entrada e devolve tudo o que saiu.
 fn wait_for_answers(mut child: std::process::Child, stdin: std::process::ChildStdin) -> String {
     use std::io::BufRead as _;

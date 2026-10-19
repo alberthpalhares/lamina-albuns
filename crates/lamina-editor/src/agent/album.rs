@@ -92,19 +92,7 @@ impl Agent {
     ) -> Result<NewAlbum, ToolError> {
         let (fields, limits, export) = match &a.preset {
             Some(name) => {
-                let p = self
-                    .presets
-                    .iter()
-                    .find(|p| p.name.eq_ignore_ascii_case(name.trim()));
-                let p = p.ok_or_else(|| ToolError::NoPreset {
-                    name: name.clone(),
-                    known: self
-                        .presets
-                        .iter()
-                        .map(|p| p.name.as_str())
-                        .collect::<Vec<_>>()
-                        .join(", "),
-                })?;
+                let p = self.preset(name)?;
                 (p.fields.clone(), p.limits, p.export)
             }
             None => (

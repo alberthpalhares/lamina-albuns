@@ -6,9 +6,50 @@ use std::borrow::Cow;
 use lamina_core::{Crop, FrameContent, Project};
 
 use super::Editor;
+use crate::EditorError;
 
 /// Passo do zoom: cada passo da roda ou cada + e − (regra 3).
 pub const ZOOM_STEP: f64 = 1.1;
+
+/// O recorte que o quadro de foto `frame` da lâmina `index` fica ao pedir `wanted`: conferido e
+/// preso à foto como no modo recorte ([`Crop::checked`]). Quadro sem foto: [`EditorError::NoFrame`].
+pub fn crop_for(
+    project: &Project,
+    index: usize,
+    frame: usize,
+    wanted: Crop,
+) -> Result<Crop, EditorError> {
+    let f = project
+        .spreads
+        .get(index)
+        .and_then(|s| s.frames.get(frame))
+        .ok_or(EditorError::NoFrame)?;
+    let FrameContent::Photo { photo, .. } = &f.content else {
+        return Err(EditorError::NoFrame);
+    };
+    let p = project.photo(*photo)?;
+    let rect = project.frame_rect(f);
+    let aspect = rect.width.get() / rect.height.get();
+    Ok(wanted.checked(f64::from(p.width_px), f64::from(p.height_px), aspect)?)
+}
+
+/// Grava no quadro o recorte de [`crop_for`] (dentro de [`crate::Session::edit`]) e o devolve.
+pub fn set_crop(
+    project: &mut Project,
+    index: usize,
+    frame: usize,
+    wanted: Crop,
+) -> Result<Crop, EditorError> {
+    let crop = crop_for(project, index, frame, wanted)?;
+    if let Some(FrameContent::Photo { crop: c, .. }) = project.spreads[index]
+        .frames
+        .get_mut(frame)
+        .map(|f| &mut f.content)
+    {
+        *c = crop;
+    }
+    Ok(crop)
+}
 
 impl Editor {
     /// O quadro em modo recorte, se houver.

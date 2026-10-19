@@ -11,6 +11,7 @@
 //! - `portao <termos>`: lista o que foi alocado para a fase que está abrindo.
 //! - `fotos <pasta> [quantas]`: fotos sintéticas para o teste de fumaça da release.
 //! - `versao <tag> [--notas <arquivo>]`: a tag da release bate com o `Cargo.toml` e as novidades.
+//! - `mcpb <windows|macos> <binário> <pasta>`: a pasta do pacote do Claude Desktop (spec IA).
 
 mod asserts;
 mod docs;
@@ -20,6 +21,7 @@ mod fases;
 mod fontes;
 mod fotos;
 mod layers;
+mod mcpb;
 mod portao;
 mod sala_limpa;
 mod size;
@@ -47,9 +49,10 @@ fn main() -> ExitCode {
         "portao" => portao::run(&std::env::args().skip(2).collect::<Vec<_>>()),
         "fotos" => fotos::run(&std::env::args().skip(2).collect::<Vec<_>>()),
         "versao" => versao::run(&std::env::args().skip(2).collect::<Vec<_>>()),
+        "mcpb" => mcpb::run(&std::env::args().skip(2).collect::<Vec<_>>()),
         _ => {
             eprintln!(
-                "uso: cargo xtask <verify | layers | size | specs | asserts | sala-limpa | esquema | portao | fotos | versao>"
+                "uso: cargo xtask <verify | layers | size | specs | asserts | sala-limpa | esquema | portao | fotos | versao | mcpb>"
             );
             false
         }
