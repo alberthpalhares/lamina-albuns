@@ -206,3 +206,24 @@ fn ia_b10_executar_um_comando_pelo_nome() {
         "Não existe o comando xyz. A lista está em lamina://comandos."
     );
 }
+
+/// Spec IA, regra 3: um comando que muda as opções sem mudar a lâmina (alternar as reordenadas,
+/// favoritar) também vence a lista; aplicar a opção 1 depois dele aplicaria outra opção.
+#[test]
+fn comando_que_muda_as_opcoes_vence_a_lista() {
+    let base = Base::with_photos(30, (600, 400));
+    let (mut lab, _) = Lab::opened(&base, true);
+    for command in ["layout.favoritar", "layout.reordenadas"] {
+        lab.ok("sugerir_layouts", json!({ "lamina": 3 }));
+        lab.ok(
+            "executar_comando",
+            json!({ "comando": command, "lamina": 3 }),
+        );
+        let before = lab.project().clone();
+        let err = lab
+            .call("aplicar_layout", json!({ "lamina": 3, "opcao": 1 }))
+            .unwrap_err();
+        assert!(matches!(err, ToolError::NoList(3)), "{command}: {err}");
+        assert_eq!(lab.project(), &before);
+    }
+}

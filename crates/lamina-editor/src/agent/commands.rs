@@ -33,6 +33,9 @@ impl Agent {
             return Err(ToolError::NotNow(a.comando.clone()));
         }
         editor.run(command);
+        // Um comando pode mudar as opções sem mudar a lâmina (reordenadas, favoritar): as listas
+        // de sugerir_layouts deixam de valer (regra 3).
+        self.lists.clear();
         let index = session(editor)?.current();
         self.edited(
             editor,
