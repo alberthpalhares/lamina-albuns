@@ -3,7 +3,7 @@ name: Release
 # Distribuição (spec DS, regras 11 a 14; ADR 0009). Roda na tag `v*` do repositório público:
 # `vX.Y.Z` é estável; `vX.Y.Z-beta.N` é versão de teste (pre-release, canal `<sistema>-beta`).
 #
-# 1. confere: a tag bate com o Cargo.toml e o CHANGELOG (`cargo xtask versao`) e abre a release
+# 1. confere: a tag bate com o Cargo.toml e as novidades (`cargo xtask versao`) e abre a release
 #    em rascunho, com as notas da versão.
 # 2. pacote (Windows, macOS universal, Linux): compila, empacota com o vpk, instala pelo script
 #    do terminal e abre o álbum de fumaça (`--verificar`). Só então envia ao rascunho.
