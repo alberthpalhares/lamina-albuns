@@ -6,7 +6,7 @@
 //! - `specs`: toda spec implementada tem um teste por cenário BDD.
 //! - `asserts`: nenhuma assertiva frouxa (`is_err()` sem conferir o erro) nos testes.
 //! - `sala-limpa`: nada da marca ou dos arquivos do software de referência no produto.
-//! - `espelho [--trazer] <pasta>`: copia só o código para o clone do `lamina-codigo` (público).
+//! - `espelho [--trazer] <pasta>`: copia só o código para o clone do `lamina-albuns` (público).
 //! - `esquema`: grava o JSON Schema do formato do projeto em `docs/formato/` (spec EI).
 //! - `portao <termos>`: lista o que foi alocado para a fase que está abrindo.
 //! - `fotos <pasta> [quantas]`: fotos sintéticas para o teste de fumaça da release.
