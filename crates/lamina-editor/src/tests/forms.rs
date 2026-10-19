@@ -95,8 +95,13 @@ fn passos_da_aparencia_com_limites() {
 
 #[test]
 fn dica_conforme_a_selecao() {
+    assert_eq!(crate::Editor::new().hint(), "");
     let mut editor = editor_at(three_spreads(), 0);
-    assert_eq!(editor.hint(), "");
+    assert!(
+        editor.hint().starts_with("Arraste uma foto"),
+        "{}",
+        editor.hint()
+    );
     editor.select_frame(Some(0));
     assert!(editor.hint().starts_with("Delete tira a foto"));
     assert!(editor.run(Command::CropMode));

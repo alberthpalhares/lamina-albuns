@@ -34,8 +34,8 @@ pub fn channel_name(beta: bool) -> &'static str {
 pub fn browser_failed(address: &str) -> HumanMessage {
     HumanMessage::new(
         "Não foi possível abrir o navegador.",
-        format!("Copie este endereço no navegador: {address}"),
-        format!("O sistema recusou abrir {address}"),
+        "Clique em Mostrar detalhes, copie o endereço e cole no navegador.",
+        address.to_owned(),
     )
 }
 
@@ -43,10 +43,7 @@ pub fn browser_failed(address: &str) -> HumanMessage {
 pub fn logs_failed(folder: &Path, problem: &io::Error) -> HumanMessage {
     HumanMessage::new(
         "Não foi possível abrir a pasta de registros.",
-        format!(
-            "Abra esta pasta no explorador: {}. {REPORT}",
-            folder.display()
-        ),
+        format!("Clique em Mostrar detalhes, copie o caminho e abra no explorador. {REPORT}"),
         folder_details(folder, problem),
     )
 }
@@ -55,13 +52,13 @@ pub fn logs_failed(folder: &Path, problem: &io::Error) -> HumanMessage {
 pub fn folder_failed(folder: &Path, problem: &io::Error) -> HumanMessage {
     HumanMessage::new(
         "Não foi possível abrir a pasta.",
-        format!("Abra esta pasta no explorador: {}.", folder.display()),
+        "Clique em Mostrar detalhes, copie o caminho e abra no explorador.",
         folder_details(folder, problem),
     )
 }
 
 fn folder_details(folder: &Path, problem: &io::Error) -> String {
-    format!("{}: {}", folder.display(), lamina_media::io_reason(problem))
+    format!("{}\n{}", folder.display(), lamina_media::io_reason(problem))
 }
 
 /// Codificação de endereço: letras, números e `-._~` passam; o resto vira `%XX`.

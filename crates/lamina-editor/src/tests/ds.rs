@@ -384,3 +384,34 @@ fn ds_b13_associacao_do_lamina() {
             .all(|e| e.key.starts_with(r"HKCU\Software\Classes\"))
     );
 }
+
+/// Auditoria da Fase 4, achado 8: uma versão de teste instalada recebe as próximas versões de
+/// teste sem o fotógrafo ir ao menu; a escolha dele no menu vale sempre.
+#[test]
+fn versao_de_teste_instalada_liga_as_versoes_de_teste() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("atualizacoes.json");
+    std::fs::write(
+        &path,
+        r#"{"automatico": false, "ultima_versao": "0.1.0-beta.3"}"#,
+    )
+    .unwrap();
+    let mut beta = Updates::new(UpdatesStore::load(&path), v("0.1.0-beta.4"), true);
+    assert_eq!(
+        beta.on_open().notice.as_deref(),
+        Some("Lamina atualizado para 0.1.0-beta.4.")
+    );
+    assert!(UpdatesStore::load(&path).prefs.beta);
+    // Desligado no menu: fica desligado nas próximas aberturas.
+    beta.toggle_beta().unwrap();
+    let mut again = Updates::new(UpdatesStore::load(&path), v("0.1.0-beta.4"), true);
+    again.on_open();
+    assert!(!UpdatesStore::load(&path).prefs.beta);
+    // Uma versão estável e o Lamina compilado pela equipe não ligam nada.
+    let mut stable = updates(UpdatePrefs::default(), "0.2.0", true);
+    stable.on_open();
+    assert!(!stable.store.prefs.beta);
+    let mut dev = updates(UpdatePrefs::default(), "0.1.0-beta.4", false);
+    dev.on_open();
+    assert!(!dev.store.prefs.beta);
+}

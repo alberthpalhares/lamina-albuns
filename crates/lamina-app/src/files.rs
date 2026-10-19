@@ -9,7 +9,7 @@ use slint::ComponentHandle;
 use crate::new_album;
 use crate::state::{App, Pending};
 
-const FILTER_NAME: &str = "Projeto do Lamina";
+const FILTER_NAME: &str = "Álbum do Lamina";
 const EXT: &str = "lamina";
 
 /// O diálogo de erro com a mensagem humana: a frase, o que fazer e o detalhe em "Mostrar
@@ -125,7 +125,7 @@ fn proceed(app: &mut App, action: Pending) {
 
 fn open(app: &mut App) {
     let Some(file) = rfd::FileDialog::new()
-        .set_title("Abrir projeto")
+        .set_title("Abrir álbum")
         .add_filter(FILTER_NAME, &[EXT])
         .pick_file()
     else {

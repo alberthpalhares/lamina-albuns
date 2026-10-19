@@ -3,7 +3,7 @@
 
 use lamina_core::PhotoId;
 use lamina_editor::text::ALL_REJECTED;
-use lamina_editor::{Command, Part, option_title, score_text};
+use lamina_editor::{Command, Part, option_title};
 
 use crate::LayoutItem;
 use crate::convert::{model, spread_data};
@@ -46,11 +46,9 @@ pub fn refresh(app: &mut App) {
             })
         })
         .collect();
-    let count = match items.len() {
-        1 => "1 opção".to_owned(),
-        n => format!("{n} opções"),
-    };
-    w.set_layout_count(count.into());
+    // Sem o número de opções nem a conta da nota: para o leigo, a miniatura basta (auditoria da
+    // Fase 4, achado 26; decisão do dono).
+    w.set_layout_count("".into());
     w.set_layouts(model(items));
     w.set_layout_in_use(
         panel
@@ -64,10 +62,5 @@ pub fn refresh(app: &mut App) {
         (None, false) => String::new(),
     };
     w.set_layout_notice(notice.into());
-    let explanation = panel
-        .in_use
-        .and_then(|p| panel.options.get(p))
-        .map(|c| score_text(&c.score))
-        .unwrap_or_default();
-    w.set_layout_explanation(explanation.into());
+    w.set_layout_explanation("".into());
 }

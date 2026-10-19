@@ -10,11 +10,22 @@ pub const NOTES_FILE: &str = "crates/lamina-app/dist/novidades.md";
 pub const GUIDE_URL: &str =
     "https://github.com/alberthpalhares/lamina-albuns/blob/main/crates/lamina-app/dist/instalar.md";
 
-/// As notas de qualquer versão terminam com o guia e o caminho do formulário (spec PC, regra 9).
-pub fn with_guide(notes: &str) -> String {
+/// Onde a release guarda os arquivos (o repositório público).
+const DOWNLOAD: &str = "https://github.com/alberthpalhares/lamina-albuns/releases/download";
+
+/// As notas de qualquer versão começam com o arquivo de cada sistema, com link direto, e terminam
+/// com o guia e o caminho do formulário (spec PC, regra 9; auditoria da Fase 4, achados 1 e 3).
+pub fn with_guide(notes: &str, tag: &str) -> String {
+    let channel = if tag.contains('-') { "-beta" } else { "" };
+    let link = |name: String| format!("[`{name}`]({DOWNLOAD}/{tag}/{name})");
     format!(
-        "{notes}\n\n**Primeira vez?** Veja como instalar: {GUIDE_URL}\n\nAchou um problema ou tem uma \
-         ideia? No Lamina, use Ajuda → Enviar sugestão ou problema.\n"
+        "**Para instalar, baixe o arquivo do seu sistema:** Windows → {} · Mac → {} · Linux → {}. \
+         Passo a passo, com os avisos do sistema: {GUIDE_URL}\n\n{notes}\n\n**Primeira vez?** Veja \
+         como instalar: {GUIDE_URL}\n\nAchou um problema ou tem uma ideia? No Lamina, use Ajuda → \
+         Enviar sugestão ou problema.\n",
+        link(format!("Lamina-win{channel}-Setup.exe")),
+        link(format!("Lamina-osx{channel}-Setup.pkg")),
+        link(format!("Lamina-linux{channel}.AppImage")),
     )
 }
 
@@ -95,7 +106,7 @@ pub fn run(args: &[String]) -> bool {
     match checked {
         Ok(text) => {
             if let Some(file) = out
-                && let Err(e) = std::fs::write(file, with_guide(&text))
+                && let Err(e) = std::fs::write(file, with_guide(&text, tag))
             {
                 eprintln!("  ✘ versao: não deu para gravar {file}: {e}");
                 return false;
@@ -146,7 +157,7 @@ mod tests {
 
     #[test]
     fn pc_b7_as_notas_de_toda_versao_terminam_com_o_guia() {
-        let text = with_guide("- Teste.");
+        let text = with_guide("- Teste.", "v0.1.0-beta.4");
         let lines: Vec<&str> = text.lines().filter(|l| !l.trim().is_empty()).collect();
         let tail = &lines[lines.len() - 2..];
         assert_eq!(
@@ -158,7 +169,22 @@ mod tests {
             "{}",
             tail[1]
         );
-        assert!(text.starts_with("- Teste.\n"), "{text}");
+        assert!(text.contains("\n\n- Teste.\n\n"), "{text}");
+    }
+
+    /// Auditoria da Fase 4, achado 1: a primeira linha diz qual arquivo baixar, com link direto.
+    #[test]
+    fn as_notas_comecam_com_o_arquivo_de_cada_sistema() {
+        let beta = with_guide("- Teste.", "v0.1.0-beta.4");
+        let first = beta.lines().next().unwrap();
+        assert!(first.starts_with("**Para instalar"), "{first}");
+        let win = "[`Lamina-win-beta-Setup.exe`](https://github.com/alberthpalhares/lamina-albuns/\
+                   releases/download/v0.1.0-beta.4/Lamina-win-beta-Setup.exe)";
+        assert!(first.contains(win), "{first}");
+        assert!(first.contains("Lamina-osx-beta-Setup.pkg"), "{first}");
+        assert!(first.contains("Lamina-linux-beta.AppImage"), "{first}");
+        let stable = with_guide("- Teste.", "v0.2.0");
+        assert!(stable.contains("Lamina-win-Setup.exe"), "{stable}");
     }
 
     #[test]

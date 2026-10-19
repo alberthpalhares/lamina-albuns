@@ -2799,7 +2799,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-app"
-version = "0.1.0-beta.3"
+version = "0.1.0-beta.4"
 dependencies = [
  "anyhow",
  "image",
@@ -2816,7 +2816,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-cli"
-version = "0.1.0-beta.3"
+version = "0.1.0-beta.4"
 dependencies = [
  "anyhow",
  "clap",
@@ -2836,7 +2836,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-core"
-version = "0.1.0-beta.3"
+version = "0.1.0-beta.4"
 dependencies = [
  "schemars",
  "serde",
@@ -2846,7 +2846,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-editor"
-version = "0.1.0-beta.3"
+version = "0.1.0-beta.4"
 dependencies = [
  "image",
  "lamina-core",
@@ -2864,7 +2864,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-export"
-version = "0.1.0-beta.3"
+version = "0.1.0-beta.4"
 dependencies = [
  "image",
  "lamina-core",
@@ -2881,7 +2881,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-layout"
-version = "0.1.0-beta.3"
+version = "0.1.0-beta.4"
 dependencies = [
  "lamina-core",
  "rayon",
@@ -2891,7 +2891,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-mcp"
-version = "0.1.0-beta.3"
+version = "0.1.0-beta.4"
 dependencies = [
  "base64",
  "image",
@@ -2906,7 +2906,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-media"
-version = "0.1.0-beta.3"
+version = "0.1.0-beta.4"
 dependencies = [
  "blake3",
  "image",
@@ -2921,7 +2921,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-render"
-version = "0.1.0-beta.3"
+version = "0.1.0-beta.4"
 dependencies = [
  "fast_image_resize",
  "image",
@@ -6674,7 +6674,7 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 
 [[package]]
 name = "xtask"
-version = "0.1.0-beta.3"
+version = "0.1.0-beta.4"
 dependencies = [
  "image",
  "lamina-core",

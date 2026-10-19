@@ -9,7 +9,8 @@ use std::path::Path;
 use lamina_core::FrameContent;
 use lamina_editor::agent::{Agent, AgentOptions, ToolCall};
 use lamina_editor::{
-    Cache, Command, EXAMPLE_FILE, Editor, NewAlbum, Part, Session, SpecFields, create_album,
+    Cache, Command, EXAMPLE_COPY, EXAMPLE_FILE, Editor, NewAlbum, Part, Session, SpecFields,
+    create_album,
 };
 use serde_json::json;
 
@@ -28,7 +29,7 @@ pub fn build(dir: &Path) -> Result<(), String> {
     };
     let new = NewAlbum {
         folder: dir.join("fotos"),
-        name: Some("exemplo".into()),
+        name: Some(EXAMPLE_COPY.into()),
         spec: fields.to_spec().map_err(|e| e.to_string())?,
         spreads: Some(SPREADS),
         reuse: lamina_layout::Reuse::Medium,

@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "name": "exemplo",
+  "name": "Álbum de exemplo",
   "spec": {
     "page_width": 150.0,
     "page_height": 150.0,

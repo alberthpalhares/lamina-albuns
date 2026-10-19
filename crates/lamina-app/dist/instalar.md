@@ -3,8 +3,11 @@
 O Lamina é um programa gratuito para diagramar álbuns de fotos. Este guia mostra como instalar no
 Windows, no Mac e no Linux, em poucos minutos.
 
-**Antes de começar:** na página da versão, role até **Assets** (arquivos) e baixe o arquivo do seu
-sistema. Os nomes têm `beta` quando é uma versão de teste.
+**Antes de começar:** na página da versão, o começo das notas tem o link do arquivo do seu sistema.
+Se preferir, role até **Assets** (arquivos); se a lista estiver curta, clique em **Show all
+assets** para ver todos. Os nomes têm `beta` quando é uma versão de teste, e o selo **Pre-release**
+da página é normal numa versão de teste. Os outros arquivos da lista (`.nupkg`, `.json`, `RELEASES`)
+são das atualizações automáticas: não precisa baixar.
 
 | Sistema | Arquivo para baixar |
 |---|---|
@@ -21,35 +24,43 @@ pelo próprio Lamina, sem esse aviso.
 
 ## Windows
 
-1. Abra o arquivo `Setup.exe` que você baixou (clique duas vezes nele, na pasta Downloads).
-2. Se aparecer uma janela azul **"O Windows protegeu o computador"**:
+1. Se o navegador avisar que o arquivo **não é baixado com frequência** ou que **pode ser
+   perigoso**, ele não apagou nada ainda:
+   - **Edge:** passe o mouse no aviso, clique nos **três pontinhos** → **Manter** → **Mostrar mais**
+     → **Manter mesmo assim**;
+   - **Chrome:** clique em **Manter** (ou **Baixar arquivo suspeito**).
+2. Abra o arquivo `Setup.exe` que você baixou (clique duas vezes nele, na pasta Downloads).
+3. Se aparecer uma janela azul **"O Windows protegeu o computador"**:
    1. clique em **Mais informações** (o texto pequeno, embaixo da mensagem);
    2. clique no botão **Executar assim mesmo**.
-3. A instalação leva poucos segundos e não pede senha de administrador. No fim, o Lamina abre
+4. A instalação leva poucos segundos e não pede senha de administrador. No fim, o Lamina abre
    sozinho.
-4. Nas próximas vezes, abra pelo atalho **Lamina** na área de trabalho ou no menu Iniciar.
+5. Nas próximas vezes, abra pelo atalho **Lamina** na área de trabalho ou no menu Iniciar.
 
 ## Mac
 
-1. Abra o arquivo `Setup.pkg` que você baixou (na pasta Transferências) e siga o instalador.
+1. Abra o arquivo `Setup.pkg` que você baixou (na pasta Transferências) e siga o instalador. O Mac
+   pede a sua senha para instalar: é a senha de entrar no Mac.
 2. Se o Mac disser que **não pode verificar o desenvolvedor** ou que o Lamina **não foi aberto**:
    1. clique em **OK** (ou **Concluído**);
    2. abra **Ajustes do Sistema** (o ícone de engrenagem) → **Privacidade e Segurança**;
    3. role até o fim e, ao lado da mensagem sobre o Lamina, clique em **Abrir mesmo assim**;
    4. confirme com a sua senha do Mac, se ele pedir.
-3. Isso só acontece na primeira vez. Depois, abra o Lamina pela pasta **Aplicativos** ou pelo
-   Launchpad.
+3. Isso pode acontecer duas vezes: ao abrir o instalador e ao abrir o Lamina pela primeira vez.
+   Depois, abra o Lamina pela pasta **Aplicativos** ou pelo Launchpad, sem aviso.
 
 ## Linux
 
 1. Baixe o arquivo `.AppImage` e guarde numa pasta sua (por exemplo, `Aplicativos` na sua pasta
    pessoal).
 2. Clique com o botão direito no arquivo → **Propriedades** → **Permissões** e marque **Permitir
-   executar o arquivo como programa**.
+   executar o arquivo como programa** (em versões novas do Ubuntu, a opção se chama **Executável como
+   programa**).
 3. Clique duas vezes no arquivo para abrir. Na primeira vez, o Lamina cria o atalho no menu de
    aplicativos.
-4. Se não abrir, a sua distribuição pode precisar do pacote `libfuse2` (no Ubuntu: `sudo apt
-   install libfuse2`).
+4. Se **nada acontecer** ao clicar duas vezes, falta um pacote do sistema. Abra o Terminal e rode
+   `sudo apt install libfuse2` (no Ubuntu 24.04 ou mais novo: `sudo apt install libfuse2t64`).
+   Ou instale pelo comando do fim deste guia.
 
 ## Primeiro uso
 
@@ -63,8 +74,8 @@ de uma pasta de fotos.
 ## Atualizações
 
 O Lamina procura versões novas sozinho, baixa em segundo plano e avisa com **Reiniciar e
-atualizar**. Para receber as versões de teste (beta), use **Ajuda → Receber versões de teste
-(beta)**.
+atualizar**. Quem instalou uma versão de teste (beta) já recebe as próximas versões de teste;
+para voltar só às versões estáveis, desligue **Ajuda → Receber versões de teste (beta)**.
 
 ## Encontrou um problema ou tem uma ideia?
 

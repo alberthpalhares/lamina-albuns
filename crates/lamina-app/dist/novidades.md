@@ -3,6 +3,20 @@
 As notas de cada versão, em linguagem simples. A release copia daqui a seção da versão
 (`cargo xtask versao`). Versão nova entra no topo.
 
+## [0.1.0-beta.4] - 2026-10-19
+
+Esta é a versão da primeira rodada de testes com fotógrafos.
+
+- **Experimente sem medo.** Na tela de boas-vindas, "Experimentar com o álbum de exemplo" abre um
+  álbum pronto, com fotos livres de uma viagem. Mexa à vontade: ele é uma cópia só sua.
+- **Mande sugestões e problemas sem criar conta.** Ajuda → "Enviar sugestão ou problema…" abre um
+  formulário curto no navegador, já com a versão do Lamina. Se algo der errado, Ajuda → "Abrir
+  pasta de registros" mostra o arquivo para anexar. O Lamina não envia nada sozinho.
+- **Erros que dá para entender.** Quando algo dá errado, a mensagem diz o que aconteceu e o que
+  fazer agora. O texto técnico fica em "Mostrar detalhes".
+- **Nada de tela travada.** Se uma tarefa em segundo plano falhar, o Lamina volta a responder e
+  avisa, em vez de ficar parado em "Exportando…".
+
 ## [0.1.0-beta.3] - 2026-10-19
 
 - **O Lamina no Claude Desktop.** Baixe o `Lamina-Windows.mcpb` (ou o `Lamina-macOS.mcpb`) desta
