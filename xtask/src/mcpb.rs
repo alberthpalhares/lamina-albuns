@@ -17,7 +17,8 @@ use serde_json::{Value, json};
 pub const MANIFEST_VERSION: &str = "0.3";
 /// O ícone do pacote: o mesmo do programa, a partir da raiz do repositório.
 const ICON: &str = "crates/lamina-app/icons/lamina-512.png";
-const REPO: &str = "https://github.com/alberthpalhares/lamina-codigo";
+/// O repositório público, do `Cargo.toml` (acompanha um renome).
+const REPO: &str = env!("CARGO_PKG_REPOSITORY");
 
 /// As duas configurações que o fotógrafo vê ao instalar (spec IA, seção 3).
 pub const FOLDERS_TITLE: &str = "Pastas com álbuns e fotos";
