@@ -52,8 +52,9 @@ pub fn across(ctx: &Ctx, aspects: &[f64], max_crop: Option<f64>) -> Vec<Raw> {
 }
 
 /// Uma foto cobre uma página até o corte. Na página esquerda é a primeira foto, na direita a
-/// última (a ordem se mantém); as outras ficam justificadas na outra página.
-pub fn bleed_page(ctx: &Ctx, aspects: &[f64]) -> Vec<Raw> {
+/// última (a ordem se mantém); as outras ficam justificadas na outra página. A foto sangrada
+/// perde no máximo `max_crop` (o recorte leve da montagem pede 15%; spec NP, regra 6).
+pub fn bleed_page(ctx: &Ctx, aspects: &[f64], max_crop: f64) -> Vec<Raw> {
     let n = aspects.len();
     if n == 0 || (n > 1 && (!ctx.both() || n - 1 > MAX_PER_PAGE)) {
         return Vec::new();
@@ -72,7 +73,7 @@ pub fn bleed_page(ctx: &Ctx, aspects: &[f64]) -> Vec<Raw> {
         let Some((bled, rest, other)) = split else {
             continue;
         };
-        if crop_of(aspect(&page), bled) > BLEED_MAX_CROP {
+        if crop_of(aspect(&page), bled) > max_crop {
             continue;
         }
         let place = |rest_rects: Vec<Rect>| match side {
