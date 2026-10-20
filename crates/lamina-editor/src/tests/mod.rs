@@ -30,6 +30,7 @@ mod mv_listas;
 mod mv_reduzir;
 mod mv_telas;
 mod mv_tempos;
+mod mv_vagas;
 mod np;
 mod np_create;
 mod pc;

@@ -9,9 +9,9 @@ use std::time::Duration;
 
 use lamina_core::{FrameContent, PhotoId, Project};
 use lamina_editor::{
-    Area, FrameKind, frame_dpi_text, guarded, load_original, photo_extent, spread_view,
+    Area, FrameKind, FrameView, frame_dpi_text, guarded, load_original, photo_extent, spread_view,
 };
-use slint::{Timer, TimerMode};
+use slint::{Model, Timer, TimerMode};
 
 use crate::AppWindow;
 use crate::convert::{boxed, spread_data};
@@ -95,22 +95,16 @@ pub fn refresh_spread(app: &mut App) {
         (warning, crate::texts::BIG),
     );
     data.snaps = crate::hand::snap_boxes(app, &project);
-    data.frames = crate::hand::stable_frames(&data.frames);
+    let frames = view_frames(&project, index, &missing);
+    place_slots(app, &project, index, &frames, &mut data);
     w.set_current(data);
     w.set_current_index(i32::try_from(index).unwrap_or(0));
     let as_i32 = |f: Option<usize>| f.and_then(|f| i32::try_from(f).ok()).unwrap_or(-1);
     w.set_selected_frame(as_i32(app.editor.selected_frame()));
     w.set_crop_frame(as_i32(app.editor.crop_mode()));
 
-    let canvas = project.spec.canvas_rect();
-    let area = Area {
-        width: 1.0,
-        height: canvas.height.get() / canvas.width.get(),
-        margin: 0.0,
-    };
     let preview = app.editor.crop_mode().and_then(|f| {
-        let view = spread_view(&project, index, area, &missing)?;
-        let frame = view.frames.get(f)?;
+        let frame = frames.get(f)?;
         let FrameKind::Photo { id, .. } = &frame.kind else {
             return None;
         };
@@ -133,6 +127,45 @@ pub fn refresh_spread(app: &mut App) {
     );
     w.set_info_frame_warn(dpi.is_some_and(|(_, warn)| warn));
     w.set_hint(app.editor.hint().into());
+}
+
+/// Os quadros da lâmina `index`, em frações da largura da lâmina (como a tela desenha).
+fn view_frames(project: &Project, index: usize, missing: &[PhotoId]) -> Vec<FrameView> {
+    let canvas = project.spec.canvas_rect();
+    let area = Area {
+        width: 1.0,
+        height: canvas.height.get() / canvas.width.get(),
+        margin: 0.0,
+    };
+    spread_view(project, index, area, missing).map_or_else(Vec::new, |v| v.frames)
+}
+
+/// Leva os quadros às vagas da lâmina grande (spec MV, regra 4) e marca o quadro selecionado e
+/// o do recorte, que a tela não acha mais pela posição na lista.
+fn place_slots(
+    app: &mut App,
+    project: &Project,
+    index: usize,
+    frames: &[FrameView],
+    data: &mut crate::SpreadData,
+) {
+    let mut rows: Vec<crate::FrameData> = data.frames.iter().collect();
+    for (row, frame) in rows.iter_mut().zip(frames) {
+        if let FrameKind::Photo { id, .. } = &frame.kind {
+            row.photo = app.images.version(*id);
+        }
+    }
+    let place = (app.images.epoch(), project.spreads[index].id);
+    let gesture = app.editor.gesture_rect().is_some();
+    app.slot_rows.sync(frames, &rows, place, gesture);
+    data.frames = app.slot_rows.model();
+    let rect = |f: Option<usize>| {
+        f.and_then(|f| frames.get(f))
+            .map(|f| boxed(f.rect))
+            .unwrap_or_default()
+    };
+    data.selected_box = rect(app.editor.selected_frame());
+    data.cropping_box = rect(app.editor.crop_mode());
 }
 
 /// A foto original chegou: entra no quadro se ele ainda está em modo recorte.

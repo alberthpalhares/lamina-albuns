@@ -18,10 +18,21 @@ export struct FrameData {
     kind: int,
     has-img: bool,
     img: image,
-    cx: int,
-    cy: int,
-    cw: int,
-    ch: int,
+    // A foto inteira (ou a imagem do texto), em frações da largura; o quadro recorta (spec MV,
+    // regra 7). A parte dentro do quadro é a mesma da impressão.
+    px: float,
+    py: float,
+    pw: float,
+    ph: float,
+    // A vaga (spec MV, regra 4): o número dela, o quadro que mostra (-1 = saindo), a ordem de
+    // desenho e se desliza, se está viva e se acabou de nascer. `photo` muda com a imagem.
+    id: int,
+    index: int,
+    z: float,
+    fly: bool,
+    live: bool,
+    born: bool,
+    photo: int,
     missing: bool,
     label: string,
     // Texto vazio (spec TX, regra 4): só o contorno e "Digite o texto", que não saem impressos.
@@ -52,9 +63,26 @@ export struct SpreadData {
     warning: bool,
     // Linhas das guias que pegaram no ímã (spec TX, regra 7).
     snaps: [BoxData],
+    // O quadro selecionado e o quadro em modo recorte (as vagas não estão na ordem dos quadros).
+    selected-box: BoxData,
+    cropping-box: BoxData,
 }
 
 import { Handles } from "handles.slint";
+
+// A foto da vaga (spec MV, regra 2): a imagem só troca quando a foto muda (`photo`), não a cada
+// mudança de posição; senão a tela sobe a textura de novo e o primeiro quadro atrasa.
+component SlotImage inherits Image {
+    in property <image> img;
+    in property <int> photo;
+    init => {
+        self.source = root.img;
+    }
+    changed photo => {
+        self.source = root.img;
+    }
+    image-fit: fill;
+}
 
 export component SpreadCanvas inherits Rectangle {
     in property <SpreadData> data;
@@ -64,7 +92,8 @@ export component SpreadCanvas inherits Rectangle {
     in property <bool> interactive;
     in property <int> selected: -1;
     callback frame-down(int, length, length);
-    callback frame-move(int, length, length);
+    // O quadro, o ponto e a imagem do quadro (o fantasma do arrasto).
+    callback frame-move(int, length, length, image);
     callback frame-up(int, length, length);
     // Recorte (spec RC): o quadro em modo recorte, a prévia da foto inteira e os gestos.
     in property <int> cropping: -1;
@@ -109,7 +138,7 @@ export component SpreadCanvas inherits Rectangle {
         opacity: 0.35;
     }
 
-    for f[i] in root.data.frames: Rectangle {
+    for f in root.data.frames: Rectangle {
         x: f.x * root.width;
         y: f.y * root.width;
         width: f.w * root.width;
@@ -120,15 +149,23 @@ export component SpreadCanvas inherits Rectangle {
         border-bottom-right-radius: f.br * root.width;
         border-bottom-left-radius: f.bl * root.width;
         background: f.kind == 2 || f.has-img ? transparent : #8a8a8a;
-        if f.has-img: Image {
-            width: parent.width;
-            height: parent.height;
+        z: f.z;
+        // O texto muda de imagem a cada edição: vai direto.
+        if f.has-img && f.kind == 2: Image {
+            x: (f.px - f.x) * root.width;
+            y: (f.py - f.y) * root.width;
+            width: f.pw * root.width;
+            height: f.ph * root.width;
             source: f.img;
             image-fit: fill;
-            source-clip-x: f.cx;
-            source-clip-y: f.cy;
-            source-clip-width: f.cw;
-            source-clip-height: f.ch;
+        }
+        if f.has-img && f.kind != 2: SlotImage {
+            x: (f.px - f.x) * root.width;
+            y: (f.py - f.y) * root.width;
+            width: f.pw * root.width;
+            height: f.ph * root.width;
+            img: f.img;
+            photo: f.photo;
         }
         if f.blank && !root.small: Rectangle {
             border-width: 1px;
@@ -143,12 +180,12 @@ export component SpreadCanvas inherits Rectangle {
             horizontal-alignment: center;
             wrap: word-wrap;
         }
-        if root.interactive: TouchArea {
+        if root.interactive && f.live: TouchArea {
             mouse-cursor: f.kind == 2 || f.has-img ? move : default;
-            double-clicked => { root.frame-double(i); }
+            double-clicked => { root.frame-double(f.index); }
             moved => {
                 if (f.kind != 2) {
-                    root.frame-move(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                    root.frame-move(f.index, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, f.img);
                 }
             }
             changed mouse-x => {
@@ -158,7 +195,7 @@ export component SpreadCanvas inherits Rectangle {
                 // O texto não tem foto para arrastar: segurar o corpo dele move o quadro.
                 if (f.kind == 2) {
                     if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
-                        root.grab(i, 0, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, root.width);
+                        root.grab(f.index, 0, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, root.width);
                     }
                     if (e.kind == PointerEventKind.move && self.pressed) {
                         root.grab-move(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, e.modifiers.alt);
@@ -169,16 +206,16 @@ export component SpreadCanvas inherits Rectangle {
                     return;
                 }
                 if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
-                    root.frame-down(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                    root.frame-down(f.index, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
                 }
                 if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
-                    root.frame-up(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                    root.frame-up(f.index, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
                 }
             }
         }
-        if i == root.selected && i == root.cropping: Rectangle {
+        if f.index == root.selected && f.index == root.cropping: Rectangle {
             border-width: 3px;
-            border-color: i == root.cropping ? #e3b341 : #4fc3f7;
+            border-color: f.index == root.cropping ? #e3b341 : #4fc3f7;
         }
     }
 
@@ -264,11 +301,11 @@ export component SpreadCanvas inherits Rectangle {
     }
 
     // Alças do quadro selecionado (fora do modo recorte).
-    if root.interactive && !root.small && root.cropping < 0 && root.selected >= 0 && root.selected < root.data.frames.length: Handles {
-        fx: root.data.frames[root.selected].x * root.width;
-        fy: root.data.frames[root.selected].y * root.width;
-        fw: root.data.frames[root.selected].w * root.width;
-        fh: root.data.frames[root.selected].h * root.width;
+    if root.interactive && !root.small && root.cropping < 0 && root.selected >= 0: Handles {
+        fx: root.data.selected-box.x * root.width;
+        fy: root.data.selected-box.y * root.width;
+        fw: root.data.selected-box.w * root.width;
+        fh: root.data.selected-box.h * root.width;
         grab(n, x, y) => { root.grab(root.selected, n, x, y, root.width); }
         drag(x, y, alt) => { root.grab-move(x, y, alt); }
         release => { root.grab-end(); }
@@ -276,13 +313,13 @@ export component SpreadCanvas inherits Rectangle {
 
     // Quadro em modo recorte: por cima de tudo (inclusive das guias, que senão ficam com a roda
     // do mouse), recebe o arrasto e a roda (spec RC).
-    if root.cropping >= 0 && root.cropping < root.data.frames.length: TouchArea {
+    if root.cropping >= 0: TouchArea {
         property <length> last-x;
         property <length> last-y;
-        x: root.data.frames[root.cropping].x * root.width;
-        y: root.data.frames[root.cropping].y * root.width;
-        width: root.data.frames[root.cropping].w * root.width;
-        height: root.data.frames[root.cropping].h * root.width;
+        x: root.data.cropping-box.x * root.width;
+        y: root.data.cropping-box.y * root.width;
+        width: root.data.cropping-box.w * root.width;
+        height: root.data.cropping-box.h * root.width;
         mouse-cursor: move;
         scroll-event(e) => {
             root.crop-wheel(e.delta-y / 1px);

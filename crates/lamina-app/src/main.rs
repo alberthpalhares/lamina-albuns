@@ -30,6 +30,7 @@ mod presets;
 mod recents;
 mod refresh;
 mod relink;
+mod slots;
 mod spec_dialog;
 mod state;
 mod texts;

@@ -139,6 +139,24 @@ impl Images {
         }
     }
 
+    /// A versão da imagem que a lâmina grande mostra para a foto (spec MV, regra 2): muda quando
+    /// a foto muda e quando a miniatura dá lugar à foto nítida (ou à original do recorte).
+    pub fn version(&self, id: PhotoId) -> i32 {
+        let kind = if self.original_id() == Some(id) {
+            2
+        } else if self.screens.contains_key(&id) {
+            1
+        } else {
+            0
+        };
+        i32::try_from(id.get() * 4 + kind).unwrap_or(-1)
+    }
+
+    /// O número do álbum mostrado (sobe a cada álbum novo).
+    pub fn epoch(&self) -> u64 {
+        self.epoch
+    }
+
     pub fn original_id(&self) -> Option<PhotoId> {
         self.original.as_ref().map(|(id, _)| *id)
     }

@@ -100,6 +100,8 @@ pub struct App {
     pub(crate) clock: crate::timings::Clock,
     /// A faixa, a linha do tempo e o navegador, atualizados linha a linha (spec MV, regra 3).
     pub(crate) lists: crate::lists::Lists,
+    /// As vagas da lâmina grande (spec MV, regra 4).
+    pub(crate) slot_rows: crate::slots::SlotRows,
     /// Os recentes que a última conferência não achou e a busca da tela inicial (spec TI).
     pub recent_missing: Vec<PathBuf>,
     pub recent_query: String,
@@ -137,6 +139,7 @@ impl App {
             crop_timer: crate::crop::timer(),
             clock: crate::timings::Clock::default(),
             lists: crate::lists::Lists::new(window),
+            slot_rows: crate::slots::SlotRows::new(),
             recent_missing: Vec::new(),
             recent_query: String::new(),
             filter: Filter::All,

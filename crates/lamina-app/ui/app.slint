@@ -390,10 +390,10 @@ export component AppWindow inherits Window {
                             root.press-y = y;
                             root.drag-from = i;
                         }
-                        frame-move(i, x, y) => {
+                        frame-move(i, x, y, img) => {
                             if (root.drag-kind == 0 && root.far(x, y)) {
                                 root.drag-kind = 2;
-                                root.drag-img = root.current.frames[i].img;
+                                root.drag-img = img;
                             }
                             root.drag-x = x;
                             root.drag-y = y;

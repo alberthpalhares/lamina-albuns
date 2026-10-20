@@ -3,6 +3,7 @@
 
 pub mod durations;
 pub mod rows;
+pub mod slots;
 pub mod timings;
 
 pub use durations::Durations;
@@ -10,4 +11,5 @@ pub use rows::{
     PanelKey, PhotoRow, RowOp, StripRow, TimelineKey, panel_key, photo_rows, row_ops, strip_rows,
     timeline_rows,
 };
+pub use slots::{Place, Slot, SlotContent, Slots};
 pub use timings::{BURST_GAP, TIMINGS_VAR, Timings};
