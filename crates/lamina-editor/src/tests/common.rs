@@ -72,6 +72,7 @@ impl Base {
             limits: lamina_core::PageLimits::default(),
             export: lamina_core::ExportPrefs::default(),
             style: Default::default(),
+            files: Vec::new(),
         }
     }
 

@@ -78,13 +78,16 @@ pub enum Command {
     MountAlbum,
     /// Movimento sem animação (spec MV, regra 14).
     ToggleReduceMotion,
+    /// Fotos a qualquer momento (spec IM): arquivos ou uma pasta.
+    ImportPhotos,
+    ImportFolder,
 }
 
 /// Nome, rótulo, menu e atalho de um comando.
 type Info = (&'static str, &'static str, Menu, Option<Shortcut>);
 
 impl Command {
-    pub const ALL: [Command; 57] = [
+    pub const ALL: [Command; 59] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
@@ -142,6 +145,8 @@ impl Command {
         Command::ClearRecents,
         Command::MountAlbum,
         Command::ToggleReduceMotion,
+        Command::ImportPhotos,
+        Command::ImportFolder,
     ];
 
     /// Nome estável, para testes e para a linha de comando.

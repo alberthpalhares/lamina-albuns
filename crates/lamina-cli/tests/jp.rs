@@ -35,6 +35,7 @@ fn jp_b4_novo_album_e_o_mesmo_do_lamina_build() {
         limits: lamina_core::PageLimits::default(),
         export: lamina_core::ExportPrefs::default(),
         style: Default::default(),
+        files: Vec::new(),
     };
     let (built, _) = create_album(&new, &Cache::new(base.path("cache")), &|_| {}).unwrap();
     assert_eq!(built.project.spreads.len(), 3, "a sugestão");

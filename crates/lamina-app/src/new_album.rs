@@ -76,6 +76,7 @@ pub fn message(app: &mut App, msg: Msg) {
         Msg::Update(outcome) => crate::updates::message(app, outcome),
         Msg::Failed(problem) => failed(app, &problem),
         Msg::RecentsChecked(_) | Msg::ThumbReady => crate::recents::message(app, msg),
+        Msg::Importing(..) | Msg::Imported(..) => crate::importing::message(app, msg),
     }
 }
 

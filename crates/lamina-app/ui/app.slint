@@ -6,6 +6,7 @@ import { Theme } from "theme.slint";
 import { SpreadCanvas, SpreadData, FrameData, BoxData } from "canvas.slint";
 import { ConfirmDialog, MessageDialog, BusyOverlay } from "dialogs.slint";
 import { NewProjectDialog, NewProjectUi, FormatCard, DrawData } from "new_project.slint";
+import { ImportUi, DropOverlay, EmptyAlbum } from "importing.slint";
 import { LayoutsPanel, LayoutItem } from "layouts.slint";
 import { LookPanel, LookUi, Swatch } from "look.slint";
 import { FramePanel, FrameUi } from "frame.slint";
@@ -21,7 +22,7 @@ import { UpdateBar } from "update_bar.slint";
 import { Motion } from "motion.slint";
 import { WelcomeScreen, ClearRecentsDialog, RecentsUi, RecentCard, RecentItem } from "welcome.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, NewProjectUi, FormatCard, DrawData }
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, NewProjectUi, FormatCard, DrawData, ImportUi }
 
 // O fantasma do arrasto (spec MV, regra 12): a parte da foto que está no quadro (em pixels da
 // imagem), o tamanho na tela e o selo da quantidade (0 = sem selo).
@@ -287,6 +288,9 @@ export component AppWindow inherits Window {
                 for item in RecentsUi.menu: MenuItem { title: item.label; enabled: item.enabled; activated => { RecentsUi.open(item.index); } }
             }
             MenuItem { title: "Abrir o álbum de exemplo"; activated => { root.command("arquivo.exemplo"); } }
+            MenuSeparator { }
+            MenuItem { title: "Importar fotos…  (Ctrl+I)"; enabled: root.has-project; activated => { root.command("arquivo.importar"); } }
+            MenuItem { title: "Importar uma pasta de fotos…"; enabled: root.has-project; activated => { root.command("arquivo.importar-pasta"); } }
             MenuItem { title: "Limpar recentes não fixados…"; enabled: RecentsUi.menu.length > 0; activated => { root.command("arquivo.limpar-recentes"); } }
             MenuSeparator { }
             MenuItem { title: "Fechar álbum  (Ctrl+W)"; enabled: root.has-project; activated => { root.command("arquivo.fechar"); } }
@@ -500,6 +504,10 @@ export component AppWindow inherits Window {
                         border-width: 3px;
                         border-color: #ffd23f;
                     }
+                    if root.has-project && root.spreads.length == 0: EmptyAlbum {
+                        photos: root.photos.length;
+                        import => { root.command("arquivo.importar"); }
+                    }
                     if !root.has-project: WelcomeScreen {
                         command(name) => { root.command(name); }
                     }
@@ -601,6 +609,7 @@ export component AppWindow inherits Window {
                 toggled => { root.command("ver.fotos"); }
                 FilterTab { text: "Todas"; active: root.filter == 0; clicked => { root.filter-changed(0); } }
                 FilterTab { text: "Usadas"; active: root.filter == 1; clicked => { root.filter-changed(1); } }
+                BarButton { text: "+ Fotos"; clicked => { root.command("arquivo.importar"); } }
                 FilterTab { text: "Não usadas"; active: root.filter == 2; clicked => { root.filter-changed(2); } }
             }
             if root.has-project && root.photos-open: PhotoStrip {
@@ -713,6 +722,7 @@ export component AppWindow inherits Window {
             Text { text: root.ghost.badge; color: white; font-size: 12px; font-weight: 700; }
         }
     }
+    if ImportUi.dropping: DropOverlay { }
     if root.busy-text != "": BusyOverlay {
         text: root.busy-text;
     }

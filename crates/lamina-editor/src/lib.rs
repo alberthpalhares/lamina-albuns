@@ -23,6 +23,7 @@
 //! - [`screens`]: as imagens de tela na memória, só da lâmina atual e das vizinhas.
 //! - [`agent`]: o controle por IA, as ferramentas que o servidor MCP oferece (spec IA).
 //! - [`human`]: cada erro dito ao fotógrafo, com o que fazer e o detalhe (spec EH).
+//! - [`importing`]: fotos entrando num álbum aberto (spec IM).
 //! - [`error_log`] e [`feedback`]: o registro de erros e o formulário de sugestões (spec SR).
 //! - [`motion`]: movimento e fluidez, a medição de tempos e as vagas da lâmina (spec MV).
 
@@ -43,6 +44,7 @@ pub mod forms;
 pub mod frame_form;
 pub mod hand;
 pub mod human;
+pub mod importing;
 pub mod keys;
 mod look_form;
 pub mod models;

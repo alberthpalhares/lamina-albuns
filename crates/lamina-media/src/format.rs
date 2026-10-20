@@ -51,6 +51,34 @@ pub fn list_photos(dir: &Path) -> io::Result<Vec<PathBuf>> {
     Ok(photos)
 }
 
+/// O que veio numa lista de arquivos e pastas (spec IM, regras 3 e 5): as fotos (as pastas com as
+/// subpastas), sem repetir, em ordem de caminho, e quantos arquivos não são foto.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct Gathered {
+    pub photos: Vec<PathBuf>,
+    pub not_photos: usize,
+}
+
+/// Junta as fotos de uma lista de arquivos e pastas soltos ou escolhidos.
+pub fn gather_photos(paths: &[PathBuf]) -> io::Result<Gathered> {
+    let mut out = Gathered::default();
+    let mut pending: Vec<PathBuf> = paths.to_vec();
+    while let Some(path) = pending.pop() {
+        if path.is_dir() {
+            for entry in fs::read_dir(&path)? {
+                pending.push(entry?.path());
+            }
+        } else if ImageFormat::from_path(&path).is_some() {
+            out.photos.push(path);
+        } else {
+            out.not_photos += 1;
+        }
+    }
+    out.photos.sort();
+    out.photos.dedup();
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
