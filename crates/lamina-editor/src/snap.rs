@@ -40,6 +40,11 @@ fn edges_of(r: &Rect, xs: &mut Vec<f64>, ys: &mut Vec<f64>) {
 /// Corte, sangria, zonas seguras, dobra, centro das páginas e os outros quadros (com e sem o
 /// espaço entre fotos) da lâmina `index`, menos o quadro `moving`.
 pub fn guides(project: &Project, index: usize, moving: usize) -> Guides {
+    guides_without(project, index, &[moving])
+}
+
+/// Como [`guides`], sem os quadros `skip` (os do grupo não contam como guia; spec EG, regra 6).
+pub fn guides_without(project: &Project, index: usize, skip: &[usize]) -> Guides {
     let spec = &project.spec;
     let (mut xs, mut ys) = (Vec::new(), Vec::new());
     edges_of(&spec.trim_rect(), &mut xs, &mut ys);
@@ -53,11 +58,11 @@ pub fn guides(project: &Project, index: usize, moving: usize) -> Guides {
     xs.push(spec.page_rect(PageSide::Left).right().get());
     if let Some(spread) = project.spreads.get(index) {
         let gap = project.spread_gap(spread).get();
-        for (i, f) in spread
+        for (_, f) in spread
             .frames
             .iter()
             .enumerate()
-            .filter(|(i, _)| *i != moving)
+            .filter(|(i, _)| !skip.contains(i))
         {
             let r = project.frame_rect(f);
             edges_of(&r, &mut xs, &mut ys);
@@ -71,7 +76,6 @@ pub fn guides(project: &Project, index: usize, moving: usize) -> Guides {
                 r.bottom().get() + gap,
                 r.y.get() + r.height.get() / 2.0,
             ]);
-            let _ = i;
         }
     }
     Guides { xs, ys }

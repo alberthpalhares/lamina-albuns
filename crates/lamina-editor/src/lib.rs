@@ -42,6 +42,7 @@ pub mod exporting;
 pub mod feedback;
 pub mod forms;
 pub mod frame_form;
+pub mod group;
 pub mod hand;
 pub mod human;
 pub mod importing;

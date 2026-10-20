@@ -18,6 +18,7 @@ mod crop;
 mod dispatch;
 mod dropping;
 mod frames;
+mod group_gesture;
 mod hand;
 mod hand_frames;
 mod layouts;
@@ -75,8 +76,9 @@ pub struct Editor {
     log: Option<crate::ErrorLog>,
     /// A lista de recentes (spec TI); só na memória nos testes e na linha de comando.
     recents: crate::recents::RecentsStore,
-    /// O modo organizar a lâmina (spec EG).
+    /// O modo organizar a lâmina (spec EG) e o gesto do grupo.
     organize: organize::Organizing,
+    group: Option<group_gesture::GroupGesture>,
 }
 
 impl Default for Editor {
@@ -114,6 +116,7 @@ impl Editor {
             log: None,
             recents: crate::recents::RecentsStore::default(),
             organize: organize::Organizing::default(),
+            group: None,
         }
     }
 
@@ -173,6 +176,7 @@ impl Editor {
         self.pending_crop = None;
         // Abrir outro álbum sai do modo organizar (spec EG).
         self.organize = organize::Organizing::default();
+        self.group = None;
     }
 
     /// Passa a usar o estado das faixas de `store` (lido de `janela.json`). O aviso de leitura,

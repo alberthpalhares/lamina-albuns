@@ -162,7 +162,7 @@ impl Editor {
         let s = self.session.as_ref()?;
         let pending = self.crop_frame.zip(self.pending_crop);
         let gesture = self.gesture_rect();
-        if pending.is_none() && gesture.is_none() {
+        if pending.is_none() && gesture.is_none() && !self.group_moving() {
             return Some(Cow::Borrowed(s.project()));
         }
         let mut project = s.project().clone();
@@ -178,6 +178,7 @@ impl Editor {
             // O retângulo do gesto já foi preso ao corte; erro aqui só deixa o quadro onde estava.
             let _ = crate::hand::set_rect(&mut project, s.current(), frame, rect);
         }
+        self.apply_group_preview(&mut project, s.current());
         Some(Cow::Owned(project))
     }
 }

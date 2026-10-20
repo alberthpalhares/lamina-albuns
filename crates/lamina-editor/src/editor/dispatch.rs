@@ -106,6 +106,7 @@ impl Editor {
         // quadro na lâmina errada (auditoria do Marco 3, M2). E encerra a emenda do histórico:
         // digitar depois de um comando é uma edição nova (spec TX, regra 10).
         self.gesture = None;
+        self.group = None;
         // Setas seguidas no mesmo grupo viram uma edição só (spec EG, regra 10).
         let nudging = organize_cmd::nudge_of(command).is_some();
         if let Some(s) = self.session.as_mut()
