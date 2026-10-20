@@ -5,6 +5,7 @@ import { Button, CheckBox, LineEdit, ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { BoxData } from "canvas.slint";
 import { LookPanel } from "look.slint";
+import { PhotoUi, PhotoSection } from "photo.slint";
 
 // Uma marca do ímã de mesmo tamanho ou de espaçamento igual: a linha e o texto, em frações da
 // largura da lâmina.
@@ -282,6 +283,7 @@ export component OrganizePanel inherits ScrollView {
     }
     if OrganizeUi.count != "": CheckBox { text: "Manter proporção"; checked <=> OrganizeUi.keep; }
     if OrganizeUi.field-error != "": Text { text: OrganizeUi.field-error; color: #e57373; wrap: word-wrap; }
+    if PhotoUi.has-photo: PhotoSection { }
     LookPanel {
         done => { root.done(); }
     }

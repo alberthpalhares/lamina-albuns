@@ -203,6 +203,9 @@ export component SpreadCanvas inherits Rectangle {    in property <SpreadData> d
     callback frame-double(int);
     // Clique direito num quadro (-1 = no fundo), em pixels da janela: o menu de contexto (spec EG).
     callback context(int, length, length);
+    // A grade do recorte (spec AF): os terços, e a grade fina enquanto o ângulo muda. Só na tela.
+    in property <bool> grid-thirds;
+    in property <bool> grid-fine;
     callback crop-drag(float, float);
     callback crop-end();
     // Quanto a roda girou, em pixels (um entalhe da roda costuma valer 120).
@@ -412,6 +415,34 @@ export component SpreadCanvas inherits Rectangle {    in property <SpreadData> d
         grab(n, x, y) => { root.grab(root.selected, n, x, y, root.width); }
         drag(x, y, alt, shift) => { root.grab-move(x, y, alt, shift); }
         release => { root.grab-end(); }
+    }
+
+    if root.cropping >= 0 && root.grid-thirds: Rectangle {
+        z: 1000;
+        x: root.data.cropping-box.x * root.width;
+        y: root.data.cropping-box.y * root.width;
+        width: root.data.cropping-box.w * root.width;
+        height: root.data.cropping-box.h * root.width;
+        for _[i] in root.grid-fine ? 11 : 0: Rectangle {
+            x: parent.width * (i + 1) / 12;
+            width: 1px;
+            background: #ffffff40;
+        }
+        for _[i] in root.grid-fine ? 11 : 0: Rectangle {
+            y: parent.height * (i + 1) / 12;
+            height: 1px;
+            background: #ffffff40;
+        }
+        for _[i] in 2: Rectangle {
+            x: parent.width * (i + 1) / 3;
+            width: 1px;
+            background: #ffffffb0;
+        }
+        for _[i] in 2: Rectangle {
+            y: parent.height * (i + 1) / 3;
+            height: 1px;
+            background: #ffffffb0;
+        }
     }
 
     // Quadro em modo recorte: por cima de tudo (inclusive das guias, que senão ficam com a roda

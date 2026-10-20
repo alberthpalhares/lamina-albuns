@@ -2,6 +2,7 @@
 // informações. As outras abas moram em layouts.slint, look.slint, frame.slint e history.slint.
 
 import { Theme } from "theme.slint";
+import { PhotoUi, PhotoSection } from "photo.slint";
 
 component Tab inherits Rectangle {
     in property <string> text;
@@ -39,6 +40,7 @@ export component InfoPanel inherits VerticalLayout {
     in property <bool> frame-warn;
     in property <string> photo;
     spacing: 8px;
+    if PhotoUi.has-photo: PhotoSection { }
     Text { text: "Álbum"; color: Theme.muted; font-size: 12px; }
     Text { text: root.album; color: Theme.text; wrap: word-wrap; }
     Text { text: "Lâmina"; color: Theme.muted; font-size: 12px; }

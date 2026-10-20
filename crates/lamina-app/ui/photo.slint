@@ -1,0 +1,97 @@
+// A seção Foto (spec AF, seção 3): endireitar, escala, brilho, contraste, preto e branco e
+// restaurar. Só desenho: o editor decide e o Rust preenche o `PhotoUi`.
+
+import { Button, CheckBox, LineEdit, Slider } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+
+export global PhotoUi {
+    in property <bool> has-photo;
+    // O ângulo pede um quadro só (AF-B19).
+    in property <bool> can-turn;
+    in-out property <string> angle;
+    in-out property <float> angle-value;
+    in-out property <string> scale;
+    in-out property <float> brightness;
+    in-out property <float> contrast;
+    in-out property <bool> bw;
+    in property <string> error;
+    // "Vale para esta foto em todos os quadros" (regra 1), quando a foto está em mais de um.
+    in property <string> note;
+    // O controle arrastado (em décimos de grau ou em pontos de −100 a 100).
+    callback angle-moved(float);
+    callback angle-accepted();
+    callback angle-step(int);
+    callback angle-zero();
+    callback scale-accepted();
+    callback brightness-moved(float);
+    callback contrast-moved(float);
+    // Soltou um controle: a próxima mudança é outra edição.
+    callback released();
+    callback bw-toggled(bool);
+    callback restore();
+}
+
+component Label inherits Text {
+    color: Theme.muted;
+    font-size: 12px;
+}
+
+export component PhotoSection inherits VerticalLayout {
+    spacing: 6px;
+    Text { text: "Foto"; color: Theme.text; font-weight: 700; }
+    if PhotoUi.note != "": Text { text: PhotoUi.note; color: Theme.muted; font-size: 11px; wrap: word-wrap; }
+    Label { text: PhotoUi.can-turn ? "Endireitar" : "Endireitar (selecione um quadro só)"; }
+    Slider {
+        enabled: PhotoUi.can-turn;
+        minimum: -45;
+        maximum: 45;
+        value <=> PhotoUi.angle-value;
+        changed(v) => { PhotoUi.angle-moved(v); }
+        released => { PhotoUi.released(); }
+    }
+    HorizontalLayout {
+        spacing: 4px;
+        LineEdit {
+            enabled: PhotoUi.can-turn;
+            width: 70px;
+            text <=> PhotoUi.angle;
+            accepted => { PhotoUi.angle-accepted(); }
+        }
+        Button { text: "−0,1"; enabled: PhotoUi.can-turn; clicked => { PhotoUi.angle-step(-1); } }
+        Button { text: "+0,1"; enabled: PhotoUi.can-turn; clicked => { PhotoUi.angle-step(1); } }
+        Button { text: "0°"; enabled: PhotoUi.can-turn; clicked => { PhotoUi.angle-zero(); } }
+    }
+    HorizontalLayout {
+        spacing: 6px;
+        Label { text: "Escala (%)"; vertical-alignment: center; }
+        LineEdit {
+            enabled: PhotoUi.can-turn;
+            width: 70px;
+            text <=> PhotoUi.scale;
+            accepted => { PhotoUi.scale-accepted(); }
+        }
+    }
+    Label { text: "Brilho  " + round(PhotoUi.brightness); }
+    Slider {
+        minimum: -100;
+        maximum: 100;
+        value <=> PhotoUi.brightness;
+        changed(v) => { PhotoUi.brightness-moved(v); }
+        released => { PhotoUi.released(); }
+    }
+    Label { text: "Contraste  " + round(PhotoUi.contrast); }
+    Slider {
+        minimum: -100;
+        maximum: 100;
+        value <=> PhotoUi.contrast;
+        changed(v) => { PhotoUi.contrast-moved(v); }
+        released => { PhotoUi.released(); }
+    }
+    CheckBox {
+        text: "Preto e branco";
+        checked <=> PhotoUi.bw;
+        toggled => { PhotoUi.bw-toggled(self.checked); }
+    }
+    Button { text: "Restaurar a foto"; clicked => { PhotoUi.restore(); } }
+    if PhotoUi.error != "": Text { text: PhotoUi.error; color: #e57373; wrap: word-wrap; }
+}
