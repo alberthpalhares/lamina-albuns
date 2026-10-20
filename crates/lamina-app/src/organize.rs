@@ -6,12 +6,13 @@ use std::rc::Rc;
 
 use lamina_editor::editor::Field;
 use lamina_editor::marks::mark_views;
+use lamina_editor::rulers::{Tick, rulers};
 use lamina_editor::{Area, Command, PxRect, spread_view};
 use slint::ComponentHandle;
 
 use crate::convert::{boxed, model};
 use crate::state::App;
-use crate::{AppWindow, MarkData, OrganizeUi};
+use crate::{AppWindow, MarkData, OrganizeUi, TickData};
 
 type Shared = Rc<RefCell<App>>;
 
@@ -48,6 +49,51 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     });
     let a = app.clone();
     ui.on_field_accepted(move |i| field_accepted(&a, i));
+    let a = app.clone();
+    ui.on_draw_done(move |tool, x0, y0, x1, y1| {
+        let p = |x: f32, y: f32| (f64::from(x), f64::from(y));
+        let mut app = a.borrow_mut();
+        app.editor.draw_frame(tool == 2, p(x0, y0), p(x1, y1));
+        if let Some(w) = app.window.upgrade() {
+            w.global::<OrganizeUi>().set_tool(0);
+        }
+        app.refresh_current();
+    });
+}
+
+fn ticks(list: Vec<Tick>) -> Vec<TickData> {
+    // Frações de tela cabem com folga em f32.
+    #[allow(clippy::cast_possible_truncation)]
+    let f = |v: f64| v as f32;
+    list.into_iter()
+        .map(|t| TickData {
+            at: f(t.at),
+            label: t.label.into(),
+            major: t.major,
+        })
+        .collect()
+}
+
+/// O zoom, a vista e as réguas da lâmina em destaque. Mudar o zoom ou sair do modo volta a vista
+/// para o centro; fora do modo, a paleta volta a Selecionar.
+fn view(app: &App, ui: &OrganizeUi) {
+    #[allow(clippy::cast_possible_truncation)]
+    let zoom = app.editor.view_zoom() as f32;
+    if (ui.get_zoom() - zoom).abs() > f32::EPSILON || !app.editor.organizing() {
+        ui.set_pan_x(0.0);
+        ui.set_pan_y(0.0);
+    }
+    ui.set_zoom(zoom);
+    if !app.editor.organizing() {
+        ui.set_tool(0);
+        ui.set_hand(false);
+        return;
+    }
+    if let Some(project) = app.editor.view_project() {
+        let r = rulers(&project, app.editor.strips().unit);
+        ui.set_ticks_x(model(ticks(r.xs)));
+        ui.set_ticks_y(model(ticks(r.ys)));
+    }
 }
 
 /// Um campo da seleção digitado (Enter): o editor decide; texto inválido mostra a mensagem.
@@ -95,6 +141,8 @@ pub fn refresh(app: &App) {
     ui.set_gh(h.into());
     ui.set_unit(app.editor.strips().unit.label().into());
     ui.set_hint(app.editor.distribute_hint().into());
+    view(app, &ui);
+    crate::palette::refresh(app);
 }
 
 /// As marcas do ímã do gesto, na unidade da tela.

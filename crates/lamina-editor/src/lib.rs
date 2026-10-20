@@ -61,6 +61,7 @@ pub mod presets;
 pub mod recents;
 pub mod relink;
 pub mod respec;
+pub mod rulers;
 pub mod screens;
 pub mod session;
 pub mod snap;

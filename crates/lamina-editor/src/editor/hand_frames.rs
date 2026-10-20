@@ -1,10 +1,10 @@
 //! Quadros novos, apagar e a ordem pelo editor (spec TX, regras 11 a 13). O gesto e as setas
 //! ficam em `hand.rs`.
 
-use lamina_core::{FrameContent, PageSide};
+use lamina_core::{FrameContent, Mm, PageSide, Rect};
 
 use super::Editor;
-use crate::hand::{add_empty_frame, add_text, page_for, remove_frame, reorder};
+use crate::hand::{add_empty_frame, add_frame_at, add_text, page_for, remove_frame, reorder};
 
 impl Editor {
     /// T: texto novo na página pedida (a do mouse), selecionado (regra 11).
@@ -31,6 +31,39 @@ impl Editor {
         });
         if done {
             self.selected_frame = at;
+        }
+        done
+    }
+
+    /// A paleta do modo organizar (spec EG, seção 3): arrastar com a ferramenta Quadro ou Texto
+    /// desenha o quadro de `a` a `b` (frações da largura da lâmina com a sangria, como o laço). O
+    /// quadro novo fica selecionado.
+    pub fn draw_frame(&mut self, text: bool, a: (f64, f64), b: (f64, f64)) -> bool {
+        let Some(s) = &self.session else {
+            return false;
+        };
+        let canvas = s.project().spec.canvas_rect();
+        let w = canvas.width.get();
+        let (x0, x1) = (a.0.min(b.0), a.0.max(b.0));
+        let (y0, y1) = (a.1.min(b.1), a.1.max(b.1));
+        let rect = Rect::new(
+            Mm(canvas.x.get() + x0 * w),
+            Mm(canvas.y.get() + y0 * w),
+            Mm((x1 - x0) * w),
+            Mm((y1 - y0) * w),
+        );
+        let label = if text { "Novo texto" } else { "Novo quadro" };
+        let mut at = None;
+        let done = self.change(label, |p, i| {
+            at = Some(add_frame_at(p, i, rect, text)?);
+            Ok(())
+        });
+        let id = self.session.as_ref().and_then(|s| {
+            let spread = s.project().spreads.get(s.current())?;
+            Some(spread.frames.get(at?)?.id)
+        });
+        if let (true, Some(id)) = (done, id) {
+            self.select_ids(vec![id]);
         }
         done
     }

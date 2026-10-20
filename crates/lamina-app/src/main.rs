@@ -31,6 +31,7 @@ mod new_album;
 mod new_project;
 mod new_project_file;
 mod organize;
+mod palette;
 mod panel;
 mod presets;
 mod recents;
@@ -94,6 +95,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     drag::connect_motion(window, app);
     organize::connect(window, app);
     context::connect(window, app);
+    palette::connect(window, app);
     crop::connect(window, app);
     look::connect(window, app);
     hand::connect(window, app);
