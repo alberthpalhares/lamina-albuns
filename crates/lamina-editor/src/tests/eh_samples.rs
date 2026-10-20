@@ -46,6 +46,9 @@ fn core() -> Vec<CoreError> {
             reason: "campo faltando".into(),
         },
         CoreError::InvalidCrop("zoom 0".into()),
+        CoreError::InvalidAdjust {
+            photo: "IMG_0001.jpg".into(),
+        },
         CoreError::UnknownPhoto(id),
         CoreError::UnknownSpread(serde_json::from_str("7").unwrap()),
         CoreError::UnknownFrame(serde_json::from_str("8").unwrap()),

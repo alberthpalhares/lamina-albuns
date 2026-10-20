@@ -17,6 +17,7 @@ pub(super) fn migrate(mut value: Value, from: u32) -> Result<Value, CoreError> {
             1 => v1_para_v2(value)?,
             2 => v2_para_v3(value)?,
             3 => v3_para_v4(value)?,
+            4 => v4_para_v5(value),
             _ => {
                 return Err(CoreError::Migration {
                     from: version,
@@ -116,6 +117,13 @@ fn v3_para_v4(mut value: Value) -> Result<Value, CoreError> {
     Ok(value)
 }
 
+/// v4 → v5 (spec AF): as fotos ganham os ajustes, que começam neutros e não são gravados; nada
+/// muda no arquivo além da versão.
+fn v4_para_v5(mut value: Value) -> Value {
+    value["schema_version"] = json!(5);
+    value
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{AlbumEdge, Margins, Mm, Project};
@@ -162,7 +170,13 @@ mod tests {
         let opened = Project::from_json(&v3.to_string()).unwrap();
         assert_eq!(opened.mounting, crate::Mounting::default());
         let saved = opened.to_json().unwrap();
-        assert!(saved.contains("\"schema_version\": 4"), "{saved}");
+        assert!(
+            saved.contains(&format!(
+                "\"schema_version\": {}",
+                super::CURRENT_SCHEMA_VERSION
+            )),
+            "{saved}"
+        );
         assert!(saved.contains("\"montagem\""), "{saved}");
         assert_eq!(Project::from_json(&saved).unwrap(), opened);
     }
