@@ -67,6 +67,18 @@ pub fn start(app: &mut App) {
     ui.set_show(true);
 }
 
+/// Sem álbum aberto, arquivos soltos na janela abrem o Novo projeto com eles já escolhidos na
+/// etapa 3 (spec IM, regra 6).
+pub fn start_with_files(app: &mut App, files: Vec<std::path::PathBuf>) {
+    let photos = lamina_editor::importing::photos_in(&files);
+    if photos == 0 {
+        app.notice = lamina_editor::importing::NO_PHOTOS_DROPPED.to_owned();
+        return app.refresh_current();
+    }
+    start(app);
+    crate::new_project_file::use_files(app, files, photos);
+}
+
 /// Arquivo → Especificação do álbum…: a etapa 1 com os valores do álbum aberto (regra 11).
 pub fn open_spec(app: &mut App) {
     let (Some(w), Some(session)) = (app.window.upgrade(), app.editor.session()) else {

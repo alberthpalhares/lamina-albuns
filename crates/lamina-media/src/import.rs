@@ -9,7 +9,9 @@ use rayon::prelude::*;
 
 use crate::fingerprint::fingerprint;
 use crate::thumbnail::{DerivedDirs, derived_path, ensure_derived};
-use crate::{Catalog, CatalogEntry, ImageFormat, MediaError, list_photos, read_metadata};
+use crate::{
+    Catalog, CatalogEntry, ImageFormat, MediaError, gather_photos, list_photos, read_metadata,
+};
 
 /// Resultado de uma importação.
 #[derive(Debug, Default)]
@@ -25,6 +27,8 @@ pub struct ImportReport {
     /// Avisos das fotos lidas agora (perfil de cor ilegível: spec CT, seção 6), em ordem de
     /// caminho.
     pub warnings: Vec<String>,
+    /// Arquivos de uma lista que não são foto (spec IM, regra 5).
+    pub not_photos: usize,
 }
 
 /// Andamento da importação: chamado com (fotos prontas, total), sempre em ordem crescente.
@@ -51,9 +55,33 @@ pub fn import_folder_with(
     dirs: DerivedDirs<'_>,
     progress: Progress<'_>,
 ) -> Result<ImportReport, MediaError> {
+    let photos = list_photos(dir).map_err(MediaError::io(dir))?;
+    import_list(photos, catalog, dirs, progress)
+}
+
+/// Importa uma lista de arquivos e pastas (spec IM, regra 3): o mesmo miolo da pasta, com as
+/// subpastas, contando o que não é foto.
+pub fn import_files(
+    paths: &[PathBuf],
+    catalog: &Catalog,
+    dirs: DerivedDirs<'_>,
+    progress: Progress<'_>,
+) -> Result<ImportReport, MediaError> {
+    let first = paths.first().cloned().unwrap_or_default();
+    let gathered = gather_photos(paths).map_err(MediaError::io(&first))?;
+    let mut report = import_list(gathered.photos, catalog, dirs, progress)?;
+    report.not_photos = gathered.not_photos;
+    Ok(report)
+}
+
+fn import_list(
+    photos: Vec<PathBuf>,
+    catalog: &Catalog,
+    dirs: DerivedDirs<'_>,
+    progress: Progress<'_>,
+) -> Result<ImportReport, MediaError> {
     let mut report = ImportReport::default();
     let mut pending = Vec::new();
-    let photos = list_photos(dir).map_err(MediaError::io(dir))?;
     let total = photos.len();
     for path in photos {
         if !ImageFormat::from_path(&path).is_some_and(ImageFormat::is_decodable) {
@@ -62,7 +90,18 @@ pub fn import_folder_with(
                 .push((path, "formato ainda não suportado".into()));
             continue;
         }
-        let (size, modified) = file_stamp(&path)?;
+        // Um arquivo que não dá para ler fica de fora; os outros entram (spec IM, seção 6).
+        let (size, modified) = match file_stamp(&path) {
+            Ok(stamp) => stamp,
+            Err(e) => {
+                let reason = match &e {
+                    MediaError::Io { source, .. } => crate::io_reason(source),
+                    other => other.to_string(),
+                };
+                report.failures.push((path, reason));
+                continue;
+            }
+        };
         match catalog.get(&path)? {
             Some(e) if is_current(&e, size, modified, dirs) => {
                 report.reused += 1;

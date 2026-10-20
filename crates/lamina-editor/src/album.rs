@@ -153,6 +153,9 @@ pub struct NewAlbum {
     pub export: ExportPrefs,
     /// Montagem, aparência e espaço entre fotos (spec NP, etapa 2); padrão = o de sempre.
     pub style: crate::new_project::AlbumStyle,
+    /// Arquivos e pastas soltos na tela inicial (spec IM, regra 6): quando há, são eles que
+    /// entram, no lugar de `folder`.
+    pub files: Vec<PathBuf>,
 }
 
 /// Fotos importadas, já num projeto sem lâminas, e as que não deram para importar.
@@ -267,7 +270,11 @@ pub fn create_album(
     progress: &(dyn Fn(Step) + Sync),
 ) -> Result<(AutoBuild, Vec<(PathBuf, String)>), EditorError> {
     let name = new.name.as_deref();
-    let mut imported = import_project(&new.folder, name, new.spec.clone(), cache, true, progress)?;
+    let mut imported = if new.files.is_empty() {
+        import_project(&new.folder, name, new.spec.clone(), cache, true, progress)?
+    } else {
+        import_dropped(new, cache, progress)?
+    };
     imported.project.page_limits = new.limits;
     imported.project.export = new.export;
     crate::new_project::put_style(&mut imported.project, &new.style);
@@ -282,6 +289,34 @@ pub fn create_album(
     let mut built = auto_build(&imported.project, spreads, &options)?;
     crate::new_project::apply_look(&mut built.project);
     Ok((built, imported.failures))
+}
+
+/// As fotos soltas na tela inicial, já num projeto sem lâminas (spec IM, regra 6).
+fn import_dropped(
+    new: &NewAlbum,
+    cache: &Cache,
+    progress: &(dyn Fn(Step) + Sync),
+) -> Result<Imported, EditorError> {
+    let report = crate::importing::import_photos(&new.files, cache, &|done, total| {
+        progress(Step::Importing { done, total });
+    })?;
+    if report.entries.is_empty() {
+        let first = new.files.first().map(|p| p.display().to_string());
+        return Err(EditorError::NoPhotos(first.unwrap_or_default()));
+    }
+    let name = new.name.as_deref().map_or_else(
+        || {
+            new.files
+                .first()
+                .map_or_else(|| "album".to_owned(), |p| folder_name(p))
+        },
+        |n| n.trim().to_owned(),
+    );
+    Ok(Imported {
+        project: project_from(&report, &name, new.spec.clone()),
+        failures: report.failures,
+        warnings: report.warnings,
+    })
 }
 
 /// Nome da pasta (caminho absoluto, sem tocar o disco); "album" se não houver.

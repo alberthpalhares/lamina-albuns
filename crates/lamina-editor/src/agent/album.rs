@@ -115,6 +115,7 @@ impl Agent {
             limits,
             export,
             style: Default::default(),
+            files: Vec::new(),
         })
     }
 

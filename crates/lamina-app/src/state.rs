@@ -66,6 +66,13 @@ pub enum Msg {
     /// Os recentes cujo arquivo sumiu e a miniatura gravada (spec TI, regras 4 e 5).
     RecentsChecked(Vec<PathBuf>),
     ThumbReady,
+    /// Andamento e fim de uma importação no álbum aberto (spec IM); `file` é o álbum em que ela
+    /// começou.
+    Importing(usize, usize),
+    Imported(
+        Result<lamina_editor::importing::ImportReport, HumanMessage>,
+        Option<PathBuf>,
+    ),
 }
 
 pub struct App {
@@ -80,6 +87,8 @@ pub struct App {
     /// As etapas do Novo projeto abertas e o arquivo que o "Criar" grava (spec NP).
     pub wizard: Option<lamina_editor::new_project::NewProject>,
     pub new_target: Option<PathBuf>,
+    /// Arquivos soltos na tela inicial, que o Novo projeto importa no lugar de uma pasta.
+    pub new_files: Vec<PathBuf>,
     pub notice: String,
     /// A conferência da janela Exportar aberta (avisos que sobraram e arquivos que já existem).
     pub export_check: Option<ExportCheck>,
@@ -128,6 +137,7 @@ impl App {
             new_photos: 0,
             wizard: None,
             new_target: None,
+            new_files: Vec::new(),
             notice: String::new(),
             export_check: None,
             presets: lamina_editor::PresetsStore::default(),

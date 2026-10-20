@@ -17,6 +17,7 @@ mod hand;
 mod help;
 mod history;
 mod images;
+mod importing;
 mod input;
 mod install;
 mod lists;
@@ -96,6 +97,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     models::connect(window, app);
     history::connect(window, app);
     recents::connect(window, app);
+    importing::connect(window, app);
 }
 
 /// O painel de layouts: clique aplica; a estrela e o "×" marcam a opção (spec TL, seção 3).

@@ -14,7 +14,9 @@ lamina-core = { workspace = true }
 lamina-editor = { workspace = true }
 lamina-layout = { workspace = true }
 anyhow = { workspace = true }
-slint = { workspace = true }
+# `unstable-winit-030`: o evento da janela que recebe arquivos soltos de outro programa (spec IM,
+# regra 10; ADR 0011, decisão 9). Conferir a cada versão nova do Slint (ADR 0002, adendo).
+slint = { workspace = true, features = ["unstable-winit-030"] }
 rfd = { workspace = true }
 velopack = { workspace = true }
 

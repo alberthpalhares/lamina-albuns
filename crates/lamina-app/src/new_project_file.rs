@@ -24,12 +24,43 @@ pub fn reset(app: &mut App) {
     app.new_folder = PathBuf::new();
     app.new_photos = 0;
     app.new_target = None;
+    app.new_files.clear();
     if let Some(w) = app.window.upgrade() {
         let ui = w.global::<NewProjectUi>();
         ui.set_name("Álbum novo".into());
         ui.set_no_photos(false);
         ui.set_photos(0);
         ui.set_photos_text("Nenhuma pasta escolhida".into());
+    }
+    refresh(app);
+}
+
+/// As fotos soltas na tela inicial ficam escolhidas na etapa 3 (spec IM, regra 6).
+pub fn use_files(app: &mut App, files: Vec<PathBuf>, photos: usize) {
+    let Some(w) = app.window.upgrade() else {
+        return;
+    };
+    let ui = w.global::<NewProjectUi>();
+    let folder = files
+        .first()
+        .and_then(|p| {
+            if p.is_dir() {
+                Some(p.as_path())
+            } else {
+                p.parent()
+            }
+        })
+        .map(std::path::Path::to_path_buf)
+        .unwrap_or_default();
+    ui.set_photos_text(format!("{photos} fotos soltas na janela").into());
+    ui.set_photos(i32::try_from(photos).unwrap_or(i32::MAX));
+    ui.set_name(folder_name(&folder).into());
+    app.new_folder = folder;
+    app.new_photos = photos;
+    app.new_files = files;
+    if let Some(spec) = app.wizard.as_ref().and_then(|w| w.size.spec().ok()) {
+        let limits = crate::new_project::limits(app).unwrap_or_default();
+        ui.set_spreads(i32::try_from(suggestion_within(photos, &spec, limits)).unwrap_or(1));
     }
     refresh(app);
 }
@@ -108,6 +139,7 @@ fn pick_folder(app: &mut App) {
     }
     app.new_folder = folder;
     app.new_photos = photos;
+    app.new_files.clear();
     if let Some(spec) = app.wizard.as_ref().and_then(|w| w.size.spec().ok()) {
         let limits = crate::new_project::limits(app).unwrap_or_default();
         let n = suggestion_within(photos, &spec, limits);
@@ -163,6 +195,7 @@ fn create(app: &mut App) {
         limits,
         export: app.new_export,
         style: wizard.style(),
+        files: std::mem::take(&mut app.new_files),
     };
     ui.set_show(false);
     app.wizard = None;

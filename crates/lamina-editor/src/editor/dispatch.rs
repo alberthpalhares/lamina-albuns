@@ -38,7 +38,7 @@ impl Editor {
             Command::OpenExample | Command::CloseAlbum => true,
             Command::ClearRecents => self.recents.has_unpinned(),
             Command::Export | Command::Specification | Command::Presets => true,
-            Command::MountAlbum => true,
+            Command::MountAlbum | Command::ImportPhotos | Command::ImportFolder => true,
             Command::FindMissing => !s.missing().is_empty(),
             Command::ToggleGuides | Command::About | Command::ToggleReordered => true,
             Command::ToggleSpreads | Command::ToggleTimeline | Command::TogglePhotos => true,

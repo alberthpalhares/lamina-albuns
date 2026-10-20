@@ -31,8 +31,10 @@ pub use catalog::{Catalog, CatalogEntry};
 pub use color::{embedded_profile, profile_problem};
 pub use decode::{decode_in, decode_with_orientation, load_oriented, load_oriented_in};
 pub use error::{MediaError, io_reason};
-pub use format::{ImageFormat, list_photos};
-pub use import::{ImportReport, Progress, default_cache_dir, import_folder, import_folder_with};
+pub use format::{Gathered, ImageFormat, gather_photos, list_photos};
+pub use import::{
+    ImportReport, Progress, default_cache_dir, import_files, import_folder, import_folder_with,
+};
 pub use metadata::{PhotoMetadata, read_metadata};
 pub use photo_source::{Loaded, original_source, original_source_in, thumbnail_source};
 pub use thumbnail::{

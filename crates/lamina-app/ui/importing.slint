@@ -1,0 +1,56 @@
+// Fotos entrando no álbum (spec IM, parte de importar): o aviso "Solte para importar" enquanto
+// arquivos vêm de outro programa e o convite do álbum ainda sem lâminas. Só desenho.
+
+import { Button } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+
+export global ImportUi {
+    // Arquivos de outro programa sobre a janela (o sistema não diz onde: regra 10).
+    in property <bool> dropping;
+}
+
+// A janela inteira avisa; o lugar do soltar não acende (o sistema não informa a posição).
+export component DropOverlay inherits Rectangle {
+    background: #1f3a5acc;
+    border-width: 3px;
+    border-color: #4f8fd6;
+    Text {
+        text: "Solte para importar as fotos";
+        color: Theme.text;
+        font-size: 22px;
+        font-weight: 600;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+// O álbum sem lâminas: sem fotos, o convite para importar; com fotos, como montar a primeira.
+export component EmptyAlbum inherits VerticalLayout {
+    in property <int> photos;
+    callback import();
+    alignment: center;
+    spacing: 12px;
+    if root.photos == 0: Text {
+        text: "Este álbum ainda não tem fotos";
+        color: Theme.text;
+        font-size: 18px;
+        font-weight: 600;
+        horizontal-alignment: center;
+    }
+    if root.photos == 0: Text {
+        text: "Arraste fotos ou pastas do Explorador para esta janela, ou use o botão abaixo.";
+        color: Theme.muted;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
+    if root.photos == 0: HorizontalLayout {
+        alignment: center;
+        Button { text: "Importar fotos…  (Ctrl+I)"; primary: true; clicked => { root.import(); } }
+    }
+    if root.photos > 0: Text {
+        text: "Selecione fotos na faixa de baixo e aperte Enter para montar a primeira lâmina.";
+        color: Theme.muted;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
+}

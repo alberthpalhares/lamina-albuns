@@ -19,6 +19,7 @@ mod ia_files;
 mod ia_models;
 mod ia_read;
 mod ia_style;
+mod im;
 mod jp_album;
 mod jp_commands;
 mod jp_session;
