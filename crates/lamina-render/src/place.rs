@@ -131,7 +131,7 @@ pub fn region(crop: &Crop, frame: Rect, bled: &Bled, photo: (f64, f64)) -> Pixel
 
 /// Encaixa a região na foto: as contas em ponto flutuante podem passar da borda por um fio, e
 /// a redução recusa qualquer pixel de fora.
-fn inside(r: PixelRegion, pw: f64, ph: f64) -> PixelRegion {
+pub(crate) fn inside(r: PixelRegion, pw: f64, ph: f64) -> PixelRegion {
     let x = r.x.clamp(0.0, pw);
     let y = r.y.clamp(0.0, ph);
     PixelRegion {

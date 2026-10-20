@@ -33,6 +33,7 @@ pub use document::{
     validate_project_name,
 };
 pub use document::{DEFAULT_FONT, LINE_SPACING, MAX_TEXT_CHARS, TEXT_SIZE_PT, clean_text};
+pub use document::{cover_factor, screen_to_photo, turned_box};
 pub use error::CoreError;
 
 /// Apoio aos testes de velocidade dos outros crates (folga única no CI).

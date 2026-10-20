@@ -83,7 +83,7 @@ impl Crop {
     }
 
     /// Traz o centro para o ponto que a região visível realmente usa.
-    fn clamped(&self, photo_w: f64, photo_h: f64, frame_aspect: f64) -> Crop {
+    pub(crate) fn clamped(&self, photo_w: f64, photo_h: f64, frame_aspect: f64) -> Crop {
         let region = self.visible_region(photo_w, photo_h, frame_aspect);
         Crop {
             center_x: (region.x + region.width / 2.0) / photo_w,

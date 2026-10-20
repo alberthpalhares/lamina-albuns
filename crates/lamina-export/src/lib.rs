@@ -121,6 +121,10 @@ mod tests {
 }
 
 #[cfg(test)]
+#[path = "tests/af.rs"]
+mod af;
+
+#[cfg(test)]
 #[path = "tests/ap.rs"]
 mod ap;
 #[cfg(test)]
