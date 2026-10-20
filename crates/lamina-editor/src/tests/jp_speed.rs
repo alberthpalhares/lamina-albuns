@@ -22,6 +22,7 @@ fn jp_b13_abrir_e_navegar_rapido() {
         models: Vec::new(),
         limits: lamina_core::PageLimits::default(),
         export: lamina_core::ExportPrefs::default(),
+        style: Default::default(),
     };
     // Monta uma vez: deixa miniaturas e imagens de tela no cache.
     let (built, _) = create_album(&new, &cache, &|_| {}).unwrap();

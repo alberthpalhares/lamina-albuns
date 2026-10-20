@@ -16,6 +16,7 @@ pub(super) fn migrate(mut value: Value, from: u32) -> Result<Value, CoreError> {
         value = match version {
             1 => v1_para_v2(value)?,
             2 => v2_para_v3(value)?,
+            3 => v3_para_v4(value)?,
             _ => {
                 return Err(CoreError::Migration {
                     from: version,
@@ -92,6 +93,29 @@ fn v2_para_v3(mut value: Value) -> Result<Value, CoreError> {
     Ok(value)
 }
 
+/// v3 → v4 (spec NP): a montagem do álbum, com o comportamento de sempre (livre, com página
+/// sangrada e mosaicos).
+fn v3_para_v4(mut value: Value) -> Result<Value, CoreError> {
+    let object = value.as_object_mut().ok_or(CoreError::Migration {
+        from: 3,
+        reason: "campo `projeto` ausente".into(),
+    })?;
+    object.insert(
+        "montagem".into(),
+        json!({ "recorte": "livre", "pagina_sangrada": true, "mosaicos": true }),
+    );
+    object.insert(
+        "aparencia".into(),
+        json!({
+            "fundo": { "r": 255, "g": 255, "b": 255 },
+            "borda": { "width": 0.0, "color": { "r": 255, "g": 255, "b": 255 } },
+            "cantos": 0.0
+        }),
+    );
+    value["schema_version"] = json!(4);
+    Ok(value)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{AlbumEdge, Margins, Mm, Project};
@@ -125,5 +149,21 @@ mod tests {
             Project::from_json(json),
             Err(crate::CoreError::Migration { from: 1, .. })
         ));
+    }
+
+    #[test]
+    fn np_b14_projeto_v3_abre_livre_e_salva_na_versao_4() {
+        let project = Project::from_json(PROJETO_V1).unwrap();
+        // O mesmo projeto como a versão 3 gravava: sem a montagem.
+        let mut v3: serde_json::Value = serde_json::from_str(&project.to_json().unwrap()).unwrap();
+        v3["schema_version"] = serde_json::json!(3);
+        v3.as_object_mut().unwrap().remove("montagem");
+        v3.as_object_mut().unwrap().remove("aparencia");
+        let opened = Project::from_json(&v3.to_string()).unwrap();
+        assert_eq!(opened.mounting, crate::Mounting::default());
+        let saved = opened.to_json().unwrap();
+        assert!(saved.contains("\"schema_version\": 4"), "{saved}");
+        assert!(saved.contains("\"montagem\""), "{saved}");
+        assert_eq!(Project::from_json(&saved).unwrap(), opened);
     }
 }

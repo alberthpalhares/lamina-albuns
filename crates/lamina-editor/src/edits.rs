@@ -9,11 +9,13 @@ use crate::EditorError;
 pub use crate::spreads::{delete_spread, insert_spread, move_spread};
 
 /// Só a lista na ordem: a 1ª opção dela é a mesma da lista completa, sem calcular as reordenadas.
-fn first_only(gap: lamina_core::Mm) -> LayoutOptions {
+/// Com a montagem do álbum (spec NP, regra 6).
+fn first_only(gap: lamina_core::Mm, mounting: lamina_core::Mounting) -> LayoutOptions {
     LayoutOptions {
         gap,
         max_candidates: 12,
         reordered: false,
+        mounting,
     }
 }
 
@@ -123,7 +125,10 @@ pub fn layout_with(
             &project.spec,
             active,
             &aspects,
-            &first_only(project.spread_gap(&project.spreads[index])),
+            &first_only(
+                project.spread_gap(&project.spreads[index]),
+                project.mounting,
+            ),
         )?;
         let first = lists
             .in_order

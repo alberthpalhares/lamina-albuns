@@ -13,8 +13,9 @@ use crate::human::Human as _;
 
 /// Arquivo dos presets do fotógrafo, ao lado das preferências de layout.
 pub const PRESETS_FILE: &str = "presets.json";
-/// Versão do formato do arquivo.
-const VERSION: u32 = 1;
+/// Versão do formato do arquivo: a 2 guarda a sangria e a zona segura por borda (spec NP); a 1,
+/// lida como margens iguais nas bordas, não tinha esses campos.
+const VERSION: u32 = 2;
 
 /// Uma especificação pronta.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

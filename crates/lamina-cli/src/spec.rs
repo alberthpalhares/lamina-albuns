@@ -85,6 +85,7 @@ impl AlbumArgs {
             spine_mm: self.lombada_mm.or(base.spine_mm),
             starts_single: self.inicia_com_pagina || base.starts_single,
             ends_single: self.termina_com_pagina || base.ends_single,
+            ..base
         }
     }
 

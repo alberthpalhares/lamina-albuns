@@ -23,6 +23,7 @@ mod models;
 mod new_album;
 mod panel;
 mod presets;
+mod recents;
 mod refresh;
 mod relink;
 mod spec_dialog;
@@ -40,7 +41,7 @@ use std::time::Duration;
 
 use lamina_editor::{
     Cache, Command, Editor, Filter, MODELS_FILE, ModelsStore, PREFS_FILE, PRESETS_FILE, Part,
-    PrefsStore, PresetsStore, STRIPS_FILE, StripsStore, config_dir,
+    PrefsStore, PresetsStore, RECENTS_FILE, RecentsStore, STRIPS_FILE, StripsStore, config_dir,
 };
 use slint::{CloseRequestResponse, ComponentHandle, Timer, TimerMode};
 
@@ -86,6 +87,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     frame_panel::connect(window, app);
     models::connect(window, app);
     history::connect(window, app);
+    recents::connect(window, app);
 }
 
 /// O painel de layouts: clique aplica; a estrela e o "×" marcam a opção (spec TL, seção 3).
@@ -237,6 +239,7 @@ fn main() -> anyhow::Result<()> {
     let prefs = PrefsStore::load(&config_dir().join(PREFS_FILE));
     let mut editor = Editor::with_prefs(prefs);
     editor.set_strips(StripsStore::load(&config_dir().join(STRIPS_FILE)));
+    editor.set_recents(RecentsStore::load(&config_dir().join(RECENTS_FILE)));
     editor.set_log(help::error_log());
     let app: Shared = Rc::new(RefCell::new(App::new(&window, Cache::system(), editor, tx)));
     // Ligada por `LAMINA_TEMPOS=1`; o temporizador precisa viver até a janela fechar.
@@ -256,6 +259,8 @@ fn main() -> anyhow::Result<()> {
     }
     connect(&window, &app);
     app.borrow_mut().refresh_all();
+    recents::refresh(&app.borrow());
+    recents::check(&app.borrow());
     // `lamina-app projeto.lamina` abre o projeto direto: o duplo clique no arquivo e a volta
     // depois de atualizar (spec DS, regra 5).
     let file = match &verifying {
@@ -286,6 +291,8 @@ fn main() -> anyhow::Result<()> {
     });
     window.invoke_focus_main();
     window.run()?;
+    // Sair do Lamina guarda a lâmina em que o fotógrafo parou (spec TI, regra 3).
+    app.borrow_mut().editor.remember_current();
     updates::on_exit(&app.borrow());
     Ok(())
 }

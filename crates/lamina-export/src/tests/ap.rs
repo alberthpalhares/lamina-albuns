@@ -166,7 +166,7 @@ fn as_v2(project: &Project) -> String {
 fn ap_b9_projeto_da_versao_2() {
     let album = album();
     let opened = Project::from_json(&as_v2(&album.project)).unwrap();
-    assert_eq!(opened.schema_version, 3);
+    assert_eq!(opened.schema_version, lamina_core::CURRENT_SCHEMA_VERSION);
     assert_eq!(
         opened, album.project,
         "padrões: sem borda, sem cantos, mesmo fundo, 8 pt"

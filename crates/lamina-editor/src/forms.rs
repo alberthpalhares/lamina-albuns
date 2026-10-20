@@ -69,7 +69,10 @@ impl SpecText {
                 .parse()
                 .map_err(|_| "DPI: digite um número inteiro.".to_owned())?,
             bleed_mm: field(&self.bleed_mm, "Sangria")?,
+            bleed_top_mm: None,
+            bleed_spine_mm: None,
             safe_mm: field(&self.safe_mm, "Zona segura")?,
+            safe_top_mm: None,
             spine_mm: if self.spine_mm.trim().is_empty() {
                 None
             } else {

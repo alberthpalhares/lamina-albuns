@@ -141,6 +141,7 @@ pub fn create(app: &mut App) {
         models: app.editor.models().to_vec(),
         limits,
         export: app.new_export,
+        style: Default::default(),
     };
     w.set_show_new(false);
     w.set_busy_text("Importando as fotos…".into());
@@ -194,6 +195,7 @@ pub fn message(app: &mut App, msg: Msg) {
         Msg::Searching(..) | Msg::Relinked { .. } => crate::relink::message(app, msg),
         Msg::Update(outcome) => crate::updates::message(app, outcome),
         Msg::Failed(problem) => failed(app, &problem),
+        Msg::RecentsChecked(_) | Msg::ThumbReady => crate::recents::message(app, msg),
     }
 }
 

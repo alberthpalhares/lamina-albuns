@@ -16,6 +16,7 @@
 //! - [`photos`]: o navegador de fotos.
 //! - [`presets`] e [`respec`]: presets e trocar a especificação de um álbum pronto (spec PR).
 //! - [`strips`]: as três faixas de baixo, com título e recolhíveis (spec PN).
+//! - [`recents`]: a lista de recentes e o que a tela inicial mostra (spec TI).
 //! - [`forms`]: campos, passos e textos das janelas (novo álbum, exportar, aparência).
 //! - [`exporting`]: exportar pela janela, com a pré-impressão antes (spec EI).
 //! - [`relink`]: reencontrar fotos que mudaram de pasta (spec EI).
@@ -47,9 +48,11 @@ mod look_form;
 pub mod models;
 pub mod motion;
 pub mod naming;
+pub mod new_project;
 pub mod photos;
 pub mod prefs_store;
 pub mod presets;
+pub mod recents;
 pub mod relink;
 pub mod respec;
 pub mod screens;
@@ -88,6 +91,7 @@ pub use models::{MODELS_FILE, ModelError, ModelsStore, model_from_spread};
 pub use photos::{Filter, PhotoInfo, PhotoItem, photo_info, photo_list, used_photos};
 pub use prefs_store::{PREFS_FILE, PrefsStore, config_dir};
 pub use presets::{PRESETS_FILE, Preset, PresetError, PresetsStore, builtin_presets};
+pub use recents::{RECENTS_FILE, Recent, RecentsStore};
 pub use relink::{
     Found, RELINK_LATER, not_found_message, relinked_message, search_folder, search_near,
 };

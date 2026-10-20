@@ -114,6 +114,7 @@ impl Agent {
             models: editor.models().to_vec(),
             limits,
             export,
+            style: Default::default(),
         })
     }
 

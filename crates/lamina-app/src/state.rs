@@ -28,6 +28,9 @@ pub enum Pending {
     Update,
     /// O álbum de exemplo (spec PC, regra 4).
     Example,
+    /// Fechar o álbum e voltar à tela inicial; abrir o recente da posição dada (spec TI).
+    CloseAlbum,
+    OpenRecent(usize),
 }
 
 /// Mensagens do trabalho em segundo plano para a linha da janela.
@@ -53,6 +56,9 @@ pub enum Msg {
     Update(lamina_editor::updates::Outcome),
     /// Uma tarefa em segundo plano entrou em pânico (spec EH, regra 6): a janela se libera.
     Failed(HumanMessage),
+    /// Os recentes cujo arquivo sumiu e a miniatura gravada (spec TI, regras 4 e 5).
+    RecentsChecked(Vec<PathBuf>),
+    ThumbReady,
 }
 
 pub struct App {
@@ -85,6 +91,9 @@ pub struct App {
     pub(crate) crop_timer: slint::Timer,
     /// A medição de `LAMINA_TEMPOS=1` (spec MV, seção 4).
     pub(crate) clock: crate::timings::Clock,
+    /// Os recentes que a última conferência não achou e a busca da tela inicial (spec TI).
+    pub recent_missing: Vec<PathBuf>,
+    pub recent_query: String,
     filter: Filter,
     list: Vec<PhotoItem>,
     selected: Option<PhotoId>,
@@ -117,6 +126,8 @@ impl App {
             loading: None,
             crop_timer: crate::crop::timer(),
             clock: crate::timings::Clock::default(),
+            recent_missing: Vec::new(),
+            recent_query: String::new(),
             filter: Filter::All,
             list: Vec::new(),
             selected: None,

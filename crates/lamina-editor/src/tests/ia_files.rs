@@ -122,6 +122,7 @@ fn ia_b14_novo_album_igual_ao_da_janela() {
         models: window.models().to_vec(),
         limits: preset.limits,
         export: preset.export,
+        style: Default::default(),
     };
     let (built, _) = create_album(&new, &base.cache(), &|_| {}).unwrap();
     std::fs::create_dir_all(base.path("janela")).unwrap();
