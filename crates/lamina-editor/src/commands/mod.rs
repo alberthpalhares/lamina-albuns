@@ -112,6 +112,10 @@ pub enum Command {
     EqualSize,
     DistributeAcross,
     DistributeDown,
+    /// A área de cópia (spec EG, regra 12).
+    CopyFrames,
+    PasteFrames,
+    DuplicateFrames,
 }
 
 /// Nome, rótulo, menu e atalho de um comando.
@@ -127,7 +131,7 @@ impl Command {
             .unwrap_or(("", "", Menu::Help, None))
     }
 
-    pub const ALL: [Command; 83] = [
+    pub const ALL: [Command; 86] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
@@ -211,6 +215,9 @@ impl Command {
         Command::EqualSize,
         Command::DistributeAcross,
         Command::DistributeDown,
+        Command::CopyFrames,
+        Command::PasteFrames,
+        Command::DuplicateFrames,
     ];
 
     /// Nome estável, para testes e para a linha de comando.

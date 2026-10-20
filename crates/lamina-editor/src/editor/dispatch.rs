@@ -62,6 +62,7 @@ impl Editor {
             Command::NextRight | Command::PreviousRight => self.can_step(Part::Right),
             Command::Mirror => self.can_mirror(),
             Command::Favorite | Command::Reject => self.panel(Part::Spread).in_use.is_some(),
+            Command::ClearFrame if self.organizing() => !self.selected_frames().is_empty(),
             Command::ClearFrame => self.selected_content().is_some(),
             Command::NewText | Command::NewPhotoFrame | Command::Models => true,
             Command::CheckUpdates | Command::ToggleAutoUpdates | Command::ToggleBeta => true,
@@ -107,6 +108,8 @@ impl Editor {
             | Command::EqualSize
             | Command::DistributeAcross
             | Command::DistributeDown => false,
+            Command::CopyFrames | Command::DuplicateFrames => !self.selected_frames().is_empty(),
+            Command::PasteFrames => self.can_paste(),
         }
     }
 
@@ -171,7 +174,11 @@ impl Editor {
             Command::Mirror => self.mirror(),
             Command::Favorite => self.favorite(),
             Command::Reject => self.reject(),
+            Command::ClearFrame if self.organizing() => self.delete_group(),
             Command::ClearFrame => self.delete_selected(),
+            Command::CopyFrames => self.copy_frames(),
+            Command::PasteFrames => self.paste_frames(),
+            Command::DuplicateFrames => self.duplicate_frames(),
             Command::NewText => self.new_text(None),
             Command::NewPhotoFrame => self.new_photo_frame(None),
             Command::BringForward => self.reorder_selected(true),

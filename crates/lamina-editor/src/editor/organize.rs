@@ -133,6 +133,13 @@ impl Editor {
         self.sync_reference();
     }
 
+    /// Seleciona os quadros `ids` da lâmina atual (os colados). Fora do modo, o primeiro deles.
+    pub(super) fn select_ids(&mut self, ids: Vec<FrameId>) {
+        self.organize.spread = self.current_ids().map(|(s, _)| s);
+        self.organize.ids = ids;
+        self.sync_reference();
+    }
+
     /// O quadro de referência (o primeiro clicado) vira o quadro selecionado de sempre.
     fn sync_reference(&mut self) {
         let reference = self.organize.ids.first().copied();
