@@ -93,6 +93,8 @@ if [ "$SISTEMA" = mac ]; then
     [ -n "$APP" ] || falha "Não foi possível abrir o pacote do Lamina; nada foi instalado."
     rm -rf "$DESTINO/Lamina.app"
     mv "$APP" "$DESTINO/Lamina.app"
+    # O programa precisa poder rodar mesmo se o pacote perdeu a permissão no caminho.
+    chmod +x "$DESTINO/Lamina.app/Contents/MacOS/"* 2>/dev/null || true
     printf 'Pronto! O Lamina está em %s/Lamina.app. Abra pelo Launchpad ou pelo Finder.\n' "$DESTINO"
 else
     DESTINO="$HOME/.local/bin"
