@@ -35,6 +35,10 @@ pub struct Strips {
     pub timeline: bool,
     #[serde(rename = "fotos")]
     pub photos: bool,
+    /// "Reduzir movimento" (spec MV, regra 14): também é estado da janela. Arquivo antigo sem o
+    /// campo vale desligado.
+    #[serde(rename = "reduzir_movimento")]
+    pub reduce_motion: bool,
 }
 
 impl Default for Strips {
@@ -43,6 +47,7 @@ impl Default for Strips {
             spreads: true,
             timeline: true,
             photos: true,
+            reduce_motion: false,
         }
     }
 }

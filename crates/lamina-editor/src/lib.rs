@@ -24,6 +24,7 @@
 //! - [`agent`]: o controle por IA, as ferramentas que o servidor MCP oferece (spec IA).
 //! - [`human`]: cada erro dito ao fotógrafo, com o que fazer e o detalhe (spec EH).
 //! - [`error_log`] e [`feedback`]: o registro de erros e o formulário de sugestões (spec SR).
+//! - [`motion`]: movimento e fluidez, a medição de tempos e as vagas da lâmina (spec MV).
 
 pub mod agent;
 pub mod album;
@@ -45,6 +46,7 @@ pub mod human;
 pub mod keys;
 mod look_form;
 pub mod models;
+pub mod motion;
 pub mod naming;
 pub mod new_project;
 pub mod photos;
@@ -93,7 +95,7 @@ pub use recents::{RECENTS_FILE, Recent, RecentsStore};
 pub use relink::{
     Found, RELINK_LATER, not_found_message, relinked_message, search_folder, search_near,
 };
-pub use screens::{ScreenImages, load_original, prepare_images};
+pub use screens::{Arrival, ScreenPlan, load_original, load_screen, prepare_images};
 pub use session::{HistoryList, HistoryStep, Session};
 pub use snap::{Grip, SnapLine};
 pub use strips::{STRIPS_FILE, STRIPS_UNREADABLE, Strip, Strips, StripsStore, strip_titles};

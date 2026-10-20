@@ -4,6 +4,7 @@
 import { ListView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { SpreadCanvas, SpreadData } from "canvas.slint";
+import { Motion } from "motion.slint";
 
 export struct LayoutItem {
     data: SpreadData,
@@ -67,7 +68,32 @@ export component LayoutsPanel inherits VerticalLayout {
         }
         let top = root.in-use * item-height;
         if (top + options.content-y < 0px || top + item-height + options.content-y > options.visible-height) {
-            options.content-y = max(min(0px, options.visible-height / 2 - top - item-height / 2), options.visible-height - root.items.length * item-height);
+            root.follow(max(min(0px, options.visible-height / 2 - top - item-height / 2), options.visible-height - root.items.length * item-height));
+        }
+    }
+
+    // Rolagem suave pelo relógio (spec MV, regra 10): a barra responde na hora e rolar à mão para.
+    property <bool> sc-running;
+    property <duration> sc-t0;
+    property <length> sc-from;
+    property <length> sc-to;
+    property <float> sc-p: self.sc-running ? min(1, (animation-tick() - self.sc-t0) / max(1ms, Motion.scroll-ms * 1ms)) : 1;
+    changed sc-p => {
+        if (self.sc-running) {
+            options.content-y = self.sc-from + (self.sc-to - self.sc-from) * (1 - pow(1 - self.sc-p, 3));
+            if (self.sc-p >= 1) {
+                self.sc-running = false;
+            }
+        }
+    }
+    function follow(target: length) {
+        if (Motion.on && Motion.scroll-ms > 0) {
+            root.sc-from = options.content-y;
+            root.sc-to = target;
+            root.sc-t0 = animation-tick();
+            root.sc-running = true;
+        } else {
+            options.content-y = target;
         }
     }
 
@@ -90,6 +116,7 @@ export component LayoutsPanel inherits VerticalLayout {
 
     options := ListView {
         vertical-stretch: 1;
+        scrolled => { root.sc-running = false; }
         for item[i] in root.items: Rectangle {
             height: root.item-height;
             VerticalLayout {

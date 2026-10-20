@@ -2,6 +2,7 @@
 //! miniatura de cada opção feita com as fotos de verdade.
 
 use lamina_core::PhotoId;
+use lamina_editor::motion::panel_key;
 use lamina_editor::text::ALL_REJECTED;
 use lamina_editor::{Command, Part, option_title};
 
@@ -29,9 +30,27 @@ pub fn refresh(app: &mut App) {
     };
     let (project, index) = (session.project().clone(), session.current());
     let missing = session.missing().to_vec();
+
+    let panel = app.editor.panel(Part::Spread);
+    w.set_layout_in_use(
+        panel
+            .in_use
+            .and_then(|p| i32::try_from(p).ok())
+            .unwrap_or(-1),
+    );
+    let notice = match (&panel.unavailable, panel.all_rejected) {
+        (Some(reason), _) => reason.to_string(),
+        (None, true) => ALL_REJECTED.to_owned(),
+        (None, false) => String::new(),
+    };
+    w.set_layout_notice(notice.into());
+    // As mesmas prévias: nada a refazer, só a opção em uso muda (spec MV, regra 3; MV-B17).
+    let key = panel_key(&panel, session);
+    if app.lists.panel.as_ref() == Some(&key) {
+        return;
+    }
     let thumbs = app.thumbs(&project);
     let image = |id: PhotoId| thumbs.get(&id).cloned();
-    let panel = app.editor.panel(Part::Spread);
     let items: Vec<LayoutItem> = panel
         .options
         .iter()
@@ -50,17 +69,6 @@ pub fn refresh(app: &mut App) {
     // Fase 4, achado 26; decisão do dono).
     w.set_layout_count("".into());
     w.set_layouts(model(items));
-    w.set_layout_in_use(
-        panel
-            .in_use
-            .and_then(|p| i32::try_from(p).ok())
-            .unwrap_or(-1),
-    );
-    let notice = match (&panel.unavailable, panel.all_rejected) {
-        (Some(reason), _) => reason.to_string(),
-        (None, true) => ALL_REJECTED.to_owned(),
-        (None, false) => String::new(),
-    };
-    w.set_layout_notice(notice.into());
     w.set_layout_explanation("".into());
+    app.lists.panel = Some(key);
 }

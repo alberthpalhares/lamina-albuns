@@ -61,14 +61,19 @@ pub fn run_command(app: &Shared, command: Command) {
                     | Command::ToggleSpreads
                     | Command::ToggleTimeline
                     | Command::TogglePhotos
+                    | Command::ToggleReduceMotion
             );
-            if a.editor.run(command) {
-                if only_view {
-                    a.refresh_current();
-                } else {
-                    a.refresh_all();
-                }
-            }
+            a.timed(
+                command.label(),
+                |a| a.editor.run(command),
+                |a| {
+                    if only_view {
+                        a.refresh_current();
+                    } else {
+                        a.refresh_all();
+                    }
+                },
+            );
         }
     }
 }

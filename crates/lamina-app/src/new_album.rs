@@ -69,7 +69,8 @@ pub fn message(app: &mut App, msg: Msg) {
             }
         }
         Msg::ImagesReady => app.images_ready(),
-        Msg::Original(id, image) => crate::crop::original_ready(app, id, image),
+        Msg::Screen { epoch, id, pixels } => app.images.screen_arrived(epoch, id, pixels),
+        Msg::Original(id, pixels) => crate::crop::original_ready(app, id, pixels),
         Msg::Exporting(..) | Msg::Exported(..) => crate::export::message(app, msg),
         Msg::Searching(..) | Msg::Relinked { .. } => crate::relink::message(app, msg),
         Msg::Update(outcome) => crate::updates::message(app, outcome),

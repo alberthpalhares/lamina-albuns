@@ -8,10 +8,11 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use lamina_core::{FrameContent, PhotoId, Project};
+use lamina_editor::motion::{Place, Transition};
 use lamina_editor::{
-    Area, FrameKind, frame_dpi_text, guarded, load_original, photo_extent, spread_view,
+    Area, FrameKind, FrameView, frame_dpi_text, guarded, load_original, photo_extent, spread_view,
 };
-use slint::{Timer, TimerMode};
+use slint::{Model, Timer, TimerMode};
 
 use crate::AppWindow;
 use crate::convert::{boxed, spread_data};
@@ -50,7 +51,13 @@ fn sync_original(app: &mut App, project: &Project, index: usize) {
             std::thread::spawn(move || match guarded(|| load_original(&project, id)) {
                 // Se a janela já fechou, não há a quem avisar.
                 Ok(Some(image)) => {
-                    let _ = tx.send(Msg::Original(id, image));
+                    // A cópia para os pixels da janela também fica fora da linha dela (MV, regra 1).
+                    let pixels = slint::SharedPixelBuffer::clone_from_slice(
+                        image.as_raw(),
+                        image.width(),
+                        image.height(),
+                    );
+                    let _ = tx.send(Msg::Original(id, pixels));
                 }
                 Ok(None) => {}
                 Err(problem) => {
@@ -89,22 +96,19 @@ pub fn refresh_spread(app: &mut App) {
         (warning, crate::texts::BIG),
     );
     data.snaps = crate::hand::snap_boxes(app, &project);
-    data.frames = crate::hand::stable_frames(&data.frames);
+    let frames = view_frames(&project, index, &missing);
+    let place = (app.images.epoch(), project.spreads[index].id);
+    let before = (w.get_current(), app.slot_rows.rows());
+    place_slots(app, place, &frames, &mut data);
     w.set_current(data);
+    slide(app, &w, (place, index), before);
     w.set_current_index(i32::try_from(index).unwrap_or(0));
     let as_i32 = |f: Option<usize>| f.and_then(|f| i32::try_from(f).ok()).unwrap_or(-1);
     w.set_selected_frame(as_i32(app.editor.selected_frame()));
     w.set_crop_frame(as_i32(app.editor.crop_mode()));
 
-    let canvas = project.spec.canvas_rect();
-    let area = Area {
-        width: 1.0,
-        height: canvas.height.get() / canvas.width.get(),
-        margin: 0.0,
-    };
     let preview = app.editor.crop_mode().and_then(|f| {
-        let view = spread_view(&project, index, area, &missing)?;
-        let frame = view.frames.get(f)?;
+        let frame = frames.get(f)?;
         let FrameKind::Photo { id, .. } = &frame.kind else {
             return None;
         };
@@ -129,20 +133,86 @@ pub fn refresh_spread(app: &mut App) {
     w.set_hint(app.editor.hint().into());
 }
 
-/// A foto original chegou: entra no quadro se ele ainda está em modo recorte.
-pub fn original_ready(
+/// Os quadros da lâmina `index`, em frações da largura da lâmina (como a tela desenha).
+fn view_frames(project: &Project, index: usize, missing: &[PhotoId]) -> Vec<FrameView> {
+    let canvas = project.spec.canvas_rect();
+    let area = Area {
+        width: 1.0,
+        height: canvas.height.get() / canvas.width.get(),
+        margin: 0.0,
+    };
+    spread_view(project, index, area, missing).map_or_else(Vec::new, |v| v.frames)
+}
+
+/// Leva os quadros às vagas da lâmina grande (spec MV, regra 4) e marca o quadro selecionado e
+/// o do recorte, que a tela não acha mais pela posição na lista.
+fn place_slots(app: &mut App, place: Place, frames: &[FrameView], data: &mut crate::SpreadData) {
+    let mut rows: Vec<crate::FrameData> = data.frames.iter().collect();
+    for (row, frame) in rows.iter_mut().zip(frames) {
+        if let FrameKind::Photo { id, .. } = &frame.kind {
+            row.photo = app.images.version(*id);
+        }
+    }
+    let gesture = app.editor.gesture_rect().is_some();
+    if app.slot_rows.sync(frames, &rows, place, gesture) {
+        // As vagas que saíram esmaecem e depois saem da lista (MV-B12).
+        let fade = u64::from(app.editor.durations().fade);
+        crate::mailbox::later(Duration::from_millis(fade + 40), |app| {
+            app.slot_rows.sweep();
+        });
+    }
+    data.frames = app.slot_rows.model();
+    let rect = |f: Option<usize>| {
+        f.and_then(|f| frames.get(f))
+            .map(|f| boxed(f.rect))
+            .unwrap_or_default()
+    };
+    data.selected_box = rect(app.editor.selected_frame());
+    data.cropping_box = rect(app.editor.crop_mode());
+}
+
+/// Outra lâmina: a que sai fica por cima esmaecendo e a nova entra deslizando, na direção da
+/// navegação (spec MV, seção 4); navegar seguido, outro álbum e "Reduzir movimento" não deslizam.
+fn slide(
     app: &mut App,
-    id: PhotoId,
-    image: std::sync::Arc<lamina_editor::screens::Rgba>,
+    w: &AppWindow,
+    (place, index): (Place, usize),
+    (mut old, rows): (crate::SpreadData, Vec<crate::FrameData>),
 ) {
+    let (at, reduce) = (app.clock.now(), app.editor.reduce_motion());
+    let dir = match app.navigator.arrive(place, index, at, reduce) {
+        Transition::Forward => 1,
+        Transition::Backward => -1,
+        Transition::Stay | Transition::Cut => return,
+    };
+    old.frames = crate::convert::model(rows);
+    w.set_leaving(old);
+    w.set_has_leaving(true);
+    app.images.start_slide();
+    w.invoke_start_nav(dir);
+}
+
+/// A foto original chegou: entra no quadro se ele ainda está em modo recorte.
+pub fn original_ready(app: &mut App, id: PhotoId, pixels: crate::images::Pixels) {
     if app.loading == Some(id) {
-        app.images.set_original(id, &image);
+        app.images.set_original(id, pixels);
         app.loading = None;
         refresh_spread(app);
     }
 }
 
 pub fn connect(window: &AppWindow, app: &Shared) {
+    let a = app.clone();
+    window.on_nav_ended(move || {
+        let mut app = a.borrow_mut();
+        if let Some(w) = app.window.upgrade() {
+            w.set_has_leaving(false);
+        }
+        // As fotos nítidas que chegaram no meio do deslize entram agora (MV-B26).
+        if app.images.slide_ended() {
+            refresh_spread(&mut app);
+        }
+    });
     let a = app.clone();
     window.on_frame_double(move |i| {
         let mut app = a.borrow_mut();

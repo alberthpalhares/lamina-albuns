@@ -4,7 +4,7 @@
 use std::rc::Rc;
 
 use lamina_core::{PhotoId, Project, Rgb};
-use lamina_editor::{Area, FrameKind, PhotoItem, PxRect, spread_view};
+use lamina_editor::{Area, FrameKind, PhotoItem, PxRect, photo_extent, spread_view};
 use slint::{Color, Image, ModelRc, VecModel};
 
 use crate::texts::{picture, pixels};
@@ -35,12 +35,6 @@ fn color(c: Rgb) -> Color {
     Color::from_rgb_u8(c.r, c.g, c.b)
 }
 
-/// Pixel da imagem carregada que corresponde à fração `f` do lado `side`.
-#[allow(clippy::cast_possible_truncation)]
-fn clip(f: f64, side: u32) -> i32 {
-    (f * f64::from(side)).round() as i32
-}
-
 /// A lâmina `index` em frações da largura da lâmina (a tela escala sozinha), com as imagens
 /// que `image` der (imagem de tela na lâmina grande, miniatura na faixa) e os textos desenhados
 /// para uma lâmina de `text_px` pixels de largura (spec TX).
@@ -63,8 +57,18 @@ pub fn spread_data(
     let frames: Vec<FrameData> = view
         .frames
         .iter()
-        .map(|f| {
+        .enumerate()
+        .map(|(i, f)| {
+            // A foto inteira (ou a imagem do texto, do tamanho do quadro), recortada pelo quadro.
+            let whole = photo_extent(f).unwrap_or(f.rect);
             let mut data = FrameData {
+                px: to_f32(whole.x),
+                py: to_f32(whole.y),
+                pw: to_f32(whole.width),
+                ph: to_f32(whole.height),
+                index: i32::try_from(i).unwrap_or(-1),
+                z: to_f32(i as f64),
+                live: true,
                 x: to_f32(f.rect.x),
                 y: to_f32(f.rect.y),
                 w: to_f32(f.rect.width),
@@ -91,18 +95,13 @@ pub fn spread_data(
                         pixels(f.rect.height, text_px),
                     );
                     if let Some(img) = picture(text, *size_mm, px) {
-                        data.cw = i32::try_from(px.0).unwrap_or(1);
-                        data.ch = i32::try_from(px.1).unwrap_or(1);
                         data.img = img;
                         data.has_img = true;
                     }
                 }
-                FrameKind::Photo {
-                    id,
-                    source,
-                    missing,
-                } => {
+                FrameKind::Photo { id, missing, .. } => {
                     data.kind = 1;
+                    data.photo = i32::try_from(id.get()).unwrap_or(-1);
                     data.missing = *missing;
                     data.label = project
                         .photo(*id)
@@ -111,11 +110,6 @@ pub fn spread_data(
                         .map(|n| n.to_string_lossy().into_owned().into())
                         .unwrap_or_default();
                     if let Some(img) = image(*id).filter(|_| !*missing) {
-                        let size = img.size();
-                        data.cx = clip(source.x, size.width);
-                        data.cy = clip(source.y, size.height);
-                        data.cw = clip(source.width, size.width).max(1);
-                        data.ch = clip(source.height, size.height).max(1);
                         data.img = img;
                         data.has_img = true;
                     }
@@ -137,6 +131,8 @@ pub fn spread_data(
         frames: ModelRc::from(Rc::new(VecModel::from(frames))),
         warning,
         snaps: ModelRc::default(),
+        selected_box: BoxData::default(),
+        cropping_box: BoxData::default(),
     }
 }
 

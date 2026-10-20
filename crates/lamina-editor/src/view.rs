@@ -2,7 +2,7 @@
 //! que cabe, com cada quadro onde vai sair impresso e a mesma parte da foto que a renderização
 //! usa (as funções `bleed` e `region` do `lamina-render`).
 
-use lamina_core::{FrameContent, PageSide, PhotoId, Project, Rect, Rgb, TextBox};
+use lamina_core::{FrameContent, FrameId, PageSide, PhotoId, Project, Rect, Rgb, TextBox};
 use lamina_render::{bleed, region};
 
 /// Retângulo em pixels da tela (com fração: a janela desenha sem arredondar).
@@ -35,6 +35,8 @@ pub enum FrameKind {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FrameView {
+    /// O quadro do projeto: as vagas da tela casam por ele (spec MV, regra 4).
+    pub id: FrameId,
     /// Quadro já estendido até a sangria quando encosta no corte, como na impressão.
     pub rect: PxRect,
     pub kind: FrameKind,
@@ -154,6 +156,7 @@ pub fn spread_view(
             let [left, top, right, bottom] = bled.grow.map(|g| g > 0.0);
             let corner = |a: bool, b: bool| if a || b { 0.0 } else { r };
             FrameView {
+                id: frame.id,
                 rect: at,
                 kind,
                 trim: px(rect),

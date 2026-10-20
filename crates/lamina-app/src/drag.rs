@@ -4,10 +4,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use lamina_editor::edits::timeline;
 use lamina_editor::frame_at;
+use lamina_editor::motion::reorder;
+use lamina_editor::motion::{TimelineKey, timeline_rows};
 
-use crate::convert::model;
 use crate::state::App;
 use crate::{AppWindow, TimelineItem};
 
@@ -28,14 +28,19 @@ fn after_edit(app: &mut App, changed: bool) {
 pub fn connect(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     window.on_photo_pressed(move |i, ctrl, shift| {
-        let mut app = a.borrow_mut();
-        let shown = app.shown_photos();
-        if let Ok(index) = usize::try_from(i) {
-            app.editor.click_photo(&shown, index, ctrl, shift);
-        }
-        let id = app.photo_at(i);
-        app.select_photo(id);
-        app.refresh_current();
+        let edit = |app: &mut App| {
+            let shown = app.shown_photos();
+            if let Ok(index) = usize::try_from(i) {
+                app.editor.click_photo(&shown, index, ctrl, shift);
+            }
+            true
+        };
+        let show = |app: &mut App| {
+            let id = app.photo_at(i);
+            app.select_photo(id);
+            app.refresh_current();
+        };
+        a.borrow_mut().timed("Clicar numa foto", edit, show);
     });
     let a = app.clone();
     window.on_drop_photo(move |i, fx, fy| {
@@ -43,8 +48,11 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         let (Some(photo), Some(frame)) = (app.photo_at(i), target(&app, fx, fy)) else {
             return;
         };
-        let changed = app.editor.drop_photo(frame, photo);
-        after_edit(&mut app, changed);
+        app.timed(
+            "Soltar foto",
+            |app| app.editor.drop_photo(frame, photo),
+            App::refresh_all,
+        );
     });
     let a = app.clone();
     window.on_drop_frame(move |from, fx, fy| {
@@ -52,21 +60,32 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         let (Ok(from), Some(to)) = (usize::try_from(from), target(&app, fx, fy)) else {
             return;
         };
-        let changed = app.editor.drop_frame(from, to);
-        after_edit(&mut app, changed);
+        app.timed(
+            "Trocar fotos",
+            |app| app.editor.drop_frame(from, to),
+            App::refresh_all,
+        );
     });
     let a = app.clone();
     window.on_frame_selected(move |i| {
-        let mut app = a.borrow_mut();
-        app.editor.select_frame(usize::try_from(i).ok());
-        app.refresh_current();
+        a.borrow_mut().timed(
+            "Selecionar quadro",
+            |app| {
+                app.editor.select_frame(usize::try_from(i).ok());
+                true
+            },
+            App::refresh_current,
+        );
     });
     let a = app.clone();
-    window.on_move_spread(move |from, to| {
+    window.on_move_spread(move |from, gap| {
         let mut app = a.borrow_mut();
-        let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else {
+        let (Ok(from), Ok(gap)) = (usize::try_from(from), usize::try_from(gap)) else {
             return;
         };
+        // O vão vira a posição final pela regra do editor (spec MV, MV-B23).
+        let count = app.session().map_or(0, |s| s.spread_count());
+        let to = reorder(from, gap, count).to;
         let moved = app.editor.session_mut().is_some_and(|s| s.go_to(from))
             && (from == to || app.editor.move_current_to(to));
         after_edit(&mut app, moved);
@@ -79,33 +98,72 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     });
 }
 
-/// A timeline: as fotos de cada lâmina e um corte entre uma lâmina e a outra (regra 8).
+/// A timeline: as fotos de cada lâmina e um corte entre uma lâmina e a outra (regra 8), só as
+/// posições que mudaram (spec MV, regra 3).
 pub fn refresh_timeline(app: &mut App) {
-    let Some(w) = app.window.upgrade() else {
-        return;
-    };
     let Some(project) = app.session().map(|s| s.project().clone()) else {
         return;
     };
     let thumbs = app.thumbs(&project);
-    let spreads = timeline(&project);
-    let last = spreads.len().saturating_sub(1);
-    let mut items = Vec::new();
-    for (k, photos) in spreads.iter().enumerate() {
-        for id in photos {
-            items.push(TimelineItem {
-                img: thumbs.get(id).cloned().unwrap_or_default(),
-                cut: false,
-                spread: i32::try_from(k).unwrap_or(0),
-            });
+    let rows = timeline_rows(&project);
+    let items: Vec<TimelineItem> = rows
+        .iter()
+        .map(|(key, spread)| {
+            let spread = i32::try_from(*spread).unwrap_or(0);
+            match key {
+                TimelineKey::Photo(id, _) => TimelineItem {
+                    img: thumbs.get(id).cloned().unwrap_or_default(),
+                    cut: false,
+                    spread,
+                },
+                TimelineKey::Cut(_) => TimelineItem {
+                    img: slint::Image::default(),
+                    cut: true,
+                    spread,
+                },
+            }
+        })
+        .collect();
+    app.lists.line.sync(rows, |i| items[i].clone());
+}
+
+/// O arrasto (spec MV, regra 12): o fantasma, o quadro de destino e as lâminas abrindo espaço.
+pub fn connect_motion(window: &AppWindow, app: &Shared) {
+    let a = app.clone();
+    window.on_drag_started(move |kind, from| {
+        let mut app = a.borrow_mut();
+        if let Some(ghost) = crate::ghost::make(&mut app, kind, from)
+            && let Some(w) = app.window.upgrade()
+        {
+            w.set_ghost(ghost);
         }
-        if k < last {
-            items.push(TimelineItem {
-                img: slint::Image::default(),
-                cut: true,
-                spread: i32::try_from(k).unwrap_or(0),
-            });
-        }
-    }
-    w.set_timeline(model(items));
+    });
+    let a = app.clone();
+    window.on_drop_at(move |fx, fy| {
+        let app = a.borrow();
+        let target = app.session().and_then(|s| {
+            lamina_editor::motion::drop_target(
+                s.project(),
+                s.current(),
+                f64::from(fx),
+                f64::from(fy),
+            )
+        });
+        target
+            .map(|(_, r)| crate::convert::boxed(r))
+            .unwrap_or_default()
+    });
+    let a = app.clone();
+    window.on_spread_shift(move |from, gap, i| {
+        let app = a.borrow();
+        let count = app.session().map_or(0, |s| s.spread_count());
+        let (Ok(from), Ok(gap), Ok(i)) = (
+            usize::try_from(from),
+            usize::try_from(gap),
+            usize::try_from(i),
+        ) else {
+            return 0;
+        };
+        reorder(from, gap, count).shift.get(i).copied().unwrap_or(0)
+    });
 }

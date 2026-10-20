@@ -6,11 +6,11 @@ use std::rc::Rc;
 
 use lamina_core::Project;
 use lamina_editor::Grip;
-use slint::{Model, ModelRc, VecModel};
+use slint::ModelRc;
 
 use crate::convert::model;
 use crate::state::App;
-use crate::{AppWindow, BoxData, FrameData};
+use crate::{AppWindow, BoxData};
 
 type Shared = Rc<RefCell<App>>;
 
@@ -115,27 +115,4 @@ pub fn snap_boxes(app: &App, project: &Project) -> ModelRc<BoxData> {
         }
     });
     model(lines.collect())
-}
-
-thread_local! {
-    // Os quadros da lâmina grande: a mesma lista, atualizada linha a linha. Trocar a lista
-    // inteira recriaria os quadros da tela e soltaria o mouse no meio do gesto.
-    static FRAMES: Rc<VecModel<FrameData>> = Rc::new(VecModel::default());
-}
-
-/// Põe `frames` na lista que a lâmina grande usa, mudando só as linhas diferentes.
-pub fn stable_frames(frames: &ModelRc<FrameData>) -> ModelRc<FrameData> {
-    FRAMES.with(|m| {
-        let new: Vec<FrameData> = frames.iter().collect();
-        if m.row_count() == new.len() {
-            for (i, f) in new.into_iter().enumerate() {
-                if m.row_data(i).as_ref() != Some(&f) {
-                    m.set_row_data(i, f);
-                }
-            }
-        } else {
-            m.set_vec(new);
-        }
-        ModelRc::from(m.clone())
-    })
 }

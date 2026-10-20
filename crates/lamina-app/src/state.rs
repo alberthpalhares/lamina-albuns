@@ -3,10 +3,10 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::mpsc::Sender;
 
 use lamina_core::{PhotoId, Project};
 use lamina_editor::forms::photo_text;
+use lamina_editor::motion::{photo_rows, strip_rows};
 use lamina_editor::{
     Cache, Editor, ExportCheck, Filter, Found, HumanMessage, PhotoItem, Session, Step, guarded,
     photo_info, photo_list, prepare_images,
@@ -14,8 +14,9 @@ use lamina_editor::{
 use slint::{ComponentHandle, Image};
 
 use crate::AppWindow;
-use crate::convert::{model, photo_data, spread_data};
+use crate::convert::{photo_data, spread_data};
 use crate::images::Images;
+use crate::mailbox::Mailbox;
 use crate::texts::SMALL;
 
 /// O que fazer depois da pergunta "Salvar as alterações?".
@@ -39,8 +40,14 @@ pub enum Msg {
     Step(Step),
     Album(Result<(Project, usize), HumanMessage>),
     ImagesReady,
-    /// A foto original do quadro em modo recorte (spec RC, regra 9).
-    Original(PhotoId, std::sync::Arc<lamina_editor::screens::Rgba>),
+    /// Uma foto de tela lida pelo trabalhador (spec MV, regra 1); `None` sem imagem de tela.
+    Screen {
+        epoch: u64,
+        id: PhotoId,
+        pixels: Option<crate::images::Pixels>,
+    },
+    /// A foto original do quadro em modo recorte (spec RC, regra 9), já em pixels da janela.
+    Original(PhotoId, crate::images::Pixels),
     /// Andamento e fim da exportação (spec EI): o resumo ou o erro, e a pasta.
     Exporting(usize, usize),
     Exported(Result<String, HumanMessage>, PathBuf),
@@ -65,7 +72,7 @@ pub struct App {
     pub window: slint::Weak<AppWindow>,
     pub editor: Editor,
     pub cache: Cache,
-    pub tx: Sender<Msg>,
+    pub tx: Mailbox,
     pub pending: Option<Pending>,
     /// Pasta e número de fotos da janela "Novo álbum" aberta.
     pub new_folder: PathBuf,
@@ -92,6 +99,14 @@ pub struct App {
     pub(crate) loading: Option<PhotoId>,
     /// Fecha o gesto de zoom da roda depois de uma pausa (spec RC, regra 4).
     pub(crate) crop_timer: slint::Timer,
+    /// A medição de `LAMINA_TEMPOS=1` (spec MV, seção 4).
+    pub(crate) clock: crate::timings::Clock,
+    /// A faixa, a linha do tempo e o navegador, atualizados linha a linha (spec MV, regra 3).
+    pub(crate) lists: crate::lists::Lists,
+    /// As vagas da lâmina grande (spec MV, regra 4).
+    pub(crate) slot_rows: crate::slots::SlotRows,
+    /// Decide se ir para outra lâmina desliza (spec MV, seção 4).
+    pub(crate) navigator: lamina_editor::motion::Navigator,
     /// Os recentes que a última conferência não achou e a busca da tela inicial (spec TI).
     pub recent_missing: Vec<PathBuf>,
     pub recent_query: String,
@@ -101,7 +116,8 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(window: &AppWindow, cache: Cache, editor: Editor, tx: Sender<Msg>) -> Self {
+    pub fn new(window: &AppWindow, cache: Cache, editor: Editor, tx: Mailbox) -> Self {
+        let images = Images::new(&cache, &tx);
         App {
             window: window.as_weak(),
             editor,
@@ -125,9 +141,13 @@ impl App {
                 false,
             ),
             updater: crate::updates::Shared::default(),
-            images: Images::default(),
+            images,
             loading: None,
             crop_timer: crate::crop::timer(),
+            clock: crate::timings::Clock::default(),
+            lists: crate::lists::Lists::new(window),
+            slot_rows: crate::slots::SlotRows::new(),
+            navigator: lamina_editor::motion::Navigator::default(),
             recent_missing: Vec::new(),
             recent_query: String::new(),
             filter: Filter::All,
@@ -157,12 +177,15 @@ impl App {
                 let _ = tx.send(Msg::ImagesReady);
             });
         }
-        self.images_ready();
+        self.images.clear();
+        self.lists.reset();
+        self.refresh_all();
     }
 
-    /// Imagens geradas (ou projeto novo): recarrega tudo do cache.
+    /// Imagens geradas no cache: as que faltavam são pedidas de novo e as miniaturas entram.
     pub fn images_ready(&mut self) {
-        self.images.clear();
+        self.images.recheck();
+        self.lists.reset();
         self.refresh_all();
     }
 
@@ -198,30 +221,24 @@ impl App {
         self.images.all_thumbs(project, &self.cache)
     }
 
-    /// Faixa de lâminas, com as miniaturas e o marcador de aviso.
+    /// Faixa de lâminas, com as miniaturas e o marcador de aviso: só as lâminas que mudaram.
     pub fn refresh_strip(&mut self) {
-        let Some(w) = self.window.upgrade() else {
-            return;
-        };
         let Some(session) = self.editor.session() else {
             return;
         };
+        let rows = strip_rows(session);
+        let warned: Vec<bool> = rows.iter().map(|(_, r)| r.warned).collect();
         let (project, missing) = (session.project().clone(), session.missing().to_vec());
-        let warned: Vec<bool> = (0..session.spread_count())
-            .map(|i| !session.warnings_for(i).is_empty())
-            .collect();
         let images = self.images.all_thumbs(&project, &self.cache);
         let image = |id: PhotoId| images.get(&id).cloned();
-        let spreads = warned
-            .iter()
-            .enumerate()
-            .map(|(i, warning)| spread_data(&project, i, &missing, &image, (*warning, SMALL)))
-            .collect();
-        w.set_spreads(model(spreads));
+        self.lists.strip.sync(rows, |i| {
+            let warning = warned.get(i).copied().unwrap_or(false);
+            spread_data(&project, i, &missing, &image, (warning, SMALL))
+        });
         crate::drag::refresh_timeline(self);
     }
 
-    /// Navegador de fotos e dados da foto selecionada.
+    /// Navegador de fotos e dados da foto selecionada: só as fotos que mudaram.
     pub fn refresh_photos(&mut self) {
         let Some(w) = self.window.upgrade() else {
             return;
@@ -230,19 +247,15 @@ impl App {
             return;
         };
         self.list = photo_list(&project, self.filter);
-        let list = self.list.clone();
-        let items = list
-            .iter()
-            .map(|item| {
-                let picked = self.editor.selection().contains(&item.id);
-                photo_data(
-                    item,
-                    self.images.thumb(&project, item.id, &self.cache),
-                    picked,
-                )
-            })
-            .collect();
-        w.set_photos(model(items));
+        let rows = photo_rows(&self.list, self.editor.selection());
+        let picked: Vec<bool> = rows.iter().map(|(_, r)| r.picked).collect();
+        let (images, cache) = (&mut self.images, &self.cache);
+        let list = &self.list;
+        self.lists.browser.sync(rows, |i| {
+            let item = &list[i];
+            let picked = picked.get(i).copied().unwrap_or(false);
+            photo_data(item, images.thumb(&project, item.id, cache), picked)
+        });
         w.set_filter(match self.filter {
             Filter::All => 0,
             Filter::Used => 1,
@@ -250,7 +263,7 @@ impl App {
         });
         let selected = self
             .selected
-            .and_then(|id| list.iter().position(|p| p.id == id));
+            .and_then(|id| self.list.iter().position(|p| p.id == id));
         w.set_selected_photo(selected.and_then(|i| i32::try_from(i).ok()).unwrap_or(-1));
         let info = self.selected.and_then(|id| photo_info(&project, id));
         w.set_info_photo(info.map(|i| photo_text(&i)).unwrap_or_default().into());
