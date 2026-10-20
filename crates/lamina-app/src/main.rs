@@ -21,6 +21,8 @@ mod install;
 mod look;
 mod models;
 mod new_album;
+mod new_project;
+mod new_project_file;
 mod panel;
 mod presets;
 mod recents;
@@ -145,10 +147,7 @@ fn connect_photos(window: &AppWindow, app: &Shared) {
 }
 
 fn connect_dialogs(window: &AppWindow, app: &Shared) {
-    let a = app.clone();
-    window.on_na_changed(move || new_album::changed(&mut a.borrow_mut()));
-    let a = app.clone();
-    window.on_na_create(move || new_album::create(&mut a.borrow_mut()));
+    new_project::connect(window, app);
     let a = app.clone();
     window.on_confirm(move |choice| files::answer(&mut a.borrow_mut(), choice));
     connect_export(window, app);

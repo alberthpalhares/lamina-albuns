@@ -30,16 +30,26 @@ pub struct Preset {
     pub export: ExportPrefs,
 }
 
-/// Os seis presets do Lamina (regra 1): 300 DPI, 3 mm de sangria, 10 mm de zona segura, 20 a 80
-/// páginas, JPEG em sRGB.
+/// Os presets do Lamina (regra 1): os tamanhos padrão de mercado de cada formato, largura ×
+/// altura da página (decisão do dono, 2026-10-19), todos a 300 DPI, 3 mm de sangria, 10 mm de
+/// zona segura, 20 a 80 páginas, JPEG em sRGB.
 pub fn builtin_presets() -> Vec<Preset> {
     [
+        ("Quadrado 15 × 15", 15.0, 15.0),
         ("Quadrado 20 × 20", 20.0, 20.0),
         ("Quadrado 25 × 25", 25.0, 25.0),
         ("Quadrado 30 × 30", 30.0, 30.0),
-        ("Paisagem 30 × 20", 30.0, 20.0),
-        ("Paisagem 40 × 30", 40.0, 30.0),
-        ("Retrato 20 × 30", 20.0, 30.0),
+        ("Horizontal 21 × 15", 21.0, 15.0),
+        ("Horizontal 25 × 20", 25.0, 20.0),
+        ("Horizontal 30 × 20", 30.0, 20.0),
+        ("Horizontal 30 × 25", 30.0, 25.0),
+        ("Horizontal 35 × 30", 35.0, 30.0),
+        ("Horizontal 40 × 30", 40.0, 30.0),
+        ("Horizontal 45 × 30", 45.0, 30.0),
+        ("Vertical 15 × 21", 15.0, 21.0),
+        ("Vertical 20 × 25", 20.0, 25.0),
+        ("Vertical 20 × 30", 20.0, 30.0),
+        ("Vertical 25 × 30", 25.0, 30.0),
     ]
     .into_iter()
     .map(|(name, width_cm, height_cm)| Preset {

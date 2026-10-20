@@ -8,6 +8,27 @@ use lamina_core::{FrameContent, Project};
 use super::AlbumStyle;
 use crate::NewAlbum;
 
+/// Mensagens da seção 6.
+pub const NO_PHOTOS_HERE: &str = "Não achei fotos nessa pasta.";
+pub const CANNOT_WRITE: &str = "Não dá para salvar nessa pasta. Escolha outra.";
+
+/// A pasta Documentos do fotógrafo (a pasta pessoal, se não houver).
+pub fn documents_dir() -> PathBuf {
+    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
+        .map_or_else(std::env::temp_dir, PathBuf::from);
+    let docs = home.join("Documents");
+    if docs.is_dir() { docs } else { home }
+}
+
+/// Dá para gravar um álbum em `folder`? A pasta que ainda não existe vale pela primeira que
+/// existe acima dela (criar a cria).
+pub fn can_write(folder: &Path) -> bool {
+    let Some(existing) = folder.ancestors().find(|p| p.is_dir()) else {
+        return false;
+    };
+    tempfile::tempfile_in(existing).is_ok()
+}
+
 /// A pasta sugerida: a das fotos, senão a última usada, senão `Documentos\Lamina`.
 pub fn suggested_folder(photos: Option<&Path>, last: Option<&Path>, documents: &Path) -> PathBuf {
     photos

@@ -6,7 +6,9 @@ use std::path::Path;
 use lamina_core::{AlbumLook, Border, CropLevel, FrameContent, Mm, Mounting, Project, Rgb};
 
 use super::common::Base;
-use crate::new_project::{AlbumStyle, empty_album, free_file, suggested_folder};
+use crate::new_project::{
+    AlbumStyle, can_write, documents_dir, empty_album, free_file, suggested_folder,
+};
 use crate::{Editor, create_album};
 
 fn style() -> AlbumStyle {
@@ -121,4 +123,11 @@ fn onde_salvar_sugere_a_pasta_das_fotos_ou_a_ultima_ou_documentos() {
     assert_eq!(suggested_folder(Some(photos), Some(last), docs), photos);
     assert_eq!(suggested_folder(None, Some(last), docs), last);
     assert_eq!(suggested_folder(None, None, docs), docs.join("Lamina"));
+}
+
+#[test]
+fn pasta_que_ainda_nao_existe_vale_pela_de_cima() {
+    let dir = tempfile::tempdir().unwrap();
+    assert!(can_write(&dir.path().join("Lamina").join("Novo")));
+    assert!(documents_dir().is_dir());
 }

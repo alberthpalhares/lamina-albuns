@@ -47,7 +47,10 @@ fn ia_b22_modelo_e_especificacao() {
         "trocar_especificacao",
         json!({ "preset": "Quadrado 25 × 25" }),
     );
-    let preset = builtin_presets().remove(1);
+    let preset = builtin_presets()
+        .into_iter()
+        .find(|p| p.name == "Quadrado 25 × 25")
+        .unwrap();
     window
         .respec(preset.fields.to_spec().unwrap(), preset.limits)
         .unwrap();

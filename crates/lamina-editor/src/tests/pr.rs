@@ -24,12 +24,21 @@ fn pr_b1_presets_do_lamina() {
     assert_eq!(
         names,
         [
+            "Quadrado 15 × 15",
             "Quadrado 20 × 20",
             "Quadrado 25 × 25",
             "Quadrado 30 × 30",
-            "Paisagem 30 × 20",
-            "Paisagem 40 × 30",
-            "Retrato 20 × 30"
+            "Horizontal 21 × 15",
+            "Horizontal 25 × 20",
+            "Horizontal 30 × 20",
+            "Horizontal 30 × 25",
+            "Horizontal 35 × 30",
+            "Horizontal 40 × 30",
+            "Horizontal 45 × 30",
+            "Vertical 15 × 21",
+            "Vertical 20 × 25",
+            "Vertical 20 × 30",
+            "Vertical 25 × 30"
         ]
     );
     // Os números de cada preset, escritos aqui (auditoria do Marco 3, M5).
@@ -40,12 +49,21 @@ fn pr_b1_presets_do_lamina() {
     assert_eq!(
         sizes,
         [
+            (15.0, 15.0),
             (20.0, 20.0),
             (25.0, 25.0),
             (30.0, 30.0),
+            (21.0, 15.0),
+            (25.0, 20.0),
             (30.0, 20.0),
+            (30.0, 25.0),
+            (35.0, 30.0),
             (40.0, 30.0),
-            (20.0, 30.0)
+            (45.0, 30.0),
+            (15.0, 21.0),
+            (20.0, 25.0),
+            (20.0, 30.0),
+            (25.0, 30.0)
         ]
     );
     for preset in builtin_presets() {
@@ -66,7 +84,7 @@ fn pr_b1_presets_do_lamina() {
 #[test]
 fn pr_b2_novo_album_a_partir_de_um_preset() {
     let base = Base::with_photos(12, (300, 200));
-    let preset = PresetsStore::default().find("Paisagem 30 × 20").unwrap();
+    let preset = PresetsStore::default().find("Horizontal 30 × 20").unwrap();
     let new = crate::NewAlbum {
         spec: preset.fields.to_spec().unwrap(),
         limits: preset.limits,
@@ -142,7 +160,11 @@ fn pr_b4_arquivo_de_presets_ilegivel() {
     let file = dir.path().join("presets.json");
     std::fs::write(&file, "isto não é json").unwrap();
     let store = PresetsStore::load(&file);
-    assert_eq!(store.all().len(), 6, "só os do Lamina");
+    assert_eq!(
+        store.all().len(),
+        builtin_presets().len(),
+        "só os do Lamina"
+    );
     assert!(
         store
             .warning
