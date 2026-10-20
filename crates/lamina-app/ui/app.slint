@@ -21,11 +21,12 @@ import { UpdateBar } from "update_bar.slint";
 import { RightPanel } from "panel.slint";
 import { DragGhost, GhostData } from "ghost.slint";
 import { ContextUi, ContextMenu, ContextRow } from "context.slint";
-import { OrganizeUi, OrganizeBar, OrganizeMarks, LassoBox, MarkData } from "organize.slint";
+import { PaletteUi, FloatingPalette, PaletteWindow } from "palette.slint";
+import { OrganizeUi, OrganizeBar, OrganizeMarks, OrganizeRulers, OrganizeTools, LassoBox, MarkData, TickData } from "organize.slint";
 import { Motion } from "motion.slint";
 import { WelcomeScreen, ClearRecentsDialog, RecentsUi, RecentCard, RecentItem } from "welcome.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, ContextUi, ContextRow, NewProjectUi, FormatCard, DrawData, ImportUi }
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, NewProjectUi, FormatCard, DrawData, ImportUi }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -422,8 +423,20 @@ export component AppWindow inherits Window {
             if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || root.busy-text != "") {
                 return reject;
             }
+            // No modo organizar, Espaço segurado é a mão (spec EG, seção 3).
+            if (OrganizeUi.on && event.text == " ") {
+                OrganizeUi.hand = true;
+                return accept;
+            }
             // Teclas especiais chegam como o caractere do Slint; o Rust traduz o nome.
             root.key(event.text, event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject
+        }
+        key-released(event) => {
+            if (event.text == " " && OrganizeUi.hand) {
+                OrganizeUi.hand = false;
+                return accept;
+            }
+            reject
         }
 
         VerticalLayout {
@@ -478,8 +491,13 @@ export component AppWindow inherits Window {
                 // Lâmina atual.
                 area := Rectangle {
                     horizontal-stretch: 1;
+                    clip: true;
+                    // No modo organizar, a barra da lâmina em destaque e as réguas ocupam o topo.
+                    property <length> top-room: OrganizeUi.on ? 52px : 0px;
                     property <length> canvas-width: root.current.aspect > 0
-                        ? min(self.width - 48px, (self.height - 48px) / root.current.aspect) : 0px;
+                        ? min(self.width - 48px - (OrganizeUi.on ? 18px : 0px), (self.height - 48px - self.top-room) / root.current.aspect) : 0px;
+                    // A lâmina em destaque cresce com movimento (spec EG, herdado da MV).
+                    animate canvas-width { duration: Motion.on ? Motion.navigate-ms * 1ms : 0ms; easing: ease-out; }
                     // Clique fora dos quadros: desmarca e sai do modo recorte.
                     // Clique fora dos quadros: desmarca e sai do modo recorte. Duplo clique abre o
                     // modo organizar; arrastar no modo faz o laço (spec EG).
@@ -491,6 +509,14 @@ export component AppWindow inherits Window {
                             root.focus-main();
                         }
                         double-clicked => { root.frame-double(-1); root.focus-main(); }
+                        // Ctrl+roda dá zoom na lâmina no modo organizar.
+                        scroll-event(e) => {
+                            if (OrganizeUi.on && (e.modifiers.control || e.modifiers.meta)) {
+                                root.command(e.delta-y > 0 ? "organizar.mais-zoom" : "organizar.menos-zoom");
+                                return accept;
+                            }
+                            return reject;
+                        }
                         moved => { root.background-event(1, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, false); }
                         pointer-event(e) => {
                             if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
@@ -519,7 +545,7 @@ export component AppWindow inherits Window {
                     // Sempre na árvore (some sem projeto) para o arrastar achar a posição dela.
                     big := SpreadCanvas {
                         // Entra deslizando 32 px e esmaecendo, na direção da navegação.
-                        x: (parent.width - self.width) / 2 + (root.nav-running ? root.nav-dir * 32px * (1 - root.nav-e) : 0px);
+                        x: (parent.width - self.width) / 2 + (OrganizeUi.on ? 9px + OrganizeUi.pan-x : 0px) + (root.nav-running ? root.nav-dir * 32px * (1 - root.nav-e) : 0px);
                         opacity: root.nav-running ? root.nav-e : 1;
                         cropping: root.crop-frame;
                         has-preview: root.has-preview;
@@ -537,8 +563,9 @@ export component AppWindow inherits Window {
                         grab-end => { root.frame-release(); root.focus-main(); }
                         hover-fx <=> root.hover-fx;
                         visible: root.has-project;
-                        width: area.canvas-width;
-                        height: area.canvas-width * root.current.aspect;
+                        width: area.canvas-width * (OrganizeUi.on ? OrganizeUi.zoom : 1);
+                        height: self.width * root.current.aspect;
+                        y: (parent.height - self.height) / 2 + area.top-room / 2 + (OrganizeUi.on ? OrganizeUi.pan-y : 0px);
                         data: root.current;
                         guides: root.guides;
                         interactive: true;
@@ -593,6 +620,21 @@ export component AppWindow inherits Window {
                         y: big.y;
                         width: big.width;
                         height: big.height;
+                        unit: big.width;
+                    }
+                    if OrganizeUi.on: OrganizeRulers {
+                        y: 34px;
+                        width: parent.width;
+                        height: parent.height - 34px;
+                        lx: big.x;
+                        ly: big.y - 34px;
+                        unit: big.width;
+                    }
+                    if OrganizeUi.on && (OrganizeUi.tool != 0 || OrganizeUi.hand): OrganizeTools {
+                        width: parent.width;
+                        height: parent.height;
+                        lx: big.x;
+                        ly: big.y;
                         unit: big.width;
                     }
                     if OrganizeUi.on: OrganizeBar {
@@ -657,20 +699,20 @@ export component AppWindow inherits Window {
                 move-spread(from, to) => { root.move-spread(from, to); }
                 focus-main => { root.focus-main(); }
             }
-            if root.has-project: StripHeader {
+            if root.has-project && !OrganizeUi.on: StripHeader {
                 name: "Linha do tempo";
                 summary: root.strip-timeline;
                 open: root.timeline-open;
                 toggled => { root.command("ver.linha-do-tempo"); }
             }
-            if root.has-project && root.timeline-open: TimelineStrip {
+            if root.has-project && root.timeline-open && !OrganizeUi.on: TimelineStrip {
                 height: 58px;
                 timeline: root.timeline;
                 press-x <=> root.press-x;
                 cut-moved(spread, delta) => { root.cut-moved(spread, delta); }
                 focus-main => { root.focus-main(); }
             }
-            if root.has-project: StripHeader {
+            if root.has-project && !OrganizeUi.on: StripHeader {
                 name: "Fotos";
                 summary: root.strip-photos;
                 open: root.photos-open;
@@ -680,7 +722,7 @@ export component AppWindow inherits Window {
                 FilterTab { text: "Não usadas"; active: root.filter == 2; clicked => { root.filter-changed(2); } }
                 BarButton { text: "+ Fotos"; clicked => { root.command("arquivo.importar"); } }
             }
-            if root.has-project && root.photos-open: PhotoStrip {
+            if root.has-project && root.photos-open && !OrganizeUi.on: PhotoStrip {
                 height: 144px;
                 photos: root.photos;
                 selected-photo: root.selected-photo;
@@ -778,6 +820,11 @@ export component AppWindow inherits Window {
     }
     if OrganizeUi.lassoing && root.lasso-moved: LassoBox { }
     if ImportUi.dropping: DropOverlay { }
+    // A paleta do modo organizar, flutuando em qualquer ponto da janela (ou destacada).
+    if OrganizeUi.on && !PaletteUi.detached: FloatingPalette {
+        room-w: root.width;
+        room-h: root.height;
+    }
     if ContextUi.open: ContextMenu {
         width: root.width;
         height: root.height;

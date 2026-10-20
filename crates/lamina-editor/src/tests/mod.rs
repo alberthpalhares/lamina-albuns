@@ -13,6 +13,7 @@ mod eg_copiar;
 mod eg_grupo;
 mod eg_imas;
 mod eg_modo;
+mod eg_paleta;
 mod eh;
 mod eh_samples;
 mod ei;

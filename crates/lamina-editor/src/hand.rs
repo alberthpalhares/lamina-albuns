@@ -107,6 +107,36 @@ pub fn add_empty_frame(
     Ok(at)
 }
 
+/// Um quadro desenhado com a paleta do modo organizar (spec EG, seção 3): texto (na cor que lê
+/// sobre o fundo da página do meio do retângulo) ou quadro de foto vazio, que deixa a lâmina à mão.
+pub fn add_frame_at(
+    project: &mut Project,
+    index: usize,
+    rect: Rect,
+    text: bool,
+) -> Result<usize, EditorError> {
+    let content = if text {
+        let left = project.spec.page_rect(PageSide::Left);
+        let center = rect.x.get() + rect.width.get() / 2.0;
+        let side = if center < left.right().get() {
+            PageSide::Left
+        } else {
+            PageSide::Right
+        };
+        let background = spread_mut(project, index)?.page_background(side);
+        FrameContent::Text(TextBox::new(Rgb::text_on(background)))
+    } else {
+        FrameContent::Empty
+    };
+    let at = push(project, index, rect, content)?;
+    if !text {
+        let spread = spread_mut(project, index)?;
+        spread.manual = true;
+        spread.model = None;
+    }
+    Ok(at)
+}
+
 fn is_text(content: &FrameContent) -> bool {
     matches!(content, FrameContent::Text(_))
 }

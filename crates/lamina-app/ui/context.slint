@@ -57,9 +57,18 @@ export component ContextMenu inherits Rectangle {
                 if r.kind != 2: Text {
                     x: r.indent ? 26px : 10px;
                     height: parent.height;
-                    text: r.kind == 1 ? r.label + (r.open ? "  ▾" : "  ▸") : r.label;
+                    text: r.label;
                     color: r.enabled || r.kind == 1 ? Theme.text : Theme.muted;
                     vertical-alignment: center;
+                }
+                if r.kind == 1: Image {
+                    x: parent.width - 22px;
+                    y: (parent.height - 14px) / 2;
+                    width: 14px;
+                    height: 14px;
+                    source: @image-url("../icons/eg/seta.svg");
+                    colorize: Theme.muted;
+                    transform-rotation: r.open ? 90deg : 0deg;
                 }
                 touch := TouchArea {
                     enabled: r.kind == 1 || (r.kind == 0 && r.enabled);
