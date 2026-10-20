@@ -178,6 +178,17 @@ impl Updates {
         if let Some(warning) = self.store.warning.take() {
             notices.push(warning);
         }
+        // Uma versão de teste instalada recebe as próximas versões de teste, até o fotógrafo
+        // escolher no menu (auditoria da Fase 4, achado 8).
+        let prefs = &self.store.prefs;
+        if self.installed
+            && self.current.is_prerelease()
+            && !prefs.beta
+            && !prefs.beta_chosen
+            && let Err(e) = self.store.beta_by_default()
+        {
+            notices.push(e);
+        }
         let current = self.current.to_string();
         let last = self.store.prefs.last_version.clone();
         if last.as_deref() != Some(current.as_str()) {

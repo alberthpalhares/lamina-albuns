@@ -73,7 +73,7 @@ pub use commands::{Command, Menu};
 pub use editor::{Editor, Leave, Panel, TextChange};
 pub use error::EditorError;
 pub use error_log::ErrorLog;
-pub use example::{EXAMPLE_DIR, EXAMPLE_FILE, example_target, prepare_example};
+pub use example::{EXAMPLE_COPY, EXAMPLE_DIR, EXAMPLE_FILE, example_target, prepare_example};
 pub use exporting::{
     DEFAULT_QUALITY, ExportCheck, ExportFormat, ExportOptions, Warning, export_progress,
     export_project, export_summary,

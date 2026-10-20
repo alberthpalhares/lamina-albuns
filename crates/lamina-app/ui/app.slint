@@ -310,7 +310,8 @@ export component AppWindow inherits Window {
                     BarButton { text: "Novo"; clicked => { root.command("arquivo.novo"); } }
                     BarButton { text: "Abrir"; clicked => { root.command("arquivo.abrir"); } }
                     BarButton { text: "Salvar"; enabled: root.can-save; clicked => { root.command("arquivo.salvar"); } }
-                    BarButton { text: "Exportar"; enabled: root.has-project; clicked => { root.command("arquivo.exportar"); } }
+                    BarButton { text: "Texto"; enabled: root.has-project; clicked => { root.command("lamina.novo-texto"); } }
+                    BarButton { text: "Exportar"; primary: true; enabled: root.has-project; clicked => { root.command("arquivo.exportar"); } }
                 }
             }
 

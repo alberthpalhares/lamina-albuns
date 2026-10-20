@@ -221,6 +221,8 @@ fn main() -> anyhow::Result<()> {
         install::linux_desktop();
     }
     let window = AppWindow::new()?;
+    // Abre maximizada: numa tela pequena, as faixas de baixo ficariam fora (auditoria da Fase 4, 7).
+    window.window().set_maximized(true);
     let (tx, rx) = channel();
     let prefs = PrefsStore::load(&config_dir().join(PREFS_FILE));
     let mut editor = Editor::with_prefs(prefs);

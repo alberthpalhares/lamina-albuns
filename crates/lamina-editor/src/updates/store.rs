@@ -24,6 +24,10 @@ pub struct UpdatePrefs {
     /// A versão da última abertura, para o aviso "Lamina atualizado para …" (regra 6).
     #[serde(rename = "ultima_versao")]
     pub last_version: Option<String>,
+    /// O fotógrafo já ligou ou desligou as versões de teste no menu: a escolha dele vale
+    /// (auditoria da Fase 4, achado 8).
+    #[serde(rename = "beta_escolhido")]
+    pub beta_chosen: bool,
 }
 
 impl Default for UpdatePrefs {
@@ -32,6 +36,7 @@ impl Default for UpdatePrefs {
             automatic: true,
             beta: false,
             last_version: None,
+            beta_chosen: false,
         }
     }
 }
@@ -86,7 +91,17 @@ impl UpdatesStore {
     /// Liga ou desliga as versões de teste e grava.
     pub fn set_beta(&mut self, on: bool) -> Result<(), String> {
         self.prefs.beta = on;
+        self.prefs.beta_chosen = true;
         self.unreadable = false;
+        self.save()
+    }
+
+    /// Liga as versões de teste sem marcar como escolha do fotógrafo (versão de teste instalada).
+    pub fn beta_by_default(&mut self) -> Result<(), String> {
+        self.prefs.beta = true;
+        if self.unreadable {
+            return Ok(());
+        }
         self.save()
     }
 

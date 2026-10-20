@@ -6,13 +6,17 @@ import { Theme } from "theme.slint";
 export component BarButton inherits Rectangle {
     in property <string> text;
     in property <bool> enabled: true;
+    // O botão principal da barra, com fundo (auditoria da Fase 4, achado 25).
+    in property <bool> primary;
     callback clicked();
     width: label.preferred-width + 24px;
     border-radius: 4px;
-    background: touch.has-hover && root.enabled ? #ffffff1a : transparent;
+    background: root.primary && root.enabled
+        ? (touch.has-hover ? #3b8fd4 : #2f7fc1)
+        : (touch.has-hover && root.enabled ? #ffffff1a : transparent);
     label := Text {
         text: root.text;
-        color: root.enabled ? Theme.text : #6b6b6b;
+        color: root.primary && root.enabled ? #ffffff : (root.enabled ? Theme.text : #6b6b6b);
         vertical-alignment: center;
     }
     touch := TouchArea {

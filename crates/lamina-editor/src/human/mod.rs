@@ -92,7 +92,7 @@ pub(crate) fn name(path: &str) -> String {
 pub(crate) fn bug(details: String) -> HumanMessage {
     HumanMessage::new(
         "Algo não saiu como o esperado nesta lâmina.",
-        format!("Desfaça com Ctrl+Z e tente de novo. {REPORT}"),
+        format!("Desfaça em Editar → Desfazer e tente de novo. {REPORT}"),
         details,
     )
 }

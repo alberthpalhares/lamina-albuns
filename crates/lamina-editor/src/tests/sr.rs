@@ -181,8 +181,10 @@ fn sr_b9_navegador_que_nao_abre() {
     let address = feedback_address("0.1.0", "linux-x86_64", "beta");
     let message = browser_failed(&address);
     assert_eq!(message.title, "Não foi possível abrir o navegador.");
+    // O texto do diálogo não se seleciona; o detalhe sim (auditoria da Fase 4, achado 13).
     assert_eq!(
         message.what_to_do,
-        format!("Copie este endereço no navegador: {address}")
+        "Clique em Mostrar detalhes, copie o endereço e cole no navegador."
     );
+    assert_eq!(message.details, address);
 }

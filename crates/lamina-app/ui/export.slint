@@ -142,7 +142,7 @@ export component ExportDialog inherits Shade {
             ListView {
                 vertical-stretch: 1;
                 for warning[i] in root.warnings: Rectangle {
-                    height: 36px;
+                    height: 52px;
                     HorizontalLayout {
                         spacing: 8px;
                         padding-right: 8px;
@@ -151,7 +151,7 @@ export component ExportDialog inherits Shade {
                             color: Theme.text;
                             font-size: 12px;
                             vertical-alignment: center;
-                            overflow: elide;
+                            wrap: word-wrap;
                             horizontal-stretch: 1;
                         }
                         Button { text: "Ir para a lâmina"; clicked => { root.go-to(i); } }
