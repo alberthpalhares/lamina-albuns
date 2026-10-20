@@ -27,6 +27,7 @@ mod jp_view;
 mod md;
 mod md_more;
 mod mv_listas;
+mod mv_reduzir;
 mod mv_telas;
 mod mv_tempos;
 mod np;

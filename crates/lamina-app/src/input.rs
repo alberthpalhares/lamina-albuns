@@ -61,6 +61,7 @@ pub fn run_command(app: &Shared, command: Command) {
                     | Command::ToggleSpreads
                     | Command::ToggleTimeline
                     | Command::TogglePhotos
+                    | Command::ToggleReduceMotion
             );
             a.timed(
                 command.label(),

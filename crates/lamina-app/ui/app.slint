@@ -17,9 +17,10 @@ import { StripHeader, SpreadStrip, TimelineStrip, PhotoStrip, PhotoData, Timelin
 import { BarButton, FilterTab } from "widgets.slint";
 import { PanelTabs, InfoPanel } from "side.slint";
 import { UpdateBar } from "update_bar.slint";
+import { Motion } from "motion.slint";
 import { WelcomeScreen, ClearRecentsDialog, RecentsUi, RecentCard, RecentItem } from "welcome.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem }
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -39,6 +40,8 @@ export component AppWindow inherits Window {
     in property <bool> can-prev;
     in property <bool> can-next;
     in property <bool> guides: true;
+    // "Reduzir movimento" ligado (spec MV, regra 14): a marca no menu Visualizar.
+    in property <bool> reduce-motion;
     in property <SpreadData> current;
     in property <int> current-index;
     in property <[SpreadData]> spreads;
@@ -272,6 +275,8 @@ export component AppWindow inherits Window {
             MenuItem { title: (root.spreads-open ? "✓ " : "    ") + "Faixa de lâminas  (Alt+1)"; enabled: root.has-project; activated => { root.command("ver.faixa-laminas"); } }
             MenuItem { title: (root.timeline-open ? "✓ " : "    ") + "Linha do tempo  (Alt+2)"; enabled: root.has-project; activated => { root.command("ver.linha-do-tempo"); } }
             MenuItem { title: (root.photos-open ? "✓ " : "    ") + "Fotos  (Alt+3)"; enabled: root.has-project; activated => { root.command("ver.fotos"); } }
+            MenuSeparator { }
+            MenuItem { title: (root.reduce-motion ? "✓ " : "    ") + "Reduzir movimento"; activated => { root.command("ver.reduzir-movimento"); } }
         }
         Menu {
             title: "Ajuda";

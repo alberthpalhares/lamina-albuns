@@ -1,0 +1,16 @@
+// Movimento (spec MV, ADR 0011, decisão 5): as durações em ms e o interruptor num lugar só. O
+// Rust preenche a partir do editor; "Reduzir movimento" zera as durações e desliga.
+
+export global Motion {
+    in property <bool> on: true;
+    // Foto que continua na lâmina desliza; foto que entra ou sai esmaece.
+    in property <int> slide-ms: 180;
+    in property <int> fade-ms: 120;
+    // Ir para outra lâmina; faixa e painel acompanhando.
+    in property <int> navigate-ms: 200;
+    in property <int> scroll-ms: 250;
+    // Fantasma que pousa; foto nítida chegando; lâminas abrindo espaço.
+    in property <int> land-ms: 150;
+    in property <int> sharp-ms: 120;
+    in property <int> reorder-ms: 150;
+}

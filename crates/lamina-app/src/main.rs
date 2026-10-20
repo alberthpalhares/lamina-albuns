@@ -23,6 +23,7 @@ mod loader;
 mod look;
 mod mailbox;
 mod models;
+mod motion;
 mod new_album;
 mod panel;
 mod presets;
