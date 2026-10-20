@@ -7,6 +7,7 @@ mod auditoria_m3;
 mod common;
 mod ct;
 mod ds;
+mod eg_arrumar;
 mod eg_grupo;
 mod eg_imas;
 mod eg_modo;

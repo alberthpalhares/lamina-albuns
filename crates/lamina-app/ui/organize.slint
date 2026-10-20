@@ -1,7 +1,7 @@
 // O modo organizar a lâmina (spec EG): o título da lâmina em destaque, os quadros selecionados, o
 // laço e o painel do modo. Só desenho: o editor decide e o Rust preenche o `OrganizeUi`.
 
-import { Button } from "std-widgets.slint";
+import { Button, CheckBox, LineEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { BoxData } from "canvas.slint";
 import { LookPanel } from "look.slint";
@@ -33,7 +33,28 @@ export global OrganizeUi {
     in-out property <length> lasso-y0;
     in-out property <length> lasso-x1;
     in-out property <length> lasso-y1;
+    // Os campos da seleção (X e Y a partir do corte, largura e altura da caixa do grupo).
+    in property <string> unit;
+    in-out property <string> gx;
+    in-out property <string> gy;
+    in-out property <string> gw;
+    in-out property <string> gh;
+    in-out property <bool> keep: true;
+    in property <string> field-error;
+    // "Selecione três quadros ou mais." enquanto Distribuir não vale.
+    in property <string> hint;
     callback done();
+    // 0 = X, 1 = Y, 2 = largura, 3 = altura.
+    callback field-accepted(int);
+    // Um comando do registro pelo nome estável (Alinhar, Igualar, Distribuir).
+    callback command(string);
+}
+
+// Um botão pequeno que roda um comando do registro.
+component Act inherits Button {
+    in property <string> name;
+    horizontal-stretch: 1;
+    clicked => { OrganizeUi.command(root.name); }
 }
 
 // A barra da lâmina em destaque, em cima da área da lâmina.
@@ -124,6 +145,54 @@ export component OrganizePanel inherits VerticalLayout {
         color: Theme.muted;
         wrap: word-wrap;
     }
+    if OrganizeUi.count != "": Text {
+        text: "Posição e tamanho (" + OrganizeUi.unit + ", a partir do corte)";
+        color: Theme.text;
+    }
+    if OrganizeUi.count != "": GridLayout {
+        spacing: 6px;
+        Row {
+            Text { text: "X"; color: Theme.text; vertical-alignment: center; }
+            LineEdit { width: 84px; text <=> OrganizeUi.gx; accepted => { OrganizeUi.field-accepted(0); } }
+            Text { text: "Y"; color: Theme.text; vertical-alignment: center; }
+            LineEdit { width: 84px; text <=> OrganizeUi.gy; accepted => { OrganizeUi.field-accepted(1); } }
+        }
+        Row {
+            Text { text: "Larg."; color: Theme.text; vertical-alignment: center; }
+            LineEdit { width: 84px; text <=> OrganizeUi.gw; accepted => { OrganizeUi.field-accepted(2); } }
+            Text { text: "Alt."; color: Theme.text; vertical-alignment: center; }
+            LineEdit { width: 84px; text <=> OrganizeUi.gh; accepted => { OrganizeUi.field-accepted(3); } }
+        }
+    }
+    if OrganizeUi.count != "": CheckBox { text: "Manter proporção"; checked <=> OrganizeUi.keep; }
+    if OrganizeUi.field-error != "": Text { text: OrganizeUi.field-error; color: #e57373; wrap: word-wrap; }
+    if OrganizeUi.count != "": Text { text: "Alinhar"; color: Theme.text; font-weight: 700; }
+    if OrganizeUi.count != "": HorizontalLayout {
+        spacing: 4px;
+        Act { text: "Esquerda"; name: "organizar.alinhar-esquerda"; }
+        Act { text: "Centro"; name: "organizar.alinhar-centro"; }
+        Act { text: "Direita"; name: "organizar.alinhar-direita"; }
+    }
+    if OrganizeUi.count != "": HorizontalLayout {
+        spacing: 4px;
+        Act { text: "Topo"; name: "organizar.alinhar-topo"; }
+        Act { text: "Meio"; name: "organizar.alinhar-meio"; }
+        Act { text: "Base"; name: "organizar.alinhar-base"; }
+    }
+    if OrganizeUi.count != "": Text { text: "Igualar"; color: Theme.text; font-weight: 700; }
+    if OrganizeUi.count != "": HorizontalLayout {
+        spacing: 4px;
+        Act { text: "Largura"; name: "organizar.igualar-largura"; }
+        Act { text: "Altura"; name: "organizar.igualar-altura"; }
+        Act { text: "Tamanho"; name: "organizar.igualar-tamanho"; }
+    }
+    if OrganizeUi.count != "": Text { text: "Distribuir"; color: Theme.text; font-weight: 700; }
+    if OrganizeUi.count != "": HorizontalLayout {
+        spacing: 4px;
+        Act { text: "Na horizontal"; name: "organizar.distribuir-horizontal"; }
+        Act { text: "Na vertical"; name: "organizar.distribuir-vertical"; }
+    }
+    if OrganizeUi.hint != "" && OrganizeUi.count != "": Text { text: OrganizeUi.hint; color: Theme.muted; wrap: word-wrap; }
     LookPanel {
         vertical-stretch: 1;
         done => { root.done(); }

@@ -36,7 +36,10 @@ impl Editor {
         if !command.in_mode(self.mode()) {
             return false;
         }
-        if let Some(ok) = self.organize_available(command) {
+        if let Some(ok) = self
+            .organize_available(command)
+            .or_else(|| self.arrange_available(command))
+        {
             return ok;
         }
         let last = s.spread_count().saturating_sub(1);
@@ -92,7 +95,18 @@ impl Editor {
             | Command::NudgeDownMore
             | Command::ViewZoomIn
             | Command::ViewZoomOut
-            | Command::ViewFit => false,
+            | Command::ViewFit
+            | Command::AlignLeft
+            | Command::AlignCenter
+            | Command::AlignRight
+            | Command::AlignTop
+            | Command::AlignMiddle
+            | Command::AlignBottom
+            | Command::EqualWidth
+            | Command::EqualHeight
+            | Command::EqualSize
+            | Command::DistributeAcross
+            | Command::DistributeDown => false,
         }
     }
 
@@ -124,6 +138,9 @@ impl Editor {
             self.exit_crop();
         }
         if let Some(done) = self.organize_run(command, had_crop) {
+            return done;
+        }
+        if let Some(done) = self.arrange_run(command) {
             return done;
         }
         match command {

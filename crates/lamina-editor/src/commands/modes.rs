@@ -31,7 +31,8 @@ impl Command {
             | C::NewSpreadFromSelection
             | C::ZoomIn
             | C::ZoomOut => mode == Mode::Normal,
-            // Só no modo: mover a seleção, selecionar todos e o zoom da lâmina.
+            // Só no modo: mover a seleção, selecionar todos, o zoom da lâmina, Alinhar, Igualar e
+            // Distribuir.
             C::NudgeLeft
             | C::NudgeRight
             | C::NudgeUp
@@ -43,7 +44,18 @@ impl Command {
             | C::SelectAllFrames
             | C::ViewZoomIn
             | C::ViewZoomOut
-            | C::ViewFit => mode == Mode::Organize,
+            | C::ViewFit
+            | C::AlignLeft
+            | C::AlignCenter
+            | C::AlignRight
+            | C::AlignTop
+            | C::AlignMiddle
+            | C::AlignBottom
+            | C::EqualWidth
+            | C::EqualHeight
+            | C::EqualSize
+            | C::DistributeAcross
+            | C::DistributeDown => mode == Mode::Organize,
             _ => true,
         }
     }

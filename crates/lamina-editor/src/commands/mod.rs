@@ -100,6 +100,18 @@ pub enum Command {
     ViewZoomIn,
     ViewZoomOut,
     ViewFit,
+    /// Alinhar, Igualar e Distribuir (spec EG, regra 9).
+    AlignLeft,
+    AlignCenter,
+    AlignRight,
+    AlignTop,
+    AlignMiddle,
+    AlignBottom,
+    EqualWidth,
+    EqualHeight,
+    EqualSize,
+    DistributeAcross,
+    DistributeDown,
 }
 
 /// Nome, rótulo, menu e atalho de um comando.
@@ -115,7 +127,7 @@ impl Command {
             .unwrap_or(("", "", Menu::Help, None))
     }
 
-    pub const ALL: [Command; 72] = [
+    pub const ALL: [Command; 83] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
@@ -188,6 +200,17 @@ impl Command {
         Command::ViewZoomIn,
         Command::ViewZoomOut,
         Command::ViewFit,
+        Command::AlignLeft,
+        Command::AlignCenter,
+        Command::AlignRight,
+        Command::AlignTop,
+        Command::AlignMiddle,
+        Command::AlignBottom,
+        Command::EqualWidth,
+        Command::EqualHeight,
+        Command::EqualSize,
+        Command::DistributeAcross,
+        Command::DistributeDown,
     ];
 
     /// Nome estável, para testes e para a linha de comando.
