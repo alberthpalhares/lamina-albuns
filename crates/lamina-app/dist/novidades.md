@@ -3,10 +3,24 @@
 As notas de cada versão, em linguagem simples. A release copia daqui a seção da versão
 (`cargo xtask versao`). Versão nova entra no topo.
 
-## [0.1.0-beta.4] - 2026-10-19
+## [0.1.0-beta.4] - 2026-10-20
 
 Esta é a versão da primeira rodada de testes com fotógrafos.
 
+- **Tela inicial com os seus álbuns.** Os últimos álbuns aparecem em cartões com miniatura, e um
+  clique abre o álbum na lâmina em que você parou. Dá para fixar os favoritos no topo; Ctrl+W ou o
+  botão Início voltam para essa tela.
+- **Novo álbum em três passos.** Escolha o tamanho (formatos desenhados, com os tamanhos de
+  mercado, ou medidas próprias em mm, cm ou polegadas), depois como as fotos entram (cortar nada,
+  pouco ou à vontade, com a cor do fundo e da borda num seletor) e por fim as fotos e onde salvar.
+  O álbum já é gravado na pasta e dá para começar sem fotos.
+- **Movimento.** Trocar o layout, espelhar, trocar fotos e desfazer mostram cada foto deslizando
+  para o lugar novo, e ir para outra lâmina desliza na direção certa. Prefere sem animação?
+  Visualizar → "Reduzir movimento".
+- **Mais rápido.** Cada mudança aparece na tela em menos de 40 milésimos de segundo, e as fotos
+  ficam nítidas sem travar a navegação.
+- **Arrastar com retorno.** Arrastar uma foto mostra a parte dela que está no quadro, acende o
+  quadro de destino e a foto "pousa" ao soltar; reordenar lâminas abre espaço entre as vizinhas.
 - **Experimente sem medo.** Na tela de boas-vindas, "Experimentar com o álbum de exemplo" abre um
   álbum pronto, com fotos livres de uma viagem. Mexa à vontade: ele é uma cópia só sua.
 - **Mande sugestões e problemas sem criar conta.** Ajuda → "Enviar sugestão ou problema…" abre um
