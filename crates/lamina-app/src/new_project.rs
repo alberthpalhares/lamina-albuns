@@ -8,15 +8,15 @@ use std::rc::Rc;
 use lamina_core::{AlbumLook, Border, CropLevel, Mm, Mounting};
 use lamina_editor::forms::{limits_text, parse_limits};
 use lamina_editor::new_project::{
-    Format, NewProject, SizeField, SizeForm, Unit, drawing, formats, mount_preview,
+    Format, NewProject, SizeField, SizeForm, Unit, drawing, formats, mount_preview, picker_color,
 };
-use lamina_editor::{Preset, SpecFields, color_hex, parse_color};
+use lamina_editor::{PALETTE, Preset, SpecFields, color_hex, parse_color};
 use lamina_layout::Reuse;
 use slint::{ComponentHandle, Image, Rgba8Pixel, SharedPixelBuffer, SharedString};
 
 use crate::convert::model;
 use crate::state::App;
-use crate::{AppWindow, DrawData, FormatCard, NewProjectUi};
+use crate::{AppWindow, ColorChoice, DrawData, FormatCard, NewProjectUi};
 
 type Shared = Rc<RefCell<App>>;
 
@@ -46,6 +46,14 @@ pub fn start(app: &mut App) {
     ui.set_max_pages("".into());
     app.new_export = lamina_core::ExportPrefs::default();
     fill_size(&ui, &wizard.size);
+    let palette = PALETTE
+        .iter()
+        .map(|(_, c)| ColorChoice {
+            c: slint::Color::from_rgb_u8(c.r, c.g, c.b),
+            hex: color_hex(*c).into(),
+        })
+        .collect();
+    ui.set_palette(model(palette));
     fill_mount(&ui, &wizard);
     app.wizard = Some(wizard);
     crate::new_project_file::reset(app);
@@ -203,13 +211,16 @@ fn pick_format(app: &mut App, index: i32) {
     let sizes = usize::try_from(index)
         .ok()
         .and_then(|i| groups.get(i))
-        .map(|(_, s)| {
-            s.iter()
-                .map(|p| SharedString::from(p.name.as_str()))
-                .collect()
-        })
+        .map(|(format, s)| s.iter().map(|p| size_label(*format, &p.name)).collect())
         .unwrap_or_default();
     ui.set_sizes(model(sizes));
+}
+
+/// "Horizontal 21 × 15" vira "21 × 15" no botão do formato; o preset do fotógrafo fica com o nome.
+fn size_label(format: Format, name: &str) -> SharedString {
+    name.strip_prefix(format.label())
+        .map_or(name, str::trim)
+        .into()
 }
 
 fn pick_size(app: &mut App, index: i32) {
@@ -304,6 +315,34 @@ fn fill_mount(ui: &NewProjectUi, wizard: &NewProject) {
     ui.set_border_color(color_hex(wizard.look.border.color).into());
     ui.set_radius(Unit::Mm.show(wizard.look.radius.get()).into());
     ui.set_look_error("".into());
+    show_colors(ui);
+}
+
+/// O quadradinho ao lado de cada código mostra a cor digitada (ou a última que valeu).
+fn show_colors(ui: &NewProjectUi) {
+    let swatch =
+        |text: SharedString| parse_color(&text).map(|c| slint::Color::from_rgb_u8(c.r, c.g, c.b));
+    if let Some(c) = swatch(ui.get_background()) {
+        ui.set_background_color(c);
+    }
+    if let Some(c) = swatch(ui.get_border_color()) {
+        ui.set_border_swatch(c);
+    }
+}
+
+/// Clique no quadro de cores: a cor do ponto vira o código do campo (0 = fundo, 1 = borda).
+fn color_at(app: &mut App, which: i32, x: f32, y: f32) {
+    let Some(w) = app.window.upgrade() else {
+        return;
+    };
+    let ui = w.global::<NewProjectUi>();
+    let hex: SharedString = color_hex(picker_color(f64::from(x), f64::from(y))).into();
+    if which == 0 {
+        ui.set_background(hex);
+    } else {
+        ui.set_border_color(hex);
+    }
+    mount_changed(app);
 }
 
 /// A etapa 2 mudou: montagem e aparência no editor e a prévia de novo (regra 7).
@@ -330,6 +369,7 @@ fn mount_changed(app: &mut App) {
         2 => Reuse::High,
         _ => Reuse::Medium,
     };
+    show_colors(&ui);
     let look = read_look(&ui);
     ui.set_look_error(look.as_ref().err().copied().unwrap_or_default().into());
     if let Ok((look, gap)) = look {
@@ -389,6 +429,8 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     ui.on_size_changed(on(size_changed));
     ui.on_same_margins(on(same_margins));
     ui.on_mount_changed(on(mount_changed));
+    let a = app.clone();
+    ui.on_color_at(move |which, x, y| color_at(&mut a.borrow_mut(), which, x, y));
     ui.on_next(on(|app| step(app, true)));
     ui.on_back(on(|app| step(app, false)));
     ui.on_cancel(on(cancel));

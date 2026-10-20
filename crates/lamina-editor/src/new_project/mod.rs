@@ -4,12 +4,14 @@
 use lamina_core::{AlbumLook, DEFAULT_GAP, Mm, Mounting};
 use lamina_layout::Reuse;
 
+mod colors;
 mod create;
 mod formats;
 mod preview;
 mod size;
 mod units;
 
+pub use colors::picker_color;
 pub use create::{
     CANNOT_WRITE, NO_PHOTOS_HERE, apply_look, can_write, documents_dir, empty_album, free_file,
     put_style, suggested_folder,

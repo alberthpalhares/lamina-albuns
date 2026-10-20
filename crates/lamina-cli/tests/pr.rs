@@ -14,12 +14,21 @@ fn pr_b10_presets_pela_linha_de_comando() {
     assert!(list.status.success(), "{}", text(&list.stderr));
     let out = text(&list.stdout);
     for name in [
+        "Quadrado 15 × 15",
         "Quadrado 20 × 20",
         "Quadrado 25 × 25",
         "Quadrado 30 × 30",
-        "Paisagem 30 × 20",
-        "Paisagem 40 × 30",
-        "Retrato 20 × 30",
+        "Horizontal 21 × 15",
+        "Horizontal 25 × 20",
+        "Horizontal 30 × 20",
+        "Horizontal 30 × 25",
+        "Horizontal 35 × 30",
+        "Horizontal 40 × 30",
+        "Horizontal 45 × 30",
+        "Vertical 15 × 21",
+        "Vertical 20 × 25",
+        "Vertical 20 × 30",
+        "Vertical 25 × 30",
     ] {
         assert!(out.contains(name), "{name}: {out}");
     }
@@ -37,7 +46,7 @@ fn pr_b10_presets_pela_linha_de_comando() {
         "--dpi",
         "72",
         "--preset",
-        "Retrato 20 × 30",
+        "Vertical 20 × 30",
         "--cache",
         cache.to_str().unwrap(),
     ]);

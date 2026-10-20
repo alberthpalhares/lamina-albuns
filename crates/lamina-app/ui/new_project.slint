@@ -23,6 +23,11 @@ export struct DrawData {
     ends: bool,
 }
 
+export struct ColorChoice {
+    c: color,
+    hex: string,
+}
+
 export global NewProjectUi {
     in-out property <bool> show;
     in property <int> step: 1;
@@ -62,6 +67,9 @@ export global NewProjectUi {
     in-out property <string> border-color;
     in-out property <string> radius;
     in property <[image]> previews;
+    in property <[ColorChoice]> palette;
+    in property <color> background-color;
+    in property <color> border-swatch;
     in property <string> look-error;
     // Etapa 3.
     in-out property <string> name;
@@ -78,6 +86,8 @@ export global NewProjectUi {
     callback size-changed();
     callback same-margins();
     callback mount-changed();
+    // Clique no quadro de cores: 0 = fundo, 1 = borda; posição de 0 a 1.
+    callback color-at(int, float, float);
     callback file-changed();
     callback change-file();
     callback pick-folder();
@@ -252,43 +262,149 @@ component StepOne inherits VerticalLayout {
     if NewProjectUi.error != "": Text { text: NewProjectUi.error; color: Theme.warning; horizontal-alignment: center; }
 }
 
+// Uma explicação curta embaixo de cada opção, para quem faz o primeiro álbum.
+component Hint inherits Text {
+    color: Theme.muted;
+    font-size: 12px;
+    wrap: word-wrap;
+}
+
+// Um cartão de escolha: título e explicação; o escolhido fica marcado.
+component Choice inherits Rectangle {
+    in property <string> title;
+    in property <string> text;
+    in property <bool> chosen;
+    callback clicked();
+    horizontal-stretch: 1;
+    min-height: 92px;
+    border-radius: 6px;
+    background: root.chosen ? #3d4a5a : (touch.has-hover ? #3a3a3a : #2a2a2a);
+    border-width: root.chosen ? 2px : 1px;
+    border-color: root.chosen ? #4f8fd6 : #ffffff20;
+    VerticalLayout {
+        padding: 10px;
+        spacing: 4px;
+        Text { text: root.title; color: Theme.text; font-weight: 600; }
+        Hint { text: root.text; }
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+// O seletor de cor: amostras prontas, o quadro de cores para clicar e o código, se quiser.
+component ColorPicker inherits VerticalLayout {
+    in property <int> which;
+    in-out property <string> hex;
+    in property <color> current;
+    spacing: 6px;
+    HorizontalLayout {
+        spacing: 8px;
+        Rectangle { width: 28px; height: 28px; border-radius: 4px; background: root.current; border-width: 1px; border-color: #ffffff40; }
+        LineEdit { text <=> root.hex; width: 100px; edited => { NewProjectUi.mount-changed(); } }
+        Hint { text: "ou clique numa cor"; vertical-alignment: center; }
+    }
+    Rectangle {
+        height: 2 * 26px;
+        for c[i] in NewProjectUi.palette: Rectangle {
+            x: mod(i, 6) * 30px;
+            y: floor(i / 6) * 26px;
+            width: 24px;
+            height: 22px;
+            border-radius: 4px;
+            background: c.c;
+            border-width: c.hex == root.hex ? 2px : 1px;
+            border-color: c.hex == root.hex ? Theme.selected : #ffffff30;
+            TouchArea { clicked => { root.hex = c.hex; NewProjectUi.mount-changed(); } }
+        }
+    }
+    // Matiz na horizontal; do branco (topo) à cor pura (meio) e ao preto (embaixo).
+    area := Rectangle {
+        height: 70px;
+        width: 176px;
+        border-radius: 4px;
+        clip: true;
+        background: @linear-gradient(90deg, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+        Rectangle { background: @linear-gradient(180deg, #ffffffff 0%, #ffffff00 50%, #00000000 50%, #000000ff 100%); }
+        TouchArea {
+            mouse-cursor: crosshair;
+            clicked => { NewProjectUi.color-at(root.which, self.mouse-x / area.width, self.mouse-y / area.height); }
+        }
+    }
+}
+
 component StepTwo inherits VerticalLayout {
-    spacing: 8px;
+    spacing: 10px;
+    Title { text: "Como as fotos entram nas lâminas"; }
+    CheckBox { text: "As fotos podem atravessar o meio do álbum aberto"; checked <=> NewProjectUi.lay-flat; toggled => { NewProjectUi.mount-changed(); } }
+    Hint { text: "Ligue para álbuns que abrem totalmente planos (lay-flat). Se a encadernação tem um vinco no meio, deixe desligado: nenhuma foto fica na dobra."; }
+    Text { text: "Quanto o Lamina pode cortar das suas fotos"; color: Theme.text; }
+    HorizontalLayout {
+        spacing: 8px;
+        Choice {
+            title: "Nada";
+            text: "Fotos sempre inteiras. Pode sobrar um pouco mais de fundo em volta.";
+            chosen: NewProjectUi.crop == 0;
+            clicked => { NewProjectUi.crop = 0; NewProjectUi.mount-changed(); }
+        }
+        Choice {
+            title: "Pouco";
+            text: "Corta no máximo 15% de uma foto, só para tudo encaixar melhor.";
+            chosen: NewProjectUi.crop == 1;
+            clicked => { NewProjectUi.crop = 1; NewProjectUi.mount-changed(); }
+        }
+        Choice {
+            title: "Livre (recomendado)";
+            text: "Pode cortar até 35% para uma foto grande encher a página.";
+            chosen: NewProjectUi.crop == 2;
+            clicked => { NewProjectUi.crop = 2; NewProjectUi.mount-changed(); }
+        }
+    }
+    Text { text: "Arranjos que enchem a página"; color: Theme.text; }
+    if NewProjectUi.crop == 0: Hint { text: "Com as fotos sempre inteiras, estes arranjos ficam desligados, porque eles cortam um pouco as fotos."; }
+    CheckBox { text: "Foto de página inteira"; checked <=> NewProjectUi.bleed-page; enabled: NewProjectUi.crop != 0; toggled => { NewProjectUi.mount-changed(); } }
+    Hint { text: "Uma foto cobre a página toda, até a borda do papel (o que a gráfica chama de página sangrada)."; }
+    CheckBox { text: "Mosaicos"; checked <=> NewProjectUi.mosaics; enabled: NewProjectUi.crop != 0; toggled => { NewProjectUi.mount-changed(); } }
+    Hint { text: "Várias fotos encostadas umas nas outras, formando um painel que enche a página."; }
+    HorizontalLayout {
+        spacing: 8px;
+        Text { text: "Variedade dos desenhos"; color: Theme.text; vertical-alignment: center; width: 170px; }
+        ComboBox { model: ["Muita variedade", "Equilibrado", "Mais uniforme"]; current-index <=> NewProjectUi.reuse; selected => { NewProjectUi.mount-changed(); } }
+    }
+    Hint { text: "Quanto o Lamina repete o mesmo desenho de página ao longo do álbum: \"Mais uniforme\" deixa o álbum com cara de coleção; \"Muita variedade\" muda a cada lâmina."; }
+
+    Title { text: "Aparência"; }
     HorizontalLayout {
         spacing: 24px;
         VerticalLayout {
             spacing: 6px;
-            Title { text: "Montagem"; }
-            CheckBox { text: "Fotos podem atravessar a dobra (lay-flat)"; checked <=> NewProjectUi.lay-flat; toggled => { NewProjectUi.mount-changed(); } }
-            HorizontalLayout {
-                spacing: 8px;
-                Label { text: "Recorte das fotos"; width: 150px; }
-                ComboBox {
-                    model: ["Fotos inteiras", "Recorte leve (até 15%)", "Livre"];
-                    current-index <=> NewProjectUi.crop;
-                    selected => { NewProjectUi.mount-changed(); }
-                }
-            }
-            CheckBox { text: "Página sangrada"; checked <=> NewProjectUi.bleed-page; enabled: NewProjectUi.crop != 0; toggled => { NewProjectUi.mount-changed(); } }
-            CheckBox { text: "Mosaicos"; checked <=> NewProjectUi.mosaics; enabled: NewProjectUi.crop != 0; toggled => { NewProjectUi.mount-changed(); } }
-            HorizontalLayout {
-                spacing: 8px;
-                Label { text: "Reutilização de desenhos"; width: 150px; }
-                ComboBox { model: ["Baixa", "Média", "Alta"]; current-index <=> NewProjectUi.reuse; }
-            }
+            Text { text: "Cor do fundo das lâminas"; color: Theme.text; }
+            ColorPicker { which: 0; hex <=> NewProjectUi.background; current: NewProjectUi.background-color; }
         }
         VerticalLayout {
             spacing: 6px;
-            Title { text: "Aparência"; }
-            Field { label: "Fundo (#RRGGBB)"; text <=> NewProjectUi.background; edited => { NewProjectUi.mount-changed(); } }
-            Field { label: "Espaço entre fotos (mm)"; text <=> NewProjectUi.gap; edited => { NewProjectUi.mount-changed(); } }
-            Field { label: "Borda (mm)"; text <=> NewProjectUi.border; edited => { NewProjectUi.mount-changed(); } }
-            Field { label: "Cor da borda"; text <=> NewProjectUi.border-color; edited => { NewProjectUi.mount-changed(); } }
-            Field { label: "Cantos (mm)"; text <=> NewProjectUi.radius; edited => { NewProjectUi.mount-changed(); } }
-            if NewProjectUi.look-error != "": Text { text: NewProjectUi.look-error; color: Theme.warning; }
+            Text { text: "Borda das fotos"; color: Theme.text; }
+            HorizontalLayout {
+                spacing: 8px;
+                Hint { text: "Espessura (mm, 0 = sem borda)"; vertical-alignment: center; width: 170px; }
+                LineEdit { text <=> NewProjectUi.border; width: 70px; edited => { NewProjectUi.mount-changed(); } }
+            }
+            ColorPicker { which: 1; hex <=> NewProjectUi.border-color; current: NewProjectUi.border-swatch; }
         }
     }
-    Label { text: "Prévia com fotos de exemplo"; }
+    HorizontalLayout {
+        spacing: 24px;
+        HorizontalLayout {
+            spacing: 8px;
+            Text { text: "Espaço entre as fotos (mm)"; color: Theme.text; vertical-alignment: center; }
+            LineEdit { text <=> NewProjectUi.gap; width: 70px; edited => { NewProjectUi.mount-changed(); } }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            Text { text: "Cantos arredondados (mm, 0 = retos)"; color: Theme.text; vertical-alignment: center; }
+            LineEdit { text <=> NewProjectUi.radius; width: 70px; edited => { NewProjectUi.mount-changed(); } }
+        }
+    }
+    if NewProjectUi.look-error != "": Text { text: NewProjectUi.look-error; color: Theme.warning; }
+    Text { text: "Prévia com fotos de exemplo (em cinza)"; color: Theme.text; }
     HorizontalLayout {
         spacing: 10px;
         height: 150px;
