@@ -5,6 +5,7 @@
 import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { SpreadCanvas, SpreadData } from "canvas.slint";
+import { Motion } from "motion.slint";
 
 export struct PhotoData {
     img: image,
@@ -71,7 +72,16 @@ export component SpreadStrip inherits Rectangle {
     in-out property <length> press-x;
     in-out property <length> press-y;
     callback go-to(int);
+    // A lâmina arrastada e o vão onde ela foi solta (0 = antes da primeira).
     callback move-spread(int, int);
+    // Quantos lugares a lâmina anda durante o arrasto (lâmina arrastada, vão, lâmina).
+    pure callback spread-shift(int, int, int) -> int;
+    // O vão mais perto do ponteiro durante o arrasto de uma lâmina.
+    function gap() -> int {
+        let item = 84px / max(0.01, root.current-aspect) + 16px;
+        let at = (root.drag-x - strip-scroll.absolute-position.x - strip-scroll.content-x - 10px) / item;
+        max(0, min(root.spreads.length, round(at)))
+    }
     callback focus-main();
     background: StripTheme.spreads;
 
@@ -90,8 +100,39 @@ export component SpreadStrip inherits Rectangle {
         let left = 10px + root.current-index * item;
         let shown = strip-scroll.visible-width;
         if (left + strip-scroll.content-x < 0px || left + item + strip-scroll.content-x > shown) {
-            strip-scroll.content-x = max(min(0px, shown / 2 - left - item / 2), shown - strip.preferred-width);
+            root.follow(max(min(0px, shown / 2 - left - item / 2), shown - strip.preferred-width));
         }
+    }
+
+    // Rolagem suave pelo relógio (spec MV, regra 10; ADR 0011, decisão 6): a barra continua
+    // respondendo na hora e rolar à mão para o acompanhamento.
+    property <bool> sc-running;
+    property <duration> sc-t0;
+    property <length> sc-from;
+    property <length> sc-to;
+    property <float> sc-p: self.sc-running ? min(1, (animation-tick() - self.sc-t0) / max(1ms, Motion.scroll-ms * 1ms)) : 1;
+    changed sc-p => {
+        if (self.sc-running) {
+            strip-scroll.content-x = self.sc-from + (self.sc-to - self.sc-from) * (1 - pow(1 - self.sc-p, 3));
+            if (self.sc-p >= 1) {
+                self.sc-running = false;
+            }
+        }
+    }
+    function follow(target: length) {
+        if (Motion.on && Motion.scroll-ms > 0) {
+            root.sc-from = strip-scroll.content-x;
+            root.sc-to = target;
+            root.sc-t0 = animation-tick();
+            root.sc-running = true;
+        } else {
+            strip-scroll.content-x = target;
+        }
+    }
+    // A roda vertical rola a faixa; giros seguidos somam ao destino anterior.
+    function wheel(dy: length) {
+        let base = root.sc-running ? root.sc-to : strip-scroll.content-x;
+        root.follow(max(strip-scroll.visible-width - strip.preferred-width, min(0px, base + dy)));
     }
 
     strip-scroll := ScrollView {
@@ -99,6 +140,18 @@ export component SpreadStrip inherits Rectangle {
         mouse-drag-pan-enabled: false;
         content-width: strip.preferred-width;
         content-height: self.height;
+        scrolled => { root.sc-running = false; }
+        TouchArea {
+            width: strip.preferred-width;
+            height: strip-scroll.height;
+            scroll-event(e) => {
+                if (e.delta-y != 0) {
+                    root.wheel(e.delta-y);
+                    return accept;
+                }
+                reject
+            }
+        }
         strip := HorizontalLayout {
             padding: 8px;
             padding-left: 10px;
@@ -109,25 +162,38 @@ export component SpreadStrip inherits Rectangle {
                 Rectangle {
                     width: 84px / s.aspect + 6px;
                     height: 90px;
-                    border-radius: 4px;
-                    border-width: 2px;
-                    border-color: i == root.current-index ? Theme.selected : transparent;
-                    SpreadCanvas {
-                        x: 3px;
-                        y: 3px;
-                        width: parent.width - 6px;
-                        height: parent.height - 6px;
-                        data: s;
-                        small: true;
+                    // Reordenar (spec MV, regra 12): as vizinhas abrem espaço durante o arrasto.
+                    property <float> off: root.drag-kind == 3 ? root.spread-shift(root.drag-from, root.gap(), i) : 0;
+                    animate off {
+                        duration: Motion.reorder-ms * 1ms;
+                        easing: cubic-bezier(0.2, 0, 0, 1);
+                        enabled: Motion.on;
                     }
-                    if s.warning: Rectangle {
-                        x: parent.width - 21px;
-                        y: 6px;
-                        width: 14px;
-                        height: 14px;
-                        border-radius: 7px;
-                        background: Theme.warning;
-                        Text { text: "!"; color: black; font-size: 10px; font-weight: 700; }
+                    Rectangle {
+                        x: parent.off * (84px / s.aspect + 16px);
+                        width: parent.width;
+                        height: parent.height;
+                        border-radius: 4px;
+                        border-width: 2px;
+                        border-color: i == root.current-index ? Theme.selected : transparent;
+                        opacity: root.drag-kind == 3 && root.drag-from == i ? 0.35 : 1;
+                        SpreadCanvas {
+                            x: 3px;
+                            y: 3px;
+                            width: parent.width - 6px;
+                            height: parent.height - 6px;
+                            data: s;
+                            small: true;
+                        }
+                        if s.warning: Rectangle {
+                            x: parent.width - 21px;
+                            y: 6px;
+                            width: 14px;
+                            height: 14px;
+                            border-radius: 7px;
+                            background: Theme.warning;
+                            Text { text: "!"; color: black; font-size: 10px; font-weight: 700; }
+                        }
                     }
                     TouchArea {
                         moved => {
@@ -147,9 +213,8 @@ export component SpreadStrip inherits Rectangle {
                             }
                             if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
                                 if (root.drag-kind == 3) {
-                                    let item = 84px / s.aspect + 16px;
-                                    let at = (root.drag-x - strip-scroll.absolute-position.x - strip-scroll.content-x - 10px) / item;
-                                    root.move-spread(i, max(0, min(root.spreads.length - 1, floor(at))));
+                                    // O editor decide a posição pelo vão (spec MV, MV-B23).
+                                    root.move-spread(i, root.gap());
                                 } else {
                                     root.go-to(i);
                                 }
@@ -168,6 +233,15 @@ export component SpreadStrip inherits Rectangle {
                 }
             }
         }
+        // Marcador no vão onde a lâmina vai ficar.
+        if root.drag-kind == 3: Rectangle {
+            x: 10px + root.gap() * (84px / max(0.01, root.current-aspect) + 16px) - 7px;
+            y: 8px;
+            width: 4px;
+            height: 90px;
+            border-radius: 2px;
+            background: Theme.selected;
+        }
     }
 }
 
@@ -180,11 +254,48 @@ export component TimelineStrip inherits Rectangle {
     background: StripTheme.timeline;
     Rectangle { y: 0; height: 1px; background: StripTheme.line; }
 
-    ScrollView {
+    // A roda vertical rola a faixa (spec MV, regra 10), suave pelo relógio; giros seguidos somam.
+    property <bool> sc-running;
+    property <duration> sc-t0;
+    property <length> sc-from;
+    property <length> sc-to;
+    property <float> sc-p: self.sc-running ? min(1, (animation-tick() - self.sc-t0) / max(1ms, Motion.scroll-ms * 1ms)) : 1;
+    changed sc-p => {
+        if (self.sc-running) {
+            line-scroll.content-x = self.sc-from + (self.sc-to - self.sc-from) * (1 - pow(1 - self.sc-p, 3));
+            if (self.sc-p >= 1) {
+                self.sc-running = false;
+            }
+        }
+    }
+    function wheel(dy: length) {
+        let base = root.sc-running ? root.sc-to : line-scroll.content-x;
+        let target = max(line-scroll.visible-width - line.preferred-width, min(0px, base + dy));
+        if (Motion.on && Motion.scroll-ms > 0) {
+            root.sc-from = line-scroll.content-x;
+            root.sc-to = target;
+            root.sc-t0 = animation-tick();
+            root.sc-running = true;
+        } else {
+            line-scroll.content-x = target;
+        }
+    }
+    line-scroll := ScrollView {
         // Arrastar é para levar a foto (ou o corte), não para rolar.
         mouse-drag-pan-enabled: false;
         content-width: line.preferred-width;
-        content-height: self.height;
+        content-height: self.height;        scrolled => { root.sc-running = false; }
+        TouchArea {
+            width: line.preferred-width;
+            height: line-scroll.height;
+            scroll-event(e) => {
+                if (e.delta-y != 0) {
+                    root.wheel(e.delta-y);
+                    return accept;
+                }
+                reject
+            }
+        }
         line := HorizontalLayout {
             padding: 6px;
             spacing: 2px;
@@ -244,11 +355,48 @@ export component PhotoStrip inherits Rectangle {
         abs(x - root.press-x) > 6px || abs(y - root.press-y) > 6px
     }
 
-    ScrollView {
+    // A roda vertical rola a faixa (spec MV, regra 10), suave pelo relógio; giros seguidos somam.
+    property <bool> sc-running;
+    property <duration> sc-t0;
+    property <length> sc-from;
+    property <length> sc-to;
+    property <float> sc-p: self.sc-running ? min(1, (animation-tick() - self.sc-t0) / max(1ms, Motion.scroll-ms * 1ms)) : 1;
+    changed sc-p => {
+        if (self.sc-running) {
+            photo-scroll.content-x = self.sc-from + (self.sc-to - self.sc-from) * (1 - pow(1 - self.sc-p, 3));
+            if (self.sc-p >= 1) {
+                self.sc-running = false;
+            }
+        }
+    }
+    function wheel(dy: length) {
+        let base = root.sc-running ? root.sc-to : photo-scroll.content-x;
+        let target = max(photo-scroll.visible-width - browser.preferred-width, min(0px, base + dy));
+        if (Motion.on && Motion.scroll-ms > 0) {
+            root.sc-from = photo-scroll.content-x;
+            root.sc-to = target;
+            root.sc-t0 = animation-tick();
+            root.sc-running = true;
+        } else {
+            photo-scroll.content-x = target;
+        }
+    }
+    photo-scroll := ScrollView {
         // Arrastar é para levar a foto (ou o corte), não para rolar.
         mouse-drag-pan-enabled: false;
         content-width: browser.preferred-width;
-        content-height: self.height;
+        content-height: self.height;        scrolled => { root.sc-running = false; }
+        TouchArea {
+            width: browser.preferred-width;
+            height: photo-scroll.height;
+            scroll-event(e) => {
+                if (e.delta-y != 0) {
+                    root.wheel(e.delta-y);
+                    return accept;
+                }
+                reject
+            }
+        }
         browser := HorizontalLayout {
             padding: 8px;
             spacing: 8px;

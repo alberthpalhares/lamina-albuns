@@ -177,6 +177,26 @@ impl Editor {
         self.strips.strips
     }
 
+    /// "Reduzir movimento" ligado (spec MV, regra 14).
+    pub fn reduce_motion(&self) -> bool {
+        self.strips.strips.reduce_motion
+    }
+
+    /// As durações dos movimentos agora (zero com "Reduzir movimento").
+    pub fn durations(&self) -> crate::motion::Durations {
+        crate::motion::Durations::new(self.reduce_motion())
+    }
+
+    /// Liga ou desliga "Reduzir movimento" e grava em `janela.json`; se não gravar, vale nesta
+    /// sessão, com aviso.
+    fn toggle_reduce_motion(&mut self) -> bool {
+        self.strips.strips.reduce_motion = !self.strips.strips.reduce_motion;
+        if let Err(message) = self.strips.save() {
+            self.notice = Some(message);
+        }
+        true
+    }
+
     /// Recolhe ou abre a faixa e grava; se não gravar, vale nesta sessão, com aviso (spec PN,
     /// seção 6).
     fn toggle_strip(&mut self, strip: Strip) -> bool {

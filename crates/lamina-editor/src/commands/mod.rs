@@ -74,13 +74,15 @@ pub enum Command {
     /// Fechar o álbum e voltar à tela inicial (spec TI, regra 6).
     CloseAlbum,
     ClearRecents,
+    /// Movimento sem animação (spec MV, regra 14).
+    ToggleReduceMotion,
 }
 
 /// Nome, rótulo, menu e atalho de um comando.
 type Info = (&'static str, &'static str, Menu, Option<Shortcut>);
 
 impl Command {
-    pub const ALL: [Command; 55] = [
+    pub const ALL: [Command; 56] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
@@ -136,6 +138,7 @@ impl Command {
         Command::OpenExample,
         Command::CloseAlbum,
         Command::ClearRecents,
+        Command::ToggleReduceMotion,
     ];
 
     /// Nome estável, para testes e para a linha de comando.

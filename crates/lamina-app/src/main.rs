@@ -12,14 +12,19 @@ mod drag;
 mod export;
 mod files;
 mod frame_panel;
+mod ghost;
 mod hand;
 mod help;
 mod history;
 mod images;
 mod input;
 mod install;
+mod lists;
+mod loader;
 mod look;
+mod mailbox;
 mod models;
+mod motion;
 mod new_album;
 mod new_project;
 mod new_project_file;
@@ -28,16 +33,17 @@ mod presets;
 mod recents;
 mod refresh;
 mod relink;
+mod slots;
 mod spec_dialog;
 mod state;
 mod texts;
+mod timings;
 mod updates;
 mod verify;
 mod welcome;
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::mpsc::channel;
 use std::time::Duration;
 
 use lamina_editor::{
@@ -69,16 +75,20 @@ fn connect(window: &AppWindow, app: &Shared) {
     input::connect(window, app);
     let a = app.clone();
     window.on_go_to(move |index| {
-        let mut app = a.borrow_mut();
-        let moved = usize::try_from(index).is_ok_and(|i| app.editor.go_to_spread(i));
-        if moved {
-            app.refresh_current();
-        }
+        let Ok(index) = usize::try_from(index) else {
+            return;
+        };
+        a.borrow_mut().timed(
+            "Ir para a lâmina",
+            |app| app.editor.go_to_spread(index),
+            App::refresh_current,
+        );
     });
     connect_photos(window, app);
     connect_dialogs(window, app);
     connect_layouts(window, app);
     drag::connect(window, app);
+    drag::connect_motion(window, app);
     crop::connect(window, app);
     look::connect(window, app);
     hand::connect(window, app);
@@ -92,11 +102,17 @@ fn connect(window: &AppWindow, app: &Shared) {
 fn connect_layouts(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     window.on_layout_apply(move |i| {
-        let mut app = a.borrow_mut();
-        if usize::try_from(i).is_ok_and(|i| app.editor.apply_option(Part::Spread, i)) {
-            app.refresh_strip();
-            app.refresh_current();
-        }
+        let Ok(i) = usize::try_from(i) else {
+            return;
+        };
+        a.borrow_mut().timed(
+            "Aplicar a opção do painel",
+            |app| app.editor.apply_option(Part::Spread, i),
+            |app| {
+                app.refresh_strip();
+                app.refresh_current();
+            },
+        );
     });
     let a = app.clone();
     window.on_layout_favorite(move |i| mark(&a, i, true));
@@ -224,15 +240,18 @@ fn main() -> anyhow::Result<()> {
     let window = AppWindow::new()?;
     // Abre maximizada: numa tela pequena, as faixas de baixo ficariam fora (auditoria da Fase 4, 7).
     window.window().set_maximized(true);
-    let (tx, rx) = channel();
+    let (tx, rx) = mailbox::Mailbox::new();
     let prefs = PrefsStore::load(&config_dir().join(PREFS_FILE));
     let mut editor = Editor::with_prefs(prefs);
     editor.set_strips(StripsStore::load(&config_dir().join(STRIPS_FILE)));
     editor.set_recents(RecentsStore::load(&config_dir().join(RECENTS_FILE)));
     editor.set_log(help::error_log());
     let app: Shared = Rc::new(RefCell::new(App::new(&window, Cache::system(), editor, tx)));
+    // Ligada por `LAMINA_TEMPOS=1`; o temporizador precisa viver até a janela fechar.
+    let (clock, _tick) = timings::Clock::install(window.window());
     {
         let mut a = app.borrow_mut();
+        a.clock = clock;
         a.presets = PresetsStore::load(&config_dir().join(PRESETS_FILE));
         let models = ModelsStore::load(&config_dir().join(MODELS_FILE));
         a.editor.set_models(models);
@@ -268,13 +287,15 @@ fn main() -> anyhow::Result<()> {
         });
     }
 
-    let a = app.clone();
+    // As mensagens acordam a janela na hora; o temporizador só pega as que chegaram com o estado
+    // ocupado.
+    mailbox::install(rx, &app);
     let poll = Timer::default();
-    poll.start(TimerMode::Repeated, Duration::from_millis(50), move || {
-        while let Ok(msg) = rx.try_recv() {
-            new_album::message(&mut a.borrow_mut(), msg);
-        }
-    });
+    poll.start(
+        TimerMode::Repeated,
+        Duration::from_millis(250),
+        mailbox::drain,
+    );
     window.invoke_focus_main();
     window.run()?;
     // Sair do Lamina guarda a lâmina em que o fotógrafo parou (spec TI, regra 3).
