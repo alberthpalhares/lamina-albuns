@@ -84,6 +84,72 @@ impl Command {
                 k(Key::Char('-')),
             ),
             C::ViewFit => ("organizar.ajustar", "Ajustar a lâmina", Menu::View, None),
+            C::AlignLeft => (
+                "organizar.alinhar-esquerda",
+                "Alinhar à esquerda",
+                Menu::Spread,
+                None,
+            ),
+            C::AlignCenter => (
+                "organizar.alinhar-centro",
+                "Alinhar ao centro",
+                Menu::Spread,
+                None,
+            ),
+            C::AlignRight => (
+                "organizar.alinhar-direita",
+                "Alinhar à direita",
+                Menu::Spread,
+                None,
+            ),
+            C::AlignTop => (
+                "organizar.alinhar-topo",
+                "Alinhar ao topo",
+                Menu::Spread,
+                None,
+            ),
+            C::AlignMiddle => (
+                "organizar.alinhar-meio",
+                "Alinhar ao meio",
+                Menu::Spread,
+                None,
+            ),
+            C::AlignBottom => (
+                "organizar.alinhar-base",
+                "Alinhar à base",
+                Menu::Spread,
+                None,
+            ),
+            C::EqualWidth => (
+                "organizar.igualar-largura",
+                "Igualar largura",
+                Menu::Spread,
+                None,
+            ),
+            C::EqualHeight => (
+                "organizar.igualar-altura",
+                "Igualar altura",
+                Menu::Spread,
+                None,
+            ),
+            C::EqualSize => (
+                "organizar.igualar-tamanho",
+                "Igualar tamanho",
+                Menu::Spread,
+                None,
+            ),
+            C::DistributeAcross => (
+                "organizar.distribuir-horizontal",
+                "Distribuir na horizontal",
+                Menu::Spread,
+                None,
+            ),
+            C::DistributeDown => (
+                "organizar.distribuir-vertical",
+                "Distribuir na vertical",
+                Menu::Spread,
+                None,
+            ),
             _ => return None,
         })
     }

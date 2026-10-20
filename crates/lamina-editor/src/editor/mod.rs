@@ -14,10 +14,12 @@ use crate::prefs_store::PrefsStore;
 use crate::strips::{Strip, Strips, StripsStore};
 use crate::{EditorError, Session};
 
+mod arrange_cmd;
 mod crop;
 mod dispatch;
 mod dropping;
 mod frames;
+mod group_fields;
 mod group_gesture;
 mod hand;
 mod hand_frames;
@@ -31,8 +33,10 @@ mod report;
 mod style;
 mod text_edit;
 
+pub use arrange_cmd::NEED_THREE;
 pub use crop::{ZOOM_STEP, crop_for, set_crop};
 pub use dropping::DropPlace;
+pub use group_fields::{Field, GROUP_NOT_A_NUMBER};
 pub use layouts::Panel;
 pub use organize::{DoubleClick, SidePanel};
 pub use style::Look;

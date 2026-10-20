@@ -21,7 +21,7 @@ const BOTTOM: Grip = Grip::Resize {
 const TOL: f64 = 2.0;
 
 /// Uma lâmina (a de índice 1) com os quadros nas posições dadas em mm, contadas do canto do corte.
-fn album_mm(rects: &[(f64, f64, f64, f64)]) -> Project {
+pub(super) fn album_mm(rects: &[(f64, f64, f64, f64)]) -> Project {
     let photos: Vec<(u32, u32)> = (0..16).map(|i| if i % 4 == 3 { V } else { H }).collect();
     let mut project = built(spec(30.0, 30.0), &photos, 4);
     project.spreads[1].frames.truncate(rects.len().max(1));

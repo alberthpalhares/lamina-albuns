@@ -31,6 +31,7 @@ pub mod agent;
 pub mod album;
 pub mod appearance;
 mod applying;
+pub mod arrange;
 pub mod cache;
 pub mod commands;
 pub mod editor;

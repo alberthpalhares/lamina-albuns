@@ -4,6 +4,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use lamina_editor::editor::Field;
 use lamina_editor::marks::mark_views;
 use lamina_editor::{Area, Command, PxRect, spread_view};
 use slint::ComponentHandle;
@@ -36,10 +37,40 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         app.editor.lasso(p(x0, y0), p(x1, y1), shift);
         app.refresh_current();
     });
+    let ui = window.global::<OrganizeUi>();
     let a = app.clone();
-    window
-        .global::<OrganizeUi>()
-        .on_done(move || crate::input::run_command(&a, Command::Organize));
+    ui.on_done(move || crate::input::run_command(&a, Command::Organize));
+    let a = app.clone();
+    ui.on_command(move |name| {
+        if let Some(command) = Command::from_name(&name) {
+            crate::input::run_command(&a, command);
+        }
+    });
+    let a = app.clone();
+    ui.on_field_accepted(move |i| field_accepted(&a, i));
+}
+
+/// Um campo da seleção digitado (Enter): o editor decide; texto inválido mostra a mensagem.
+fn field_accepted(app: &Shared, index: i32) {
+    let mut app = app.borrow_mut();
+    let Some(w) = app.window.upgrade() else {
+        return;
+    };
+    let ui = w.global::<OrganizeUi>();
+    let (field, text) = match index {
+        0 => (Field::X, ui.get_gx()),
+        1 => (Field::Y, ui.get_gy()),
+        2 => (Field::Width, ui.get_gw()),
+        _ => (Field::Height, ui.get_gh()),
+    };
+    match app.editor.set_group_field(field, &text, ui.get_keep()) {
+        // Mensagem fixa do editor, já em linguagem de fotógrafo.
+        Err(message) => ui.set_field_error(message.into()), // texto já humano
+        Ok(_) => {
+            ui.set_field_error("".into());
+            app.refresh_current();
+        }
+    }
 }
 
 /// O título, a seleção e a caixa do grupo do modo organizar.
@@ -57,6 +88,13 @@ pub fn refresh(app: &App) {
     ui.set_group(group.map(boxed).unwrap_or_default());
     ui.set_boxes(model(rects.into_iter().map(boxed).collect()));
     ui.set_marks(model(marks(app)));
+    let [x, y, w, h] = app.editor.group_fields();
+    ui.set_gx(x.into());
+    ui.set_gy(y.into());
+    ui.set_gw(w.into());
+    ui.set_gh(h.into());
+    ui.set_unit(app.editor.strips().unit.label().into());
+    ui.set_hint(app.editor.distribute_hint().into());
 }
 
 /// As marcas do ímã do gesto, na unidade da tela.

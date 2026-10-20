@@ -347,6 +347,28 @@ export component AppWindow inherits Window {
             MenuItem { title: "Trazer para a frente"; enabled: root.has-project; activated => { root.command("lamina.frente"); } }
             MenuItem { title: "Enviar para trás"; enabled: root.has-project; activated => { root.command("lamina.tras"); } }
             MenuSeparator { }
+            MenuItem { title: "Organizar lâmina  (O)"; enabled: root.has-project; activated => { root.command("lamina.organizar"); } }
+            Menu {
+                title: "Alinhar";
+                MenuItem { title: "À esquerda"; enabled: root.has-project; activated => { root.command("organizar.alinhar-esquerda"); } }
+                MenuItem { title: "Ao centro"; enabled: root.has-project; activated => { root.command("organizar.alinhar-centro"); } }
+                MenuItem { title: "À direita"; enabled: root.has-project; activated => { root.command("organizar.alinhar-direita"); } }
+                MenuItem { title: "Ao topo"; enabled: root.has-project; activated => { root.command("organizar.alinhar-topo"); } }
+                MenuItem { title: "Ao meio"; enabled: root.has-project; activated => { root.command("organizar.alinhar-meio"); } }
+                MenuItem { title: "À base"; enabled: root.has-project; activated => { root.command("organizar.alinhar-base"); } }
+            }
+            Menu {
+                title: "Igualar";
+                MenuItem { title: "Largura"; enabled: root.has-project; activated => { root.command("organizar.igualar-largura"); } }
+                MenuItem { title: "Altura"; enabled: root.has-project; activated => { root.command("organizar.igualar-altura"); } }
+                MenuItem { title: "Tamanho"; enabled: root.has-project; activated => { root.command("organizar.igualar-tamanho"); } }
+            }
+            Menu {
+                title: "Distribuir";
+                MenuItem { title: "Na horizontal"; enabled: root.has-project; activated => { root.command("organizar.distribuir-horizontal"); } }
+                MenuItem { title: "Na vertical"; enabled: root.has-project; activated => { root.command("organizar.distribuir-vertical"); } }
+            }
+            MenuSeparator { }
             MenuItem { title: "Salvar como modelo…"; enabled: root.has-project; activated => { root.command("lamina.salvar-modelo"); } }
             MenuItem { title: "Meus modelos…"; activated => { root.command("lamina.modelos"); } }
         }
