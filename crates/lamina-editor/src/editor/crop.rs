@@ -30,7 +30,13 @@ pub fn crop_for(
     let p = project.photo(*photo)?;
     let rect = project.frame_rect(f);
     let aspect = rect.width.get() / rect.height.get();
-    Ok(wanted.checked(f64::from(p.width_px), f64::from(p.height_px), aspect)?)
+    let photo = (f64::from(p.width_px), f64::from(p.height_px));
+    let crop = wanted.checked(photo.0, photo.1, aspect)?;
+    // Com giro, o centro fica onde a região girada não sai da foto (spec AF, regra 2).
+    Ok(match p.adjust.angle_tenths {
+        0 => crop,
+        _ => crop.turned_clamped(photo, (aspect, 1.0), p.adjust.degrees()),
+    })
 }
 
 /// Grava no quadro o recorte de [`crop_for`] (dentro de [`crate::Session::edit`]) e o devolve.
@@ -57,8 +63,9 @@ impl Editor {
         self.crop_frame
     }
 
-    /// Foto e recorte do quadro `frame` da lâmina atual (o provisório, se houver).
-    fn frame_crop(&self, frame: usize) -> Option<(f64, f64, f64, Crop)> {
+    /// Foto (largura, altura), proporção do quadro, recorte (o provisório, se houver) e giro da
+    /// foto do quadro `frame` da lâmina atual.
+    fn frame_crop(&self, frame: usize) -> Option<(f64, f64, f64, Crop, f64)> {
         let s = self.session.as_ref()?;
         let project = s.project();
         let f = project.spreads.get(s.current())?.frames.get(frame)?;
@@ -72,7 +79,14 @@ impl Editor {
             .pending_crop
             .filter(|_| self.crop_frame == Some(frame))
             .unwrap_or(*crop);
-        Some((f64::from(p.width_px), f64::from(p.height_px), aspect, crop))
+        let degrees = p.adjust.degrees();
+        Some((
+            f64::from(p.width_px),
+            f64::from(p.height_px),
+            aspect,
+            crop,
+            degrees,
+        ))
     }
 
     /// Entra no modo recorte do quadro (só quadro com foto; regra 1).
@@ -99,19 +113,31 @@ impl Editor {
 
     /// Arrasto de `dx`, `dy` (frações do quadro) desde o último movimento: provisório (regra 2).
     pub fn crop_drag(&mut self, dx: f64, dy: f64) -> bool {
-        let Some((w, h, aspect, crop)) = self.crop_frame.and_then(|f| self.frame_crop(f)) else {
+        let Some((w, h, aspect, crop, degrees)) = self.crop_frame.and_then(|f| self.frame_crop(f))
+        else {
             return false;
         };
-        self.pending_crop = Some(crop.panned(w, h, aspect, dx, dy));
+        // Com giro, a foto acompanha o mouse na tela (spec AF, regra 4).
+        self.pending_crop = Some(if degrees == 0.0 {
+            crop.panned(w, h, aspect, dx, dy)
+        } else {
+            crop.panned_turned((w, h), (aspect, 1.0), degrees, (dx, dy))
+        });
         true
     }
 
     /// Zoom multiplicado por `factor`, provisório até [`Editor::commit_crop`] (regra 3).
     pub fn crop_zoom(&mut self, factor: f64) -> bool {
-        let Some((w, h, aspect, crop)) = self.crop_frame.and_then(|f| self.frame_crop(f)) else {
+        let Some((w, h, aspect, crop, degrees)) = self.crop_frame.and_then(|f| self.frame_crop(f))
+        else {
             return false;
         };
-        self.pending_crop = Some(crop.zoomed(w, h, aspect, factor));
+        let zoomed = crop.zoomed(w, h, aspect, factor);
+        self.pending_crop = Some(if degrees == 0.0 {
+            zoomed
+        } else {
+            zoomed.turned_clamped((w, h), (aspect, 1.0), degrees)
+        });
         true
     }
 

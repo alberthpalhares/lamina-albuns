@@ -1,6 +1,6 @@
 //! O registro de comandos no editor: quando cada comando está disponível e o que ele faz.
 
-use super::{Editor, crop, organize_cmd};
+use super::{Editor, adjust, crop, organize_cmd};
 use crate::suggestions::Part;
 use crate::{Command, Session, Strip};
 
@@ -110,6 +110,10 @@ impl Editor {
             | Command::DistributeDown => false,
             Command::CopyFrames | Command::DuplicateFrames => !self.selected_frames().is_empty(),
             Command::PasteFrames => self.can_paste(),
+            Command::TurnLeft
+            | Command::TurnRight
+            | Command::TurnLeftMore
+            | Command::TurnRightMore => self.crop_frame.is_some(),
         }
     }
 
@@ -125,7 +129,8 @@ impl Editor {
         self.gesture = None;
         self.group = None;
         // Setas seguidas no mesmo grupo viram uma edição só (spec EG, regra 10).
-        let nudging = organize_cmd::nudge_of(command).is_some();
+        let nudging =
+            organize_cmd::nudge_of(command).is_some() || adjust::turn_of(command).is_some();
         if let Some(s) = self.session.as_mut()
             && !nudging
         {
@@ -136,7 +141,7 @@ impl Editor {
         let crop_command = matches!(
             command,
             Command::CropMode | Command::ZoomIn | Command::ZoomOut | Command::ResetCrop
-        );
+        ) || adjust::turn_of(command).is_some();
         if !crop_command {
             self.exit_crop();
         }
@@ -179,6 +184,9 @@ impl Editor {
             Command::CopyFrames => self.copy_frames(),
             Command::PasteFrames => self.paste_frames(),
             Command::DuplicateFrames => self.duplicate_frames(),
+            c if adjust::turn_of(c).is_some() => {
+                adjust::turn_of(c).is_some_and(|t| self.adjust(adjust::AdjustChange::Turn(t)))
+            }
             Command::NewText => self.new_text(None),
             Command::NewPhotoFrame => self.new_photo_frame(None),
             Command::BringForward => self.reorder_selected(true),

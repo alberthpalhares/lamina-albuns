@@ -14,6 +14,7 @@ use crate::prefs_store::PrefsStore;
 use crate::strips::{Strip, Strips, StripsStore};
 use crate::{EditorError, Session};
 
+mod adjust;
 mod arrange_cmd;
 mod clipboard;
 mod context;
@@ -36,6 +37,7 @@ mod report;
 mod style;
 mod text_edit;
 
+pub use adjust::{AdjustChange, BAD_ANGLE, BAD_SCALE, CropGrid, parse_angle};
 pub use arrange_cmd::NEED_THREE;
 pub use context::ContextEntry;
 pub use crop::{ZOOM_STEP, crop_for, set_crop};
@@ -72,6 +74,8 @@ pub struct Editor {
     /// Quadro em modo recorte e o recorte provisório do gesto (spec RC).
     crop_frame: Option<usize>,
     pending_crop: Option<Crop>,
+    /// O ângulo da foto está mudando: a grade fina aparece no recorte (spec AF, seção 4).
+    turning: bool,
     /// Trabalho em segundo plano (novo álbum, exportar, procurar fotos): os comandos esperam.
     busy: bool,
     /// As faixas de baixo e o arquivo delas (spec PN).
@@ -119,6 +123,7 @@ impl Editor {
             anchor: None,
             crop_frame: None,
             pending_crop: None,
+            turning: false,
             busy: false,
             strips: StripsStore::default(),
             gesture: None,
@@ -185,6 +190,7 @@ impl Editor {
         self.anchor = None;
         self.crop_frame = None;
         self.pending_crop = None;
+        self.turning = false;
         // Abrir outro álbum sai do modo organizar (spec EG).
         self.organize = organize::Organizing::default();
         self.group = None;
