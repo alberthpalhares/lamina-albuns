@@ -29,6 +29,11 @@ pub enum CoreError {
     #[error("projeto na versão de formato {from} não pôde ser migrado: {reason}")]
     Migration { from: u32, reason: String },
 
+    #[error(
+        "ajuste da foto {photo} fora das faixas (−45° a 45°, brilho e contraste de −100 a 100)"
+    )]
+    InvalidAdjust { photo: String },
+
     #[error("recorte inválido: {0}")]
     InvalidCrop(String),
 

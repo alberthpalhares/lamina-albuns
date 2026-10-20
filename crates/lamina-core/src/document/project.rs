@@ -13,7 +13,7 @@ use crate::{AlbumSpec, CoreError, Mm, Rect, RelRect};
 
 /// Versão atual do formato do arquivo de projeto. Suba ao mudar a estrutura e
 /// escreva a migração correspondente em [`Project::from_json`].
-pub const CURRENT_SCHEMA_VERSION: u32 = 4;
+pub const CURRENT_SCHEMA_VERSION: u32 = 5;
 
 /// Espaço entre fotos padrão: 8 pontos tipográficos (spec TP; spec AP, regra 2).
 pub const DEFAULT_GAP: Mm = Mm(8.0 * 25.4 / 72.0);
@@ -87,6 +87,7 @@ impl Project {
             fingerprint: None,
             taken_at: None,
             camera: None,
+            adjust: super::PhotoAdjust::default(),
         });
         id
     }
@@ -185,6 +186,12 @@ impl Project {
     /// Confere todas as invariantes. Chamado ao carregar um arquivo.
     pub fn validate(&self) -> Result<(), CoreError> {
         self.spec.validate()?;
+        if let Some(bad) = self.photos.iter().find(|p| !p.adjust.is_valid()) {
+            let name = bad.path.file_name().unwrap_or(bad.path.as_os_str());
+            return Err(CoreError::InvalidAdjust {
+                photo: name.to_string_lossy().into_owned(),
+            });
+        }
         for spread in &self.spreads {
             for frame in &spread.frames {
                 frame.rect.validate()?;

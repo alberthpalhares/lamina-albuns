@@ -37,6 +37,12 @@ impl Human for CoreError {
                 "Atualize em Ajuda → Verificar atualizações agora e abra o álbum de novo."
                     .to_owned(),
             ),
+            CoreError::InvalidAdjust { photo } => (
+                format!("A foto {photo} tem um ajuste inválido."),
+                "Abra uma cópia de segurança do álbum. O ângulo vai de −45° a 45°; brilho e \
+                 contraste, de −100 a 100."
+                    .to_owned(),
+            ),
             CoreError::InvalidName(name) => (
                 format!("O nome \"{name}\" tem caracteres que não servem para nome de arquivo."),
                 "Use só letras, números, espaços, - e _.".to_owned(),

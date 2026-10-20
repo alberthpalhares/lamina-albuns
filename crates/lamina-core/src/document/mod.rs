@@ -4,6 +4,8 @@
 //! o documento guarda o caminho relativo e uma impressão digital para reencontrar o
 //! arquivo se ele mudar de pasta.
 
+#[cfg(test)]
+mod adjust_tests;
 mod content;
 mod crop;
 mod ids;
@@ -20,7 +22,7 @@ pub use crop::{Crop, PixelRegion};
 pub use ids::{FrameId, PhotoId, SpreadId};
 pub use mounting::{AlbumLook, CropLevel, LIGHT_MAX_CROP, Mounting};
 pub use paths::{lexical_path, relative_path, validate_project_name};
-pub use photo::{Orientation, Photo};
+pub use photo::{Orientation, Photo, PhotoAdjust};
 pub use print::{ExportPrefs, OutputFormat, PageLimits};
 pub use project::{CURRENT_SCHEMA_VERSION, DEFAULT_GAP, Project};
 pub use text::{
