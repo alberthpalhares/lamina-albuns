@@ -4,6 +4,7 @@
 use crate::keys::{Key, Shortcut};
 
 mod table;
+mod table_edit;
 
 /// Menu onde o comando aparece.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -87,6 +88,14 @@ pub enum Command {
 type Info = (&'static str, &'static str, Menu, Option<Shortcut>);
 
 impl Command {
+    /// Nome, rótulo, menu e atalho: cada comando está numa das duas partes da tabela (o teste
+    /// `todo_comando_esta_numa_parte_da_tabela` confere).
+    fn info(self) -> Info {
+        self.app_info()
+            .or_else(|| self.edit_info())
+            .unwrap_or(("", "", Menu::Help, None))
+    }
+
     pub const ALL: [Command; 59] = [
         Command::NewAlbum,
         Command::Open,

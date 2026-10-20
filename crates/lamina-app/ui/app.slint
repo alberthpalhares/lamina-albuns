@@ -7,35 +7,23 @@ import { SpreadCanvas, SpreadData, FrameData, BoxData } from "canvas.slint";
 import { ConfirmDialog, MessageDialog, BusyOverlay } from "dialogs.slint";
 import { NewProjectDialog, NewProjectUi, FormatCard, DrawData } from "new_project.slint";
 import { ImportUi, DropOverlay, EmptyAlbum } from "importing.slint";
-import { LayoutsPanel, LayoutItem } from "layouts.slint";
-import { LookPanel, LookUi, Swatch } from "look.slint";
-import { FramePanel, FrameUi } from "frame.slint";
+import { LayoutItem } from "layouts.slint";
+import { LookUi, Swatch } from "look.slint";
+import { FrameUi } from "frame.slint";
 import { AboutDialog } from "about.slint";
 import { ModelNameDialog, ModelsDialog, ModelUi } from "models.slint";
-import { HistoryPanel, HistoryItem } from "history.slint";
+import { HistoryItem } from "history.slint";
 import { ExportDialog } from "export.slint";
 import { PresetNameDialog, PresetsDialog, PresetUi } from "spec.slint";
 import { StripHeader, SpreadStrip, TimelineStrip, PhotoStrip, PhotoData, TimelineItem } from "strips.slint";
 import { BarButton, FilterTab } from "widgets.slint";
-import { PanelTabs, InfoPanel } from "side.slint";
 import { UpdateBar } from "update_bar.slint";
+import { RightPanel } from "panel.slint";
+import { DragGhost, GhostData } from "ghost.slint";
 import { Motion } from "motion.slint";
 import { WelcomeScreen, ClearRecentsDialog, RecentsUi, RecentCard, RecentItem } from "welcome.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, NewProjectUi, FormatCard, DrawData, ImportUi }
-
-// O fantasma do arrasto (spec MV, regra 12): a parte da foto que está no quadro (em pixels da
-// imagem), o tamanho na tela e o selo da quantidade (0 = sem selo).
-export struct GhostData {
-    img: image,
-    cx: int,
-    cy: int,
-    cw: int,
-    ch: int,
-    w: float,
-    h: float,
-    badge: int,
-}
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, NewProjectUi, FormatCard, DrawData, ImportUi }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -518,55 +506,32 @@ export component AppWindow inherits Window {
                 }
 
                 // Painel da direita: layouts (padrão) e informações.
-                if root.has-project: Rectangle {
-                    width: 300px;
-                    background: Theme.panel;
-                    VerticalLayout {
-                        padding: 12px;
-                        spacing: 8px;
-                        PanelTabs { tab <=> root.panel-tab; }
-                        if root.panel-tab == 0: LayoutsPanel {
-                            vertical-stretch: 1;
-                            items: root.layouts;
-                            in-use: root.layout-in-use;
-                            list: root.layout-list;
-                            has-reordered: root.has-reordered;
-                            count: root.layout-count;
-                            notice: root.layout-notice;
-                            explanation: root.layout-explanation;
-                            aspect: root.current.aspect;
-                            apply(i) => { root.layout-apply(i); root.focus-main(); }
-                            favorite(i) => { root.layout-favorite(i); root.focus-main(); }
-                            reject(i) => { root.layout-reject(i); root.focus-main(); }
-                            list-changed(i) => { root.layout-list-changed(i); root.focus-main(); }
-                        }
-                        if root.panel-tab == 2: LookPanel {
-                            vertical-stretch: 1;
-                            done => { root.focus-main(); }
-                        }
-                        if root.panel-tab == 4: FramePanel {
-                            vertical-stretch: 1;
-                            done => { root.focus-main(); }
-                        }
-                        if root.panel-tab == 3: HistoryPanel {
-                            vertical-stretch: 1;
-                            items: root.history;
-                            position: root.history-pos;
-                            go(i) => { root.history-go(i); root.focus-main(); }
-                        }
-                        if root.panel-tab == 1: InfoPanel {
-                            vertical-stretch: 1;
-                            album: root.info-album;
-                            spread: root.info-spread;
-                            warnings: root.info-warnings;
-                            frame: root.info-frame;
-                            frame-warn: root.info-frame-warn;
-                            photo: root.info-photo;
-                        }
-                    }
+                if root.has-project: RightPanel {
+                    tab <=> root.panel-tab;
+                    layouts: root.layouts;
+                    layout-in-use: root.layout-in-use;
+                    layout-list: root.layout-list;
+                    has-reordered: root.has-reordered;
+                    layout-count: root.layout-count;
+                    layout-notice: root.layout-notice;
+                    layout-explanation: root.layout-explanation;
+                    aspect: root.current.aspect;
+                    history: root.history;
+                    history-pos: root.history-pos;
+                    info-album: root.info-album;
+                    info-spread: root.info-spread;
+                    info-warnings: root.info-warnings;
+                    info-frame: root.info-frame;
+                    info-frame-warn: root.info-frame-warn;
+                    info-photo: root.info-photo;
+                    layout-apply(i) => { root.layout-apply(i); }
+                    layout-favorite(i) => { root.layout-favorite(i); }
+                    layout-reject(i) => { root.layout-reject(i); }
+                    layout-list-changed(i) => { root.layout-list-changed(i); }
+                    history-go(i) => { root.history-go(i); }
+                    done => { root.focus-main(); }
                 }
             }
-
             // As três faixas de baixo (spec PN): cabeçalho com nome e resumo, e o conteúdo, que
             // recolhe. A faixa de lâminas fica sempre na árvore (só some sem projeto ou
             // recolhida) para rolar até a lâmina atual.
@@ -703,33 +668,14 @@ export component AppWindow inherits Window {
     if RecentsUi.show-clear: ClearRecentsDialog {
         closed => { root.focus-main(); }
     }
-    if root.drag-kind == 1 || root.drag-kind == 2 || root.landing: Rectangle {
+    if root.drag-kind == 1 || root.drag-kind == 2 || root.landing: DragGhost {
+        ghost: root.ghost;
+        landing: root.landing;
         width: root.landing ? root.land-w0 + (root.land-w1 - root.land-w0) * root.land-e : root.ghost.w * 1px;
         height: root.landing ? root.land-h0 + (root.land-h1 - root.land-h0) * root.land-e : root.ghost.h * 1px;
         x: root.landing ? root.land-x0 + (root.land-x1 - root.land-x0) * root.land-e : root.drag-x - self.width / 2;
         y: root.landing ? root.land-y0 + (root.land-y1 - root.land-y0) * root.land-e : root.drag-y - self.height / 2;
         opacity: root.landing ? 0.85 * (1 - root.land-p) + 0.15 : 0.85;
-        drop-shadow-blur: 10px;
-        drop-shadow-color: #00000080;
-        Image {
-            width: parent.width;
-            height: parent.height;
-            source: root.ghost.img;
-            image-fit: fill;
-            source-clip-x: root.ghost.cx;
-            source-clip-y: root.ghost.cy;
-            source-clip-width: root.ghost.cw;
-            source-clip-height: root.ghost.ch;
-        }
-        if root.ghost.badge > 1 && !root.landing: Rectangle {
-            x: parent.width - 14px;
-            y: -10px;
-            width: 26px;
-            height: 26px;
-            border-radius: 13px;
-            background: Theme.selected;
-            Text { text: root.ghost.badge; color: white; font-size: 12px; font-weight: 700; }
-        }
     }
     if ImportUi.dropping: DropOverlay { }
     if root.busy-text != "": BusyOverlay {
