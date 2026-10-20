@@ -6,6 +6,15 @@ import { Theme } from "theme.slint";
 import { BoxData } from "canvas.slint";
 import { LookPanel } from "look.slint";
 
+// Uma marca do ímã de mesmo tamanho ou de espaçamento igual: a linha e o texto, em frações da
+// largura da lâmina.
+export struct MarkData {
+    line: BoxData,
+    text: string,
+    tx: float,
+    ty: float,
+}
+
 export global OrganizeUi {
     in property <bool> on;
     // "Organizando a lâmina 3 · Esc conclui".
@@ -16,6 +25,8 @@ export global OrganizeUi {
     in property <[BoxData]> boxes;
     in property <BoxData> group;
     in property <bool> has-group;
+    // As marcas do ímã durante o gesto ("= 9 cm" e os vãos iguais).
+    in property <[MarkData]> marks;
     // O laço em andamento, em pixels da janela.
     in-out property <bool> lassoing;
     in-out property <length> lasso-x0;
@@ -65,6 +76,30 @@ export component OrganizeMarks inherits Rectangle {
         height: OrganizeUi.group.h * root.unit + 6px;
         border-width: 1px;
         border-color: #ffffffb0;
+    }
+    for m in OrganizeUi.marks: Rectangle {
+        Rectangle {
+            x: m.line.x * root.unit;
+            y: m.line.y * root.unit;
+            width: max(1px, m.line.w * root.unit);
+            height: max(1px, m.line.h * root.unit);
+            background: #ff4fd8;
+        }
+        Rectangle {
+            x: m.tx * root.unit;
+            y: m.ty * root.unit - self.height / 2;
+            width: label.preferred-width + 8px;
+            height: label.preferred-height + 4px;
+            background: #000000b0;
+            border-radius: 3px;
+            label := Text {
+                x: 4px;
+                y: 2px;
+                text: m.text;
+                color: #ff4fd8;
+                font-size: 11px;
+            }
+        }
     }
 }
 

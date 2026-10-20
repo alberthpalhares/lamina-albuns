@@ -7,7 +7,8 @@ use lamina_core::{FrameContent, Project, Rect};
 use super::Editor;
 use crate::group::{clamp_shift, group_box, scaled, scaled_text, shifted};
 use crate::hand::{MIN_FRAME_MM, frame_mm, set_rect};
-use crate::snap::{Grip, SnapLine, guides_without, snap};
+use crate::magnets::{self, Mark, Near};
+use crate::snap::{Grip, SnapLine};
 
 /// O gesto do grupo: os quadros, a alça, os retângulos do começo e os de agora (mm), os corpos de
 /// texto do começo e os fatores de agora.
@@ -20,6 +21,7 @@ pub(super) struct GroupGesture {
     text_pt: Vec<Option<f64>>,
     scale: (f64, f64),
     pub(super) lines: Vec<SnapLine>,
+    pub(super) marks: Vec<Mark>,
 }
 
 fn text_pt(project: &Project, index: usize, frame: usize) -> Option<f64> {
@@ -59,6 +61,7 @@ impl Editor {
             text_pt,
             scale: (1.0, 1.0),
             lines: Vec::new(),
+            marks: Vec::new(),
         });
         true
     }
@@ -80,35 +83,40 @@ impl Editor {
         let Some(start) = group_box(&g.starts) else {
             return false;
         };
-        let (now, scale, lines) = match g.grip {
+        let near = if magnet {
+            Near::of(project, index, &g.frames)
+        } else {
+            Near::default()
+        };
+        let (now, scale, lines, marks) = match g.grip {
             Grip::Move => {
                 let moved = shifted(&[start], dx, dy)[0];
-                let (target, lines) = if magnet {
-                    snap(
-                        moved,
-                        Grip::Move,
-                        &guides_without(project, index, &g.frames),
-                        tolerance,
-                    )
+                let (target, lines, marks) = if magnet {
+                    magnets::magnet(moved, Grip::Move, &near, tolerance)
                 } else {
-                    (moved, Vec::new())
+                    (moved, Vec::new(), Vec::new())
                 };
                 let wanted = (
                     target.x.get() - start.x.get(),
                     target.y.get() - start.y.get(),
                 );
                 let (dx, dy) = clamp_shift(start, trim, wanted.0, wanted.1);
-                (shifted(&g.starts, dx, dy), (1.0, 1.0), lines)
+                (shifted(&g.starts, dx, dy), (1.0, 1.0), lines, marks)
             }
             grip => {
                 let (rects, sx, sy) = scaled(&g.starts, grip, (dx, dy), free, (trim, MIN_FRAME_MM));
-                (rects, (sx, sy), Vec::new())
+                match alone(&rects, grip, free).filter(|_| magnet) {
+                    Some(rect) => sized_alone(start, rect, grip, (&near, tolerance), trim)
+                        .unwrap_or((rects, (sx, sy), Vec::new(), Vec::new())),
+                    None => (rects, (sx, sy), Vec::new(), Vec::new()),
+                }
             }
         };
         if let Some(g) = self.group.as_mut() {
             g.now = now;
             g.scale = scale;
             g.lines = lines;
+            g.marks = marks;
         }
         true
     }
@@ -134,6 +142,11 @@ impl Editor {
         self.change(&label, |p, i| apply_group(p, i, &g))
     }
 
+    /// As marcas do ímã de mesmo tamanho e de espaçamento igual do gesto, para a tela.
+    pub fn magnet_marks(&self) -> &[Mark] {
+        self.group.as_ref().map_or(&[], |g| g.marks.as_slice())
+    }
+
     /// O gesto do grupo está em curso.
     pub fn group_moving(&self) -> bool {
         self.group.is_some()
@@ -146,6 +159,49 @@ impl Editor {
             let _ = apply_group(project, index, g);
         }
     }
+}
+
+/// O quadro sozinho num gesto de tamanho pela borda (ou num canto com Shift): só aí vale o ímã de
+/// mesmo tamanho, porque o canto proporcional não muda um eixo só (regra 7).
+fn alone(rects: &[Rect], grip: Grip, free: bool) -> Option<Rect> {
+    let Grip::Resize {
+        left,
+        right,
+        top,
+        bottom,
+    } = grip
+    else {
+        return None;
+    };
+    let corner = (left || right) && (top || bottom);
+    match rects {
+        [one] if free || !corner => Some(*one),
+        _ => None,
+    }
+}
+
+/// Os retângulos, os fatores, as linhas e as marcas do quadro sozinho com os ímãs da borda
+/// segurada; `None` se o encaixe sairia do corte ou ficaria abaixo do mínimo.
+type Sized = (Vec<Rect>, (f64, f64), Vec<SnapLine>, Vec<Mark>);
+
+fn sized_alone(
+    start: Rect,
+    rect: Rect,
+    grip: Grip,
+    (near, tolerance): (&Near, f64),
+    trim: Rect,
+) -> Option<Sized> {
+    let (r, lines, marks) = magnets::magnet(rect, grip, near, tolerance);
+    let inside = r.x.get() >= trim.x.get() - 1e-9
+        && r.y.get() >= trim.y.get() - 1e-9
+        && r.right().get() <= trim.right().get() + 1e-9
+        && r.bottom().get() <= trim.bottom().get() + 1e-9;
+    let big = r.width.get() >= MIN_FRAME_MM && r.height.get() >= MIN_FRAME_MM;
+    let scale = (
+        r.width.get() / start.width.get(),
+        r.height.get() / start.height.get(),
+    );
+    (inside && big).then(|| (vec![r], scale, lines, marks))
 }
 
 /// Os retângulos e os corpos de texto do gesto no projeto.

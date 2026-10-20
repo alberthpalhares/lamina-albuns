@@ -4,12 +4,13 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use lamina_editor::marks::mark_views;
 use lamina_editor::{Area, Command, PxRect, spread_view};
 use slint::ComponentHandle;
 
 use crate::convert::{boxed, model};
 use crate::state::App;
-use crate::{AppWindow, OrganizeUi};
+use crate::{AppWindow, MarkData, OrganizeUi};
 
 type Shared = Rc<RefCell<App>>;
 
@@ -55,6 +56,30 @@ pub fn refresh(app: &App) {
     ui.set_has_group(rects.len() > 1);
     ui.set_group(group.map(boxed).unwrap_or_default());
     ui.set_boxes(model(rects.into_iter().map(boxed).collect()));
+    ui.set_marks(model(marks(app)));
+}
+
+/// As marcas do ímã do gesto, na unidade da tela.
+fn marks(app: &App) -> Vec<MarkData> {
+    let Some(project) = app.editor.view_project() else {
+        return Vec::new();
+    };
+    // Frações de tela cabem com folga em f32.
+    #[allow(clippy::cast_possible_truncation)]
+    let f = |v: f64| v as f32;
+    mark_views(
+        &project,
+        app.editor.magnet_marks(),
+        app.editor.strips().unit,
+    )
+    .into_iter()
+    .map(|m| MarkData {
+        line: boxed(m.line),
+        text: m.text.into(),
+        tx: f(m.at.0),
+        ty: f(m.at.1),
+    })
+    .collect()
 }
 
 /// Os retângulos dos quadros selecionados, em frações da largura da lâmina.
