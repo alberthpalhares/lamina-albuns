@@ -16,6 +16,7 @@ use crate::{EditorError, Session};
 
 mod arrange_cmd;
 mod clipboard;
+mod context;
 mod crop;
 mod dispatch;
 mod dropping;
@@ -35,6 +36,7 @@ mod style;
 mod text_edit;
 
 pub use arrange_cmd::NEED_THREE;
+pub use context::ContextEntry;
 pub use crop::{ZOOM_STEP, crop_for, set_crop};
 pub use dropping::DropPlace;
 pub use group_fields::{Field, GROUP_NOT_A_NUMBER};

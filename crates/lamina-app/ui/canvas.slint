@@ -201,6 +201,8 @@ export component SpreadCanvas inherits Rectangle {    in property <SpreadData> d
     in property <BoxData> preview;
     in property <image> preview-img;
     callback frame-double(int);
+    // Clique direito num quadro (-1 = no fundo), em pixels da janela: o menu de contexto (spec EG).
+    callback context(int, length, length);
     callback crop-drag(float, float);
     callback crop-end();
     // Quanto a roda girou, em pixels (um entalhe da roda costuma valer 120).
@@ -233,6 +235,9 @@ export component SpreadCanvas inherits Rectangle {    in property <SpreadData> d
         double-clicked => { root.frame-double(-1); }
         moved => { root.back-press(1, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, false); }
         pointer-event(e) => {
+            if (e.button == PointerEventButton.right && e.kind == PointerEventKind.up) {
+                root.context(-1, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+            }
             if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
                 root.back-press(0, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, e.modifiers.shift);
             }
@@ -282,6 +287,10 @@ export component SpreadCanvas inherits Rectangle {    in property <SpreadData> d
             root.hover-fx = (self.absolute-position.x + self.mouse-x - root.absolute-position.x) / root.width;
         }
         pointer-event(e) => {
+            if (e.button == PointerEventButton.right && e.kind == PointerEventKind.up) {
+                root.context(f.index, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                return;
+            }
             // No modo organizar, o corpo de qualquer quadro segura o grupo (nenhuma foto troca de
             // quadro, spec EG, regra 4).
             if (root.organizing) {

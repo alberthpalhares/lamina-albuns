@@ -1,0 +1,71 @@
+// O menu de contexto da lâmina (spec EG, regra 13). Só desenho: o editor monta os itens a partir
+// do registro de comandos e o Rust preenche o `ContextUi`.
+
+import { Theme } from "theme.slint";
+
+// Uma linha do menu: 0 = comando, 1 = submenu (abre e fecha no lugar), 2 = separador.
+export struct ContextRow {
+    label: string,
+    kind: int,
+    enabled: bool,
+    open: bool,
+    indent: bool,
+}
+
+export global ContextUi {
+    in-out property <bool> open;
+    // Onde o clique direito aconteceu, em pixels da janela.
+    in property <length> x;
+    in property <length> y;
+    in property <[ContextRow]> rows;
+    callback pick(int);
+    callback close();
+}
+
+// O menu por cima da janela inteira: clicar fora fecha.
+export component ContextMenu inherits Rectangle {
+    TouchArea {
+        clicked => { ContextUi.close(); }
+        pointer-event(e) => {
+            if (e.button == PointerEventButton.right && e.kind == PointerEventKind.down) {
+                ContextUi.close();
+            }
+        }
+    }
+    Rectangle {
+        x: max(0px, min(ContextUi.x, root.width - self.width - 4px));
+        y: max(0px, min(ContextUi.y, root.height - self.height - 4px));
+        width: 250px;
+        height: list.preferred-height;
+        background: Theme.panel;
+        border-radius: 6px;
+        border-width: 1px;
+        border-color: #ffffff30;
+        drop-shadow-blur: 12px;
+        drop-shadow-color: #00000080;
+        list := VerticalLayout {
+            padding: 4px;
+            for r[i] in ContextUi.rows: Rectangle {
+                height: r.kind == 2 ? 9px : 26px;
+                border-radius: 4px;
+                background: r.kind != 2 && touch.has-hover && (r.enabled || r.kind == 1) ? #ffffff18 : transparent;
+                if r.kind == 2: Rectangle {
+                    y: 4px;
+                    height: 1px;
+                    background: #ffffff25;
+                }
+                if r.kind != 2: Text {
+                    x: r.indent ? 26px : 10px;
+                    height: parent.height;
+                    text: r.kind == 1 ? r.label + (r.open ? "  ▾" : "  ▸") : r.label;
+                    color: r.enabled || r.kind == 1 ? Theme.text : Theme.muted;
+                    vertical-alignment: center;
+                }
+                touch := TouchArea {
+                    enabled: r.kind == 1 || (r.kind == 0 && r.enabled);
+                    clicked => { ContextUi.pick(i); }
+                }
+            }
+        }
+    }
+}
