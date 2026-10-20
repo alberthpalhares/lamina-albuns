@@ -1,23 +1,26 @@
-//! A aba Quadro (spec TX, seção 3): as medidas do quadro selecionado em mm, contadas do canto do
-//! corte, e os campos do texto. Ler o que o fotógrafo digitou também mora aqui (regra 12).
+//! A aba Quadro (spec TX, seção 3): as medidas do quadro selecionado na unidade da tela (spec NP,
+//! regra 3; a pendência foi para a EG), contadas do canto do corte, e os campos do texto. Ler o que o fotógrafo digitou também mora aqui (regra 12).
 
 use lamina_core::{LINE_SPACING, Mm, PageSide, Project, Rect, Rgb, TEXT_SIZE_PT, TextBox};
 use lamina_render::{FAMILIES, family};
 
 use crate::Editor;
 use crate::hand::frame_mm;
+use crate::new_project::Unit;
 
 /// Mensagem de medida inválida.
-pub const BAD_NUMBER: &str = "Use um número em mm, como 12,5.";
+pub const BAD_NUMBER: &str = "Use um número, como 12,5.";
 
 /// O que a aba mostra.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FrameForm {
-    /// X, Y, largura e altura em mm, com uma casa e vírgula.
+    /// X, Y, largura e altura na unidade da tela, com até duas casas e vírgula.
     pub x: String,
     pub y: String,
     pub width: String,
     pub height: String,
+    /// "mm", "cm" ou "pol".
+    pub unit: &'static str,
     pub text: Option<TextForm>,
 }
 
@@ -87,21 +90,24 @@ impl Editor {
         let frame = self.selected_frame()?;
         let r = frame_mm(s.project(), s.current(), frame)?;
         let trim = s.project().spec.trim_rect();
+        let unit = self.strips().unit;
         Some(FrameForm {
-            x: decimal(r.x.get() - trim.x.get()),
-            y: decimal(r.y.get() - trim.y.get()),
-            width: decimal(r.width.get()),
-            height: decimal(r.height.get()),
+            x: unit.show(r.x.get() - trim.x.get()),
+            y: unit.show(r.y.get() - trim.y.get()),
+            width: unit.show(r.width.get()),
+            height: unit.show(r.height.get()),
+            unit: unit.label(),
             text: self.selected_text().map(text_form),
         })
     }
 }
 
-/// As medidas digitadas (X, Y a partir do corte; largura, altura) → retângulo da lâmina.
-pub fn parse_frame(project: &Project, fields: [&str; 4]) -> Result<Rect, &'static str> {
+/// As medidas digitadas na unidade `unit` (X, Y a partir do corte; largura, altura) → retângulo
+/// da lâmina, em mm. X e Y podem ser negativos (o corte prende depois).
+pub fn parse_frame(project: &Project, fields: [&str; 4], unit: Unit) -> Result<Rect, &'static str> {
     let mut v = [0.0; 4];
     for (slot, s) in v.iter_mut().zip(fields) {
-        *slot = parse_number(s).ok_or(BAD_NUMBER)?;
+        *slot = parse_number(s).ok_or(BAD_NUMBER)? * unit.mm_per_unit();
     }
     let trim = project.spec.trim_rect();
     Ok(Rect::new(

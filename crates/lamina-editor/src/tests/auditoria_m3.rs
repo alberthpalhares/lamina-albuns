@@ -7,6 +7,7 @@ use lamina_layout::{ModelSlot, ModelText, SpreadModel};
 use super::tl_common::{editor_at, three_spreads};
 use crate::frame_form::{page_at, parse_frame};
 use crate::hand::frame_mm;
+use crate::new_project::Unit;
 use crate::presets::{Preset, PresetsStore};
 use crate::snap::Grip;
 use crate::{Command, ModelsStore, Part, Session, TextChange, option_title};
@@ -62,13 +63,32 @@ fn um_comando_encerra_a_emenda_do_texto() {
 }
 
 #[test]
+fn aba_quadro_mostra_e_le_na_unidade_da_tela() {
+    // A unidade de sempre é cm (spec NP, regra 3): 12 cm de largura aparecem como "12".
+    let mut editor = editor_at(three_spreads(), 0);
+    editor.select_frame(Some(0));
+    let form = editor.frame_form().unwrap();
+    assert_eq!(form.unit, "cm");
+    let s = editor.session().unwrap();
+    let r = frame_mm(s.project(), 0, 0).unwrap();
+    assert_eq!(form.width, Unit::Cm.show(r.width.get()));
+    let project = s.project().clone();
+    let rect = parse_frame(&project, ["1", "2", "3,5", "4"], Unit::Cm).unwrap();
+    let trim = project.spec.trim_rect();
+    assert!((rect.x.get() - trim.x.get() - 10.0).abs() < 1e-9);
+    assert!((rect.width.get() - 35.0).abs() < 1e-9);
+    let inch = parse_frame(&project, ["0", "0", "1", "1"], Unit::Inch).unwrap();
+    assert!((inch.width.get() - 25.4).abs() < 1e-9);
+}
+
+#[test]
 fn aba_quadro_digitada_prende_ao_corte_e_marca_a_mao() {
     let mut editor = editor_at(three_spreads(), 0);
     editor.select_frame(Some(0));
     let form = editor.frame_form().unwrap();
     assert!(form.text.is_none());
     let project = editor.session().unwrap().project().clone();
-    let rect = parse_frame(&project, ["-10", "5", "2", "2,5"]).unwrap();
+    let rect = parse_frame(&project, ["-10", "5", "2", "2,5"], Unit::Mm).unwrap();
     assert!(editor.set_frame_mm(rect));
     let s = editor.session().unwrap();
     assert_eq!(s.undo_label(), Some("Redimensionar quadro"));
@@ -78,7 +98,7 @@ fn aba_quadro_digitada_prende_ao_corte_e_marca_a_mao() {
     assert!((r.width.get() - 5.0).abs() < 1e-9 && (r.height.get() - 5.0).abs() < 1e-9);
     assert!(s.project().spreads[0].manual);
     assert_eq!(
-        parse_frame(&project, ["doze", "1", "1", "1"]),
+        parse_frame(&project, ["doze", "1", "1", "1"], Unit::Mm),
         Err(crate::frame_form::BAD_NUMBER)
     );
 }

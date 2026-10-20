@@ -30,6 +30,7 @@ mod models;
 mod mounting;
 mod organize;
 mod organize_cmd;
+mod organize_moves;
 mod recents;
 mod report;
 mod style;
