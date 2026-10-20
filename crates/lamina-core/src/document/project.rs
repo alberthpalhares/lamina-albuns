@@ -6,14 +6,14 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    Border, ExportPrefs, Frame, FrameContent, FrameId, PageLimits, Photo, PhotoId, Rgb, Spread,
-    SpreadId, migration,
+    AlbumLook, Border, ExportPrefs, Frame, FrameContent, FrameId, Mounting, PageLimits, Photo,
+    PhotoId, Spread, SpreadId, migration,
 };
 use crate::{AlbumSpec, CoreError, Mm, Rect, RelRect};
 
 /// Versão atual do formato do arquivo de projeto. Suba ao mudar a estrutura e
 /// escreva a migração correspondente em [`Project::from_json`].
-pub const CURRENT_SCHEMA_VERSION: u32 = 3;
+pub const CURRENT_SCHEMA_VERSION: u32 = 4;
 
 /// Espaço entre fotos padrão: 8 pontos tipográficos (spec TP; spec AP, regra 2).
 pub const DEFAULT_GAP: Mm = Mm(8.0 * 25.4 / 72.0);
@@ -39,6 +39,12 @@ pub struct Project {
     /// Formato, cor e páginas soltas que o laboratório pede (spec PR; opcional no arquivo).
     #[serde(default, skip_serializing_if = "ExportPrefs::is_default")]
     pub export: ExportPrefs,
+    /// Quanto o gerador pode recortar e quais famílias usa (spec NP; formato 4).
+    #[serde(rename = "montagem", default)]
+    pub mounting: Mounting,
+    /// Fundo das lâminas novas, borda e cantos das fotos escolhidos ao criar (spec NP).
+    #[serde(rename = "aparencia", default)]
+    pub look: AlbumLook,
     /// Próximo identificador livre (compartilhado por fotos, lâminas e quadros).
     next_id: u64,
 }
@@ -54,6 +60,8 @@ impl Project {
             spreads: Vec::new(),
             page_limits: PageLimits::default(),
             export: ExportPrefs::default(),
+            mounting: Mounting::default(),
+            look: AlbumLook::default(),
             next_id: 1,
         }
     }
@@ -87,7 +95,7 @@ impl Project {
         let id = SpreadId(self.take_id());
         self.spreads.push(Spread {
             id,
-            background: Rgb::WHITE,
+            background: self.look.background,
             background_right: None,
             gap: None,
             frames: Vec::new(),

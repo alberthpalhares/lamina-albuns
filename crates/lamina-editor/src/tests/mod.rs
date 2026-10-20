@@ -26,6 +26,8 @@ mod jp_speed;
 mod jp_view;
 mod md;
 mod md_more;
+mod np;
+mod np_create;
 mod pc;
 mod pn;
 mod pr;

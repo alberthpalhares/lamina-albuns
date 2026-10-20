@@ -151,6 +151,7 @@ pub fn selection(project: &Project, index: usize, part: Part) -> Result<Selectio
 pub fn lists(project: &Project, sel: &Selection) -> Result<LayoutLists, LayoutError> {
     let options = LayoutOptions {
         gap: sel.gap,
+        mounting: project.mounting,
         ..LayoutOptions::default()
     };
     layout_options(&project.spec, sel.active, &sel.aspects, &options)

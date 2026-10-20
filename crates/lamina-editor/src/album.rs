@@ -33,11 +33,21 @@ pub struct SpecFields {
     #[serde(rename = "altura_cm")]
     pub height_cm: f64,
     pub dpi: u32,
+    /// Sangria na borda externa (e nas outras, quando elas não têm a sua).
     #[serde(rename = "sangria_mm")]
     pub bleed_mm: f64,
+    /// Sangria em cima e embaixo e na lombada (spec NP, regra 4); `None` = igual à externa.
+    #[serde(rename = "sangria_cima_baixo_mm", default)]
+    pub bleed_top_mm: Option<f64>,
+    #[serde(rename = "sangria_lombada_mm", default)]
+    pub bleed_spine_mm: Option<f64>,
+    /// Zona segura na borda externa (e nas outras, quando elas não têm a sua).
     #[serde(rename = "zona_segura_mm")]
     pub safe_mm: f64,
-    /// Zona segura na lombada; `None` = igual à zona segura.
+    /// Zona segura em cima e embaixo; `None` = igual à externa.
+    #[serde(rename = "zona_segura_cima_baixo_mm", default)]
+    pub safe_top_mm: Option<f64>,
+    /// Zona segura na lombada; `None` = igual à externa.
     #[serde(rename = "lombada_mm", default)]
     pub spine_mm: Option<f64>,
     #[serde(rename = "inicia_com_pagina", default)]
@@ -53,7 +63,10 @@ impl Default for SpecFields {
             height_cm: 30.0,
             dpi: 300,
             bleed_mm: 3.0,
+            bleed_top_mm: None,
+            bleed_spine_mm: None,
             safe_mm: 10.0,
+            safe_top_mm: None,
             spine_mm: None,
             starts_single: false,
             ends_single: false,
@@ -64,23 +77,45 @@ impl Default for SpecFields {
 impl SpecFields {
     /// Os campos de uma especificação pronta (a janela "Especificação do álbum"; spec PR).
     pub fn from_spec(spec: &AlbumSpec) -> Self {
-        let safe = spec.safe_margins();
+        let (bleed, safe) = (spec.bleed(), spec.safe_margins());
+        // A borda igual à externa fica `None` ("igual à externa").
+        let other = |m: Mm, outer: Mm| ((m.get() - outer.get()).abs() > 1e-9).then_some(m.get());
         SpecFields {
             width_cm: spec.page_width().get() / 10.0,
             height_cm: spec.page_height().get() / 10.0,
             dpi: spec.dpi().get(),
-            bleed_mm: spec.bleed().outer.get(),
+            bleed_mm: bleed.outer.get(),
+            bleed_top_mm: other(bleed.top_bottom, bleed.outer),
+            bleed_spine_mm: other(bleed.inner, bleed.outer),
             safe_mm: safe.outer.get(),
-            spine_mm: ((safe.inner.get() - safe.outer.get()).abs() > 1e-9)
-                .then_some(safe.inner.get()),
+            safe_top_mm: other(safe.top_bottom, safe.outer),
+            spine_mm: other(safe.inner, safe.outer),
             starts_single: spec.edges().start == AlbumEdge::SinglePage,
             ends_single: spec.edges().end == AlbumEdge::SinglePage,
         }
     }
 
+    /// A sangria das três bordas (externa, cima e baixo, lombada).
+    pub fn bleed(&self) -> Margins {
+        let side = |v: Option<f64>| Mm(v.unwrap_or(self.bleed_mm));
+        Margins::new(
+            Mm(self.bleed_mm),
+            side(self.bleed_top_mm),
+            side(self.bleed_spine_mm),
+        )
+    }
+
+    /// A zona segura das três bordas (externa, cima e baixo, lombada).
+    pub fn safe(&self) -> Margins {
+        let side = |v: Option<f64>| Mm(v.unwrap_or(self.safe_mm));
+        Margins::new(
+            Mm(self.safe_mm),
+            side(self.safe_top_mm),
+            side(self.spine_mm),
+        )
+    }
+
     pub fn to_spec(&self) -> Result<AlbumSpec, CoreError> {
-        let safe = Mm(self.safe_mm);
-        let inner = Mm(self.spine_mm.unwrap_or(self.safe_mm));
         let edge = |single| {
             if single {
                 AlbumEdge::SinglePage
@@ -93,8 +128,8 @@ impl SpecFields {
             Mm::from_cm(self.height_cm),
             Dpi::new(self.dpi)?,
         )?
-        .with_bleed(Mm(self.bleed_mm))?
-        .with_safe_margins(Margins::new(safe, safe, inner))
+        .with_bleed_margins(self.bleed())?
+        .with_safe_margins(self.safe())
         .map(|s| s.with_edges(edge(self.starts_single), edge(self.ends_single)))
     }
 }
@@ -116,6 +151,8 @@ pub struct NewAlbum {
     /// Faixa de páginas e exportação do preset (spec PR); padrão = sem limite, JPEG em sRGB.
     pub limits: PageLimits,
     pub export: ExportPrefs,
+    /// Montagem, aparência e espaço entre fotos (spec NP, etapa 2); padrão = o de sempre.
+    pub style: crate::new_project::AlbumStyle,
 }
 
 /// Fotos importadas, já num projeto sem lâminas, e as que não deram para importar.
@@ -233,6 +270,7 @@ pub fn create_album(
     let mut imported = import_project(&new.folder, name, new.spec.clone(), cache, true, progress)?;
     imported.project.page_limits = new.limits;
     imported.project.export = new.export;
+    crate::new_project::put_style(&mut imported.project, &new.style);
     progress(Step::Building);
     let spreads = new.spreads.unwrap_or_else(|| suggestion(&imported.project));
     let options = BuildOptions {
@@ -241,7 +279,8 @@ pub fn create_album(
         models: new.models.clone(),
         ..BuildOptions::default()
     };
-    let built = auto_build(&imported.project, spreads, &options)?;
+    let mut built = auto_build(&imported.project, spreads, &options)?;
+    crate::new_project::apply_look(&mut built.project);
     Ok((built, imported.failures))
 }
 

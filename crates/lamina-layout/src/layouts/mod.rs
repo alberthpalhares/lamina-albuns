@@ -16,7 +16,7 @@ mod types;
 
 use std::collections::HashSet;
 
-use lamina_core::{ActivePages, AlbumSpec, Mm};
+use lamina_core::{ActivePages, AlbumSpec, Mm, Mounting};
 use rayon::prelude::*;
 
 use area::{Ctx, MARGIN_LEVELS, Raw, aligned};
@@ -81,7 +81,7 @@ pub fn layout_options(
         .chain(reorderings)
         .collect::<Vec<_>>()
         .into_par_iter()
-        .map(|order| sequence(&ctx, aspects, order))
+        .map(|order| sequence(&ctx, aspects, order, options.mounting))
         .collect();
     let first = [sequences.remove(0)];
     let max = options.max_candidates.max(1);
@@ -138,8 +138,9 @@ fn insert_by_score(list: &mut Vec<LayoutCandidate>, c: LayoutCandidate) {
     list.insert(at, c);
 }
 
-/// Todas as famílias para as fotos na sequência `order`.
-fn sequence(base: &Ctx, aspects: &[f64], order: Vec<usize>) -> Sequence {
+/// Todas as famílias para as fotos na sequência `order`, as que recortam só dentro do que a
+/// montagem aceita (spec NP, regra 6).
+fn sequence(base: &Ctx, aspects: &[f64], order: Vec<usize>, mounting: Mounting) -> Sequence {
     let seq: Vec<f64> = order.iter().map(|&i| aspects[i]).collect();
     let mut raws: Vec<Raw> = Vec::new();
     for (level, inset) in (0u8..).zip(MARGIN_LEVELS) {
@@ -154,10 +155,26 @@ fn sequence(base: &Ctx, aspects: &[f64], order: Vec<usize>) -> Sequence {
             raws.extend(aligned(s, level, ctx.gutter()));
         }
     }
-    raws.extend(fill::across(base, &seq, Some(fill::BLEED_MAX_CROP)));
-    raws.extend(fill::bleed_page(base, &seq));
-    raws.extend(fill::mosaics(base, &seq));
+    raws.extend(cropping(base, &seq, mounting));
     Sequence { order, raws }
+}
+
+/// As famílias que recortam para encher: nenhuma com fotos inteiras; com recorte leve, só as que
+/// recortam até 15%; a página sangrada e os mosaicos só quando ligados.
+fn cropping(ctx: &Ctx, seq: &[f64], mounting: Mounting) -> Vec<Raw> {
+    let max = match mounting.max_crop() {
+        Some(max) if max <= 0.0 => return Vec::new(),
+        Some(max) => max.min(fill::BLEED_MAX_CROP),
+        None => fill::BLEED_MAX_CROP,
+    };
+    let mut raws = fill::across(ctx, seq, Some(max));
+    if mounting.bleed_page {
+        raws.extend(fill::bleed_page(ctx, seq, max));
+    }
+    if mounting.mosaics {
+        raws.extend(fill::mosaics(ctx, seq));
+    }
+    raws
 }
 
 fn context<'a>(

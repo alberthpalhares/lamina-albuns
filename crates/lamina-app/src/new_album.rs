@@ -141,6 +141,7 @@ pub fn create(app: &mut App) {
         models: app.editor.models().to_vec(),
         limits,
         export: app.new_export,
+        style: Default::default(),
     };
     w.set_show_new(false);
     w.set_busy_text("Importando as fotos…".into());

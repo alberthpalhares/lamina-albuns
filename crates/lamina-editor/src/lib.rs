@@ -46,6 +46,7 @@ pub mod keys;
 mod look_form;
 pub mod models;
 pub mod naming;
+pub mod new_project;
 pub mod photos;
 pub mod prefs_store;
 pub mod presets;

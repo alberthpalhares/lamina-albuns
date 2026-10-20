@@ -157,6 +157,8 @@ pub struct LayoutOptions {
     pub max_candidates: usize,
     /// Calcular também as sugestões reordenadas (padrão sim; o Auto Build usa só "na ordem").
     pub reordered: bool,
+    /// Quanto recortar e quais famílias opcionais usar (spec NP; padrão = o de sempre).
+    pub mounting: lamina_core::Mounting,
 }
 
 impl Default for LayoutOptions {
@@ -165,6 +167,7 @@ impl Default for LayoutOptions {
             gap: DEFAULT_GAP,
             max_candidates: 200,
             reordered: true,
+            mounting: lamina_core::Mounting::default(),
         }
     }
 }

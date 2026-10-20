@@ -144,6 +144,7 @@ fn suggestions(
         },
         reordered: false,
         gap: project.gap,
+        mounting: project.mounting,
     };
     let results: Vec<Result<Window, BuildError>> = plan
         .par_iter()
@@ -213,6 +214,9 @@ mod tests;
 #[cfg(test)]
 #[path = "tests/more.rs"]
 mod tests_more;
+#[cfg(test)]
+#[path = "tests/np.rs"]
+mod tests_np;
 #[cfg(test)]
 #[path = "tests/prefs.rs"]
 mod tests_prefs;

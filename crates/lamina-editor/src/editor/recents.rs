@@ -45,6 +45,18 @@ impl Editor {
         Ok(file)
     }
 
+    /// Passa a editar o álbum novo e já o grava em `file` (spec NP, regra 8): ele entra no
+    /// topo dos recentes na hora.
+    pub fn adopt_saved(&mut self, project: Project, file: &Path) -> Result<PathBuf, EditorError> {
+        // A pasta sugerida (`Documentos\Lamina`) pode ainda não existir. Se não der para
+        // criá-la, o salvar abaixo devolve o erro de gravação.
+        if let Some(folder) = file.parent() {
+            let _ = std::fs::create_dir_all(folder);
+        }
+        self.adopt(project);
+        self.save_to(Some(file))
+    }
+
     /// "Fechar álbum": guarda a lâmina em que parou e volta à tela inicial. A pergunta de salvar
     /// vem antes, pela janela (regra 6). `false` se não havia álbum.
     pub fn close_album(&mut self) -> bool {

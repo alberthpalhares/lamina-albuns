@@ -1,0 +1,65 @@
+//! Criar o álbum (spec NP, regras 8 e 6): onde salvar, sem nunca substituir um arquivo, o álbum
+//! sem fotos e a aparência aplicada em todas as lâminas.
+
+use std::path::{Path, PathBuf};
+
+use lamina_core::{FrameContent, Project};
+
+use super::AlbumStyle;
+use crate::NewAlbum;
+
+/// A pasta sugerida: a das fotos, senão a última usada, senão `Documentos\Lamina`.
+pub fn suggested_folder(photos: Option<&Path>, last: Option<&Path>, documents: &Path) -> PathBuf {
+    photos
+        .or(last)
+        .map_or_else(|| documents.join("Lamina"), Path::to_path_buf)
+}
+
+/// `<pasta>/<nome>.lamina`, ou com " (2)", " (3)"… se o arquivo já existe: criar nunca
+/// substitui um álbum.
+pub fn free_file(folder: &Path, name: &str) -> PathBuf {
+    let name = name.trim();
+    let first = folder.join(format!("{name}.lamina"));
+    if !first.exists() {
+        return first;
+    }
+    (2..)
+        .map(|n| folder.join(format!("{name} ({n}).lamina")))
+        .find(|p| !p.exists())
+        .unwrap_or(first)
+}
+
+/// "Começar sem fotos": o álbum com a especificação, a montagem e a aparência, sem fotos e sem
+/// lâminas (as fotos chegam depois; spec IM).
+pub fn empty_album(new: &NewAlbum) -> Project {
+    let name = new.name.as_deref().map_or("Álbum", str::trim);
+    let mut project = Project::new(name, new.spec.clone());
+    project.page_limits = new.limits;
+    project.export = new.export;
+    put_style(&mut project, &new.style);
+    project
+}
+
+/// A montagem, a aparência e o espaço entre fotos no projeto, antes de montar as lâminas.
+pub fn put_style(project: &mut Project, style: &AlbumStyle) {
+    project.mounting = style.mounting;
+    project.look = style.look;
+    project.gap = style.gap;
+}
+
+/// A aparência do projeto em todas as lâminas: o fundo, o espaço do álbum e a borda e os cantos
+/// das fotos (NP-B11).
+pub fn apply_look(project: &mut Project) {
+    let look = project.look;
+    for spread in &mut project.spreads {
+        spread.background = look.background;
+        spread.background_right = None;
+        spread.gap = None;
+        for frame in &mut spread.frames {
+            if matches!(frame.content, FrameContent::Photo { .. }) {
+                frame.border = look.border;
+                frame.radius = look.radius;
+            }
+        }
+    }
+}
