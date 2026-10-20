@@ -23,6 +23,7 @@
 //! - [`agent`]: o controle por IA, as ferramentas que o servidor MCP oferece (spec IA).
 //! - [`human`]: cada erro dito ao fotógrafo, com o que fazer e o detalhe (spec EH).
 //! - [`error_log`] e [`feedback`]: o registro de erros e o formulário de sugestões (spec SR).
+//! - [`motion`]: movimento e fluidez, a medição de tempos e as vagas da lâmina (spec MV).
 
 pub mod agent;
 pub mod album;
@@ -44,6 +45,7 @@ pub mod human;
 pub mod keys;
 mod look_form;
 pub mod models;
+pub mod motion;
 pub mod naming;
 pub mod photos;
 pub mod prefs_store;

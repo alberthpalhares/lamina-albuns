@@ -83,6 +83,8 @@ pub struct App {
     pub(crate) loading: Option<PhotoId>,
     /// Fecha o gesto de zoom da roda depois de uma pausa (spec RC, regra 4).
     pub(crate) crop_timer: slint::Timer,
+    /// A medição de `LAMINA_TEMPOS=1` (spec MV, seção 4).
+    pub(crate) clock: crate::timings::Clock,
     filter: Filter,
     list: Vec<PhotoItem>,
     selected: Option<PhotoId>,
@@ -114,6 +116,7 @@ impl App {
             images: Images::default(),
             loading: None,
             crop_timer: crate::crop::timer(),
+            clock: crate::timings::Clock::default(),
             filter: Filter::All,
             list: Vec::new(),
             selected: None,

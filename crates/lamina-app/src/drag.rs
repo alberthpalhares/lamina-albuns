@@ -28,14 +28,19 @@ fn after_edit(app: &mut App, changed: bool) {
 pub fn connect(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     window.on_photo_pressed(move |i, ctrl, shift| {
-        let mut app = a.borrow_mut();
-        let shown = app.shown_photos();
-        if let Ok(index) = usize::try_from(i) {
-            app.editor.click_photo(&shown, index, ctrl, shift);
-        }
-        let id = app.photo_at(i);
-        app.select_photo(id);
-        app.refresh_current();
+        let edit = |app: &mut App| {
+            let shown = app.shown_photos();
+            if let Ok(index) = usize::try_from(i) {
+                app.editor.click_photo(&shown, index, ctrl, shift);
+            }
+            true
+        };
+        let show = |app: &mut App| {
+            let id = app.photo_at(i);
+            app.select_photo(id);
+            app.refresh_current();
+        };
+        a.borrow_mut().timed("Clicar numa foto", edit, show);
     });
     let a = app.clone();
     window.on_drop_photo(move |i, fx, fy| {
@@ -43,8 +48,11 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         let (Some(photo), Some(frame)) = (app.photo_at(i), target(&app, fx, fy)) else {
             return;
         };
-        let changed = app.editor.drop_photo(frame, photo);
-        after_edit(&mut app, changed);
+        app.timed(
+            "Soltar foto",
+            |app| app.editor.drop_photo(frame, photo),
+            App::refresh_all,
+        );
     });
     let a = app.clone();
     window.on_drop_frame(move |from, fx, fy| {
@@ -52,14 +60,22 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         let (Ok(from), Some(to)) = (usize::try_from(from), target(&app, fx, fy)) else {
             return;
         };
-        let changed = app.editor.drop_frame(from, to);
-        after_edit(&mut app, changed);
+        app.timed(
+            "Trocar fotos",
+            |app| app.editor.drop_frame(from, to),
+            App::refresh_all,
+        );
     });
     let a = app.clone();
     window.on_frame_selected(move |i| {
-        let mut app = a.borrow_mut();
-        app.editor.select_frame(usize::try_from(i).ok());
-        app.refresh_current();
+        a.borrow_mut().timed(
+            "Selecionar quadro",
+            |app| {
+                app.editor.select_frame(usize::try_from(i).ok());
+                true
+            },
+            App::refresh_current,
+        );
     });
     let a = app.clone();
     window.on_move_spread(move |from, to| {

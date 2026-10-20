@@ -28,6 +28,7 @@ mod relink;
 mod spec_dialog;
 mod state;
 mod texts;
+mod timings;
 mod updates;
 mod verify;
 mod welcome;
@@ -66,11 +67,14 @@ fn connect(window: &AppWindow, app: &Shared) {
     input::connect(window, app);
     let a = app.clone();
     window.on_go_to(move |index| {
-        let mut app = a.borrow_mut();
-        let moved = usize::try_from(index).is_ok_and(|i| app.editor.go_to_spread(i));
-        if moved {
-            app.refresh_current();
-        }
+        let Ok(index) = usize::try_from(index) else {
+            return;
+        };
+        a.borrow_mut().timed(
+            "Ir para a lâmina",
+            |app| app.editor.go_to_spread(index),
+            App::refresh_current,
+        );
     });
     connect_photos(window, app);
     connect_dialogs(window, app);
@@ -88,11 +92,17 @@ fn connect(window: &AppWindow, app: &Shared) {
 fn connect_layouts(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     window.on_layout_apply(move |i| {
-        let mut app = a.borrow_mut();
-        if usize::try_from(i).is_ok_and(|i| app.editor.apply_option(Part::Spread, i)) {
-            app.refresh_strip();
-            app.refresh_current();
-        }
+        let Ok(i) = usize::try_from(i) else {
+            return;
+        };
+        a.borrow_mut().timed(
+            "Aplicar a opção do painel",
+            |app| app.editor.apply_option(Part::Spread, i),
+            |app| {
+                app.refresh_strip();
+                app.refresh_current();
+            },
+        );
     });
     let a = app.clone();
     window.on_layout_favorite(move |i| mark(&a, i, true));
@@ -229,8 +239,11 @@ fn main() -> anyhow::Result<()> {
     editor.set_strips(StripsStore::load(&config_dir().join(STRIPS_FILE)));
     editor.set_log(help::error_log());
     let app: Shared = Rc::new(RefCell::new(App::new(&window, Cache::system(), editor, tx)));
+    // Ligada por `LAMINA_TEMPOS=1`; o temporizador precisa viver até a janela fechar.
+    let (clock, _tick) = timings::Clock::install(window.window());
     {
         let mut a = app.borrow_mut();
+        a.clock = clock;
         a.presets = PresetsStore::load(&config_dir().join(PRESETS_FILE));
         let models = ModelsStore::load(&config_dir().join(MODELS_FILE));
         a.editor.set_models(models);
