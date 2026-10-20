@@ -18,6 +18,7 @@ mod history;
 mod images;
 mod input;
 mod install;
+mod lists;
 mod loader;
 mod look;
 mod mailbox;

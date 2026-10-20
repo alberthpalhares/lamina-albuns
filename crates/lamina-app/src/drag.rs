@@ -4,10 +4,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use lamina_editor::edits::timeline;
 use lamina_editor::frame_at;
+use lamina_editor::motion::{TimelineKey, timeline_rows};
 
-use crate::convert::model;
 use crate::state::App;
 use crate::{AppWindow, TimelineItem};
 
@@ -95,33 +94,31 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     });
 }
 
-/// A timeline: as fotos de cada lâmina e um corte entre uma lâmina e a outra (regra 8).
+/// A timeline: as fotos de cada lâmina e um corte entre uma lâmina e a outra (regra 8), só as
+/// posições que mudaram (spec MV, regra 3).
 pub fn refresh_timeline(app: &mut App) {
-    let Some(w) = app.window.upgrade() else {
-        return;
-    };
     let Some(project) = app.session().map(|s| s.project().clone()) else {
         return;
     };
     let thumbs = app.thumbs(&project);
-    let spreads = timeline(&project);
-    let last = spreads.len().saturating_sub(1);
-    let mut items = Vec::new();
-    for (k, photos) in spreads.iter().enumerate() {
-        for id in photos {
-            items.push(TimelineItem {
-                img: thumbs.get(id).cloned().unwrap_or_default(),
-                cut: false,
-                spread: i32::try_from(k).unwrap_or(0),
-            });
-        }
-        if k < last {
-            items.push(TimelineItem {
-                img: slint::Image::default(),
-                cut: true,
-                spread: i32::try_from(k).unwrap_or(0),
-            });
-        }
-    }
-    w.set_timeline(model(items));
+    let rows = timeline_rows(&project);
+    let items: Vec<TimelineItem> = rows
+        .iter()
+        .map(|(key, spread)| {
+            let spread = i32::try_from(*spread).unwrap_or(0);
+            match key {
+                TimelineKey::Photo(id, _) => TimelineItem {
+                    img: thumbs.get(id).cloned().unwrap_or_default(),
+                    cut: false,
+                    spread,
+                },
+                TimelineKey::Cut(_) => TimelineItem {
+                    img: slint::Image::default(),
+                    cut: true,
+                    spread,
+                },
+            }
+        })
+        .collect();
+    app.lists.line.sync(rows, |i| items[i].clone());
 }
