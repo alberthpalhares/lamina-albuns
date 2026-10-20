@@ -21,6 +21,24 @@ Esta é a versão da primeira rodada de testes com fotógrafos.
   ficam nítidas sem travar a navegação.
 - **Arrastar com retorno.** Arrastar uma foto mostra a parte dela que está no quadro, acende o
   quadro de destino e a foto "pousa" ao soltar; reordenar lâminas abre espaço entre as vizinhas.
+- **Ajustes da foto.** Endireite uma foto torta com precisão de 0,1° (até 45°), com a grade de
+  referência, e ajuste brilho, contraste e preto e branco. A foto nunca mostra canto vazio ao
+  girar e sai igual na exportação. Clique direito na foto → "Ajustar a foto…"; "Restaurar a foto"
+  volta ao original.
+- **Painel Detalhes.** A antiga aba Info mostra o álbum quando nada está selecionado e, com uma
+  foto, os dados da câmera (velocidade, abertura, ISO e lente). Alt+4 esconde o painel e dá mais
+  espaço para a lâmina.
+- **Organizar a lâmina à mão.** Dois cliques fora dos quadros (ou a tecla O) abrem a lâmina em
+  destaque: selecione vários quadros, mova, amplie até sangrar, alinhe, iguale e distribua, com
+  réguas, zoom e o aviso "= 9 cm" quando as medidas batem. Esc conclui.
+- **Importar fotos num álbum aberto.** Arquivo → "Importar fotos…" (Ctrl+I), o botão "+ Fotos" ou
+  arrastar fotos e pastas do Explorador para a janela. Fotos repetidas não entram duas vezes, e
+  Ctrl+Z desfaz.
+- **Soltar fotos numa lâmina.** Arraste fotos da faixa para o "+ Lâmina nova", entre duas lâminas
+  ou para uma lâmina pronta, e o Lamina monta o layout com elas.
+- **Programa menor.** O instalador ficou mais leve, e as exportações saem iguais.
+- **Atenção:** álbuns salvos nesta versão não abrem nas betas anteriores. Os álbuns antigos abrem
+  normalmente aqui.
 - **Experimente sem medo.** Na tela de boas-vindas, "Experimentar com o álbum de exemplo" abre um
   álbum pronto, com fotos livres de uma viagem. Mexa à vontade: ele é uma cópia só sua.
 - **Mande sugestões e problemas sem criar conta.** Ajuda → "Enviar sugestão ou problema…" abre um
