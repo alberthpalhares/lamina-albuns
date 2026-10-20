@@ -7,6 +7,7 @@ mod modes;
 mod table;
 mod table_edit;
 mod table_organize;
+mod table_photo;
 
 pub use modes::Mode;
 
@@ -116,22 +117,28 @@ pub enum Command {
     CopyFrames,
     PasteFrames,
     DuplicateFrames,
+    /// Endireitar a foto pelas teclas, no modo recorte (spec AF).
+    TurnLeft,
+    TurnRight,
+    TurnLeftMore,
+    TurnRightMore,
 }
 
 /// Nome, rótulo, menu e atalho de um comando.
 type Info = (&'static str, &'static str, Menu, Option<Shortcut>);
 
 impl Command {
-    /// Nome, rótulo, menu e atalho: cada comando está numa das três partes da tabela (o teste
+    /// Nome, rótulo, menu e atalho: cada comando está numa das quatro partes da tabela (o teste
     /// `todo_comando_esta_numa_parte_da_tabela` confere).
     fn info(self) -> Info {
         self.app_info()
             .or_else(|| self.edit_info())
             .or_else(|| self.organize_info())
+            .or_else(|| self.photo_info())
             .unwrap_or(("", "", Menu::Help, None))
     }
 
-    pub const ALL: [Command; 86] = [
+    pub const ALL: [Command; 90] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
@@ -218,6 +225,10 @@ impl Command {
         Command::CopyFrames,
         Command::PasteFrames,
         Command::DuplicateFrames,
+        Command::TurnLeft,
+        Command::TurnRight,
+        Command::TurnLeftMore,
+        Command::TurnRightMore,
     ];
 
     /// Nome estável, para testes e para a linha de comando.
