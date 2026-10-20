@@ -1,28 +1,173 @@
-// Tela de boas-vindas (spec PC): aparece sempre que não há álbum aberto. Cada botão chama um
-// comando do registro; as decisões ficam no Rust.
+// Tela de boas-vindas (spec PC) e tela inicial com os álbuns recentes (spec TI): aparece sempre
+// que não há álbum aberto. Sem recentes, é a boas-vindas da PC sem mudança. Cada botão chama um
+// comando do registro; as decisões (ordem, busca, quais sumiram) ficam no Rust.
 
-import { Button } from "std-widgets.slint";
+import { Button, LineEdit, ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
+import { Shade, Panel } from "widgets.slint";
+
+export struct RecentCard {
+    index: int,
+    name: string,
+    folder: string,
+    when: string,
+    counts: string,
+    pinned: bool,
+    missing: bool,
+    thumb: image,
+    has-thumb: bool,
+}
+
+export struct RecentItem {
+    index: int,
+    label: string,
+    enabled: bool,
+}
+
+// A lista vem do Rust (`src/recents.rs`); `index` é a posição na lista de recentes.
+export global RecentsUi {
+    in property <bool> has-recents;
+    in property <[RecentCard]> pinned;
+    in property <[RecentCard]> others;
+    in property <[RecentItem]> menu;
+    in property <bool> show-search;
+    in-out property <string> query;
+    in-out property <bool> show-clear;
+    callback open(int);
+    callback pin(int);
+    callback browse(int);
+    callback forget(int);
+    callback search(string);
+    callback clear-confirmed();
+}
+
+component Card inherits Rectangle {
+    in property <RecentCard> data;
+    width: 200px;
+    height: 210px;
+    border-radius: 6px;
+    background: open.has-hover && !root.data.missing ? #3a3a3a : Theme.panel;
+    open := TouchArea {
+        enabled: !root.data.missing;
+        mouse-cursor: root.data.missing ? default : pointer;
+        clicked => { RecentsUi.open(root.data.index); }
+    }
+    VerticalLayout {
+        padding: 10px;
+        spacing: 4px;
+        Rectangle {
+            height: 112px;
+            background: #1f1f1f;
+            border-radius: 3px;
+            opacity: root.data.missing ? 0.35 : 1;
+            if root.data.has-thumb: Image { source: root.data.thumb; image-fit: contain; width: parent.width; height: parent.height; }
+            if !root.data.has-thumb: Text { text: "▦"; font-size: 40px; color: #4a4a4a; horizontal-alignment: center; vertical-alignment: center; }
+        }
+        HorizontalLayout {
+            spacing: 4px;
+            Text { text: root.data.name; color: root.data.missing ? Theme.muted : Theme.text; font-weight: 600; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
+            Rectangle {
+                width: 22px;
+                height: 22px;
+                border-radius: 3px;
+                background: pin.has-hover ? #ffffff1a : transparent;
+                // O alfinete: cheio quando fixado.
+                Path {
+                    width: 14px;
+                    height: 14px;
+                    viewbox-width: 16;
+                    viewbox-height: 16;
+                    commands: "M 5 1 L 11 1 L 10 6 L 13 9 L 3 9 L 6 6 Z M 8 9 L 8 15";
+                    stroke: root.data.pinned ? Theme.selected : Theme.muted;
+                    stroke-width: 1.5px;
+                    fill: root.data.pinned ? Theme.selected : transparent;
+                    opacity: root.data.pinned || pin.has-hover ? 1 : 0.5;
+                }
+                pin := TouchArea { clicked => { RecentsUi.pin(root.data.index); } }
+            }
+        }
+        if !root.data.missing: Text { text: root.data.when; color: Theme.muted; font-size: 12px; }
+        if !root.data.missing: Text { text: root.data.counts; color: Theme.muted; font-size: 12px; }
+        if root.data.missing: Text { text: "Não encontrado"; color: Theme.warning; font-size: 12px; }
+        if root.data.missing: HorizontalLayout {
+            spacing: 6px;
+            Button { text: "Procurar…"; clicked => { RecentsUi.browse(root.data.index); } }
+            Button { text: "Tirar da lista"; clicked => { RecentsUi.forget(root.data.index); } }
+        }
+    }
+}
+
+// Os cartões em linhas que quebram conforme a largura.
+component CardGrid inherits Rectangle {
+    in property <[RecentCard]> cards;
+    in property <length> columns-width;
+    property <int> columns: max(1, floor((root.columns-width + 12px) / 212px));
+    height: ceil(root.cards.length / root.columns) * 222px;
+    for card[i] in root.cards: Card {
+        x: mod(i, root.columns) * 212px;
+        y: floor(i / root.columns) * 222px;
+        data: card;
+    }
+}
+
+component Section inherits Text {
+    color: Theme.muted;
+    font-size: 12px;
+    font-weight: 600;
+}
 
 export component WelcomeScreen inherits VerticalLayout {
     callback command(string);
-    alignment: center;
+    alignment: RecentsUi.has-recents ? start : center;
     spacing: 16px;
+    padding-top: RecentsUi.has-recents ? 24px : 0px;
     Image { source: @image-url("../icons/lamina-logo-escuro.svg"); height: 64px; image-fit: contain; }
     Text { text: "Diagramação de álbuns de fotos"; color: Theme.muted; horizontal-alignment: center; }
-    HorizontalLayout {
+    if !RecentsUi.has-recents: HorizontalLayout {
         alignment: center;
         Button { text: "Experimentar com o álbum de exemplo"; primary: true; clicked => { root.command("arquivo.exemplo"); } }
     }
-    HorizontalLayout {
+    if !RecentsUi.has-recents: HorizontalLayout {
         alignment: center;
         spacing: 12px;
         Button { text: "Novo álbum com minhas fotos…"; clicked => { root.command("arquivo.novo"); } }
         Button { text: "Abrir um álbum…"; clicked => { root.command("arquivo.abrir"); } }
     }
+    // Com recentes, o novo álbum passa a principal e o exemplo fica ao lado (TI-B14).
+    if RecentsUi.has-recents: HorizontalLayout {
+        alignment: center;
+        spacing: 12px;
+        Button { text: "Novo álbum com minhas fotos…"; primary: true; clicked => { root.command("arquivo.novo"); } }
+        Button { text: "Experimentar com o álbum de exemplo"; clicked => { root.command("arquivo.exemplo"); } }
+        Button { text: "Abrir um álbum…"; clicked => { root.command("arquivo.abrir"); } }
+    }
+    if RecentsUi.has-recents: HorizontalLayout {
+        alignment: center;
+        vertical-stretch: 1;
+        list := VerticalLayout {
+            width: min(root.width - 48px, 1084px);
+            spacing: 10px;
+            if RecentsUi.show-search: LineEdit {
+                placeholder-text: "Buscar pelo nome ou pela pasta";
+                text <=> RecentsUi.query;
+                edited(text) => { RecentsUi.search(text); }
+            }
+            ScrollView {
+                vertical-stretch: 1;
+                VerticalLayout {
+                    spacing: 10px;
+                    if RecentsUi.pinned.length > 0: Section { text: "FIXADOS"; }
+                    if RecentsUi.pinned.length > 0: CardGrid { cards: RecentsUi.pinned; columns-width: list.width - 16px; }
+                    if RecentsUi.others.length > 0: Section { text: "RECENTES"; }
+                    if RecentsUi.others.length > 0: CardGrid { cards: RecentsUi.others; columns-width: list.width - 16px; }
+                }
+            }
+        }
+    }
     HorizontalLayout {
         alignment: center;
         padding-top: 8px;
+        padding-bottom: RecentsUi.has-recents ? 12px : 0px;
         Text {
             text: "Enviar sugestão ou problema";
             color: link.has-hover ? #8fcaff : #5fb0f0;
@@ -30,6 +175,27 @@ export component WelcomeScreen inherits VerticalLayout {
             link := TouchArea {
                 mouse-cursor: pointer;
                 clicked => { root.command("ajuda.enviar-sugestao"); }
+            }
+        }
+    }
+}
+
+// "Limpar recentes não fixados…" pede confirmação (regra 7).
+export component ClearRecentsDialog inherits Shade {
+    callback closed();
+    Panel {
+        width: 440px;
+        height: 170px;
+        VerticalLayout {
+            padding: 24px;
+            spacing: 12px;
+            Text { text: "Limpar os álbuns recentes?"; font-size: 18px; font-weight: 700; color: Theme.text; }
+            Text { text: "Os fixados ficam na lista. Os arquivos dos álbuns não são apagados."; color: Theme.muted; wrap: word-wrap; }
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Button { text: "Cancelar"; clicked => { RecentsUi.show-clear = false; root.closed(); } }
+                Button { text: "Limpar"; primary: true; clicked => { RecentsUi.show-clear = false; RecentsUi.clear-confirmed(); root.closed(); } }
             }
         }
     }

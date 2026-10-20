@@ -20,6 +20,7 @@ mod frames;
 mod hand;
 mod layouts;
 mod models;
+mod recents;
 mod report;
 mod style;
 mod text_edit;
@@ -65,6 +66,8 @@ pub struct Editor {
     models: crate::models::ModelsStore,
     /// O registro de erros da janela (spec SR); nenhum nos testes e na linha de comando.
     log: Option<crate::ErrorLog>,
+    /// A lista de recentes (spec TI); só na memória nos testes e na linha de comando.
+    recents: crate::recents::RecentsStore,
 }
 
 impl Default for Editor {
@@ -100,6 +103,7 @@ impl Editor {
             gesture: None,
             models: crate::models::ModelsStore::default(),
             log: None,
+            recents: crate::recents::RecentsStore::default(),
         }
     }
 
@@ -129,16 +133,20 @@ impl Editor {
         self.notice.take()
     }
 
-    /// Abre o arquivo. Se não der, a sessão anterior continua como estava (JP-B11).
+    /// Abre o arquivo, na lâmina em que o fotógrafo parou (spec TI, regra 3). Se não der, a
+    /// sessão anterior continua como estava (JP-B11).
     pub fn open(&mut self, file: &Path) -> Result<(), EditorError> {
         let session = Session::open(file)?;
+        self.remember_current();
         self.forget_view();
         self.session = Some(session);
+        self.after_open();
         Ok(())
     }
 
     /// Passa a editar um álbum novo, ainda sem arquivo.
     pub fn adopt(&mut self, project: Project) {
+        self.remember_current();
         self.forget_view();
         self.session = Some(Session::new_unsaved(project));
     }
@@ -213,12 +221,11 @@ impl Editor {
             Leave::Cancel => Ok(false),
             Leave::DontSave => Ok(true),
             Leave::Save => {
-                let session = self.session.as_mut().ok_or(EditorError::NoProject)?;
-                match (session.file(), save_to) {
-                    (_, Some(target)) => session.save_as(target)?,
-                    (Some(_), None) => session.save()?,
-                    (None, None) => return Err(EditorError::NoFile),
-                };
+                let session = self.session.as_ref().ok_or(EditorError::NoProject)?;
+                if session.file().is_none() && save_to.is_none() {
+                    return Err(EditorError::NoFile);
+                }
+                self.save_to(save_to)?;
                 Ok(true)
             }
         }

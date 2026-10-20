@@ -23,6 +23,8 @@ pub fn run_command(app: &Shared, command: Command) {
         Command::NewAlbum => files::request(&mut a, Pending::NewAlbum),
         Command::Open => files::request(&mut a, Pending::Open),
         Command::OpenExample => files::request(&mut a, Pending::Example),
+        Command::CloseAlbum => files::request(&mut a, Pending::CloseAlbum),
+        Command::ClearRecents => crate::recents::ask_clear(&a),
         Command::Save => {
             files::save(&mut a, false);
         }

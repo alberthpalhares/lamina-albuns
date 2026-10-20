@@ -53,16 +53,15 @@ pub fn save(app: &mut App, as_new: bool) -> bool {
     } else {
         None
     };
-    let Some(session) = app.editor.session_mut() else {
-        return false;
-    };
-    let result = match &target {
-        Some(path) => session.save_as(path),
-        None => session.save(),
-    };
+    // Salvar põe o álbum no topo dos recentes e gera a miniatura (spec TI, regras 1 e 5).
+    let result = app.editor.save_to(target.as_deref());
     app.refresh_current();
     match result {
-        Ok(_) => true,
+        Ok(_) => {
+            crate::recents::thumbnail(app);
+            crate::recents::refresh(app);
+            true
+        }
         Err(e) => {
             show_error(app, &e.human());
             false
@@ -120,6 +119,14 @@ fn proceed(app: &mut App, action: Pending) {
         Pending::NewAlbum => new_album::start(app),
         Pending::Update => crate::updates::restart(app),
         Pending::Example => crate::welcome::open_example(app),
+        Pending::OpenRecent(i) => crate::recents::open(app, i),
+        Pending::CloseAlbum => {
+            if app.editor.close_album() {
+                app.project_changed();
+                crate::recents::refresh(app);
+                crate::recents::check(app);
+            }
+        }
     }
 }
 
@@ -140,6 +147,7 @@ pub fn open_file(app: &mut App, file: &Path) {
         Ok(()) => {
             app.project_changed();
             crate::relink::near(app);
+            crate::recents::refresh(app);
         }
         Err(e) => show_error(app, &e.human()),
     }

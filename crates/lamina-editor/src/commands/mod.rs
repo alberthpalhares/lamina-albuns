@@ -71,13 +71,16 @@ pub enum Command {
     SendFeedback,
     OpenLogs,
     OpenExample,
+    /// Fechar o álbum e voltar à tela inicial (spec TI, regra 6).
+    CloseAlbum,
+    ClearRecents,
 }
 
 /// Nome, rótulo, menu e atalho de um comando.
 type Info = (&'static str, &'static str, Menu, Option<Shortcut>);
 
 impl Command {
-    pub const ALL: [Command; 53] = [
+    pub const ALL: [Command; 55] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
@@ -131,6 +134,8 @@ impl Command {
         Command::SendFeedback,
         Command::OpenLogs,
         Command::OpenExample,
+        Command::CloseAlbum,
+        Command::ClearRecents,
     ];
 
     /// Nome estável, para testes e para a linha de comando.

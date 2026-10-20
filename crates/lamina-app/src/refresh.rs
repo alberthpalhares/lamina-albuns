@@ -22,6 +22,11 @@ impl App {
         w.set_can_prev(self.editor.available(Command::PreviousSpread));
         w.set_can_next(self.editor.available(Command::NextSpread));
         w.set_guides(self.editor.guides());
+        // O aviso do editor vale também sem álbum: a lista de recentes ilegível aparece na tela
+        // inicial (spec TI, regra 9).
+        if let Some(notice) = self.editor.take_notice() {
+            self.notice = notice;
+        }
         w.set_notice(self.notice.clone().into());
         let Some(session) = self.editor.session() else {
             w.set_window_title("Lamina".into());
