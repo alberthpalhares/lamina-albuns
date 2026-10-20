@@ -111,6 +111,8 @@ pub struct StripRow {
     pub active: ActivePages,
     pub warned: bool,
     pub missing: bool,
+    /// Os ajustes das fotos da lâmina (spec AF): mudar um refaz a miniatura.
+    pub adjusts: Vec<lamina_core::PhotoAdjust>,
 }
 
 /// As linhas da faixa de lâminas, pela lâmina.
@@ -128,6 +130,9 @@ pub fn strip_rows(session: &Session) -> Vec<(SpreadId, StripRow)> {
                 active: project.spec.edges().active_pages(i, count),
                 warned: !session.warnings_for(i).is_empty(),
                 missing: photos_in(s).any(|id| missing.contains(&id)),
+                adjusts: photos_in(s)
+                    .filter_map(|id| project.photo(id).ok().map(|p| p.adjust))
+                    .collect(),
             };
             (s.id, row)
         })

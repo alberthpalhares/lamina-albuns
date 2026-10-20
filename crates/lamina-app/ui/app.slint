@@ -22,11 +22,12 @@ import { RightPanel } from "panel.slint";
 import { DragGhost, GhostData } from "ghost.slint";
 import { ContextUi, ContextMenu, ContextRow } from "context.slint";
 import { PaletteUi, FloatingPalette, PaletteWindow } from "palette.slint";
+import { PhotoUi } from "photo.slint";
 import { OrganizeUi, OrganizeBar, OrganizeMarks, OrganizeRulers, OrganizeTools, LassoBox, MarkData, TickData } from "organize.slint";
 import { Motion } from "motion.slint";
 import { WelcomeScreen, ClearRecentsDialog, RecentsUi, RecentCard, RecentItem } from "welcome.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, NewProjectUi, FormatCard, DrawData, ImportUi }
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, NewProjectUi, FormatCard, DrawData, ImportUi }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -248,6 +249,9 @@ export component AppWindow inherits Window {
     callback frame-selected(int);
     // Clique num quadro, com Ctrl (ou Cmd) e Shift: no modo organizar, soma ou tira (spec EG).
     callback frame-clicked(int, bool, bool);
+    // A grade do recorte (spec AF).
+    in property <bool> crop-grid-thirds;
+    in property <bool> crop-grid-fine;
     // Clique direito na lâmina: o menu de contexto (spec EG, regra 13).
     callback context-requested(int, length, length);
     // O laço do modo organizar: os dois cantos em frações da largura da lâmina e o Shift.
@@ -553,6 +557,8 @@ export component AppWindow inherits Window {
                         preview-img: root.preview-img;
                         frame-double(i) => { root.frame-double(i); root.focus-main(); }
                         context(i, x, y) => { root.context-requested(i, x, y); }
+                        grid-thirds: root.crop-grid-thirds;
+                        grid-fine: root.crop-grid-fine;
                         crop-drag(dx, dy) => { root.crop-drag(dx, dy); }
                         crop-end() => { root.crop-end(); root.focus-main(); }
                         crop-wheel(n) => { root.crop-wheel(n); }

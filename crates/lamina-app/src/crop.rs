@@ -97,6 +97,7 @@ pub fn refresh_spread(app: &mut App) {
         (warning, crate::texts::BIG),
     );
     data.snaps = crate::hand::snap_boxes(app, &project);
+    crate::adjusted::apply(app, &project, index, &images, &mut data);
     let frames = view_frames(&project, index, &missing);
     let place = (app.images.epoch(), project.spreads[index].id);
     let before = (w.get_current(), app.slot_rows.rows());
@@ -133,6 +134,10 @@ pub fn refresh_spread(app: &mut App) {
     );
     w.set_info_frame_warn(dpi.is_some_and(|(_, warn)| warn));
     w.set_hint(app.editor.hint().into());
+    let grid = app.editor.crop_grid();
+    w.set_crop_grid_thirds(grid.thirds);
+    w.set_crop_grid_fine(grid.fine);
+    crate::photo_panel::refresh(app);
 }
 
 /// Os quadros da lâmina `index`, em frações da largura da lâmina (como a tela desenha).
@@ -152,7 +157,8 @@ fn place_slots(app: &mut App, place: Place, frames: &[FrameView], data: &mut cra
     let mut rows: Vec<crate::FrameData> = data.frames.iter().collect();
     for (row, frame) in rows.iter_mut().zip(frames) {
         if let FrameKind::Photo { id, .. } = &frame.kind {
-            row.photo = app.images.version(*id);
+            // A foto ajustada tem a imagem e o número dela (spec AF, regra 7).
+            row.photo = crate::adjusted::version(frame.id).unwrap_or(app.images.version(*id));
         }
     }
     let gesture = app.editor.in_gesture();

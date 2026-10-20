@@ -13,6 +13,13 @@ type Shared = Rc<RefCell<App>>;
 
 /// Roda um comando do registro (menu, botões e teclado passam por aqui).
 pub fn run_command(app: &Shared, command: Command) {
+    // As teclas de endireitar mostram a grade fina até o giro parar (spec AF, seção 4).
+    if matches!(
+        command,
+        Command::TurnLeft | Command::TurnRight | Command::TurnLeftMore | Command::TurnRightMore
+    ) {
+        crate::photo_panel::settle_later(app);
+    }
     let mut a = app.borrow_mut();
     // O menu também obedece: no meio de um trabalho em segundo plano, só o Sobre e a ajuda de
     // sugestões e registros (spec SR, regra 2).

@@ -27,6 +27,7 @@
 //! - [`error_log`] e [`feedback`]: o registro de erros e o formulário de sugestões (spec SR).
 //! - [`motion`]: movimento e fluidez, a medição de tempos e as vagas da lâmina (spec MV).
 
+pub mod adjusted;
 pub mod agent;
 pub mod album;
 pub mod appearance;

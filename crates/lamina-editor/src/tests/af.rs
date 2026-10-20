@@ -231,3 +231,33 @@ fn af_b19_varios_quadros() {
     );
     assert!(!editor.adjust(AdjustChange::Angle(10)));
 }
+
+#[test]
+fn af_b8_a_tela_desenha_pela_funcao_da_exportacao() {
+    let (mut editor, frame, _) = selected();
+    let screen: Vec<u8> = (0..300 * 200)
+        .flat_map(|i: u32| [(i % 251) as u8, (i % 113) as u8, 90, 255])
+        .collect();
+    let per_mm = 2.0;
+    let project = editor.session().unwrap().project().clone();
+    assert!(
+        crate::adjusted::adjusted_frame(&project, (1, frame), (300, 200, &screen), per_mm)
+            .is_none(),
+        "sem ajuste, a tela recorta a foto inteira como hoje"
+    );
+    assert!(editor.adjust(AdjustChange::Bw(true)));
+    assert!(editor.adjust(AdjustChange::Angle(35)));
+    let project = editor.session().unwrap().project().clone();
+    let drawn =
+        crate::adjusted::adjusted_frame(&project, (1, frame), (300, 200, &screen), per_mm).unwrap();
+    let f = &project.spreads[1].frames[frame];
+    let bled = lamina_render::bleed(&project.spec, project.frame_rect(f));
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let want = (
+        (bled.rect.width.get() * per_mm).round() as u32,
+        (bled.rect.height.get() * per_mm).round() as u32,
+    );
+    assert_eq!((drawn.width, drawn.height), want);
+    assert_eq!(drawn.rgba.len(), (want.0 * want.1 * 4) as usize);
+    assert!(drawn.rgba.chunks(4).all(|p| p[0] == p[1] && p[1] == p[2]));
+}

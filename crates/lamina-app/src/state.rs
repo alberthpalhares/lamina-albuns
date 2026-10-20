@@ -245,7 +245,10 @@ impl App {
         let image = |id: PhotoId| images.get(&id).cloned();
         self.lists.strip.sync(rows, |i| {
             let warning = warned.get(i).copied().unwrap_or(false);
-            spread_data(&project, i, &missing, &image, (warning, SMALL))
+            let mut data = spread_data(&project, i, &missing, &image, (warning, SMALL));
+            // A miniatura mostra a foto ajustada (spec AF, regra 7).
+            crate::adjusted::patch_small(&project, i, &images, &mut data);
+            data
         });
         crate::drag::refresh_timeline(self);
     }

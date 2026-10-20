@@ -6,6 +6,7 @@
 
 #![windows_subsystem = "windows"]
 
+mod adjusted;
 mod context;
 mod convert;
 mod crop;
@@ -33,6 +34,7 @@ mod new_project_file;
 mod organize;
 mod palette;
 mod panel;
+mod photo_panel;
 mod presets;
 mod recents;
 mod refresh;
@@ -96,6 +98,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     organize::connect(window, app);
     context::connect(window, app);
     palette::connect(window, app);
+    photo_panel::connect(window, app);
     crop::connect(window, app);
     look::connect(window, app);
     hand::connect(window, app);
