@@ -1,13 +1,13 @@
-//! Lâmina → imagem (spec `renderizacao`): fundo e fotos recortadas, para impressão ou prévia.
+//! Lâmina → imagem (spec `renderizacao`): fundo e fotos recortadas (com os ajustes da spec AF),
+//! para impressão ou prévia.
 
-use fast_image_resize::images::{Image, ImageRef};
-use fast_image_resize::{FilterType, PixelType, ResizeAlg, ResizeOptions, Resizer};
 use image::RgbaImage;
-use lamina_core::{Frame, FrameContent, Photo, PixelRegion, Project};
+use lamina_core::{Frame, FrameContent, Photo, Project};
 use rayon::prelude::*;
 use tiny_skia::Pixmap;
 
-use crate::place::{Bled, PixelBox, Scale, bleed, pixels, region};
+use crate::frame_photo::{frame_pixels, needed_size, plan};
+use crate::place::{Bled, PixelBox, Scale, bleed, pixels};
 use crate::style::{Fill, draw_styled, paint_background, styled};
 use crate::types::{MIN_PREVIEW, PhotoSource, RenderError, RenderTarget};
 use crate::{preview_size, print_size};
@@ -110,9 +110,11 @@ fn tile<'a>(scene: &Scene, frame: &'a Frame) -> Result<Option<Tile<'a>>, RenderE
         return Ok(None);
     };
     let name = file_name(photo);
-    // Tamanho que a foto inteira precisa ter, pelas medidas do catálogo e o recorte.
+    // Tamanho que a foto inteira precisa ter, pelas medidas do catálogo, o recorte e o giro.
     let full = (f64::from(photo.width_px), f64::from(photo.height_px));
-    let needed = needed_size(region(crop, rect, &bled, full), full, at);
+    let out = ((at.width(), at.height()), scene.scale);
+    let p = plan(crop, &photo.adjust, (rect, &bled), full, out);
+    let needed = needed_size(p.region, full, p.size);
     let image = scene
         .photos
         .load(photo, needed)
@@ -126,9 +128,8 @@ fn tile<'a>(scene: &Scene, frame: &'a Frame) -> Result<Option<Tile<'a>>, RenderE
             reason: "a imagem lida está vazia".to_owned(),
         });
     }
-    let (pw, ph) = (f64::from(image.width()), f64::from(image.height()));
-    let r = region(crop, rect, &bled, (pw, ph));
-    let rgba = resize(&image, r, at).map_err(|reason| RenderError::Resize { name, reason })?;
+    let rgba = frame_pixels(&image, crop, &photo.adjust, (rect, &bled), out)
+        .map_err(|reason| RenderError::Resize { name, reason })?;
     Ok(Some(Tile {
         frame,
         bled,
@@ -144,41 +145,6 @@ fn file_name(photo: &Photo) -> String {
         .unwrap_or(photo.path.as_os_str())
         .to_string_lossy()
         .into_owned()
-}
-
-/// Para o pedaço `r` de uma foto `full` virar `at` pixels sem ampliar, a foto inteira precisa
-/// ter `full × at / r` pixels.
-fn needed_size(r: PixelRegion, full: (f64, f64), at: PixelBox) -> (u32, u32) {
-    let need = |whole: f64, part: f64, px: u32| {
-        let v = (whole * f64::from(px) / part.max(1e-9)).ceil();
-        // Preso ao maior u32, então o cast não trunca.
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        let n = v.clamp(1.0, f64::from(u32::MAX)) as u32;
-        n
-    };
-    (
-        need(full.0, r.width, at.width()),
-        need(full.1, r.height, at.height()),
-    )
-}
-
-/// Reduz (ou amplia) o pedaço `r` da foto para `at` pixels, com Lanczos3.
-fn resize(image: &RgbaImage, r: PixelRegion, at: PixelBox) -> Result<Vec<u8>, String> {
-    let src = ImageRef::new(
-        image.width(),
-        image.height(),
-        image.as_raw(),
-        PixelType::U8x4,
-    )
-    .map_err(|e| e.to_string())?;
-    let mut dst = Image::new(at.width(), at.height(), PixelType::U8x4);
-    let options = ResizeOptions::new()
-        .resize_alg(ResizeAlg::Convolution(FilterType::Lanczos3))
-        .crop(r.x, r.y, r.width, r.height);
-    Resizer::new()
-        .resize(&src, &mut dst, &options)
-        .map_err(|e| e.to_string())?;
-    Ok(dst.into_vec())
 }
 
 /// Copia a foto na tela, linha por linha. As fotos são tratadas como opacas (alfa 255), então

@@ -4,18 +4,23 @@
 //! impressão (spec `renderizacao`). Tela de desenho com `tiny-skia`; fotos reduzidas com
 //! `fast_image_resize`; texto com `parley` e `skrifa`, só com as fontes embutidas (spec TX).
 
+mod frame_photo;
 mod place;
 mod render;
 mod style;
 mod text;
+mod tone;
+mod turn;
 mod types;
 
+pub use frame_photo::{Plan, frame_pixels, needed_size, plan};
 pub use place::{Bled, PixelBox, Scale, bleed, pixels, region};
 pub use render::{render_spread, render_spread_with};
 pub use style::Fill;
 pub use text::{
     FAMILIES, Family, TextCheck, check_text, family, known_families, text_image, text_lines,
 };
+pub use tone::{apply_tone, gray, tone_table};
 pub use types::{MIN_PREVIEW, PhotoSource, RenderError, RenderTarget};
 
 use lamina_core::AlbumSpec;
@@ -88,3 +93,7 @@ mod rd;
 #[cfg(test)]
 #[path = "tests/tx.rs"]
 mod tx;
+
+#[cfg(test)]
+#[path = "tests/af.rs"]
+mod af;

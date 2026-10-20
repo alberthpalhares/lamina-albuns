@@ -169,10 +169,17 @@ impl Project {
         };
         let photo = self.photo(*photo)?;
         let rect = self.frame_rect(frame);
-        // Com zoom 1 a foto cobre o quadro: vale o eixo que precisa de mais ampliação.
-        let dpi_x = f64::from(photo.width_px) / rect.width.to_inches();
-        let dpi_y = f64::from(photo.height_px) / rect.height.to_inches();
-        Ok(Some(dpi_x.min(dpi_y) / crop.zoom))
+        // Com zoom 1 a foto cobre o quadro: vale o eixo que precisa de mais ampliação. O giro
+        // aproxima a foto pelo fator de cobertura (spec AF, regra 3).
+        let (pw, ph) = (f64::from(photo.width_px), f64::from(photo.height_px));
+        let dpi_x = pw / rect.width.to_inches();
+        let dpi_y = ph / rect.height.to_inches();
+        let k = super::turn::cover_factor(
+            (pw, ph),
+            (rect.width.get(), rect.height.get()),
+            photo.adjust.degrees(),
+        );
+        Ok(Some(dpi_x.min(dpi_y) / crop.zoom / k))
     }
 
     fn check_content(&self, content: &FrameContent) -> Result<(), CoreError> {

@@ -16,6 +16,9 @@ mod photo;
 mod print;
 mod project;
 mod text;
+mod turn;
+#[cfg(test)]
+mod turn_tests;
 
 pub use content::{Border, Frame, FrameContent, Rgb, Spread};
 pub use crop::{Crop, PixelRegion};
@@ -29,3 +32,4 @@ pub use text::{
     DEFAULT_FONT, LINE_SPACING, MAX_TEXT_CHARS, TEXT_SIZE_PT, TextAlign, TextBox, TextVAlign,
     clean_text,
 };
+pub use turn::{cover_factor, screen_to_photo, turned_box};
