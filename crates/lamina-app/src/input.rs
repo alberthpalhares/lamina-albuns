@@ -144,7 +144,9 @@ pub fn connect(window: &AppWindow, app: &Shared) {
             a.borrow_mut().refresh_all();
             return true;
         }
-        let Some(command) = Command::from_shortcut(shortcut) else {
+        // Atalhos por modo (spec EG, regra 2): no modo organizar, as setas movem a seleção.
+        let mode = a.borrow().editor.mode();
+        let Some(command) = Command::from_shortcut_in(shortcut, mode) else {
             return false;
         };
         if a.borrow().editor.available(command) {

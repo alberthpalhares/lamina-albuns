@@ -9,7 +9,12 @@ use crate::{Command, Editor, Key, Shortcut};
 fn jp_b12_registro_de_comandos() {
     let names: HashSet<_> = Command::ALL.iter().map(|c| c.name()).collect();
     assert_eq!(names.len(), Command::ALL.len(), "nomes repetidos");
-    let shortcuts: Vec<Shortcut> = Command::ALL.iter().filter_map(|c| c.shortcut()).collect();
+    // Sem repetir dentro do mesmo modo (spec EG, regra 2: as setas movem no modo organizar).
+    let shortcuts: Vec<Shortcut> = Command::ALL
+        .iter()
+        .filter(|c| c.in_mode(crate::commands::Mode::Normal))
+        .filter_map(|c| c.shortcut())
+        .collect();
     let unique: HashSet<_> = shortcuts.iter().collect();
     assert_eq!(unique.len(), shortcuts.len(), "atalhos repetidos");
     // As setas e Ctrl+Z/Ctrl+Y ficaram reservadas no JP e passaram para o TL (TL-B12).

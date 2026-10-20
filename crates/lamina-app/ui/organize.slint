@@ -1,0 +1,96 @@
+// O modo organizar a lâmina (spec EG): o título da lâmina em destaque, os quadros selecionados, o
+// laço e o painel do modo. Só desenho: o editor decide e o Rust preenche o `OrganizeUi`.
+
+import { Button } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { BoxData } from "canvas.slint";
+import { LookPanel } from "look.slint";
+
+export global OrganizeUi {
+    in property <bool> on;
+    // "Organizando a lâmina 3 · Esc conclui".
+    in property <string> title;
+    // "2 quadros" (vazio sem seleção).
+    in property <string> count;
+    // Os quadros selecionados e a caixa do grupo, em frações da largura da lâmina.
+    in property <[BoxData]> boxes;
+    in property <BoxData> group;
+    in property <bool> has-group;
+    // O laço em andamento, em pixels da janela.
+    in-out property <bool> lassoing;
+    in-out property <length> lasso-x0;
+    in-out property <length> lasso-y0;
+    in-out property <length> lasso-x1;
+    in-out property <length> lasso-y1;
+    callback done();
+}
+
+// A barra da lâmina em destaque, em cima da área da lâmina.
+export component OrganizeBar inherits Rectangle {
+    height: 34px;
+    background: #1f3b57;
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 8px;
+        spacing: 12px;
+        Text {
+            text: OrganizeUi.title;
+            color: white;
+            font-weight: 700;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+        }
+        Button {
+            text: "Concluir";
+            clicked => { OrganizeUi.done(); }
+        }
+    }
+}
+
+// Os quadros selecionados por cima da lâmina (`unit` = a largura dela em pixels).
+export component OrganizeMarks inherits Rectangle {
+    in property <length> unit;
+    for b in OrganizeUi.boxes: Rectangle {
+        x: b.x * root.unit;
+        y: b.y * root.unit;
+        width: b.w * root.unit;
+        height: b.h * root.unit;
+        border-width: 3px;
+        border-color: #4fc3f7;
+    }
+    if OrganizeUi.has-group: Rectangle {
+        x: OrganizeUi.group.x * root.unit - 3px;
+        y: OrganizeUi.group.y * root.unit - 3px;
+        width: OrganizeUi.group.w * root.unit + 6px;
+        height: OrganizeUi.group.h * root.unit + 6px;
+        border-width: 1px;
+        border-color: #ffffffb0;
+    }
+}
+
+// O laço, em pixels da janela.
+export component LassoBox inherits Rectangle {
+    x: min(OrganizeUi.lasso-x0, OrganizeUi.lasso-x1);
+    y: min(OrganizeUi.lasso-y0, OrganizeUi.lasso-y1);
+    width: abs(OrganizeUi.lasso-x1 - OrganizeUi.lasso-x0);
+    height: abs(OrganizeUi.lasso-y1 - OrganizeUi.lasso-y0);
+    background: #4fc3f722;
+    border-width: 1px;
+    border-color: #4fc3f7;
+}
+
+// O painel da direita no modo (EG-B23): a seleção, fundo e espaço da lâmina.
+export component OrganizePanel inherits VerticalLayout {
+    callback done();
+    spacing: 8px;
+    Text { text: "Organizar"; color: Theme.text; font-weight: 700; }
+    Text {
+        text: OrganizeUi.count == "" ? "Clique num quadro; Ctrl+clique soma; arraste no vazio para o laço." : OrganizeUi.count;
+        color: Theme.muted;
+        wrap: word-wrap;
+    }
+    LookPanel {
+        vertical-stretch: 1;
+        done => { root.done(); }
+    }
+}

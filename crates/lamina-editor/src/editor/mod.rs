@@ -23,6 +23,8 @@ mod hand_frames;
 mod layouts;
 mod models;
 mod mounting;
+mod organize;
+mod organize_cmd;
 mod recents;
 mod report;
 mod style;
@@ -31,6 +33,7 @@ mod text_edit;
 pub use crop::{ZOOM_STEP, crop_for, set_crop};
 pub use dropping::DropPlace;
 pub use layouts::Panel;
+pub use organize::{DoubleClick, SidePanel};
 pub use style::Look;
 pub use text_edit::TextChange;
 
@@ -72,6 +75,8 @@ pub struct Editor {
     log: Option<crate::ErrorLog>,
     /// A lista de recentes (spec TI); só na memória nos testes e na linha de comando.
     recents: crate::recents::RecentsStore,
+    /// O modo organizar a lâmina (spec EG).
+    organize: organize::Organizing,
 }
 
 impl Default for Editor {
@@ -108,6 +113,7 @@ impl Editor {
             models: crate::models::ModelsStore::default(),
             log: None,
             recents: crate::recents::RecentsStore::default(),
+            organize: organize::Organizing::default(),
         }
     }
 
@@ -165,6 +171,8 @@ impl Editor {
         self.anchor = None;
         self.crop_frame = None;
         self.pending_crop = None;
+        // Abrir outro álbum sai do modo organizar (spec EG).
+        self.organize = organize::Organizing::default();
     }
 
     /// Passa a usar o estado das faixas de `store` (lido de `janela.json`). O aviso de leitura,
