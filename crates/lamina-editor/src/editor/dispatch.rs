@@ -52,6 +52,8 @@ impl Editor {
             Command::FindMissing => !s.missing().is_empty(),
             Command::ToggleGuides | Command::About | Command::ToggleReordered => true,
             Command::ToggleSpreads | Command::ToggleTimeline | Command::TogglePhotos => true,
+            Command::TogglePanel => true,
+            Command::AdjustPhoto => self.photo_adjust().is_some(),
             Command::ToggleReduceMotion => true,
             Command::NextSpread | Command::LastSpread => s.current() < last,
             Command::PreviousSpread | Command::FirstSpread => s.current() > 0,
@@ -167,6 +169,11 @@ impl Editor {
             Command::ToggleSpreads => self.toggle_strip(Strip::Spreads),
             Command::ToggleTimeline => self.toggle_strip(Strip::Timeline),
             Command::TogglePhotos => self.toggle_strip(Strip::Photos),
+            Command::TogglePanel => self.toggle_strip(Strip::Panel),
+            Command::AdjustPhoto => {
+                self.wants_details = true;
+                true
+            }
             Command::ToggleReduceMotion => self.toggle_reduce_motion(),
             Command::Undo => self.session.as_mut().and_then(Session::undo).is_some(),
             Command::Redo => self.session.as_mut().and_then(Session::redo).is_some(),

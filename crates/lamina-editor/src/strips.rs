@@ -23,6 +23,8 @@ pub enum Strip {
     Spreads,
     Timeline,
     Photos,
+    /// O painel da direita (spec AF, regra 11): Alt+4 dá o espaço para a lâmina.
+    Panel,
 }
 
 /// Quais faixas estão abertas (`true`) ou recolhidas.
@@ -35,6 +37,9 @@ pub struct Strips {
     pub timeline: bool,
     #[serde(rename = "fotos")]
     pub photos: bool,
+    /// O painel da direita aberto (spec AF, regra 11). Arquivo antigo sem o campo vale aberto.
+    #[serde(rename = "painel")]
+    pub panel: bool,
     /// A unidade da tela e o formato do último álbum criado (spec NP, regras 1 e 3).
     #[serde(rename = "unidade")]
     pub unit: crate::new_project::Unit,
@@ -52,6 +57,7 @@ impl Default for Strips {
             spreads: true,
             timeline: true,
             photos: true,
+            panel: true,
             unit: crate::new_project::Unit::default(),
             format: crate::new_project::Format::Square,
             reduce_motion: false,
@@ -65,6 +71,7 @@ impl Strips {
             Strip::Spreads => self.spreads,
             Strip::Timeline => self.timeline,
             Strip::Photos => self.photos,
+            Strip::Panel => self.panel,
         }
     }
 
@@ -74,6 +81,7 @@ impl Strips {
             Strip::Spreads => &mut self.spreads,
             Strip::Timeline => &mut self.timeline,
             Strip::Photos => &mut self.photos,
+            Strip::Panel => &mut self.panel,
         };
         *open = !*open;
     }

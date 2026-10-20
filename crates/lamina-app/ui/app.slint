@@ -23,11 +23,12 @@ import { DragGhost, GhostData } from "ghost.slint";
 import { ContextUi, ContextMenu, ContextRow } from "context.slint";
 import { PaletteUi, FloatingPalette, PaletteWindow } from "palette.slint";
 import { PhotoUi } from "photo.slint";
+import { DetailRow } from "side.slint";
 import { OrganizeUi, OrganizeBar, OrganizeMarks, OrganizeRulers, OrganizeTools, LassoBox, MarkData, TickData } from "organize.slint";
 import { Motion } from "motion.slint";
 import { WelcomeScreen, ClearRecentsDialog, RecentsUi, RecentCard, RecentItem } from "welcome.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, NewProjectUi, FormatCard, DrawData, ImportUi }
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -99,6 +100,11 @@ export component AppWindow inherits Window {
 
     // Painel de layouts (spec TL).
     in-out property <int> panel-tab;
+    // O painel da direita aberto (Alt+4) e a aba Detalhes (spec AF).
+    in property <bool> panel-open: true;
+    in property <[DetailRow]> details;
+    in property <int> details-kind;
+    in property <string> details-count;
     in property <[LayoutItem]> layouts;
     in property <int> layout-in-use: -1;
     in property <int> layout-list;
@@ -406,6 +412,7 @@ export component AppWindow inherits Window {
             MenuItem { title: (root.spreads-open ? "✓ " : "    ") + "Faixa de lâminas  (Alt+1)"; enabled: root.has-project; activated => { root.command("ver.faixa-laminas"); } }
             MenuItem { title: (root.timeline-open ? "✓ " : "    ") + "Linha do tempo  (Alt+2)"; enabled: root.has-project; activated => { root.command("ver.linha-do-tempo"); } }
             MenuItem { title: (root.photos-open ? "✓ " : "    ") + "Fotos  (Alt+3)"; enabled: root.has-project; activated => { root.command("ver.fotos"); } }
+            MenuItem { title: (root.panel-open ? "✓ " : "    ") + "Mostrar painel  (Alt+4)"; enabled: root.has-project; activated => { root.command("ver.painel"); } }
             MenuSeparator { }
             MenuItem { title: (root.reduce-motion ? "✓ " : "    ") + "Reduzir movimento"; activated => { root.command("ver.reduzir-movimento"); } }
         }
@@ -468,6 +475,7 @@ export component AppWindow inherits Window {
                     BarButton { text: "Abrir"; clicked => { root.command("arquivo.abrir"); } }
                     BarButton { text: "Salvar"; enabled: root.can-save; clicked => { root.command("arquivo.salvar"); } }
                     BarButton { text: "Texto"; enabled: root.has-project; clicked => { root.command("lamina.novo-texto"); } }
+                    BarButton { text: root.panel-open ? "Esconder painel" : "Mostrar painel"; enabled: root.has-project; clicked => { root.command("ver.painel"); } }
                     BarButton { text: "Exportar"; primary: true; enabled: root.has-project; clicked => { root.command("arquivo.exportar"); } }
                 }
             }
@@ -653,8 +661,11 @@ export component AppWindow inherits Window {
                 }
 
                 // Painel da direita: layouts (padrão) e informações.
-                if root.has-project: RightPanel {
+                if root.has-project && root.panel-open: RightPanel {
                     tab <=> root.panel-tab;
+                    details: root.details;
+                    details-kind: root.details-kind;
+                    details-count: root.details-count;
                     layouts: root.layouts;
                     layout-in-use: root.layout-in-use;
                     layout-list: root.layout-list;

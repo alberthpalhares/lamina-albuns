@@ -1,8 +1,15 @@
-// O painel da direita: as abas (Layouts, Aparência, Quadro, Histórico, Informações) e a aba de
-// informações. As outras abas moram em layouts.slint, look.slint, frame.slint e history.slint.
+// O painel da direita: as abas (Layouts, Aparência, Quadro, Histórico, Detalhes) e a aba Detalhes,
+// o painel contextual da spec AF (o álbum sem seleção; a foto com uma foto). As outras abas moram em layouts.slint, look.slint, frame.slint e history.slint.
 
 import { Theme } from "theme.slint";
+import { ScrollView } from "std-widgets.slint";
 import { PhotoUi, PhotoSection } from "photo.slint";
+
+// Uma linha da aba Detalhes: o título e o valor.
+export struct DetailRow {
+    title: string,
+    value: string,
+}
 
 component Tab inherits Rectangle {
     in property <string> text;
@@ -20,7 +27,7 @@ component Tab inherits Rectangle {
 }
 
 // A ordem na tela não é a dos números: 0 = Layouts, 2 = Aparência, 4 = Quadro, 3 = Histórico,
-// 1 = Informações (os números ficaram da ordem em que as abas chegaram).
+// 1 = Detalhes (os números ficaram da ordem em que as abas chegaram).
 export component PanelTabs inherits HorizontalLayout {
     in-out property <int> tab;
     spacing: 10px;
@@ -28,27 +35,36 @@ export component PanelTabs inherits HorizontalLayout {
     Tab { text: "Aparência"; active: root.tab == 2; clicked => { root.tab = 2; } }
     Tab { text: "Quadro"; active: root.tab == 4; clicked => { root.tab = 4; } }
     Tab { text: "Histórico"; active: root.tab == 3; clicked => { root.tab = 3; } }
-    Tab { text: "Info"; active: root.tab == 1; clicked => { root.tab = 1; } }
+    Tab { text: "Detalhes"; active: root.tab == 1; clicked => { root.tab = 1; } }
     Rectangle { horizontal-stretch: 1; }
 }
 
-export component InfoPanel inherits VerticalLayout {
+// A aba Detalhes (spec AF, seção 4): `kind` 0 = o álbum, 1 = uma foto, 3 = vários quadros (o
+// texto mostra a aba Quadro, no painel).
+export component InfoPanel inherits ScrollView {
+    in property <[DetailRow]> rows;
+    in property <int> kind;
+    in property <string> count;
     in property <string> album;
     in property <string> spread;
     in property <string> warnings;
     in property <string> frame;
     in property <bool> frame-warn;
     in property <string> photo;
-    spacing: 8px;
-    if PhotoUi.has-photo: PhotoSection { }
-    Text { text: "Álbum"; color: Theme.muted; font-size: 12px; }
-    Text { text: root.album; color: Theme.text; wrap: word-wrap; }
-    Text { text: "Lâmina"; color: Theme.muted; font-size: 12px; }
-    Text { text: root.spread; color: Theme.text; wrap: word-wrap; }
-    Text { text: root.warnings; color: Theme.warning; wrap: word-wrap; }
-    if root.frame != "": Text { text: "Quadro"; color: Theme.muted; font-size: 12px; }
-    Text { text: root.frame; color: root.frame-warn ? Theme.warning : Theme.text; wrap: word-wrap; }
-    if root.photo != "": Text { text: "Foto"; color: Theme.muted; font-size: 12px; }
-    Text { text: root.photo; color: Theme.text; wrap: word-wrap; }
-    Rectangle { vertical-stretch: 1; }
+    VerticalLayout {
+        width: root.visible-width;
+        spacing: 8px;
+        if root.kind == 1 && PhotoUi.has-photo: PhotoSection { }
+        if root.kind == 3: Text { text: root.count; color: Theme.text; font-weight: 700; }
+        for r in root.rows: VerticalLayout {
+            spacing: 2px;
+            Text { text: r.title; color: Theme.muted; font-size: 12px; }
+            Text { text: r.value; color: Theme.text; wrap: word-wrap; }
+        }
+        if root.kind == 0: Text { text: "Lâmina"; color: Theme.muted; font-size: 12px; }
+        if root.kind == 0: Text { text: root.spread; color: Theme.text; wrap: word-wrap; }
+        Text { text: root.warnings; color: Theme.warning; wrap: word-wrap; }
+        if root.kind == 1 && root.frame-warn: Text { text: root.frame; color: Theme.warning; wrap: word-wrap; }
+        Rectangle { vertical-stretch: 1; }
+    }
 }

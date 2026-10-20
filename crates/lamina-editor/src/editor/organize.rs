@@ -70,7 +70,10 @@ impl Editor {
             on,
             ..Organizing::default()
         };
-        if !on {
+        if on {
+            // O modo abre a aba Detalhes (spec AF, regra 10).
+            self.wants_details = true;
+        } else {
             self.selected_frame = None;
         }
         true

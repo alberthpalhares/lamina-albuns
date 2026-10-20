@@ -10,6 +10,7 @@
 //! - [`catalog`]: catálogo SQLite, que evita reprocessar fotos que não mudaram.
 //! - [`import`]: tudo junto, em paralelo.
 
+pub mod camera;
 pub mod catalog;
 pub mod color;
 pub mod decode;
@@ -27,6 +28,7 @@ mod error;
 #[cfg(test)]
 mod testutil;
 
+pub use camera::{CameraDetails, camera_details};
 pub use catalog::{Catalog, CatalogEntry};
 pub use color::{embedded_profile, profile_problem};
 pub use decode::{decode_in, decode_with_orientation, load_oriented, load_oriented_in};

@@ -10,6 +10,7 @@ mod adjusted;
 mod context;
 mod convert;
 mod crop;
+mod details;
 mod drag;
 mod export;
 mod files;

@@ -72,6 +72,8 @@ pub fn run_command(app: &Shared, command: Command) {
                     | Command::ToggleTimeline
                     | Command::TogglePhotos
                     | Command::ToggleReduceMotion
+                    | Command::TogglePanel
+                    | Command::AdjustPhoto
             );
             a.timed(
                 command.label(),
