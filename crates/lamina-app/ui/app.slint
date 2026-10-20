@@ -334,6 +334,11 @@ export component AppWindow inherits Window {
             title: "Editar";
             MenuItem { title: "Desfazer  (Ctrl+Z)"; enabled: root.has-project; activated => { root.command("editar.desfazer"); } }
             MenuItem { title: "Refazer  (Ctrl+Y)"; enabled: root.has-project; activated => { root.command("editar.refazer"); } }
+            MenuSeparator { }
+            MenuItem { title: "Copiar  (Ctrl+C)"; enabled: root.has-project; activated => { root.command("editar.copiar"); } }
+            MenuItem { title: "Colar  (Ctrl+V)"; enabled: root.has-project; activated => { root.command("editar.colar"); } }
+            MenuItem { title: "Duplicar  (Ctrl+D)"; enabled: root.has-project; activated => { root.command("editar.duplicar"); } }
+            MenuItem { title: "Selecionar todos os quadros  (Ctrl+A)"; enabled: root.has-project; activated => { root.command("editar.selecionar-quadros"); } }
         }
         Menu {
             title: "Lâmina";

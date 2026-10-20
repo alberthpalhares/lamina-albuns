@@ -15,6 +15,7 @@ use crate::strips::{Strip, Strips, StripsStore};
 use crate::{EditorError, Session};
 
 mod arrange_cmd;
+mod clipboard;
 mod crop;
 mod dispatch;
 mod dropping;
@@ -83,6 +84,8 @@ pub struct Editor {
     /// O modo organizar a lâmina (spec EG) e o gesto do grupo.
     organize: organize::Organizing,
     group: Option<group_gesture::GroupGesture>,
+    /// A área de cópia do modo organizar (spec EG, regra 12); não vai para o arquivo.
+    clipboard: Option<clipboard::Clip>,
 }
 
 impl Default for Editor {
@@ -121,6 +124,7 @@ impl Editor {
             recents: crate::recents::RecentsStore::default(),
             organize: organize::Organizing::default(),
             group: None,
+            clipboard: None,
         }
     }
 
@@ -181,6 +185,8 @@ impl Editor {
         // Abrir outro álbum sai do modo organizar (spec EG).
         self.organize = organize::Organizing::default();
         self.group = None;
+        // As fotos copiadas são do álbum anterior.
+        self.clipboard = None;
     }
 
     /// Passa a usar o estado das faixas de `store` (lido de `janela.json`). O aviso de leitura,

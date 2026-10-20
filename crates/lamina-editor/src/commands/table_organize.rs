@@ -150,6 +150,14 @@ impl Command {
                 Menu::Spread,
                 None,
             ),
+            C::CopyFrames => ("editar.copiar", "Copiar", Menu::Edit, Some(S::ctrl('c'))),
+            C::PasteFrames => ("editar.colar", "Colar", Menu::Edit, Some(S::ctrl('v'))),
+            C::DuplicateFrames => (
+                "editar.duplicar",
+                "Duplicar",
+                Menu::Edit,
+                Some(S::ctrl('d')),
+            ),
             _ => return None,
         })
     }
