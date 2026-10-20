@@ -110,7 +110,11 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         a.borrow_mut().timed(
             "Selecionar quadro",
             |app| {
-                app.editor.select_frame(usize::try_from(i).ok());
+                // Fora dos quadros desmarca (no modo organizar, todos).
+                match usize::try_from(i) {
+                    Ok(frame) => app.editor.select_frame(Some(frame)),
+                    Err(_) => app.editor.click_nothing(),
+                }
                 true
             },
             App::refresh_current,

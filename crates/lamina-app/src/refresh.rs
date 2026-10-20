@@ -62,6 +62,7 @@ impl App {
         w.set_info_warnings(warnings.join("\n").into());
 
         crate::crop::refresh_spread(self);
+        crate::organize::refresh(self);
         if let Some(notice) = self.editor.take_notice() {
             self.notice = notice;
             w.set_notice(self.notice.clone().into());

@@ -1,6 +1,6 @@
 //! O registro de comandos no editor: quando cada comando está disponível e o que ele faz.
 
-use super::{Editor, crop};
+use super::{Editor, crop, organize_cmd};
 use crate::suggestions::Part;
 use crate::{Command, Session, Strip};
 
@@ -32,6 +32,13 @@ impl Editor {
                     | Command::OpenLogs
             ) || (command == Command::ClearRecents && self.recents.has_unpinned());
         };
+        // Atalhos por modo (spec EG, regra 2) e os comandos do modo organizar.
+        if !command.in_mode(self.mode()) {
+            return false;
+        }
+        if let Some(ok) = self.organize_available(command) {
+            return ok;
+        }
         let last = s.spread_count().saturating_sub(1);
         match command {
             Command::NewAlbum | Command::Open | Command::Save | Command::SaveAs => true,
@@ -72,6 +79,20 @@ impl Editor {
             Command::MoveSpreadRight => s.current() < last,
             Command::CropMode => self.can_clear(),
             Command::ZoomIn | Command::ZoomOut | Command::ResetCrop => self.crop_frame.is_some(),
+            // Os do modo organizar já responderam acima.
+            Command::Organize
+            | Command::SelectAllFrames
+            | Command::NudgeLeft
+            | Command::NudgeRight
+            | Command::NudgeUp
+            | Command::NudgeDown
+            | Command::NudgeLeftMore
+            | Command::NudgeRightMore
+            | Command::NudgeUpMore
+            | Command::NudgeDownMore
+            | Command::ViewZoomIn
+            | Command::ViewZoomOut
+            | Command::ViewFit => false,
         }
     }
 
@@ -85,9 +106,14 @@ impl Editor {
         // quadro na lâmina errada (auditoria do Marco 3, M2). E encerra a emenda do histórico:
         // digitar depois de um comando é uma edição nova (spec TX, regra 10).
         self.gesture = None;
-        if let Some(s) = self.session.as_mut() {
+        // Setas seguidas no mesmo grupo viram uma edição só (spec EG, regra 10).
+        let nudging = organize_cmd::nudge_of(command).is_some();
+        if let Some(s) = self.session.as_mut()
+            && !nudging
+        {
             s.end_merge();
         }
+        let had_crop = self.crop_frame.is_some();
         // Qualquer outro comando fecha o modo recorte, gravando o gesto (spec RC, regra 1).
         let crop_command = matches!(
             command,
@@ -95,6 +121,9 @@ impl Editor {
         );
         if !crop_command {
             self.exit_crop();
+        }
+        if let Some(done) = self.organize_run(command, had_crop) {
+            return done;
         }
         match command {
             Command::CropMode => self.selected_frame.is_some_and(|f| self.enter_crop(f)),

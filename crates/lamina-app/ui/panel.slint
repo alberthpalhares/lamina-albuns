@@ -7,6 +7,7 @@ import { LookPanel } from "look.slint";
 import { FramePanel } from "frame.slint";
 import { HistoryPanel, HistoryItem } from "history.slint";
 import { PanelTabs, InfoPanel } from "side.slint";
+import { OrganizeUi, OrganizePanel } from "organize.slint";
 
 export component RightPanel inherits Rectangle {
     in-out property <int> tab;
@@ -37,8 +38,13 @@ export component RightPanel inherits Rectangle {
     VerticalLayout {
         padding: 12px;
         spacing: 8px;
-        PanelTabs { tab <=> root.tab; }
-        if root.tab == 0: LayoutsPanel {
+        // No modo organizar, o painel do modo no lugar das abas (spec EG, EG-B23).
+        if OrganizeUi.on: OrganizePanel {
+            vertical-stretch: 1;
+            done => { root.done(); }
+        }
+        if !OrganizeUi.on: PanelTabs { tab <=> root.tab; }
+        if !OrganizeUi.on && root.tab == 0: LayoutsPanel {
             vertical-stretch: 1;
             items: root.layouts;
             in-use: root.layout-in-use;
@@ -53,21 +59,21 @@ export component RightPanel inherits Rectangle {
             reject(i) => { root.layout-reject(i); root.done(); }
             list-changed(i) => { root.layout-list-changed(i); root.done(); }
         }
-        if root.tab == 2: LookPanel {
+        if !OrganizeUi.on && root.tab == 2: LookPanel {
             vertical-stretch: 1;
             done => { root.done(); }
         }
-        if root.tab == 4: FramePanel {
+        if !OrganizeUi.on && root.tab == 4: FramePanel {
             vertical-stretch: 1;
             done => { root.done(); }
         }
-        if root.tab == 3: HistoryPanel {
+        if !OrganizeUi.on && root.tab == 3: HistoryPanel {
             vertical-stretch: 1;
             items: root.history;
             position: root.history-pos;
             go(i) => { root.history-go(i); root.done(); }
         }
-        if root.tab == 1: InfoPanel {
+        if !OrganizeUi.on && root.tab == 1: InfoPanel {
             vertical-stretch: 1;
             album: root.info-album;
             spread: root.info-spread;

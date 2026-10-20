@@ -8,6 +8,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use lamina_core::{FrameContent, PhotoId, Project};
+use lamina_editor::editor::DoubleClick;
 use lamina_editor::motion::{Place, Transition};
 use lamina_editor::{
     Area, FrameKind, FrameView, frame_dpi_text, guarded, load_original, photo_extent, spread_view,
@@ -216,16 +217,15 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     window.on_frame_double(move |i| {
         let mut app = a.borrow_mut();
-        let Ok(frame) = usize::try_from(i) else {
-            return;
-        };
-        // Duplo clique num texto põe o cursor no campo do texto (spec TX).
-        app.editor.select_frame(Some(frame));
-        if app.editor.selected_text().is_some() {
-            app.refresh_current();
-            crate::frame_panel::focus_text(&app);
-        } else if app.editor.enter_crop(frame) {
-            app.refresh_current();
+        // Fora dos quadros (-1) entra no modo organizar (spec EG); numa foto abre o recorte; num
+        // texto, o cursor vai para o campo do texto (spec TX).
+        match app.editor.double_click(usize::try_from(i).ok()) {
+            DoubleClick::Text => {
+                app.refresh_current();
+                crate::frame_panel::focus_text(&app);
+            }
+            DoubleClick::Organize | DoubleClick::Crop => app.refresh_current(),
+            DoubleClick::Nothing => {}
         }
     });
     let a = app.clone();

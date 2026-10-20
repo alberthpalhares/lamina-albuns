@@ -293,7 +293,12 @@ fn rc_b8_recorte_mantido_ao_trocar() {
 
 #[test]
 fn rc_b9_registro_de_comandos() {
-    let shortcuts: Vec<Shortcut> = Command::ALL.iter().filter_map(|c| c.shortcut()).collect();
+    // Sem repetir dentro do mesmo modo (spec EG, regra 2: as setas movem no modo organizar).
+    let shortcuts: Vec<Shortcut> = Command::ALL
+        .iter()
+        .filter(|c| c.in_mode(crate::commands::Mode::Normal))
+        .filter_map(|c| c.shortcut())
+        .collect();
     let unique: std::collections::HashSet<_> = shortcuts.iter().collect();
     assert_eq!(unique.len(), shortcuts.len(), "atalhos repetidos");
     let plus = Shortcut {

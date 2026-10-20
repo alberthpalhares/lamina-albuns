@@ -1,10 +1,14 @@
 //! Registro de comandos (spec JP, regra 10; spec TL, seção 3): cada ação tem um nome estável, um
 //! rótulo e no máximo um atalho, e é chamada igual pelo menu, pelo teclado e pelos testes.
 
-use crate::keys::{Key, Shortcut};
+use crate::keys::Shortcut;
 
+mod modes;
 mod table;
 mod table_edit;
+mod table_organize;
+
+pub use modes::Mode;
 
 /// Menu onde o comando aparece.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -82,21 +86,36 @@ pub enum Command {
     /// Fotos a qualquer momento (spec IM): arquivos ou uma pasta.
     ImportPhotos,
     ImportFolder,
+    /// O modo organizar a lâmina (spec EG) e o que vale dentro dele.
+    Organize,
+    SelectAllFrames,
+    NudgeLeft,
+    NudgeRight,
+    NudgeUp,
+    NudgeDown,
+    NudgeLeftMore,
+    NudgeRightMore,
+    NudgeUpMore,
+    NudgeDownMore,
+    ViewZoomIn,
+    ViewZoomOut,
+    ViewFit,
 }
 
 /// Nome, rótulo, menu e atalho de um comando.
 type Info = (&'static str, &'static str, Menu, Option<Shortcut>);
 
 impl Command {
-    /// Nome, rótulo, menu e atalho: cada comando está numa das duas partes da tabela (o teste
+    /// Nome, rótulo, menu e atalho: cada comando está numa das três partes da tabela (o teste
     /// `todo_comando_esta_numa_parte_da_tabela` confere).
     fn info(self) -> Info {
         self.app_info()
             .or_else(|| self.edit_info())
+            .or_else(|| self.organize_info())
             .unwrap_or(("", "", Menu::Help, None))
     }
 
-    pub const ALL: [Command; 59] = [
+    pub const ALL: [Command; 72] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
@@ -156,6 +175,19 @@ impl Command {
         Command::ToggleReduceMotion,
         Command::ImportPhotos,
         Command::ImportFolder,
+        Command::Organize,
+        Command::SelectAllFrames,
+        Command::NudgeLeft,
+        Command::NudgeRight,
+        Command::NudgeUp,
+        Command::NudgeDown,
+        Command::NudgeLeftMore,
+        Command::NudgeRightMore,
+        Command::NudgeUpMore,
+        Command::NudgeDownMore,
+        Command::ViewZoomIn,
+        Command::ViewZoomOut,
+        Command::ViewFit,
     ];
 
     /// Nome estável, para testes e para a linha de comando.
@@ -174,31 +206,6 @@ impl Command {
 
     pub fn shortcut(self) -> Option<Shortcut> {
         self.info().3
-    }
-
-    /// O comando do atalho, se houver. Ctrl+Shift+Z também refaz (costume no macOS e no Linux), e
-    /// Backspace também tira a foto (o Delete do Mac).
-    pub fn from_shortcut(shortcut: Shortcut) -> Option<Command> {
-        if shortcut == Shortcut::ctrl_shift('z') {
-            return Some(Command::Redo);
-        }
-        // Sinais e números: o Shift depende do teclado (o + pede Shift no ABNT2), então não conta.
-        let shortcut = match shortcut.key {
-            Key::Char(c) if !c.is_alphabetic() => Shortcut {
-                shift: false,
-                ..shortcut
-            },
-            _ => shortcut,
-        };
-        if shortcut == Shortcut::key(Key::Backspace) {
-            return Some(Command::ClearFrame);
-        }
-        if shortcut == Shortcut::key(Key::Char('=')) {
-            return Some(Command::ZoomIn);
-        }
-        Command::ALL
-            .into_iter()
-            .find(|c| c.shortcut() == Some(shortcut))
     }
 
     /// O comando de nome `name`, se houver.
