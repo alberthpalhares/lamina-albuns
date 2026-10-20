@@ -2848,6 +2848,7 @@ dependencies = [
 name = "lamina-editor"
 version = "0.1.0-beta.4"
 dependencies = [
+ "chrono",
  "image",
  "lamina-core",
  "lamina-export",

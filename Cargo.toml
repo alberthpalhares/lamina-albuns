@@ -64,6 +64,8 @@ rmcp = { version = "=3.5.0", default-features = false, features = ["server", "tr
 tokio = { version = "1", features = ["rt", "io-std", "macros", "sync"] }
 # As imagens vão em base64 nas respostas do MCP (a mesma versão que o resto do lock já usa).
 base64 = "0.23"
+# Hora local da tela inicial ("hoje, 14:32"; spec TI): a mesma versão que o resto do lock já usa.
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

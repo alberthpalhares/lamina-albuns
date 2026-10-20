@@ -36,6 +36,18 @@ impl Command {
                 Menu::File,
                 None,
             ),
+            C::CloseAlbum => (
+                "arquivo.fechar",
+                "Fechar álbum",
+                Menu::File,
+                Some(S::ctrl('w')),
+            ),
+            C::ClearRecents => (
+                "arquivo.limpar-recentes",
+                "Limpar recentes não fixados…",
+                Menu::File,
+                None,
+            ),
             C::FindMissing => (
                 "arquivo.procurar-fotos",
                 "Procurar fotos ausentes…",

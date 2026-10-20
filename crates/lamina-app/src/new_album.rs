@@ -194,6 +194,7 @@ pub fn message(app: &mut App, msg: Msg) {
         Msg::Searching(..) | Msg::Relinked { .. } => crate::relink::message(app, msg),
         Msg::Update(outcome) => crate::updates::message(app, outcome),
         Msg::Failed(problem) => failed(app, &problem),
+        Msg::RecentsChecked(_) | Msg::ThumbReady => crate::recents::message(app, msg),
     }
 }
 

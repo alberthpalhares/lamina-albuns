@@ -17,9 +17,9 @@ import { StripHeader, SpreadStrip, TimelineStrip, PhotoStrip, PhotoData, Timelin
 import { BarButton, FilterTab } from "widgets.slint";
 import { PanelTabs, InfoPanel } from "side.slint";
 import { UpdateBar } from "update_bar.slint";
-import { WelcomeScreen } from "welcome.slint";
+import { WelcomeScreen, ClearRecentsDialog, RecentsUi, RecentCard, RecentItem } from "welcome.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi }
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -213,7 +213,14 @@ export component AppWindow inherits Window {
             title: "Arquivo";
             MenuItem { title: "Novo álbum…  (Ctrl+N)"; activated => { root.command("arquivo.novo"); } }
             MenuItem { title: "Abrir…  (Ctrl+O)"; activated => { root.command("arquivo.abrir"); } }
+            Menu {
+                title: "Abrir recente";
+                for item in RecentsUi.menu: MenuItem { title: item.label; enabled: item.enabled; activated => { RecentsUi.open(item.index); } }
+            }
             MenuItem { title: "Abrir o álbum de exemplo"; activated => { root.command("arquivo.exemplo"); } }
+            MenuItem { title: "Limpar recentes não fixados…"; enabled: RecentsUi.menu.length > 0; activated => { root.command("arquivo.limpar-recentes"); } }
+            MenuSeparator { }
+            MenuItem { title: "Fechar álbum  (Ctrl+W)"; enabled: root.has-project; activated => { root.command("arquivo.fechar"); } }
             MenuSeparator { }
             MenuItem { title: "Salvar  (Ctrl+S)"; enabled: root.can-save; activated => { root.command("arquivo.salvar"); } }
             MenuItem { title: "Salvar como…  (Ctrl+Shift+S)"; enabled: root.can-save; activated => { root.command("arquivo.salvar-como"); } }
@@ -281,7 +288,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(event) => {
-            if (root.show-new || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || root.busy-text != "") {
+            if (root.show-new || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || root.busy-text != "") {
                 return reject;
             }
             // Teclas especiais chegam como o caractere do Slint; o Rust traduz o nome.
@@ -297,6 +304,8 @@ export component AppWindow inherits Window {
                     padding-left: 16px;
                     padding-right: 8px;
                     spacing: 16px;
+                    // Início: fecha o álbum e volta à tela inicial (spec TI, regra 6).
+                    if root.has-project: BarButton { text: "Início"; clicked => { root.command("arquivo.fechar"); } }
                     Text {
                         text: root.project-title;
                         color: Theme.text;
@@ -592,6 +601,9 @@ export component AppWindow inherits Window {
             root.show-about = false;
             root.focus-main();
         }
+    }
+    if RecentsUi.show-clear: ClearRecentsDialog {
+        closed => { root.focus-main(); }
     }
     if root.drag-kind == 1 || root.drag-kind == 2: Image {
         x: root.drag-x - 40px;
