@@ -26,6 +26,7 @@ mod jp_speed;
 mod jp_view;
 mod md;
 mod md_more;
+mod mv_telas;
 mod mv_tempos;
 mod np;
 mod np_create;

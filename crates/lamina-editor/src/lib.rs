@@ -95,7 +95,7 @@ pub use recents::{RECENTS_FILE, Recent, RecentsStore};
 pub use relink::{
     Found, RELINK_LATER, not_found_message, relinked_message, search_folder, search_near,
 };
-pub use screens::{ScreenImages, load_original, prepare_images};
+pub use screens::{Arrival, ScreenPlan, load_original, load_screen, prepare_images};
 pub use session::{HistoryList, HistoryStep, Session};
 pub use snap::{Grip, SnapLine};
 pub use strips::{STRIPS_FILE, STRIPS_UNREADABLE, Strip, Strips, StripsStore, strip_titles};

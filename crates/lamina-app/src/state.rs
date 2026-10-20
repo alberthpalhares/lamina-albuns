@@ -3,7 +3,6 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::mpsc::Sender;
 
 use lamina_core::{PhotoId, Project};
 use lamina_editor::forms::photo_text;
@@ -16,6 +15,7 @@ use slint::{ComponentHandle, Image};
 use crate::AppWindow;
 use crate::convert::{model, photo_data, spread_data};
 use crate::images::Images;
+use crate::mailbox::Mailbox;
 use crate::texts::SMALL;
 
 /// O que fazer depois da pergunta "Salvar as alterações?".
@@ -39,8 +39,14 @@ pub enum Msg {
     Step(Step),
     Album(Result<(Project, usize), HumanMessage>),
     ImagesReady,
-    /// A foto original do quadro em modo recorte (spec RC, regra 9).
-    Original(PhotoId, std::sync::Arc<lamina_editor::screens::Rgba>),
+    /// Uma foto de tela lida pelo trabalhador (spec MV, regra 1); `None` sem imagem de tela.
+    Screen {
+        epoch: u64,
+        id: PhotoId,
+        pixels: Option<crate::images::Pixels>,
+    },
+    /// A foto original do quadro em modo recorte (spec RC, regra 9), já em pixels da janela.
+    Original(PhotoId, crate::images::Pixels),
     /// Andamento e fim da exportação (spec EI): o resumo ou o erro, e a pasta.
     Exporting(usize, usize),
     Exported(Result<String, HumanMessage>, PathBuf),
@@ -65,7 +71,7 @@ pub struct App {
     pub window: slint::Weak<AppWindow>,
     pub editor: Editor,
     pub cache: Cache,
-    pub tx: Sender<Msg>,
+    pub tx: Mailbox,
     pub pending: Option<Pending>,
     /// Pasta e número de fotos da janela "Novo álbum" aberta.
     pub new_folder: PathBuf,
@@ -100,7 +106,8 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(window: &AppWindow, cache: Cache, editor: Editor, tx: Sender<Msg>) -> Self {
+    pub fn new(window: &AppWindow, cache: Cache, editor: Editor, tx: Mailbox) -> Self {
+        let images = Images::new(&cache, &tx);
         App {
             window: window.as_weak(),
             editor,
@@ -122,7 +129,7 @@ impl App {
                 false,
             ),
             updater: crate::updates::Shared::default(),
-            images: Images::default(),
+            images,
             loading: None,
             crop_timer: crate::crop::timer(),
             clock: crate::timings::Clock::default(),
@@ -155,12 +162,13 @@ impl App {
                 let _ = tx.send(Msg::ImagesReady);
             });
         }
-        self.images_ready();
+        self.images.clear();
+        self.refresh_all();
     }
 
-    /// Imagens geradas (ou projeto novo): recarrega tudo do cache.
+    /// Imagens geradas no cache: as que faltavam são pedidas de novo e as miniaturas entram.
     pub fn images_ready(&mut self) {
-        self.images.clear();
+        self.images.recheck();
         self.refresh_all();
     }
 

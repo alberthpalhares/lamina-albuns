@@ -6,7 +6,23 @@ use lamina_core::testing::{TRIES, budget};
 use lamina_layout::Reuse;
 
 use super::common::Base;
-use crate::{NewAlbum, ScreenImages, Session, SpecFields, create_album};
+use crate::{Cache, NewAlbum, ScreenPlan, Session, SpecFields, create_album, load_screen};
+
+/// Lê as fotos pedidas, em paralelo, como o trabalhador da janela; devolve quantas chegaram.
+fn read(session: &Session, plan: &mut ScreenPlan, index: usize, cache: &Cache) -> usize {
+    use rayon::prelude::*;
+    let asked = plan.go(session.project(), index);
+    let project = session.project();
+    let read: Vec<_> = asked
+        .photos
+        .par_iter()
+        .filter_map(|id| Some((*id, load_screen(project.photo(*id).ok()?, cache)?)))
+        .collect();
+    for (id, _) in &read {
+        plan.arrived(*id, false);
+    }
+    read.len()
+}
 
 #[test]
 fn jp_b13_abrir_e_navegar_rapido() {
@@ -33,10 +49,10 @@ fn jp_b13_abrir_e_navegar_rapido() {
     for _ in 0..TRIES {
         let started = Instant::now();
         let mut session = Session::open(&file).unwrap();
-        let mut screens = ScreenImages::new();
-        screens.keep_around(session.project(), 0, &cache);
+        let mut plan = ScreenPlan::default();
+        let loaded = read(&session, &mut plan, 0, &cache);
         open = open.min(started.elapsed());
-        assert!(!screens.is_empty());
+        assert!(loaded > 0);
 
         // A pior troca da rodada: a spec pede cada troca abaixo da meta (auditoria do Marco 2,
         // M7: antes valia a troca mais rápida).
@@ -44,7 +60,7 @@ fn jp_b13_abrir_e_navegar_rapido() {
         for next in 1..session.spread_count() {
             let started = Instant::now();
             assert!(session.go_to(next));
-            screens.keep_around(session.project(), next, &cache);
+            read(&session, &mut plan, next, &cache);
             worst = worst.max(started.elapsed());
         }
         step = step.min(worst);

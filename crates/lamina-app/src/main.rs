@@ -18,7 +18,9 @@ mod history;
 mod images;
 mod input;
 mod install;
+mod loader;
 mod look;
+mod mailbox;
 mod models;
 mod new_album;
 mod panel;
@@ -36,7 +38,6 @@ mod welcome;
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::mpsc::channel;
 use std::time::Duration;
 
 use lamina_editor::{
@@ -235,7 +236,7 @@ fn main() -> anyhow::Result<()> {
     let window = AppWindow::new()?;
     // Abre maximizada: numa tela pequena, as faixas de baixo ficariam fora (auditoria da Fase 4, 7).
     window.window().set_maximized(true);
-    let (tx, rx) = channel();
+    let (tx, rx) = mailbox::Mailbox::new();
     let prefs = PrefsStore::load(&config_dir().join(PREFS_FILE));
     let mut editor = Editor::with_prefs(prefs);
     editor.set_strips(StripsStore::load(&config_dir().join(STRIPS_FILE)));
@@ -282,13 +283,15 @@ fn main() -> anyhow::Result<()> {
         });
     }
 
-    let a = app.clone();
+    // As mensagens acordam a janela na hora; o temporizador só pega as que chegaram com o estado
+    // ocupado.
+    mailbox::install(rx, &app);
     let poll = Timer::default();
-    poll.start(TimerMode::Repeated, Duration::from_millis(50), move || {
-        while let Ok(msg) = rx.try_recv() {
-            new_album::message(&mut a.borrow_mut(), msg);
-        }
-    });
+    poll.start(
+        TimerMode::Repeated,
+        Duration::from_millis(250),
+        mailbox::drain,
+    );
     window.invoke_focus_main();
     window.run()?;
     // Sair do Lamina guarda a lâmina em que o fotógrafo parou (spec TI, regra 3).

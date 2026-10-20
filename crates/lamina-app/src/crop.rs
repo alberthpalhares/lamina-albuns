@@ -50,7 +50,13 @@ fn sync_original(app: &mut App, project: &Project, index: usize) {
             std::thread::spawn(move || match guarded(|| load_original(&project, id)) {
                 // Se a janela já fechou, não há a quem avisar.
                 Ok(Some(image)) => {
-                    let _ = tx.send(Msg::Original(id, image));
+                    // A cópia para os pixels da janela também fica fora da linha dela (MV, regra 1).
+                    let pixels = slint::SharedPixelBuffer::clone_from_slice(
+                        image.as_raw(),
+                        image.width(),
+                        image.height(),
+                    );
+                    let _ = tx.send(Msg::Original(id, pixels));
                 }
                 Ok(None) => {}
                 Err(problem) => {
@@ -130,13 +136,9 @@ pub fn refresh_spread(app: &mut App) {
 }
 
 /// A foto original chegou: entra no quadro se ele ainda está em modo recorte.
-pub fn original_ready(
-    app: &mut App,
-    id: PhotoId,
-    image: std::sync::Arc<lamina_editor::screens::Rgba>,
-) {
+pub fn original_ready(app: &mut App, id: PhotoId, pixels: crate::images::Pixels) {
     if app.loading == Some(id) {
-        app.images.set_original(id, &image);
+        app.images.set_original(id, pixels);
         app.loading = None;
         refresh_spread(app);
     }

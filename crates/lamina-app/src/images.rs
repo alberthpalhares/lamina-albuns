@@ -1,27 +1,62 @@
-//! As imagens já convertidas para o Slint: miniaturas (faixa e navegador) e imagens de tela (lâmina
-//! grande). Na memória ficam só as imagens de tela da lâmina atual (spec JP, regra 6).
+//! As imagens já convertidas para o Slint: miniaturas (faixa e navegador) e imagens de tela
+//! (lâmina grande). Na memória ficam só as imagens de tela da lâmina atual e das vizinhas (spec
+//! JP, regra 6), lidas por um trabalhador; a lâmina aparece com as miniaturas e cada foto nítida
+//! entra quando chega (spec MV, regra 1). Quem decide o que pedir é o `ScreenPlan` do editor.
 
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use lamina_core::{FrameContent, PhotoId, Project};
-use lamina_editor::screens::Rgba;
-use lamina_editor::{Cache, ScreenImages};
+use lamina_editor::{Arrival, Cache, ScreenPlan};
 use slint::{Image, Rgba8Pixel, SharedPixelBuffer};
 
-#[derive(Default)]
+use crate::loader::Loader;
+use crate::mailbox::Mailbox;
+use crate::state::App;
+
+pub type Pixels = SharedPixelBuffer<Rgba8Pixel>;
+
 pub struct Images {
-    screens: ScreenImages,
-    converted: HashMap<PhotoId, (Arc<Rgba>, Image)>,
+    /// Sobe a cada álbum novo: fotos de um álbum anterior que chegarem são ignoradas.
+    epoch: u64,
+    plan: ScreenPlan,
+    loader: Loader,
+    screens: HashMap<PhotoId, Image>,
+    /// Chegaram durante um deslize e entram quando ele termina (MV-B26).
+    held: HashMap<PhotoId, Image>,
     thumbs: HashMap<PhotoId, Image>,
     /// A foto original do quadro em modo recorte (spec RC, regra 9).
     original: Option<(PhotoId, Image)>,
+    /// Chegou foto nítida nova desde o último desenho da lâmina.
+    pub(crate) arrived: bool,
 }
 
 impl Images {
-    /// Esquece tudo (projeto novo ou imagens recém-geradas no cache).
+    pub fn new(cache: &Cache, mailbox: &Mailbox) -> Self {
+        Images {
+            epoch: 0,
+            plan: ScreenPlan::default(),
+            loader: Loader::new(cache, mailbox),
+            screens: HashMap::new(),
+            held: HashMap::new(),
+            thumbs: HashMap::new(),
+            original: None,
+            arrived: false,
+        }
+    }
+
+    /// Esquece tudo (álbum novo).
     pub fn clear(&mut self) {
-        *self = Images::default();
+        self.epoch += 1;
+        self.plan = ScreenPlan::default();
+        self.screens.clear();
+        self.held.clear();
+        self.thumbs.clear();
+        self.original = None;
+    }
+
+    /// O cache ganhou imagens: as fotos que não tinham imagem de tela podem ser pedidas de novo.
+    pub fn recheck(&mut self) {
+        self.plan.recheck();
     }
 
     /// A miniatura da foto, se estiver no cache.
@@ -44,14 +79,27 @@ impl Images {
             .collect()
     }
 
-    /// As imagens das fotos da lâmina `index`: a de tela, ou a miniatura enquanto ela não existe.
+    /// As imagens das fotos da lâmina `index`: a de tela, ou a miniatura enquanto ela não chega.
+    /// Pede ao trabalhador as que faltam (a lâmina atual primeiro) e solta as que saíram.
     pub fn spread(
         &mut self,
         project: &Project,
         index: usize,
         cache: &Cache,
     ) -> HashMap<PhotoId, Image> {
-        self.screens.keep_around(project, index, cache);
+        let asked = self.plan.go(project, index);
+        for id in &asked.release {
+            self.screens.remove(id);
+            self.held.remove(id);
+        }
+        if !asked.photos.is_empty() {
+            let items = asked
+                .photos
+                .iter()
+                .filter_map(|id| Some((*id, project.photo(*id).ok()?.clone())))
+                .collect();
+            self.loader.ask(self.epoch, index, items);
+        }
         let mut images = HashMap::new();
         for id in photos_of(project, index) {
             let original = self
@@ -60,45 +108,55 @@ impl Images {
                 .filter(|(o, _)| *o == id)
                 .map(|(_, img)| img.clone());
             let img = original
-                .or_else(|| self.screen(id))
+                .or_else(|| self.screens.get(&id).cloned())
                 .or_else(|| self.thumb(project, id, cache));
             if let Some(img) = img {
                 images.insert(id, img);
             }
         }
-        self.converted.retain(|id, _| images.contains_key(id));
         images
+    }
+
+    /// Uma foto de tela chegou do trabalhador (`None`: não há imagem de tela no cache).
+    pub fn screen_arrived(&mut self, epoch: u64, id: PhotoId, pixels: Option<Pixels>) {
+        if epoch != self.epoch {
+            return;
+        }
+        let Some(pixels) = pixels else {
+            self.plan.failed(id);
+            return;
+        };
+        // Ainda não há deslize de navegação: a foto entra na hora (MV-B26 liga o deslize).
+        match self.plan.arrived(id, false) {
+            Arrival::Show => {
+                self.screens.insert(id, Image::from_rgba8(pixels));
+                self.arrived = true;
+            }
+            Arrival::Hold => {
+                self.held.insert(id, Image::from_rgba8(pixels));
+            }
+            Arrival::Discard => {}
+        }
     }
 
     pub fn original_id(&self) -> Option<PhotoId> {
         self.original.as_ref().map(|(id, _)| *id)
     }
 
-    pub fn set_original(&mut self, id: PhotoId, image: &Rgba) {
-        let buffer = SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(
-            image.as_raw(),
-            image.width(),
-            image.height(),
-        );
-        self.original = Some((id, Image::from_rgba8(buffer)));
+    /// A foto original do recorte, já convertida pelo trabalhador.
+    pub fn set_original(&mut self, id: PhotoId, pixels: Pixels) {
+        self.original = Some((id, Image::from_rgba8(pixels)));
     }
 
     pub fn clear_original(&mut self) {
         self.original = None;
     }
+}
 
-    fn screen(&mut self, id: PhotoId) -> Option<Image> {
-        let arc = self.screens.get(id)?;
-        if let Some((known, img)) = self.converted.get(&id)
-            && Arc::ptr_eq(known, &arc)
-        {
-            return Some(img.clone());
-        }
-        let (w, h) = (arc.width(), arc.height());
-        let buffer = SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(arc.as_raw(), w, h);
-        let img = Image::from_rgba8(buffer);
-        self.converted.insert(id, (arc, img.clone()));
-        Some(img)
+/// Depois de tratar as mensagens: se chegou foto nítida, a lâmina é redesenhada uma vez só.
+pub fn after_arrivals(app: &mut App) {
+    if std::mem::take(&mut app.images.arrived) {
+        crate::crop::refresh_spread(app);
     }
 }
 
