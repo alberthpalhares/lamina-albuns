@@ -8,6 +8,7 @@ mod common;
 mod ct;
 mod ds;
 mod eg_arrumar;
+mod eg_contexto;
 mod eg_copiar;
 mod eg_grupo;
 mod eg_imas;

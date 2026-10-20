@@ -6,6 +6,7 @@
 
 #![windows_subsystem = "windows"]
 
+mod context;
 mod convert;
 mod crop;
 mod drag;
@@ -92,6 +93,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     drag::connect(window, app);
     drag::connect_motion(window, app);
     organize::connect(window, app);
+    context::connect(window, app);
     crop::connect(window, app);
     look::connect(window, app);
     hand::connect(window, app);

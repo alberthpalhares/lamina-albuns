@@ -20,11 +20,12 @@ import { BarButton, FilterTab } from "widgets.slint";
 import { UpdateBar } from "update_bar.slint";
 import { RightPanel } from "panel.slint";
 import { DragGhost, GhostData } from "ghost.slint";
+import { ContextUi, ContextMenu, ContextRow } from "context.slint";
 import { OrganizeUi, OrganizeBar, OrganizeMarks, LassoBox, MarkData } from "organize.slint";
 import { Motion } from "motion.slint";
 import { WelcomeScreen, ClearRecentsDialog, RecentsUi, RecentCard, RecentItem } from "welcome.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, NewProjectUi, FormatCard, DrawData, ImportUi }
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, ContextUi, ContextRow, NewProjectUi, FormatCard, DrawData, ImportUi }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -246,6 +247,8 @@ export component AppWindow inherits Window {
     callback frame-selected(int);
     // Clique num quadro, com Ctrl (ou Cmd) e Shift: no modo organizar, soma ou tira (spec EG).
     callback frame-clicked(int, bool, bool);
+    // Clique direito na lâmina: o menu de contexto (spec EG, regra 13).
+    callback context-requested(int, length, length);
     // O laço do modo organizar: os dois cantos em frações da largura da lâmina e o Shift.
     callback lasso-done(float, float, float, float, bool);
     property <bool> lasso-moved;
@@ -523,6 +526,7 @@ export component AppWindow inherits Window {
                         preview: root.preview;
                         preview-img: root.preview-img;
                         frame-double(i) => { root.frame-double(i); root.focus-main(); }
+                        context(i, x, y) => { root.context-requested(i, x, y); }
                         crop-drag(dx, dy) => { root.crop-drag(dx, dy); }
                         crop-end() => { root.crop-end(); root.focus-main(); }
                         crop-wheel(n) => { root.crop-wheel(n); }
@@ -774,6 +778,10 @@ export component AppWindow inherits Window {
     }
     if OrganizeUi.lassoing && root.lasso-moved: LassoBox { }
     if ImportUi.dropping: DropOverlay { }
+    if ContextUi.open: ContextMenu {
+        width: root.width;
+        height: root.height;
+    }
     if root.busy-text != "": BusyOverlay {
         text: root.busy-text;
     }
