@@ -48,6 +48,8 @@ pub mod human;
 pub mod importing;
 pub mod keys;
 mod look_form;
+pub mod magnets;
+pub mod marks;
 pub mod models;
 pub mod motion;
 pub mod naming;
