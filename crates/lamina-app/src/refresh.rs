@@ -19,6 +19,7 @@ impl App {
         w.set_spreads_open(strips.spreads);
         w.set_timeline_open(strips.timeline);
         w.set_photos_open(strips.photos);
+        w.set_panel_open(strips.panel);
         w.set_can_prev(self.editor.available(Command::PreviousSpread));
         w.set_can_next(self.editor.available(Command::NextSpread));
         w.set_guides(self.editor.guides());
@@ -70,5 +71,6 @@ impl App {
         crate::look::refresh(self);
         crate::history::refresh(self);
         crate::frame_panel::refresh(self);
+        crate::details::refresh(self);
     }
 }

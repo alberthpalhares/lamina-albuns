@@ -122,6 +122,9 @@ pub enum Command {
     TurnRight,
     TurnLeftMore,
     TurnRightMore,
+    /// O painel da direita (Alt+4) e "Ajustar a foto…" (spec AF, regras 10 e 11).
+    TogglePanel,
+    AdjustPhoto,
 }
 
 /// Nome, rótulo, menu e atalho de um comando.
@@ -138,7 +141,7 @@ impl Command {
             .unwrap_or(("", "", Menu::Help, None))
     }
 
-    pub const ALL: [Command; 90] = [
+    pub const ALL: [Command; 92] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
@@ -229,6 +232,8 @@ impl Command {
         Command::TurnRight,
         Command::TurnLeftMore,
         Command::TurnRightMore,
+        Command::TogglePanel,
+        Command::AdjustPhoto,
     ];
 
     /// Nome estável, para testes e para a linha de comando.

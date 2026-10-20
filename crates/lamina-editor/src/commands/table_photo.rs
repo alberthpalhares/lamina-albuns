@@ -34,6 +34,13 @@ impl Command {
                 Menu::Edit,
                 k('}'),
             ),
+            C::TogglePanel => (
+                "ver.painel",
+                "Mostrar painel",
+                Menu::View,
+                Some(Shortcut::alt('4')),
+            ),
+            C::AdjustPhoto => ("foto.ajustar", "Ajustar a foto…", Menu::Edit, None),
             _ => return None,
         })
     }

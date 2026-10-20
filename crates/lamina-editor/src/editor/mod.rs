@@ -19,6 +19,7 @@ mod arrange_cmd;
 mod clipboard;
 mod context;
 mod crop;
+mod details;
 mod dispatch;
 mod dropping;
 mod frames;
@@ -41,6 +42,7 @@ pub use adjust::{AdjustChange, BAD_ANGLE, BAD_SCALE, CropGrid, parse_angle};
 pub use arrange_cmd::NEED_THREE;
 pub use context::ContextEntry;
 pub use crop::{ZOOM_STEP, crop_for, set_crop};
+pub use details::{Details, album_rows};
 pub use dropping::DropPlace;
 pub use group_fields::{Field, GROUP_NOT_A_NUMBER};
 pub use layouts::Panel;
@@ -76,6 +78,11 @@ pub struct Editor {
     pending_crop: Option<Crop>,
     /// O ângulo da foto está mudando: a grade fina aparece no recorte (spec AF, seção 4).
     turning: bool,
+    /// A janela deve abrir a aba Detalhes (spec AF, regra 10).
+    wants_details: bool,
+    /// A última leitura da câmera (spec AF, regra 12): o arquivo é lido ao selecionar a foto, não
+    /// a cada redesenho.
+    camera: std::cell::RefCell<Option<(std::path::PathBuf, lamina_media::CameraDetails)>>,
     /// Trabalho em segundo plano (novo álbum, exportar, procurar fotos): os comandos esperam.
     busy: bool,
     /// As faixas de baixo e o arquivo delas (spec PN).
@@ -124,6 +131,8 @@ impl Editor {
             crop_frame: None,
             pending_crop: None,
             turning: false,
+            wants_details: false,
+            camera: std::cell::RefCell::new(None),
             busy: false,
             strips: StripsStore::default(),
             gesture: None,

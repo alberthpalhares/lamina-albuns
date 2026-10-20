@@ -97,6 +97,8 @@ impl Editor {
         }
         self.selected_frame = Some(frame);
         self.crop_frame = Some(frame);
+        // O recorte abre a aba Detalhes, com a seção Foto (spec AF, regra 10).
+        self.wants_details = true;
         true
     }
 

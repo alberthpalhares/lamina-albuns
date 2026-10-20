@@ -6,7 +6,7 @@ import { LayoutsPanel, LayoutItem } from "layouts.slint";
 import { LookPanel } from "look.slint";
 import { FramePanel } from "frame.slint";
 import { HistoryPanel, HistoryItem } from "history.slint";
-import { PanelTabs, InfoPanel } from "side.slint";
+import { PanelTabs, InfoPanel, DetailRow } from "side.slint";
 import { OrganizeUi, OrganizePanel } from "organize.slint";
 
 export component RightPanel inherits Rectangle {
@@ -27,6 +27,10 @@ export component RightPanel inherits Rectangle {
     in property <string> info-frame;
     in property <bool> info-frame-warn;
     in property <string> info-photo;
+    // A aba Detalhes (spec AF): as linhas e o tipo da seleção (0 álbum, 1 foto, 2 texto, 3 vários).
+    in property <[DetailRow]> details;
+    in property <int> details-kind;
+    in property <string> details-count;
     callback layout-apply(int);
     callback layout-favorite(int);
     callback layout-reject(int);
@@ -63,7 +67,7 @@ export component RightPanel inherits Rectangle {
             vertical-stretch: 1;
             done => { root.done(); }
         }
-        if !OrganizeUi.on && root.tab == 4: FramePanel {
+        if !OrganizeUi.on && (root.tab == 4 || (root.tab == 1 && root.details-kind == 2)): FramePanel {
             vertical-stretch: 1;
             done => { root.done(); }
         }
@@ -73,8 +77,11 @@ export component RightPanel inherits Rectangle {
             position: root.history-pos;
             go(i) => { root.history-go(i); root.done(); }
         }
-        if !OrganizeUi.on && root.tab == 1: InfoPanel {
+        if !OrganizeUi.on && root.tab == 1 && root.details-kind != 2: InfoPanel {
             vertical-stretch: 1;
+            rows: root.details;
+            kind: root.details-kind;
+            count: root.details-count;
             album: root.info-album;
             spread: root.info-spread;
             warnings: root.info-warnings;
