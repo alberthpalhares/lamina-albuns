@@ -113,3 +113,11 @@ opt-level = 3
 [profile.dev.package.lamina-editor]
 # Teste de velocidade da janela (spec JP, JP-B13) mede código otimizado.
 opt-level = 3
+
+[profile.dist]
+# O programa que vai para o fotógrafo (release.yml): otimização entre todos os crates de uma vez,
+# para um executável menor e mais rápido. Compila bem mais devagar, por isso o `--release` do dia
+# a dia (conferir a janela, o `lamina mcp` local) continua no perfil `release`.
+inherits = "release"
+lto = "fat"
+codegen-units = 1
