@@ -30,16 +30,28 @@ function Install-Lamina {
 
     if ($env:LAMINA_FONTE) {
         $fonte = $env:LAMINA_FONTE
-    } elseif ($Beta) {
+    } else {
+        # Sem versão estável publicada, a versão de teste mais nova, com aviso (Rodada 0, R0-15).
         try {
-            $releases = Invoke-RestMethod -UseBasicParsing "https://api.github.com/repos/$repo/releases?per_page=20"
-            $fonte = "https://github.com/$repo/releases/download/$($releases[0].tag_name)"
+            $tag = $null
+            if (-not $Beta) {
+                try {
+                    $tag = (Invoke-RestMethod -UseBasicParsing "https://api.github.com/repos/$repo/releases/latest").tag_name
+                } catch { $tag = $null }
+            }
+            if (-not $tag) {
+                $releases = Invoke-RestMethod -UseBasicParsing "https://api.github.com/repos/$repo/releases?per_page=20"
+                $tag = $releases[0].tag_name
+                if (-not $Beta -and $tag) {
+                    Write-Host "Ainda não há versão estável do Lamina: instalando a versão de teste $tag."
+                }
+            }
+            if (-not $tag) { throw "sem versão" }
+            $fonte = "https://github.com/$repo/releases/download/$tag"
         } catch {
             Write-Host $semRede -ForegroundColor Red
             return $false
         }
-    } else {
-        $fonte = "https://github.com/$repo/releases/latest/download"
     }
 
     $temp = Join-Path ([IO.Path]::GetTempPath()) ('lamina-instalar-' + [Guid]::NewGuid())

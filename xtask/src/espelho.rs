@@ -26,17 +26,9 @@ pub const CODE: &[&str] = &[
 /// notas de cada versão (`release.yml`).
 pub const SLINT_BADGE: &str = "[![Made with Slint](https://raw.githubusercontent.com/slint-ui/slint/master/logo/MadeWithSlint-logo-whitebg.png)](https://slint.dev)";
 
-/// O README do público: o mínimo (o README completo é do privado).
-pub const PUBLIC_README: &str = "# Lamina\n\n\
-Diagramador de álbuns fotográficos em Rust, para Windows, macOS e Linux. Projeto acadêmico.\n\n\
-## Instalar\n\nBaixe o instalador do seu sistema na [página de versões](https://github.com/alberthpalhares/lamina-albuns/releases)\n(o arquivo que termina em `Setup.exe`, `Setup.pkg` ou `.AppImage`; passo a passo, com os\navisos do sistema, no [guia de instalação](crates/lamina-app/dist/instalar.md)). Depois de\ninstalado, o Lamina avisa sozinho quando há versão nova.\n\nPelo terminal, sem o aviso de segurança do Windows e do Mac (o Lamina não é assinado; o aviso\nsó não aparece, e o antivírus continua examinando):\n\n| Sistema | Comando |\n|---|---|\n| Windows (PowerShell) | `irm https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.ps1 \\| iex` |\n| Mac e Linux | `curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.sh \\| sh` |\n\nPara a versão de teste mais nova: `$env:LAMINA_BETA = 1` antes do comando no Windows, ou\n`sh -s -- --beta` no lugar de `sh` no Mac e no Linux.\n\n\
-## Usar com o Claude Desktop\n\nBaixe `Lamina-Windows.mcpb` ou `Lamina-macOS.mcpb` na mesma página e dê dois cliques: o Claude\nDesktop instala o Lamina e pergunta as pastas dos álbuns. **Com \"Permitir que a IA veja as\nfotos\" ligada, as prévias das lâminas e as miniaturas das fotos vão para o provedor da IA** (no\nClaude, a Anthropic). São fotos de clientes (LGPD): desligue a opção se o contrato pedir; a IA\ncontinua só com os dados das fotos e das lâminas.\n\n\
-## Compilar\n\n\
-```bash\ncargo run --release -p lamina-app   # a janela\ncargo xtask verify                  # formatação, lint, testes e checagens\n```\n\n\
-No Linux, a janela precisa de `libfontconfig1-dev`, `libxkbcommon-dev` e `libwayland-dev`.\n\n\
-## Licença\n\nApache-2.0 (arquivo `LICENSE`). A interface usa o Slint sob a licença Royalty-free 2.0. \
-As fontes em `crates/lamina-render/fonts/` têm a licença SIL OFL 1.1 (o `OFL.txt` fica na pasta \
-de cada uma).\n";
+/// O README do público, para quem baixa o Lamina e para quem programa (Rodada 0, R0-16). Os
+/// links e os comandos são conferidos na release (`release.yml`, job `instalacao`).
+pub const PUBLIC_README: &str = include_str!("readme_publico.md");
 
 /// O README do público como vai para o clone: o texto e o selo do Slint no fim.
 pub fn public_readme() -> String {
@@ -174,6 +166,30 @@ mod tests {
     fn readme_publico_tem_o_selo_do_slint() {
         assert!(public_readme().ends_with(&format!("\n{SLINT_BADGE}\n")));
         assert!(SLINT_BADGE.contains("MadeWithSlint") && SLINT_BADGE.contains("slint.dev"));
+    }
+
+    /// Rodada 0, R0-16: os links relativos do README do público apontam arquivos que vão para lá,
+    /// e os comandos de instalação usam o endereço "raw" (o "latest" não vê as versões de teste).
+    #[test]
+    fn readme_publico_aponta_arquivos_do_codigo_e_comandos_que_funcionam() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        let links: Vec<&str> = PUBLIC_README
+            .split("](")
+            .skip(1)
+            .filter_map(|rest| rest.split(')').next())
+            .filter(|l| !l.starts_with("http") && !l.starts_with('#'))
+            .collect();
+        assert!(links.len() >= 3, "{links:?}");
+        // O `LICENSE` só existe no público, e o espelho o mantém lá.
+        for link in links.into_iter().filter(|l| *l != "LICENSE") {
+            assert!(root.join(link).exists(), "{link} não existe");
+            let top = link.split('/').next().unwrap();
+            assert!(CODE.contains(&top), "{link} não vai para o público");
+        }
+        assert!(!PUBLIC_README.contains("releases/latest/download"));
+        assert!(PUBLIC_README.contains(
+            "raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.sh"
+        ));
     }
 
     /// Proveta: documento nunca vai para o público; código apagado some de lá.

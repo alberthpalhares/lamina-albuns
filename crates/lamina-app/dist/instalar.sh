@@ -2,8 +2,11 @@
 # Instala o Lamina no Mac ou no Linux pelo terminal (spec DS, regra 14), sem senha e sem
 # administrador, só na pasta do usuário:
 #
-#   curl -fsSL https://github.com/alberthpalhares/lamina-albuns/releases/latest/download/instalar.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.sh | sh
 #   curl -fsSL .../instalar.sh | sh -s -- --beta      (a versão de teste mais nova)
+#
+# Sem versão estável publicada, instala a versão de teste mais nova e avisa (Rodada 0, R0-15:
+# o endereço "latest" do GitHub não vê versões de teste e o comando falhava).
 #
 # O que o terminal baixa não ganha a marca de "baixado da internet", então o Mac não mostra o
 # aviso de app não verificado. O Lamina não fica verificado pela Apple: o aviso só não aparece.
@@ -36,14 +39,21 @@ esac
 
 if [ -n "${LAMINA_FONTE:-}" ]; then
     FONTE="$LAMINA_FONTE"
-elif [ "$BETA" = 1 ]; then
-    TAG=$(curl -fsSL "https://api.github.com/repos/$REPO/releases?per_page=20" 2>/dev/null \
-        | grep -m1 '"tag_name"' | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/') \
-        || falha "Não foi possível baixar o Lamina. Confira a internet e tente de novo."
+else
+    # A versão do primeiro "tag_name" da resposta da API do GitHub (vazio se não houver).
+    tag_de() {
+        curl -fsSL "https://api.github.com/repos/$REPO/$1" 2>/dev/null \
+            | grep -m1 '"tag_name"' | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/' || true
+    }
+    TAG=""
+    [ "$BETA" = 1 ] || TAG=$(tag_de releases/latest)
+    if [ -z "$TAG" ]; then
+        TAG=$(tag_de "releases?per_page=20")
+        [ "$BETA" = 1 ] || [ -z "$TAG" ] \
+            || printf 'Ainda não há versão estável do Lamina: instalando a versão de teste %s.\n' "$TAG"
+    fi
     [ -n "$TAG" ] || falha "Não foi possível baixar o Lamina. Confira a internet e tente de novo."
     FONTE="https://github.com/$REPO/releases/download/$TAG"
-else
-    FONTE="https://github.com/$REPO/releases/latest/download"
 fi
 
 TEMP=$(mktemp -d)

@@ -8,7 +8,7 @@ use crate::human::{HumanMessage, REPORT};
 
 /// O formulário no Tally, sem conta (decisão do dono, 2026-10-19). Trocar de ferramenta é mudar
 /// esta linha e os nomes dos campos escondidos.
-pub const FEEDBACK_FORM: &str = "https://tally.so/r/a-definir";
+pub const FEEDBACK_FORM: &str = "https://tally.so/r/Dq2ldl";
 
 /// O endereço com os três campos escondidos, e nada mais (regra 3; SR-B2 trava).
 pub fn feedback_address(version: &str, system: &str, channel: &str) -> String {
