@@ -278,6 +278,9 @@ jobs:
         os: [windows-latest, macos-latest, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
+    # Os scripts consultam a API do GitHub; sem login, as máquinas do CI esbarram no limite.
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - name: Comando do README (Windows)
@@ -288,8 +291,11 @@ jobs:
           Start-Sleep -Seconds 5
           Get-Process lamina-app -ErrorAction SilentlyContinue | Stop-Process -Force
           $p = Start-Process "$env:LOCALAPPDATA\Lamina\current\lamina-app.exe" -ArgumentList '--verificar', 'exemplo' -PassThru -RedirectStandardError erro.txt
+          # No Windows PowerShell 5.1, sem guardar o Handle o código de saída vem vazio.
+          $null = $p.Handle
           if (-not $p.WaitForExit(120000)) { $p.Kill(); "verificar passou de 2 min"; exit 1 }
           Get-Content erro.txt -ErrorAction SilentlyContinue
+          "verificar exemplo saiu com $($p.ExitCode)"
           if ($p.ExitCode -ne 0) { exit 1 }
       - name: Comando do README (macOS)
         if: runner.os == 'macOS'

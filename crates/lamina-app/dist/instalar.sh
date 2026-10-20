@@ -41,9 +41,14 @@ if [ -n "${LAMINA_FONTE:-}" ]; then
     FONTE="$LAMINA_FONTE"
 else
     # A versão do primeiro "tag_name" da resposta da API do GitHub (vazio se não houver).
+    # Com GITHUB_TOKEN (só o CI tem), a consulta não esbarra no limite de 60 por hora que o
+    # GitHub dá a cada endereço sem login; as máquinas do CI dividem o endereço.
     tag_de() {
-        curl -fsSL "https://api.github.com/repos/$REPO/$1" 2>/dev/null \
-            | grep -m1 '"tag_name"' | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/' || true
+        if [ -n "${GITHUB_TOKEN:-}" ]; then
+            curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" "https://api.github.com/repos/$REPO/$1" 2>/dev/null
+        else
+            curl -fsSL "https://api.github.com/repos/$REPO/$1" 2>/dev/null
+        fi | grep -m1 '"tag_name"' | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/' || true
     }
     TAG=""
     [ "$BETA" = 1 ] || TAG=$(tag_de releases/latest)
