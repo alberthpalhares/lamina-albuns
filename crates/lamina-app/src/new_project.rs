@@ -10,7 +10,7 @@ use lamina_editor::forms::{limits_text, parse_limits};
 use lamina_editor::new_project::{
     Format, NewProject, SizeField, SizeForm, Unit, drawing, formats, mount_preview, picker_color,
 };
-use lamina_editor::{PALETTE, Preset, SpecFields, color_hex, parse_color};
+use lamina_editor::{Human, PALETTE, Preset, SpecFields, color_hex, parse_color};
 use lamina_layout::Reuse;
 use slint::{ComponentHandle, Image, Rgba8Pixel, SharedPixelBuffer, SharedString};
 
@@ -32,13 +32,18 @@ const FIELDS: [SizeField; 9] = [
     SizeField::SafeSpine,
 ];
 
-/// Abre a etapa 1 com os padrões (o cartão do formato do tamanho padrão).
+/// Abre a etapa 1 com os padrões, na unidade de sempre e com o cartão do formato do último álbum
+/// criado (regras 1 e 3).
 pub fn start(app: &mut App) {
     let Some(w) = app.window.upgrade() else {
         return;
     };
-    let wizard = NewProject::new(SizeForm::default());
+    let strips = app.editor.strips();
+    let mut size = SizeForm::default();
+    size.set_unit(strips.unit);
+    let wizard = NewProject::new(size);
     let ui = w.global::<NewProjectUi>();
+    ui.set_mode(0);
     ui.set_tab(0);
     ui.set_unit(unit_index(wizard.size.unit));
     ui.set_open_spread(false);
@@ -57,9 +62,99 @@ pub fn start(app: &mut App) {
     fill_mount(&ui, &wizard);
     app.wizard = Some(wizard);
     crate::new_project_file::reset(app);
-    pick_format(app, format_index(Format::of(&SpecFields::default())));
+    pick_format(app, format_index(strips.format));
     refresh(app);
     ui.set_show(true);
+}
+
+/// Arquivo → Especificação do álbum…: a etapa 1 com os valores do álbum aberto (regra 11).
+pub fn open_spec(app: &mut App) {
+    let (Some(w), Some(session)) = (app.window.upgrade(), app.editor.session()) else {
+        return;
+    };
+    let project = session.project();
+    let mut size = SizeForm::new(SpecFields::from_spec(&project.spec));
+    size.set_unit(app.editor.strips().unit);
+    let (min, max) = limits_text(project.page_limits);
+    app.new_export = session.export_prefs();
+    let wizard = NewProject::new(size);
+    let ui = w.global::<NewProjectUi>();
+    ui.set_mode(1);
+    ui.set_tab(1);
+    ui.set_unit(unit_index(wizard.size.unit));
+    ui.set_open_spread(false);
+    ui.set_min_pages(min.into());
+    ui.set_max_pages(max.into());
+    fill_size(&ui, &wizard.size);
+    app.wizard = Some(wizard);
+    pick_format(app, 0);
+    refresh(app);
+    ui.set_show(true);
+}
+
+/// Arquivo → Montagem do álbum…: a etapa 2 com a montagem do álbum aberto (regra 11).
+pub fn open_mount(app: &mut App) {
+    let (Some(w), Some(session)) = (app.window.upgrade(), app.editor.session()) else {
+        return;
+    };
+    let project = session.project();
+    let mut wizard = NewProject::new(SizeForm::new(SpecFields::from_spec(&project.spec)));
+    wizard.step = 2;
+    wizard.mounting = project.mounting;
+    wizard.lay_flat = project.spec.mode() == lamina_core::DesignMode::Spread;
+    let ui = w.global::<NewProjectUi>();
+    ui.set_mode(2);
+    fill_mount(&ui, &wizard);
+    app.wizard = Some(wizard);
+    refresh(app);
+    ui.set_show(true);
+}
+
+/// "Aplicar" nos dois modos do álbum aberto: a especificação (uma edição que refaz as lâminas
+/// com o mesmo desenho; spec PR) ou a montagem (sem refazer as lâminas).
+fn apply(app: &mut App) {
+    let Some(w) = app.window.upgrade() else {
+        return;
+    };
+    let ui = w.global::<NewProjectUi>();
+    let Some(wizard) = app.wizard.take() else {
+        return;
+    };
+    ui.set_show(false);
+    let done = if ui.get_mode() == 1 {
+        apply_spec(app, &wizard)
+    } else {
+        app.editor
+            .set_mounting(wizard.mounting, wizard.lay_flat)
+            .map(|()| None)
+    };
+    match done {
+        Ok(notice) => {
+            app.notice = notice.unwrap_or_default();
+            app.project_changed();
+        }
+        Err(e) => crate::files::show_error(app, &e.human()),
+    }
+    w.invoke_focus_main();
+}
+
+fn apply_spec(
+    app: &mut App,
+    wizard: &NewProject,
+) -> Result<Option<String>, lamina_editor::EditorError> {
+    let mode = app
+        .editor
+        .session()
+        .map(|s| s.project().spec.mode())
+        .unwrap_or_default();
+    let (Ok(spec), Ok(limits)) = (wizard.size.spec(), limits(app)) else {
+        return Ok(None);
+    };
+    let notice = app.editor.respec(spec.with_mode(mode), limits)?;
+    if let Some(session) = app.editor.session_mut() {
+        session.set_export_prefs(app.new_export);
+    }
+    Ok(notice)
 }
 
 fn ui_of(app: &App) -> Option<(AppWindow, &NewProject)> {
@@ -281,10 +376,12 @@ fn unit_changed(app: &mut App, index: i32) {
     };
     let unit = usize::try_from(index)
         .ok()
-        .and_then(|i| Unit::ALL.get(i).copied());
-    wizard.size.set_unit(unit.unwrap_or_default());
+        .and_then(|i| Unit::ALL.get(i).copied())
+        .unwrap_or_default();
+    wizard.size.set_unit(unit);
     wizard.size.open_spread = ui.get_open_spread();
     fill_size(&ui, &wizard.size);
+    app.editor.remember_unit(unit);
 }
 
 fn same_margins(app: &mut App) {
@@ -434,5 +531,6 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     ui.on_next(on(|app| step(app, true)));
     ui.on_back(on(|app| step(app, false)));
     ui.on_cancel(on(cancel));
+    ui.on_apply(on(apply));
     crate::new_project_file::connect(window, app);
 }

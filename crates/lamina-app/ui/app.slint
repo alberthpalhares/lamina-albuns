@@ -13,7 +13,7 @@ import { AboutDialog } from "about.slint";
 import { ModelNameDialog, ModelsDialog, ModelUi } from "models.slint";
 import { HistoryPanel, HistoryItem } from "history.slint";
 import { ExportDialog } from "export.slint";
-import { SpecDialog, PresetNameDialog, PresetsDialog, PresetUi } from "spec.slint";
+import { PresetNameDialog, PresetsDialog, PresetUi } from "spec.slint";
 import { StripHeader, SpreadStrip, TimelineStrip, PhotoStrip, PhotoData, TimelineItem } from "strips.slint";
 import { BarButton, FilterTab } from "widgets.slint";
 import { PanelTabs, InfoPanel } from "side.slint";
@@ -298,6 +298,7 @@ export component AppWindow inherits Window {
             MenuItem { title: "Procurar fotos ausentes…"; enabled: root.has-missing; activated => { root.command("arquivo.procurar-fotos"); } }
             MenuSeparator { }
             MenuItem { title: "Especificação do álbum…"; enabled: root.has-project; activated => { root.command("arquivo.especificacao"); } }
+            MenuItem { title: "Montagem do álbum…"; enabled: root.has-project; activated => { root.command("arquivo.montagem"); } }
             MenuItem { title: "Presets…"; activated => { root.command("arquivo.presets"); } }
         }
         Menu {
@@ -658,7 +659,6 @@ export component AppWindow inherits Window {
             root.focus-main();
         }
     }
-    if PresetUi.show-spec: SpecDialog { }
     if PresetUi.show-list: PresetsDialog { }
     if PresetUi.show-name: PresetNameDialog { }
     if ModelUi.show-name: ModelNameDialog { }

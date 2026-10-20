@@ -37,6 +37,13 @@ impl Editor {
         let mut bits: Vec<u64> = sel.aspects.iter().map(|a| a.to_bits()).collect();
         bits.push(sel.gap.get().to_bits());
         bits.push(u64::from(sel.whole));
+        // A montagem e o lay-flat mudam as opções (spec NP, regra 11), também ao desfazer.
+        let m = project.mounting;
+        bits.push(m.crop as u64);
+        bits.push(u64::from(m.bleed_page) | u64::from(m.mosaics) << 1);
+        bits.push(u64::from(
+            project.spec.mode() == lamina_core::DesignMode::Spread,
+        ));
         let key = (bits, sel.active.left, sel.active.right);
         if let Some(found) = self.lists.borrow().get(&key) {
             return found.clone();

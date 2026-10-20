@@ -39,6 +39,11 @@ pub struct Strips {
     /// campo vale desligado.
     #[serde(rename = "reduzir_movimento")]
     pub reduce_motion: bool,
+    /// A unidade da tela e o formato do último álbum criado (spec NP, regras 1 e 3).
+    #[serde(rename = "unidade")]
+    pub unit: crate::new_project::Unit,
+    #[serde(rename = "ultimo_formato")]
+    pub format: crate::new_project::Format,
 }
 
 impl Default for Strips {
@@ -48,6 +53,8 @@ impl Default for Strips {
             timeline: true,
             photos: true,
             reduce_motion: false,
+            unit: crate::new_project::Unit::default(),
+            format: crate::new_project::Format::Square,
         }
     }
 }

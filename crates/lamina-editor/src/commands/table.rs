@@ -61,6 +61,7 @@ impl Command {
                 None,
             ),
             C::Presets => ("arquivo.presets", "Presets…", Menu::File, None),
+            C::MountAlbum => ("arquivo.montagem", "Montagem do álbum…", Menu::File, None),
             C::Undo => (
                 "editar.desfazer",
                 "Desfazer",

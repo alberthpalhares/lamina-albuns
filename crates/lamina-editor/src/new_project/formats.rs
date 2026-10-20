@@ -4,10 +4,13 @@
 use crate::Preset;
 use crate::album::SpecFields;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Format {
+    #[serde(rename = "quadrado")]
     Square,
+    #[serde(rename = "horizontal")]
     Landscape,
+    #[serde(rename = "vertical")]
     Portrait,
 }
 
