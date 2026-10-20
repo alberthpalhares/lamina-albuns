@@ -166,6 +166,9 @@ fn create(app: &mut App) {
     };
     ui.set_show(false);
     app.wizard = None;
+    // O cartão marcado na próxima vez é o deste álbum (regra 1).
+    app.editor
+        .remember_format(lamina_editor::new_project::Format::of(&wizard.size.fields));
     if ui.get_no_photos() {
         match app.editor.adopt_saved(empty_album(&new), &file) {
             Ok(_) => {

@@ -36,6 +36,7 @@ mod mv_tempos;
 mod mv_vagas;
 mod np;
 mod np_create;
+mod np_more;
 mod pc;
 mod pn;
 mod pr;

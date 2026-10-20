@@ -20,6 +20,7 @@ mod frames;
 mod hand;
 mod layouts;
 mod models;
+mod mounting;
 mod recents;
 mod report;
 mod style;
@@ -201,10 +202,15 @@ impl Editor {
     /// seção 6).
     fn toggle_strip(&mut self, strip: Strip) -> bool {
         self.strips.strips.toggle(strip);
+        self.save_strips();
+        true
+    }
+
+    /// Grava `janela.json`; se não gravar, vale nesta sessão, com aviso (spec PN, seção 6).
+    fn save_strips(&mut self) {
         if let Err(message) = self.strips.save() {
             self.notice = Some(message);
         }
-        true
     }
 
     /// Há trabalho em segundo plano? Enquanto houver, só "Sobre" fica disponível (auditoria do

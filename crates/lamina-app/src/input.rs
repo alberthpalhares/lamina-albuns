@@ -33,7 +33,8 @@ pub fn run_command(app: &Shared, command: Command) {
         }
         Command::Export => export::start(&mut a),
         Command::FindMissing => relink::find(&mut a),
-        Command::Specification => spec_dialog::open_spec(&mut a),
+        Command::Specification => crate::new_project::open_spec(&mut a),
+        Command::MountAlbum => crate::new_project::open_mount(&mut a),
         Command::Presets => spec_dialog::open_list(&mut a),
         Command::About => {
             if let Some(w) = a.window.upgrade() {

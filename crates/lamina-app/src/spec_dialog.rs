@@ -1,36 +1,19 @@
-//! A "Especificação do álbum" e a lista "Meus presets" (spec PR): aplicar uma especificação nova
-//! ao álbum aberto, e renomear ou apagar os presets do fotógrafo.
+//! A lista "Meus presets" (spec PR): renomear ou apagar os presets do fotógrafo. A
+//! "Especificação do álbum…" agora é a etapa 1 do Novo projeto (`new_project.rs`; spec NP, regra
+//! 11); a conferência e o "Aplicar" da janela antiga continuam ligados aos presets.
 
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use lamina_editor::forms::{limits_text, parse_limits};
-use lamina_editor::{Human, SpecFields};
+use lamina_editor::Human;
+use lamina_editor::forms::parse_limits;
 use slint::ComponentHandle;
 
-use crate::presets::{custom_index, fill_spec, refresh, spec_text};
+use crate::presets::{refresh, spec_text};
 use crate::state::App;
 use crate::{AppWindow, PresetUi};
 
 type Shared = Rc<RefCell<App>>;
-
-/// Arquivo → Especificação do álbum…: os campos do álbum aberto.
-pub fn open_spec(app: &mut App) {
-    let (Some(w), Some(session)) = (app.window.upgrade(), app.editor.session()) else {
-        return;
-    };
-    let project = session.project();
-    refresh(app);
-    let ui = w.global::<PresetUi>();
-    fill_spec(&ui, &SpecFields::from_spec(&project.spec));
-    let (min, max) = limits_text(project.page_limits);
-    ui.set_spec_min(min.into());
-    ui.set_spec_max(max.into());
-    ui.set_spec_preset(custom_index(app));
-    app.spec_export = session.export_prefs();
-    spec_changed(app);
-    ui.set_show_spec(true);
-}
 
 pub(crate) fn spec_changed(app: &mut App) {
     let Some(w) = app.window.upgrade() else {

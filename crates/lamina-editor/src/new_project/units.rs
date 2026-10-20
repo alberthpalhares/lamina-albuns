@@ -4,11 +4,14 @@
 /// Mensagem do número inválido (seção 6).
 pub const NOT_A_NUMBER: &str = "Use um número, como 30 ou 30,5.";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum Unit {
+    #[serde(rename = "mm")]
     Mm,
     #[default]
+    #[serde(rename = "cm")]
     Cm,
+    #[serde(rename = "pol")]
     Inch,
 }
 
