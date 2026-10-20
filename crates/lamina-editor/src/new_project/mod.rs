@@ -6,11 +6,16 @@ use lamina_layout::Reuse;
 
 mod create;
 mod formats;
+mod preview;
 mod size;
 mod units;
 
-pub use create::{apply_look, empty_album, free_file, put_style, suggested_folder};
+pub use create::{
+    CANNOT_WRITE, NO_PHOTOS_HERE, apply_look, can_write, documents_dir, empty_album, free_file,
+    put_style, suggested_folder,
+};
 pub use formats::{Format, formats};
+pub use preview::{Drawing, PREVIEW_SIDE, drawing, mount_preview};
 pub use size::{SAFE_TOO_BIG, SIZE_INVALID, SizeField, SizeForm};
 pub use units::{NOT_A_NUMBER, Unit};
 

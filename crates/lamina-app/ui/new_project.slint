@@ -1,0 +1,387 @@
+// Novo projeto em três etapas (spec NP): 1, Tamanho; 2, Montagem e aparência; 3, Fotos e
+// arquivo. Só desenho: os campos, o resumo, os erros e as prévias vêm do lamina-editor, pelo
+// Rust (`src/new_project.rs`). O estado fica num global, como o dos presets.
+
+import { Button, CheckBox, ComboBox, LineEdit, SpinBox, ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Shade, Panel } from "widgets.slint";
+import { PresetUi } from "spec.slint";
+
+export struct FormatCard {
+    label: string,
+    // Largura ÷ altura da página.
+    aspect: float,
+}
+
+// A lâmina aberta em frações do canvas (corte + sangria).
+export struct DrawData {
+    aspect: float,
+    tx: float, ty: float, tw: float, th: float,
+    lx: float, ly: float, lw: float, lh: float,
+    rx: float, ry: float, rw: float, rh: float,
+    starts: bool,
+    ends: bool,
+}
+
+export global NewProjectUi {
+    in-out property <bool> show;
+    in property <int> step: 1;
+    // Etapa 1.
+    in-out property <int> tab;
+    in property <[FormatCard]> formats;
+    in-out property <int> format;
+    in property <[string]> sizes;
+    in property <string> label;
+    in-out property <int> unit: 1;
+    in-out property <bool> open-spread;
+    in-out property <string> width;
+    in-out property <string> height;
+    in-out property <string> dpi;
+    in-out property <string> bleed-outer;
+    in-out property <string> bleed-top;
+    in-out property <string> bleed-spine;
+    in-out property <string> safe-outer;
+    in-out property <string> safe-top;
+    in-out property <string> safe-spine;
+    in-out property <bool> starts;
+    in-out property <bool> ends;
+    in-out property <string> min-pages;
+    in-out property <string> max-pages;
+    in property <string> summary;
+    in property <string> error;
+    in property <DrawData> drawing;
+    // Etapa 2.
+    in-out property <bool> lay-flat: true;
+    in-out property <int> crop: 2;
+    in-out property <bool> bleed-page: true;
+    in-out property <bool> mosaics: true;
+    in-out property <int> reuse: 1;
+    in-out property <string> background;
+    in-out property <string> gap;
+    in-out property <string> border;
+    in-out property <string> border-color;
+    in-out property <string> radius;
+    in property <[image]> previews;
+    in property <string> look-error;
+    // Etapa 3.
+    in-out property <string> name;
+    in property <string> file;
+    in property <string> photos-text;
+    in-out property <bool> no-photos;
+    in-out property <int> spreads: 1;
+    in property <int> photos;
+    in property <string> suggestion;
+    in property <string> create-error;
+    callback pick-format(int);
+    callback pick-size(int);
+    callback unit-changed(int);
+    callback size-changed();
+    callback same-margins();
+    callback mount-changed();
+    callback file-changed();
+    callback change-file();
+    callback pick-folder();
+    callback next();
+    callback back();
+    callback cancel();
+    callback create();
+}
+
+component Label inherits Text {
+    color: Theme.muted;
+    font-size: 12px;
+    vertical-alignment: center;
+}
+
+component Title inherits Text {
+    color: Theme.text;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+// Um campo com rótulo, do tamanho fixo das colunas da etapa 1.
+component Field inherits HorizontalLayout {
+    in property <string> label;
+    in-out property <string> text;
+    callback edited();
+    spacing: 8px;
+    Label { text: root.label; width: 150px; }
+    LineEdit { text <=> root.text; width: 90px; edited => { root.edited(); } }
+}
+
+// A lâmina aberta em escala: a sangria (faixa escura), o corte, a zona segura (tracejado leve)
+// e a dobra; a página vazia nas pontas com página simples.
+component SpreadDrawing inherits Rectangle {
+    in property <DrawData> d;
+    property <length> w: min(self.width, self.height * max(0.1, root.d.aspect));
+    property <length> h: root.w / max(0.1, root.d.aspect);
+    canvas := Rectangle {
+        x: (parent.width - root.w) / 2;
+        y: (parent.height - root.h) / 2;
+        width: root.w;
+        height: root.h;
+        background: #4a3030;
+        Rectangle {
+            x: root.d.tx * parent.width;
+            y: root.d.ty * parent.height;
+            width: root.d.tw * parent.width;
+            height: root.d.th * parent.height;
+            background: #f2f2f2;
+            Rectangle { x: 0; width: parent.width / 2; background: root.d.starts ? #9a9a9a : transparent; }
+            Rectangle { x: parent.width / 2; width: parent.width / 2; background: root.d.ends ? #9a9a9a : transparent; }
+            Rectangle { x: parent.width / 2 - 0.5px; width: 1px; background: #606060; }
+        }
+        Rectangle {
+            x: root.d.lx * parent.width;
+            y: root.d.ly * parent.height;
+            width: root.d.lw * parent.width;
+            height: root.d.lh * parent.height;
+            border-width: 1px;
+            border-color: #4f8fd6;
+        }
+        Rectangle {
+            x: root.d.rx * parent.width;
+            y: root.d.ry * parent.height;
+            width: root.d.rw * parent.width;
+            height: root.d.rh * parent.height;
+            border-width: 1px;
+            border-color: #4f8fd6;
+        }
+    }
+}
+
+// Um cartão de formato: o desenho de uma lâmina aberta na proporção, com a dobra no meio.
+component FormatButton inherits Rectangle {
+    in property <FormatCard> card;
+    in property <bool> chosen;
+    callback clicked();
+    width: 150px;
+    height: 120px;
+    border-radius: 6px;
+    background: root.chosen ? #3d4a5a : (touch.has-hover ? #3a3a3a : #2a2a2a);
+    border-width: root.chosen ? 2px : 0px;
+    border-color: #4f8fd6;
+    property <length> box: 90px;
+    property <float> spread: 2 * root.card.aspect;
+    Rectangle {
+        y: 12px;
+        x: (parent.width - self.width) / 2;
+        width: root.spread >= 1 ? root.box : root.box * root.spread;
+        height: root.spread >= 1 ? root.box / root.spread : root.box;
+        background: #e6e6e6;
+        Rectangle { x: parent.width / 2 - 0.5px; width: 1px; background: #707070; }
+    }
+    Text { y: parent.height - 26px; width: parent.width; text: root.card.label; color: Theme.text; horizontal-alignment: center; }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+component StepOne inherits VerticalLayout {
+    spacing: 10px;
+    HorizontalLayout {
+        spacing: 8px;
+        Button { text: "Formatos"; primary: NewProjectUi.tab == 0; clicked => { NewProjectUi.tab = 0; } }
+        Button { text: "Personalizado"; primary: NewProjectUi.tab == 1; clicked => { NewProjectUi.tab = 1; } }
+        Rectangle { horizontal-stretch: 1; }
+        Label { text: NewProjectUi.label; }
+    }
+    if NewProjectUi.tab == 0: VerticalLayout {
+        spacing: 12px;
+        HorizontalLayout {
+            spacing: 12px;
+            alignment: center;
+            for card[i] in NewProjectUi.formats: FormatButton {
+                card: card;
+                chosen: NewProjectUi.format == i;
+                clicked => { NewProjectUi.pick-format(i); }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: center;
+            for size[i] in NewProjectUi.sizes: Button { text: size; clicked => { NewProjectUi.pick-size(i); } }
+        }
+    }
+    if NewProjectUi.tab == 1: HorizontalLayout {
+        spacing: 24px;
+        VerticalLayout {
+            spacing: 6px;
+            HorizontalLayout {
+                spacing: 8px;
+                Label { text: "Unidade"; width: 150px; }
+                ComboBox {
+                    width: 90px;
+                    model: ["mm", "cm", "pol"];
+                    current-index <=> NewProjectUi.unit;
+                    selected => { NewProjectUi.unit-changed(self.current-index); }
+                }
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                Label { text: "Medidas de"; width: 150px; }
+                ComboBox {
+                    width: 140px;
+                    model: ["uma página", "lâmina aberta"];
+                    current-index: NewProjectUi.open-spread ? 1 : 0;
+                    selected => { NewProjectUi.open-spread = self.current-index == 1; NewProjectUi.unit-changed(NewProjectUi.unit); }
+                }
+            }
+            Field { label: "Largura"; text <=> NewProjectUi.width; edited => { NewProjectUi.size-changed(); } }
+            Field { label: "Altura"; text <=> NewProjectUi.height; edited => { NewProjectUi.size-changed(); } }
+            Field { label: "DPI"; text <=> NewProjectUi.dpi; edited => { NewProjectUi.size-changed(); } }
+            CheckBox { text: "Começa com página simples"; checked <=> NewProjectUi.starts; toggled => { NewProjectUi.size-changed(); } }
+            CheckBox { text: "Termina com página simples"; checked <=> NewProjectUi.ends; toggled => { NewProjectUi.size-changed(); } }
+            Field { label: "Páginas mínimas"; text <=> NewProjectUi.min-pages; edited => { NewProjectUi.size-changed(); } }
+            Field { label: "Páginas máximas"; text <=> NewProjectUi.max-pages; edited => { NewProjectUi.size-changed(); } }
+        }
+        VerticalLayout {
+            spacing: 6px;
+            Label { text: "Sangria"; font-weight: 600; }
+            Field { label: "Externa"; text <=> NewProjectUi.bleed-outer; edited => { NewProjectUi.size-changed(); } }
+            Field { label: "Cima e baixo"; text <=> NewProjectUi.bleed-top; edited => { NewProjectUi.size-changed(); } }
+            Field { label: "Lombada"; text <=> NewProjectUi.bleed-spine; edited => { NewProjectUi.size-changed(); } }
+            Label { text: "Zona segura"; font-weight: 600; }
+            Field { label: "Externa"; text <=> NewProjectUi.safe-outer; edited => { NewProjectUi.size-changed(); } }
+            Field { label: "Cima e baixo"; text <=> NewProjectUi.safe-top; edited => { NewProjectUi.size-changed(); } }
+            Field { label: "Lombada"; text <=> NewProjectUi.safe-spine; edited => { NewProjectUi.size-changed(); } }
+            Button { text: "Igual em todas as bordas"; clicked => { NewProjectUi.same-margins(); } }
+            Button { text: "Salvar como preset…"; enabled: NewProjectUi.error == ""; clicked => { PresetUi.save-as(0); } }
+        }
+    }
+    SpreadDrawing { d: NewProjectUi.drawing; height: 190px; }
+    Text { text: NewProjectUi.summary; color: Theme.muted; horizontal-alignment: center; }
+    if NewProjectUi.error != "": Text { text: NewProjectUi.error; color: Theme.warning; horizontal-alignment: center; }
+}
+
+component StepTwo inherits VerticalLayout {
+    spacing: 8px;
+    HorizontalLayout {
+        spacing: 24px;
+        VerticalLayout {
+            spacing: 6px;
+            Title { text: "Montagem"; }
+            CheckBox { text: "Fotos podem atravessar a dobra (lay-flat)"; checked <=> NewProjectUi.lay-flat; toggled => { NewProjectUi.mount-changed(); } }
+            HorizontalLayout {
+                spacing: 8px;
+                Label { text: "Recorte das fotos"; width: 150px; }
+                ComboBox {
+                    model: ["Fotos inteiras", "Recorte leve (até 15%)", "Livre"];
+                    current-index <=> NewProjectUi.crop;
+                    selected => { NewProjectUi.mount-changed(); }
+                }
+            }
+            CheckBox { text: "Página sangrada"; checked <=> NewProjectUi.bleed-page; enabled: NewProjectUi.crop != 0; toggled => { NewProjectUi.mount-changed(); } }
+            CheckBox { text: "Mosaicos"; checked <=> NewProjectUi.mosaics; enabled: NewProjectUi.crop != 0; toggled => { NewProjectUi.mount-changed(); } }
+            HorizontalLayout {
+                spacing: 8px;
+                Label { text: "Reutilização de desenhos"; width: 150px; }
+                ComboBox { model: ["Baixa", "Média", "Alta"]; current-index <=> NewProjectUi.reuse; }
+            }
+        }
+        VerticalLayout {
+            spacing: 6px;
+            Title { text: "Aparência"; }
+            Field { label: "Fundo (#RRGGBB)"; text <=> NewProjectUi.background; edited => { NewProjectUi.mount-changed(); } }
+            Field { label: "Espaço entre fotos (mm)"; text <=> NewProjectUi.gap; edited => { NewProjectUi.mount-changed(); } }
+            Field { label: "Borda (mm)"; text <=> NewProjectUi.border; edited => { NewProjectUi.mount-changed(); } }
+            Field { label: "Cor da borda"; text <=> NewProjectUi.border-color; edited => { NewProjectUi.mount-changed(); } }
+            Field { label: "Cantos (mm)"; text <=> NewProjectUi.radius; edited => { NewProjectUi.mount-changed(); } }
+            if NewProjectUi.look-error != "": Text { text: NewProjectUi.look-error; color: Theme.warning; }
+        }
+    }
+    Label { text: "Prévia com fotos de exemplo"; }
+    HorizontalLayout {
+        spacing: 10px;
+        height: 150px;
+        for img in NewProjectUi.previews: Image { source: img; image-fit: contain; horizontal-stretch: 1; }
+    }
+}
+
+component StepThree inherits VerticalLayout {
+    spacing: 10px;
+    HorizontalLayout {
+        spacing: 8px;
+        Label { text: "Nome do álbum"; width: 150px; }
+        LineEdit { text <=> NewProjectUi.name; edited => { NewProjectUi.file-changed(); } }
+    }
+    HorizontalLayout {
+        spacing: 8px;
+        Label { text: "Fotos"; width: 150px; }
+        Button { text: "Escolher pasta…"; enabled: !NewProjectUi.no-photos; clicked => { NewProjectUi.pick-folder(); } }
+        Text { text: NewProjectUi.photos-text; color: Theme.muted; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
+    }
+    HorizontalLayout {
+        spacing: 8px;
+        Rectangle { width: 150px; }
+        CheckBox { text: "Começar sem fotos (importo depois)"; checked <=> NewProjectUi.no-photos; toggled => { NewProjectUi.file-changed(); } }
+    }
+    if !NewProjectUi.no-photos && NewProjectUi.photos > 0: HorizontalLayout {
+        spacing: 8px;
+        Label { text: "Número de lâminas"; width: 150px; }
+        SpinBox { value <=> NewProjectUi.spreads; minimum: 1; maximum: max(1, NewProjectUi.photos); edited => { NewProjectUi.file-changed(); } }
+        Text { text: NewProjectUi.suggestion; color: Theme.muted; vertical-alignment: center; }
+    }
+    HorizontalLayout {
+        spacing: 8px;
+        Label { text: "Onde salvar"; width: 150px; }
+        Text { text: NewProjectUi.file; color: Theme.text; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
+        Button { text: "Alterar…"; clicked => { NewProjectUi.change-file(); } }
+    }
+    if NewProjectUi.create-error != "": Text { text: NewProjectUi.create-error; color: Theme.warning; wrap: word-wrap; }
+}
+
+export component NewProjectDialog inherits Shade {
+    callback closed();
+    keys := FocusScope {
+        key-pressed(event) => {
+            if (event.text == Key.Escape) {
+                NewProjectUi.cancel();
+                root.closed();
+                return accept;
+            }
+            if (event.text == Key.Return && NewProjectUi.step < 3) {
+                NewProjectUi.next();
+                return accept;
+            }
+            reject
+        }
+        Panel {
+            width: min(root.width - 40px, 820px);
+            height: min(root.height - 40px, 680px);
+            VerticalLayout {
+                padding: 24px;
+                spacing: 14px;
+                HorizontalLayout {
+                    Text { text: "Novo álbum"; font-size: 20px; font-weight: 700; color: Theme.text; }
+                    Rectangle { horizontal-stretch: 1; }
+                    Label { text: "Etapa " + NewProjectUi.step + " de 3 · " + (NewProjectUi.step == 1 ? "Tamanho" : NewProjectUi.step == 2 ? "Montagem e aparência" : "Fotos e arquivo"); }
+                }
+                ScrollView {
+                    vertical-stretch: 1;
+                    VerticalLayout {
+                        if NewProjectUi.step == 1: StepOne { }
+                        if NewProjectUi.step == 2: StepTwo { }
+                        if NewProjectUi.step == 3: StepThree { }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    Button { text: "Cancelar"; clicked => { NewProjectUi.cancel(); root.closed(); } }
+                    Rectangle { horizontal-stretch: 1; }
+                    if NewProjectUi.step > 1: Button { text: "Voltar"; clicked => { NewProjectUi.back(); } }
+                    if NewProjectUi.step < 3: Button {
+                        text: "Próximo";
+                        primary: true;
+                        enabled: NewProjectUi.step != 1 || NewProjectUi.error == "";
+                        clicked => { NewProjectUi.next(); }
+                    }
+                    if NewProjectUi.step == 3: Button {
+                        text: "Criar";
+                        primary: true;
+                        enabled: NewProjectUi.create-error == "";
+                        clicked => { NewProjectUi.create(); }
+                    }
+                }
+            }
+        }
+    }
+}

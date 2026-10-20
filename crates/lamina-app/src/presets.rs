@@ -96,12 +96,7 @@ fn picked(app: &mut App, target: i32, index: i32) {
     let ui = w.global::<PresetUi>();
     let (min, max) = limits_text(preset.limits);
     if target == NEW {
-        crate::new_album::fill(&w, &preset.fields);
-        ui.set_new_min(min.into());
-        ui.set_new_max(max.into());
-        app.new_export = preset.export;
-        crate::new_album::changed(app);
-        crate::new_album::suggest(app);
+        crate::new_project::choose_preset(app, &preset);
     } else {
         fill_spec(&ui, &preset.fields);
         ui.set_spec_min(min.into());
@@ -128,10 +123,9 @@ fn save_as(app: &mut App, target: i32) {
 fn current(app: &App, w: &AppWindow, name: &str) -> Result<Preset, String> {
     let ui = w.global::<PresetUi>();
     let (fields, limits, export) = if app.preset_target == NEW {
-        let fields = crate::new_album::fields(w)?;
         (
-            fields,
-            parse_limits(&ui.get_new_min(), &ui.get_new_max())?,
+            crate::new_project::fields(app)?,
+            crate::new_project::limits(app)?,
             app.new_export,
         )
     } else {

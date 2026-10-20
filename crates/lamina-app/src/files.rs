@@ -6,7 +6,6 @@ use std::path::{Path, PathBuf};
 use lamina_editor::{Human, HumanMessage, Leave};
 use slint::ComponentHandle;
 
-use crate::new_album;
 use crate::state::{App, Pending};
 
 const FILTER_NAME: &str = "Álbum do Lamina";
@@ -116,7 +115,7 @@ fn proceed(app: &mut App, action: Pending) {
             }
         }
         Pending::Open => open(app),
-        Pending::NewAlbum => new_album::start(app),
+        Pending::NewAlbum => crate::new_project::start(app),
         Pending::Update => crate::updates::restart(app),
         Pending::Example => crate::welcome::open_example(app),
         Pending::OpenRecent(i) => crate::recents::open(app, i),

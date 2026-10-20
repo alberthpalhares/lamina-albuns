@@ -4,7 +4,8 @@
 import { Button, ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { SpreadCanvas, SpreadData, FrameData, BoxData } from "canvas.slint";
-import { NewAlbumDialog, ConfirmDialog, MessageDialog, BusyOverlay } from "dialogs.slint";
+import { ConfirmDialog, MessageDialog, BusyOverlay } from "dialogs.slint";
+import { NewProjectDialog, NewProjectUi, FormatCard, DrawData } from "new_project.slint";
 import { LayoutsPanel, LayoutItem } from "layouts.slint";
 import { LookPanel, LookUi, Swatch } from "look.slint";
 import { FramePanel, FrameUi } from "frame.slint";
@@ -19,7 +20,7 @@ import { PanelTabs, InfoPanel } from "side.slint";
 import { UpdateBar } from "update_bar.slint";
 import { WelcomeScreen, ClearRecentsDialog, RecentsUi, RecentCard, RecentItem } from "welcome.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem }
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, NewProjectUi, FormatCard, DrawData }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -75,7 +76,6 @@ export component AppWindow inherits Window {
     in property <string> layout-notice;
     in property <string> layout-explanation;
 
-    in-out property <bool> show-new;
     in-out property <bool> show-confirm;
     in-out property <bool> show-message;
     in-out property <bool> show-about;
@@ -120,21 +120,6 @@ export component AppWindow inherits Window {
     in property <string> busy-text;
 
     // Campos da janela "Novo álbum".
-    in property <string> na-folder;
-    in-out property <string> na-name;
-    in-out property <string> na-width;
-    in-out property <string> na-height;
-    in-out property <string> na-dpi;
-    in-out property <string> na-bleed;
-    in-out property <string> na-safe;
-    in-out property <string> na-spine;
-    in-out property <bool> na-starts;
-    in-out property <bool> na-ends;
-    in-out property <int> na-spreads;
-    in-out property <int> na-reuse;
-    in property <int> na-photos;
-    in property <string> na-suggestion;
-    in property <string> na-error;
 
     callback command(string);
     callback key(string, bool, bool, bool) -> bool;
@@ -142,8 +127,6 @@ export component AppWindow inherits Window {
     callback photo-clicked(int);
     callback photo-double-clicked(int);
     callback filter-changed(int);
-    callback na-changed();
-    callback na-create();
     callback confirm(int);
     // Arrastar (spec FQ): 0 nada, 1 foto do navegador, 2 quadro, 3 lâmina na faixa.
     in-out property <int> drag-kind;
@@ -288,7 +271,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(event) => {
-            if (root.show-new || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || root.busy-text != "") {
+            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || root.busy-text != "") {
                 return reject;
             }
             // Teclas especiais chegam como o caractere do Slint; o Rust traduz o nome.
@@ -524,28 +507,8 @@ export component AppWindow inherits Window {
         }
     }
 
-    if root.show-new: NewAlbumDialog {
-        folder: root.na-folder;
-        name <=> root.na-name;
-        width-cm <=> root.na-width;
-        height-cm <=> root.na-height;
-        dpi <=> root.na-dpi;
-        bleed-mm <=> root.na-bleed;
-        safe-mm <=> root.na-safe;
-        spine-mm <=> root.na-spine;
-        starts-single <=> root.na-starts;
-        ends-single <=> root.na-ends;
-        spreads <=> root.na-spreads;
-        reuse <=> root.na-reuse;
-        photos: root.na-photos;
-        suggestion: root.na-suggestion;
-        error: root.na-error;
-        changed => { root.na-changed(); }
-        create => { root.na-create(); }
-        cancel => {
-            root.show-new = false;
-            root.focus-main();
-        }
+    if NewProjectUi.show: NewProjectDialog {
+        closed => { root.focus-main(); }
     }
     if root.show-confirm: ConfirmDialog {
         name: root.project-title;

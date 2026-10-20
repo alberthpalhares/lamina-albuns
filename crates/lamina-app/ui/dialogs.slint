@@ -1,92 +1,9 @@
-// Janelas sobre a janela principal: novo álbum, pergunta antes de sair, erro, sobre e andamento.
+// Janelas sobre a janela principal: pergunta antes de sair, erro e andamento. O novo álbum fica em
+// `new_project.slint`.
 
-import { Button, LineEdit, CheckBox, ComboBox, SpinBox, TextEdit } from "std-widgets.slint";
+import { Button, TextEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
-import { Shade, Panel, Field } from "widgets.slint";
-import { SpecForm, PresetUi } from "spec.slint";
-
-export component NewAlbumDialog inherits Shade {
-    in property <string> folder;
-    in-out property <string> name;
-    in-out property <string> width-cm;
-    in-out property <string> height-cm;
-    in-out property <string> dpi;
-    in-out property <string> bleed-mm;
-    in-out property <string> safe-mm;
-    in-out property <string> spine-mm;
-    in-out property <bool> starts-single;
-    in-out property <bool> ends-single;
-    in-out property <int> spreads;
-    in-out property <int> reuse;
-    in property <int> photos;
-    in property <string> suggestion;
-    in property <string> error;
-    callback changed();
-    callback create();
-    callback cancel();
-
-    Panel {
-        width: 600px;
-        height: 680px;
-        VerticalLayout {
-            padding: 24px;
-            spacing: 10px;
-            Text {
-                text: "Novo álbum";
-                font-size: 20px;
-                font-weight: 700;
-                color: Theme.text;
-            }
-            Text {
-                text: root.folder + " · " + root.photos + " fotos";
-                color: Theme.muted;
-                overflow: elide;
-            }
-            Field {
-                label: "Nome";
-                LineEdit { text <=> root.name; edited => { root.changed(); } }
-            }
-            SpecForm {
-                presets: PresetUi.presets;
-                preset <=> PresetUi.new-preset;
-                width-cm <=> root.width-cm;
-                height-cm <=> root.height-cm;
-                dpi <=> root.dpi;
-                bleed-mm <=> root.bleed-mm;
-                safe-mm <=> root.safe-mm;
-                spine-mm <=> root.spine-mm;
-                starts-single <=> root.starts-single;
-                ends-single <=> root.ends-single;
-                min-pages <=> PresetUi.new-min;
-                max-pages <=> PresetUi.new-max;
-                changed => { root.changed(); }
-                picked(i) => { PresetUi.picked(0, i); }
-                save-preset => { PresetUi.save-as(0); }
-            }
-            Field {
-                label: "Número de lâminas";
-                SpinBox { value <=> root.spreads; minimum: 1; maximum: max(1, root.photos); edited => { root.changed(); } }
-            }
-            Text { text: root.suggestion; color: Theme.muted; }
-            Field {
-                label: "Reutilização de desenhos";
-                ComboBox { model: ["Baixa", "Média", "Alta"]; current-index <=> root.reuse; }
-            }
-            Text { text: root.error; color: Theme.warning; wrap: word-wrap; }
-            HorizontalLayout {
-                alignment: end;
-                spacing: 8px;
-                Button { text: "Cancelar"; clicked => { root.cancel(); } }
-                Button {
-                    text: "Criar";
-                    primary: true;
-                    enabled: root.error == "";
-                    clicked => { root.create(); }
-                }
-            }
-        }
-    }
-}
+import { Shade, Panel } from "widgets.slint";
 
 export component ConfirmDialog inherits Shade {
     in property <string> name;

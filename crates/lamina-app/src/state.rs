@@ -70,6 +70,9 @@ pub struct App {
     /// Pasta e número de fotos da janela "Novo álbum" aberta.
     pub new_folder: PathBuf,
     pub new_photos: usize,
+    /// As etapas do Novo projeto abertas e o arquivo que o "Criar" grava (spec NP).
+    pub wizard: Option<lamina_editor::new_project::NewProject>,
+    pub new_target: Option<PathBuf>,
     pub notice: String,
     /// A conferência da janela Exportar aberta (avisos que sobraram e arquivos que já existem).
     pub export_check: Option<ExportCheck>,
@@ -107,6 +110,8 @@ impl App {
             pending: None,
             new_folder: PathBuf::new(),
             new_photos: 0,
+            wizard: None,
+            new_target: None,
             notice: String::new(),
             export_check: None,
             presets: lamina_editor::PresetsStore::default(),
