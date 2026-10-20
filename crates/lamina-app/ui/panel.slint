@@ -1,0 +1,80 @@
+// O painel da direita da janela: as abas Layouts, Aparência, Quadro, Histórico e Info. Só
+// desenho: os dados chegam da janela principal, e cada clique devolve o teclado à lâmina.
+
+import { Theme } from "theme.slint";
+import { LayoutsPanel, LayoutItem } from "layouts.slint";
+import { LookPanel } from "look.slint";
+import { FramePanel } from "frame.slint";
+import { HistoryPanel, HistoryItem } from "history.slint";
+import { PanelTabs, InfoPanel } from "side.slint";
+
+export component RightPanel inherits Rectangle {
+    in-out property <int> tab;
+    in property <[LayoutItem]> layouts;
+    in property <int> layout-in-use;
+    in property <int> layout-list;
+    in property <bool> has-reordered;
+    in property <string> layout-count;
+    in property <string> layout-notice;
+    in property <string> layout-explanation;
+    in property <float> aspect;
+    in property <[HistoryItem]> history;
+    in property <int> history-pos;
+    in property <string> info-album;
+    in property <string> info-spread;
+    in property <string> info-warnings;
+    in property <string> info-frame;
+    in property <bool> info-frame-warn;
+    in property <string> info-photo;
+    callback layout-apply(int);
+    callback layout-favorite(int);
+    callback layout-reject(int);
+    callback layout-list-changed(int);
+    callback history-go(int);
+    callback done();
+    width: 300px;
+    background: Theme.panel;
+    VerticalLayout {
+        padding: 12px;
+        spacing: 8px;
+        PanelTabs { tab <=> root.tab; }
+        if root.tab == 0: LayoutsPanel {
+            vertical-stretch: 1;
+            items: root.layouts;
+            in-use: root.layout-in-use;
+            list: root.layout-list;
+            has-reordered: root.has-reordered;
+            count: root.layout-count;
+            notice: root.layout-notice;
+            explanation: root.layout-explanation;
+            aspect: root.aspect;
+            apply(i) => { root.layout-apply(i); root.done(); }
+            favorite(i) => { root.layout-favorite(i); root.done(); }
+            reject(i) => { root.layout-reject(i); root.done(); }
+            list-changed(i) => { root.layout-list-changed(i); root.done(); }
+        }
+        if root.tab == 2: LookPanel {
+            vertical-stretch: 1;
+            done => { root.done(); }
+        }
+        if root.tab == 4: FramePanel {
+            vertical-stretch: 1;
+            done => { root.done(); }
+        }
+        if root.tab == 3: HistoryPanel {
+            vertical-stretch: 1;
+            items: root.history;
+            position: root.history-pos;
+            go(i) => { root.history-go(i); root.done(); }
+        }
+        if root.tab == 1: InfoPanel {
+            vertical-stretch: 1;
+            album: root.info-album;
+            spread: root.info-spread;
+            warnings: root.info-warnings;
+            frame: root.info-frame;
+            frame-warn: root.info-frame-warn;
+            photo: root.info-photo;
+        }
+    }
+}

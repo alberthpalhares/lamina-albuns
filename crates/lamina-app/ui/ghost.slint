@@ -1,0 +1,41 @@
+// O fantasma do arrasto (spec MV, regra 12): a parte da foto que está no quadro e o selo da
+// quantidade. A posição, o tamanho e o pouso são da janela principal.
+
+import { Theme } from "theme.slint";
+
+export struct GhostData {
+    img: image,
+    cx: int,
+    cy: int,
+    cw: int,
+    ch: int,
+    w: float,
+    h: float,
+    badge: int,
+}
+
+export component DragGhost inherits Rectangle {
+    in property <GhostData> ghost;
+    in property <bool> landing;
+    drop-shadow-blur: 10px;
+    drop-shadow-color: #00000080;
+    Image {
+        width: parent.width;
+        height: parent.height;
+        source: root.ghost.img;
+        image-fit: fill;
+        source-clip-x: root.ghost.cx;
+        source-clip-y: root.ghost.cy;
+        source-clip-width: root.ghost.cw;
+        source-clip-height: root.ghost.ch;
+    }
+    if root.ghost.badge > 1 && !root.landing: Rectangle {
+        x: parent.width - 14px;
+        y: -10px;
+        width: 26px;
+        height: 26px;
+        border-radius: 13px;
+        background: Theme.selected;
+        Text { text: root.ghost.badge; color: white; font-size: 12px; font-weight: 700; }
+    }
+}

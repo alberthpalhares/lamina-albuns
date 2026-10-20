@@ -67,3 +67,12 @@ fn atalho_leva_ao_comando() {
     assert!(editor.run(Command::ToggleGuides));
     assert!(!editor.guides());
 }
+
+#[test]
+fn todo_comando_esta_numa_parte_da_tabela() {
+    for c in Command::ALL {
+        assert!(!c.name().is_empty(), "{c:?} sem nome");
+        assert!(!c.label().is_empty(), "{c:?} sem rótulo");
+        assert_eq!(Command::from_name(c.name()), Some(c));
+    }
+}
