@@ -85,9 +85,17 @@ unimplemented = "warn"
 cast_possible_truncation = "warn"
 cast_sign_loss = "warn"
 
+[profile.dev]
+# Espaço em disco: o nosso código guarda só arquivo e linha (o backtrace e os erros continuam
+# apontando o lugar), sem as tabelas completas de variáveis que enchiam o `target`.
+debug = "line-tables-only"
+
 [profile.dev.package."*"]
 # Dependências otimizadas mesmo em debug: decodificar imagens sem otimização é muito lento.
 opt-level = 2
+# E sem informação de depuração: ninguém depura por dentro do slint ou do image, e era a maior
+# parte do `target\debug\deps`.
+debug = false
 
 [profile.dev.package.lamina-export]
 # Teste de velocidade da exportação (spec EX, EX-B12) mede código otimizado.
