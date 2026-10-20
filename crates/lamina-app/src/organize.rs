@@ -59,19 +59,20 @@ pub fn refresh(app: &App) {
 
 /// Os retângulos dos quadros selecionados, em frações da largura da lâmina.
 fn selected_rects(app: &App) -> Vec<PxRect> {
-    let Some(s) = app.session() else {
+    let (Some(s), Some(project)) = (app.session(), app.editor.view_project()) else {
         return Vec::new();
     };
     if !app.editor.organizing() {
         return Vec::new();
     }
-    let canvas = s.project().spec.canvas_rect();
+    // Com o gesto do grupo aplicado: as marcas acompanham o mouse.
+    let canvas = project.spec.canvas_rect();
     let area = Area {
         width: 1.0,
         height: canvas.height.get() / canvas.width.get(),
         margin: 0.0,
     };
-    let Some(view) = spread_view(s.project(), s.current(), area, &[]) else {
+    let Some(view) = spread_view(&project, s.current(), area, &[]) else {
         return Vec::new();
     };
     app.editor
@@ -79,6 +80,11 @@ fn selected_rects(app: &App) -> Vec<PxRect> {
         .into_iter()
         .filter_map(|f| view.frames.get(f).map(|v| v.rect))
         .collect()
+}
+
+/// A caixa que envolve os retângulos (vazia sem nenhum).
+pub fn union_all(rects: &[PxRect]) -> PxRect {
+    rects.iter().copied().reduce(union).unwrap_or_default()
 }
 
 fn union(a: PxRect, b: PxRect) -> PxRect {

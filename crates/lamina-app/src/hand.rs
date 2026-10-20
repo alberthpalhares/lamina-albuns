@@ -44,25 +44,33 @@ fn grip_of(n: i32) -> Grip {
     }
 }
 
-/// Milímetros por pixel numa lâmina desenhada com `width_px` pixels.
+/// Milímetros por pixel numa lâmina desenhada com `width_px` pixels (com zoom, a largura
+/// desenhada cresce e o mesmo arrasto anda menos; spec EG, regra 14).
 fn mm_per_px(app: &App, width_px: f32) -> Option<f64> {
-    let s = app.editor.session()?;
-    let canvas = s.project().spec.canvas_rect();
-    (width_px > 0.0).then(|| canvas.width.get() / f64::from(width_px))
+    lamina_editor::group::mm_per_px(app.editor.session()?.project(), f64::from(width_px))
 }
 
 pub fn connect(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     window.on_frame_grab(move |frame, grip, x, y, width| {
         let mut app = a.borrow_mut();
-        if usize::try_from(frame).is_ok_and(|f| app.editor.frame_grab(f, grip_of(grip))) {
+        // No modo organizar, as alças são as da caixa do grupo (spec EG, regra 5).
+        let organizing = app.editor.organizing();
+        let grabbed = usize::try_from(frame).is_ok_and(|f| {
+            if organizing {
+                app.editor.group_grab(f, grip_of(grip))
+            } else {
+                app.editor.frame_grab(f, grip_of(grip))
+            }
+        });
+        if grabbed {
             START.set(Some((x, y, width)));
             // Só a lâmina: o painel muda no fim do gesto, sem mexer no tamanho da tela agora.
             crate::crop::refresh_spread(&mut app);
         }
     });
     let a = app.clone();
-    window.on_frame_drag(move |x, y, alt| {
+    window.on_frame_drag(move |x, y, alt, shift| {
         let mut app = a.borrow_mut();
         let Some((x0, y0, width)) = START.get() else {
             return;
@@ -71,15 +79,40 @@ pub fn connect(window: &AppWindow, app: &Shared) {
             return;
         };
         let (dx, dy) = (f64::from(x - x0) * k, f64::from(y - y0) * k);
-        if app.editor.frame_drag(dx, dy, !alt, MAGNET_PX * k) {
+        let moved = if app.editor.group_moving() {
+            app.editor.group_drag((dx, dy), !alt, MAGNET_PX * k, shift)
+        } else {
+            app.editor.frame_drag(dx, dy, !alt, MAGNET_PX * k)
+        };
+        if moved {
             crate::crop::refresh_spread(&mut app);
+        }
+    });
+    let a = app.clone();
+    window.on_organize_press(move |frame, ctrl, shift, x, y, width| {
+        let mut app = a.borrow_mut();
+        let Ok(frame) = usize::try_from(frame) else {
+            return;
+        };
+        // Ctrl ou Shift: só soma ou tira da seleção; sem eles, segura o grupo.
+        if ctrl || shift {
+            app.editor.organize_click(frame, ctrl, shift);
+            app.refresh_current();
+        } else if app.editor.group_grab(frame, lamina_editor::Grip::Move) {
+            START.set(Some((x, y, width)));
+            app.refresh_current();
         }
     });
     let a = app.clone();
     window.on_frame_release(move || {
         let mut app = a.borrow_mut();
         START.set(None);
-        if app.editor.frame_release() {
+        let released = if app.editor.group_moving() {
+            app.editor.group_release()
+        } else {
+            app.editor.frame_release()
+        };
+        if released {
             app.refresh_all();
         } else {
             app.refresh_current();

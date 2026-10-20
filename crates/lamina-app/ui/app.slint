@@ -230,7 +230,8 @@ export component AppWindow inherits Window {
     callback crop-wheel(float);
     // Quadros à mão (spec TX): alças e arrasto do texto; o mouse na lâmina para o T.
     callback frame-grab(int, int, length, length, length);
-    callback frame-drag(length, length, bool);
+    callback frame-drag(length, length, bool, bool);
+    callback organize-press(int, bool, bool, length, length, length);
     callback frame-release();
     in-out property <float> hover-fx: -1;
     // Dica embaixo da lâmina: o que dá para fazer com o quadro selecionado.
@@ -499,7 +500,9 @@ export component AppWindow inherits Window {
                         crop-end() => { root.crop-end(); root.focus-main(); }
                         crop-wheel(n) => { root.crop-wheel(n); }
                         grab(i, n, x, y, w) => { root.frame-grab(i, n, x, y, w); }
-                        grab-move(x, y, alt) => { root.frame-drag(x, y, alt); }
+                        grab-move(x, y, alt, shift) => { root.frame-drag(x, y, alt, shift); }
+                        organizing: OrganizeUi.on;
+                        organize-press(i, ctrl, shift, x, y, w) => { root.organize-press(i, ctrl, shift, x, y, w); }
                         grab-end => { root.frame-release(); root.focus-main(); }
                         hover-fx <=> root.hover-fx;
                         visible: root.has-project;

@@ -7,6 +7,7 @@ mod auditoria_m3;
 mod common;
 mod ct;
 mod ds;
+mod eg_grupo;
 mod eg_modo;
 mod eh;
 mod eh_samples;

@@ -103,6 +103,7 @@ pub fn refresh_spread(app: &mut App) {
     place_slots(app, place, &frames, &mut data);
     w.set_current(data);
     slide(app, &w, (place, index), before);
+    crate::organize::refresh(app);
     w.set_current_index(i32::try_from(index).unwrap_or(0));
     let as_i32 = |f: Option<usize>| f.and_then(|f| i32::try_from(f).ok()).unwrap_or(-1);
     w.set_selected_frame(as_i32(app.editor.selected_frame()));
@@ -154,7 +155,7 @@ fn place_slots(app: &mut App, place: Place, frames: &[FrameView], data: &mut cra
             row.photo = app.images.version(*id);
         }
     }
-    let gesture = app.editor.gesture_rect().is_some();
+    let gesture = app.editor.in_gesture();
     if app.slot_rows.sync(frames, &rows, place, gesture) {
         // As vagas que saíram esmaecem e depois saem da lista (MV-B12).
         let fade = u64::from(app.editor.durations().fade);
@@ -168,7 +169,18 @@ fn place_slots(app: &mut App, place: Place, frames: &[FrameView], data: &mut cra
             .map(|f| boxed(f.rect))
             .unwrap_or_default()
     };
-    data.selected_box = rect(app.editor.selected_frame());
+    // No modo organizar com vários quadros, as alças são as da caixa do grupo (spec EG).
+    let group: Vec<usize> = app.editor.selected_frames();
+    data.selected_box = if app.editor.organizing() && group.len() > 1 {
+        let rects: Vec<_> = group
+            .iter()
+            .filter_map(|f| frames.get(*f))
+            .map(|f| f.rect)
+            .collect();
+        boxed(crate::organize::union_all(&rects))
+    } else {
+        rect(app.editor.selected_frame())
+    };
     data.cropping_box = rect(app.editor.crop_mode());
 }
 

@@ -208,7 +208,11 @@ export component SpreadCanvas inherits Rectangle {    in property <SpreadData> d
     // Quadros à mão (spec TX): segurar uma alça (ou um texto), arrastar e soltar. O último
     // número de `grab` é a largura da lâmina em pixels, para o Rust converter em mm.
     callback grab(int, int, length, length, length);
-    callback grab-move(length, length, bool);
+    callback grab-move(length, length, bool, bool);
+    // Modo organizar (spec EG): segurar o corpo de qualquer quadro move o grupo; com Ctrl ou Shift,
+    // o clique soma ou tira da seleção. O último número é a largura da lâmina em pixels.
+    in property <bool> organizing;
+    callback organize-press(int, bool, bool, length, length, length);
     callback grab-end();
     // Onde o mouse está na lâmina, em frações da largura (o T cria o texto naquela página).
     in-out property <float> hover-fx: -1;
@@ -278,13 +282,27 @@ export component SpreadCanvas inherits Rectangle {    in property <SpreadData> d
             root.hover-fx = (self.absolute-position.x + self.mouse-x - root.absolute-position.x) / root.width;
         }
         pointer-event(e) => {
+            // No modo organizar, o corpo de qualquer quadro segura o grupo (nenhuma foto troca de
+            // quadro, spec EG, regra 4).
+            if (root.organizing) {
+                if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                    root.organize-press(f.index, e.modifiers.control || e.modifiers.meta, e.modifiers.shift, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, root.width);
+                }
+                if (e.kind == PointerEventKind.move && self.pressed) {
+                    root.grab-move(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, e.modifiers.alt, e.modifiers.shift);
+                }
+                if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                    root.grab-end();
+                }
+                return;
+            }
             // O texto não tem foto para arrastar: segurar o corpo dele move o quadro.
             if (f.kind == 2) {
                 if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
                     root.grab(f.index, 0, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, root.width);
                 }
                 if (e.kind == PointerEventKind.move && self.pressed) {
-                    root.grab-move(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, e.modifiers.alt);
+                    root.grab-move(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, e.modifiers.alt, e.modifiers.shift);
                 }
                 if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
                     root.grab-end();
@@ -301,6 +319,8 @@ export component SpreadCanvas inherits Rectangle {    in property <SpreadData> d
     }
     // Página sem conteúdo (lâmina de ponta com página simples).
     for b in root.data.inactive: Rectangle {
+        // Acima das vagas, que têm a ordem de desenho dos quadros (z).
+        z: 1000;
         x: b.x * root.width;
         y: b.y * root.width;
         width: b.w * root.width;
@@ -310,6 +330,8 @@ export component SpreadCanvas inherits Rectangle {    in property <SpreadData> d
 
     // Lombada.
     Rectangle {
+        // Acima das vagas, que têm a ordem de desenho dos quadros (z).
+        z: 1000;
         x: root.data.spine-x * root.width;
         width: 1px;
         height: root.height;
@@ -317,6 +339,8 @@ export component SpreadCanvas inherits Rectangle {    in property <SpreadData> d
     }
 
     if root.guides && !root.small: Rectangle {
+        // Acima das vagas, que têm a ordem de desenho dos quadros (z).
+        z: 1000;
         // Faixa de sangria escurecida (o que fica fora do corte).
         Rectangle {
             x: 0;
@@ -359,6 +383,8 @@ export component SpreadCanvas inherits Rectangle {    in property <SpreadData> d
 
     // Linhas do ímã durante o gesto.
     for b in root.data.snaps: Rectangle {
+        // Acima das vagas, que têm a ordem de desenho dos quadros (z).
+        z: 1000;
         x: b.x * root.width;
         y: b.y * root.width;
         width: max(1px, b.w * root.width);
@@ -368,18 +394,22 @@ export component SpreadCanvas inherits Rectangle {    in property <SpreadData> d
 
     // Alças do quadro selecionado (fora do modo recorte).
     if root.interactive && !root.small && root.cropping < 0 && root.selected >= 0: Handles {
+        // Acima das vagas, que têm a ordem de desenho dos quadros (z).
+        z: 1000;
         fx: root.data.selected-box.x * root.width;
         fy: root.data.selected-box.y * root.width;
         fw: root.data.selected-box.w * root.width;
         fh: root.data.selected-box.h * root.width;
         grab(n, x, y) => { root.grab(root.selected, n, x, y, root.width); }
-        drag(x, y, alt) => { root.grab-move(x, y, alt); }
+        drag(x, y, alt, shift) => { root.grab-move(x, y, alt, shift); }
         release => { root.grab-end(); }
     }
 
     // Quadro em modo recorte: por cima de tudo (inclusive das guias, que senão ficam com a roda
     // do mouse), recebe o arrasto e a roda (spec RC).
     if root.cropping >= 0: TouchArea {
+        // Acima das vagas, que têm a ordem de desenho dos quadros (z).
+        z: 1000;
         property <length> last-x;
         property <length> last-y;
         x: root.data.cropping-box.x * root.width;

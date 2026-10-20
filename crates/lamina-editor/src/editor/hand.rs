@@ -88,9 +88,17 @@ impl Editor {
         self.gesture.as_ref().map(|g| (g.frame, g.now))
     }
 
-    /// As guias que pegaram no gesto, para as linhas da tela.
+    /// As guias que pegaram no gesto (de um quadro ou do grupo), para as linhas da tela.
     pub fn snap_lines(&self) -> &[SnapLine] {
+        if let Some(g) = &self.group {
+            return &g.lines;
+        }
         self.gesture.as_ref().map_or(&[], |g| g.lines.as_slice())
+    }
+
+    /// Um gesto à mão (de um quadro ou do grupo) está em curso: a tela não anima (spec MV).
+    pub fn in_gesture(&self) -> bool {
+        self.gesture.is_some() || self.group.is_some()
     }
 
     /// Alt+setas move o quadro selecionado 1 mm; com Shift, 10 mm. Seguidas no mesmo quadro
