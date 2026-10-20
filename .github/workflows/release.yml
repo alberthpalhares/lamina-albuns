@@ -94,9 +94,9 @@ jobs:
         if: runner.os != 'macOS'
         shell: bash
         run: |
-          cargo build --release -p lamina-app -p lamina-cli
+          cargo build --profile dist -p lamina-app -p lamina-cli
           mkdir publish
-          cp target/release/lamina-app* publish/
+          cp target/dist/lamina-app* publish/
           rm -f publish/*.d publish/*.pdb
           # O álbum de exemplo vai ao lado do programa (spec PC, regra 8).
           cp -r crates/lamina-app/exemplo publish/
@@ -105,19 +105,19 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           rustup target add aarch64-apple-darwin x86_64-apple-darwin
-          cargo build --release -p lamina-app -p lamina-cli --target aarch64-apple-darwin
-          cargo build --release -p lamina-app -p lamina-cli --target x86_64-apple-darwin
-          cargo build --release -p lamina-cli
+          cargo build --profile dist -p lamina-app -p lamina-cli --target aarch64-apple-darwin
+          cargo build --profile dist -p lamina-app -p lamina-cli --target x86_64-apple-darwin
+          cargo build --profile dist -p lamina-cli
           mkdir publish
           lipo -create -output publish/lamina-app \
-            target/aarch64-apple-darwin/release/lamina-app target/x86_64-apple-darwin/release/lamina-app
+            target/aarch64-apple-darwin/dist/lamina-app target/x86_64-apple-darwin/dist/lamina-app
           lipo -archs publish/lamina-app
           # O álbum de exemplo vai ao lado do programa, dentro do .app (spec PC, regra 8).
           cp -r crates/lamina-app/exemplo publish/
           # O `lamina` universal vai no pacote do Claude Desktop (fora do instalador; spec DS).
           mkdir cli-universal
           lipo -create -output cli-universal/lamina \
-            target/aarch64-apple-darwin/release/lamina target/x86_64-apple-darwin/release/lamina
+            target/aarch64-apple-darwin/dist/lamina target/x86_64-apple-darwin/dist/lamina
           lipo -archs cli-universal/lamina
 
       - uses: actions/setup-dotnet@v4
@@ -165,7 +165,7 @@ jobs:
         shell: bash
         run: |
           case "${{ matrix.sistema }}" in
-            win) bin=target/release/lamina.exe; sistema=windows; nome=Lamina-Windows.mcpb ;;
+            win) bin=target/dist/lamina.exe; sistema=windows; nome=Lamina-Windows.mcpb ;;
             osx) bin=cli-universal/lamina; sistema=macos; nome=Lamina-macOS.mcpb ;;
           esac
           cargo xtask mcpb "$sistema" "$bin" pacote-mcpb
@@ -180,7 +180,7 @@ jobs:
         shell: bash
         run: |
           cargo xtask fotos fumaca/fotos 8
-          cargo run --release -q -p lamina-cli -- build fumaca/fotos --saida fumaca/album \
+          cargo run --profile dist -q -p lamina-cli -- build fumaca/fotos --saida fumaca/album \
             --laminas 2 --largura-cm 10 --altura-cm 10 --dpi 100
 
       - name: Teste de fumaça (Windows)
