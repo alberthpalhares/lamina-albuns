@@ -248,6 +248,10 @@ export component AppWindow inherits Window {
     in property <string> hint;
     callback photo-pressed(int, bool, bool);
     callback drop-photo(int, float, float);
+    // Fotos do navegador soltas num vão da faixa de lâminas: (foto arrastada, vão).
+    callback drop-photos-gap(int, int);
+    // O ponteiro sobre a área de lâmina nova, para os arquivos soltos do Explorador (spec IM).
+    out property <bool> new-spread-hover: spread-strip.new-hover;
     callback drop-frame(int, float, float);
     callback frame-selected(int);
     callback move-spread(int, int);
@@ -572,7 +576,7 @@ export component AppWindow inherits Window {
                 open: root.spreads-open;
                 toggled => { root.command("ver.faixa-laminas"); }
             }
-            SpreadStrip {
+            spread-strip := SpreadStrip {
                 visible: root.has-project && root.spreads-open;
                 height: self.visible ? 128px : 0px;
                 spreads: root.spreads;
@@ -609,8 +613,8 @@ export component AppWindow inherits Window {
                 toggled => { root.command("ver.fotos"); }
                 FilterTab { text: "Todas"; active: root.filter == 0; clicked => { root.filter-changed(0); } }
                 FilterTab { text: "Usadas"; active: root.filter == 1; clicked => { root.filter-changed(1); } }
-                BarButton { text: "+ Fotos"; clicked => { root.command("arquivo.importar"); } }
                 FilterTab { text: "Não usadas"; active: root.filter == 2; clicked => { root.filter-changed(2); } }
+                BarButton { text: "+ Fotos"; clicked => { root.command("arquivo.importar"); } }
             }
             if root.has-project && root.photos-open: PhotoStrip {
                 height: 144px;
@@ -626,8 +630,13 @@ export component AppWindow inherits Window {
                 photo-double-clicked(i) => { root.photo-double-clicked(i); }
                 photo-pressed(i, ctrl, shift) => { root.photo-pressed(i, ctrl, shift); }
                 dropped => {
-                    root.land();
-                    root.drop-photo(root.drag-from, root.frac-x(), root.frac-y());
+                    // Sobre a faixa de lâminas, uma lâmina nova no vão (spec IM, regra 7).
+                    if (spread-strip.visible && spread-strip.photo-gap >= 0) {
+                        root.drop-photos-gap(root.drag-from, spread-strip.photo-gap);
+                    } else {
+                        root.land();
+                        root.drop-photo(root.drag-from, root.frac-x(), root.frac-y());
+                    }
                 }
                 focus-main => { root.focus-main(); }
             }

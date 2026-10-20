@@ -16,6 +16,7 @@ use crate::{EditorError, Session};
 
 mod crop;
 mod dispatch;
+mod dropping;
 mod frames;
 mod hand;
 mod layouts;
@@ -27,6 +28,7 @@ mod style;
 mod text_edit;
 
 pub use crop::{ZOOM_STEP, crop_for, set_crop};
+pub use dropping::DropPlace;
 pub use layouts::Panel;
 pub use style::Look;
 pub use text_edit::TextChange;

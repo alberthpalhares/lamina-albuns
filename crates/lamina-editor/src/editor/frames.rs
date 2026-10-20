@@ -235,7 +235,7 @@ impl Editor {
         format!("{what} · lâmina {at}")
     }
 
-    fn go(&mut self, index: usize) {
+    pub(super) fn go(&mut self, index: usize) {
         self.selected_frame = None;
         if let Some(s) = self.session.as_mut() {
             s.go_to(index);
