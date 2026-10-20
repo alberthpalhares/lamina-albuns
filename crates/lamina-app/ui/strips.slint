@@ -83,6 +83,15 @@ export component SpreadStrip inherits Rectangle {
         max(0, min(root.spreads.length, round(at)))
     }
     callback focus-main();
+    // Fotos arrastadas do navegador sobre a faixa (spec IM, regra 7): o vão onde a lâmina nova
+    // entraria (o número de lâminas = a área de lâmina nova, no fim); -1 fora da faixa.
+    pure function over() -> bool {
+        root.drag-x >= root.absolute-position.x && root.drag-x <= root.absolute-position.x + root.width
+            && root.drag-y >= root.absolute-position.y && root.drag-y <= root.absolute-position.y + root.height
+    }
+    out property <int> photo-gap: root.drag-kind == 1 && root.over() ? root.gap() : -1;
+    // O ponteiro sobre a área de lâmina nova (fotos soltas do Explorador; regra 11).
+    out property <bool> new-hover: new-touch.has-hover;
     background: StripTheme.spreads;
 
     // Começa a arrastar só depois de 6 px, para um clique não virar arrasto.
@@ -232,6 +241,36 @@ export component SpreadStrip inherits Rectangle {
                     font-weight: i == root.current-index ? 700 : 400;
                 }
             }
+            // A área de lâmina nova: fotos soltas aqui viram uma lâmina montada.
+            VerticalLayout {
+                spacing: 4px;
+                Rectangle {
+                    width: 84px / max(0.01, root.current-aspect) + 6px;
+                    height: 90px;
+                    border-radius: 4px;
+                    border-width: 2px;
+                    border-color: root.photo-gap == root.spreads.length ? Theme.selected : #ffffff30;
+                    background: root.photo-gap == root.spreads.length ? #ffffff18 : transparent;
+                    Text {
+                        text: "+ Lâmina nova\nsolte fotos aqui";
+                        color: Theme.muted;
+                        font-size: 11px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    new-touch := TouchArea { }
+                }
+                Text { text: " "; font-size: 12px; }
+            }
+        }
+        // Fotos soltas entre duas lâminas: o marcador no vão da lâmina nova (regra 7).
+        if root.photo-gap >= 0 && root.photo-gap < root.spreads.length: Rectangle {
+            x: 10px + root.photo-gap * (84px / max(0.01, root.current-aspect) + 16px) - 7px;
+            y: 8px;
+            width: 4px;
+            height: 90px;
+            border-radius: 2px;
+            background: Theme.selected;
         }
         // Marcador no vão onde a lâmina vai ficar.
         if root.drag-kind == 3: Rectangle {

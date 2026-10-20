@@ -38,12 +38,13 @@ pub fn pick(app: &mut App, folder: bool) {
             .pick_files()
     };
     if let Some(paths) = paths {
-        start(app, paths);
+        start(app, paths, None);
     }
 }
 
-/// Importa `paths` no álbum aberto; sem álbum, abre o Novo projeto com elas (regra 6).
-pub fn start(app: &mut App, paths: Vec<PathBuf>) {
+/// Importa `paths` no álbum aberto (com `as_spread`, já numa lâmina nova nesse vão; regra 11);
+/// sem álbum, abre o Novo projeto com elas (regra 6).
+pub fn start(app: &mut App, paths: Vec<PathBuf>, as_spread: Option<usize>) {
     if app.editor.busy() {
         app.notice = WAIT_IMPORT.to_owned();
         return app.refresh_current();
@@ -64,7 +65,7 @@ pub fn start(app: &mut App, paths: Vec<PathBuf>) {
         };
         let result = guarded(|| import_photos(&paths, &cache, &progress).map_err(|e| e.human()))
             .and_then(|r| r);
-        let _ = tx.send(Msg::Imported(result, file));
+        let _ = tx.send(Msg::Imported(result, file, as_spread));
     });
 }
 
@@ -77,7 +78,7 @@ pub fn message(app: &mut App, msg: Msg) {
         Msg::Importing(done, total) => {
             w.set_busy_text(format!("Importando {done} de {total} fotos…").into());
         }
-        Msg::Imported(result, file) => {
+        Msg::Imported(result, file, as_spread) => {
             w.set_busy_text("".into());
             app.editor.set_busy(false);
             // O álbum trocou no meio (não deveria, com o editor ocupado): nada a fazer.
@@ -88,7 +89,12 @@ pub fn message(app: &mut App, msg: Msg) {
             {
                 return;
             }
-            match result.map(|report| app.editor.add_photos(&report)) {
+            let add =
+                |app: &mut App, report: &lamina_editor::importing::ImportReport| match as_spread {
+                    Some(at) => app.editor.add_photos_as_spread(report, at),
+                    None => app.editor.add_photos(report),
+                };
+            match result.map(|report| add(app, &report)) {
                 Ok(Ok(summary)) => {
                     app.project_changed();
                     app.notice = summary.text();
@@ -123,9 +129,14 @@ pub fn connect(window: &AppWindow, app: &Shared) {
                 pending.borrow_mut().push(path.clone());
                 if first {
                     let (a, pending) = (a.clone(), pending.clone());
+                    let weak = weak.clone();
                     Timer::single_shot(GATHER, move || {
                         let paths = std::mem::take(&mut *pending.borrow_mut());
-                        start(&mut a.borrow_mut(), paths);
+                        let mut app = a.borrow_mut();
+                        // Soltas sobre a área de lâmina nova, viram a lâmina nova (regra 11).
+                        let over = weak.upgrade().is_some_and(|w| w.get_new_spread_hover());
+                        let at = app.session().map(|s| s.spread_count()).filter(|_| over);
+                        start(&mut app, paths, at);
                     });
                 }
             }

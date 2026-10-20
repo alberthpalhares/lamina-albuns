@@ -73,6 +73,11 @@ pub fn add_imported(project: &mut Project, report: &ImportReport) -> ImportSumma
     summary
 }
 
+/// Quantas fotos do relatório ainda não estão no projeto.
+pub(crate) fn fresh_count(project: &Project, report: &ImportReport) -> usize {
+    fresh_entries(project, report).len()
+}
+
 /// As entradas do relatório que ainda não estão no projeto, sem repetir entre si.
 fn fresh_entries<'a>(project: &Project, report: &'a ImportReport) -> Vec<&'a CatalogEntry> {
     let mut known: HashSet<&str> = project

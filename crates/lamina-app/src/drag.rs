@@ -4,9 +4,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use lamina_editor::frame_at;
 use lamina_editor::motion::reorder;
 use lamina_editor::motion::{TimelineKey, timeline_rows};
+use lamina_editor::{DropPlace, frame_at};
 
 use crate::state::App;
 use crate::{AppWindow, TimelineItem};
@@ -17,6 +17,18 @@ type Shared = Rc<RefCell<App>>;
 fn target(app: &App, fx: f32, fy: f32) -> Option<usize> {
     let s = app.session()?;
     frame_at(s.project(), s.current(), f64::from(fx), f64::from(fy))
+}
+
+/// O ponto solto cai dentro da lâmina grande (frações da largura; a altura é a proporção)?
+fn inside(app: &App, fx: f32, fy: f32) -> bool {
+    let Some(s) = app.session() else {
+        return false;
+    };
+    if s.spread_count() == 0 {
+        return false;
+    }
+    let aspect = crate::convert::aspect(s.project());
+    (0.0..=1.0).contains(&fx) && (0.0..=aspect).contains(&fy)
 }
 
 fn after_edit(app: &mut App, changed: bool) {
@@ -45,12 +57,39 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     window.on_drop_photo(move |i, fx, fy| {
         let mut app = a.borrow_mut();
-        let (Some(photo), Some(frame)) = (app.photo_at(i), target(&app, fx, fy)) else {
+        let Some(photo) = app.photo_at(i) else {
             return;
         };
+        // Sobre um quadro, como sempre (FQ); na lâmina, fora dos quadros, as fotos entram nela; no
+        // álbum ainda sem lâminas, viram a primeira (spec IM, regras 7 e 8).
+        let place = match (target(&app, fx, fy), inside(&app, fx, fy)) {
+            (Some(frame), _) => DropPlace::Frame(frame),
+            (None, true) => DropPlace::Spread,
+            (None, false) if app.session().is_some_and(|s| s.spread_count() == 0) => {
+                DropPlace::NewSpread(0)
+            }
+            (None, false) => return,
+        };
+        let photos = match place {
+            DropPlace::Frame(_) => vec![photo],
+            _ => app.editor.drag_photos(photo),
+        };
         app.timed(
-            "Soltar foto",
-            |app| app.editor.drop_photo(frame, photo),
+            "Soltar fotos",
+            |app| app.editor.drop_photos(place, &photos),
+            App::refresh_all,
+        );
+    });
+    let a = app.clone();
+    window.on_drop_photos_gap(move |i, gap| {
+        let mut app = a.borrow_mut();
+        let (Some(photo), Ok(gap)) = (app.photo_at(i), usize::try_from(gap)) else {
+            return;
+        };
+        let photos = app.editor.drag_photos(photo);
+        app.timed(
+            "Lâmina nova com fotos",
+            |app| app.editor.drop_photos(DropPlace::NewSpread(gap), &photos),
             App::refresh_all,
         );
     });

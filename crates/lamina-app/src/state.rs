@@ -69,9 +69,11 @@ pub enum Msg {
     /// Andamento e fim de uma importação no álbum aberto (spec IM); `file` é o álbum em que ela
     /// começou.
     Importing(usize, usize),
+    /// `Some(n)`: soltas na área de lâmina nova, viram a lâmina nova no vão `n` (spec IM, regra 11).
     Imported(
         Result<lamina_editor::importing::ImportReport, HumanMessage>,
         Option<PathBuf>,
+        Option<usize>,
     ),
 }
 
