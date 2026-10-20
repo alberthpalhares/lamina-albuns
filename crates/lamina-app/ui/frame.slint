@@ -12,6 +12,8 @@ export global FrameUi {
     in-out property <string> y;
     in-out property <string> w;
     in-out property <string> h;
+    // "mm", "cm" ou "pol" (a unidade da tela).
+    in property <string> unit: "mm";
     in property <string> rect-error;
     in-out property <string> text;
     in property <[string]> fonts;
@@ -84,7 +86,7 @@ export component FramePanel inherits ScrollView {
             color: Theme.muted;
             wrap: word-wrap;
         }
-        if FrameUi.has-frame: Label { text: "Posição e tamanho (mm, a partir do corte)"; }
+        if FrameUi.has-frame: Label { text: "Posição e tamanho (" + FrameUi.unit + ", a partir do corte)"; }
         if FrameUi.has-frame: GridLayout {
             spacing: 6px;
             Row {

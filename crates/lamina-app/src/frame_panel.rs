@@ -31,6 +31,7 @@ pub fn refresh(app: &App) {
     ui.set_y(form.y.into());
     ui.set_w(form.width.into());
     ui.set_h(form.height.into());
+    ui.set_unit(form.unit.into());
     ui.set_rect_error("".into());
     let Some(t) = form.text else {
         ui.set_is_text(false);
@@ -105,7 +106,8 @@ pub fn connect(window: &AppWindow, app: &Shared) {
             return;
         };
         let fields = [ui.get_x(), ui.get_y(), ui.get_w(), ui.get_h()];
-        match parse_frame(&project, fields.each_ref().map(SharedString::as_str)) {
+        let unit = app.editor.strips().unit;
+        match parse_frame(&project, fields.each_ref().map(SharedString::as_str), unit) {
             Ok(rect) => {
                 if app.editor.set_frame_mm(rect) {
                     app.refresh_all();

@@ -27,7 +27,8 @@ impl Unit {
         }
     }
 
-    fn mm_per_unit(self) -> f64 {
+    /// Quantos mm vale uma unidade.
+    pub fn mm_per_unit(self) -> f64 {
         match self {
             Unit::Mm => 1.0,
             Unit::Cm => 10.0,
