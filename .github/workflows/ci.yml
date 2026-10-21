@@ -20,6 +20,10 @@ on:
         description: "Teste de fumaça: importar 1.000 fotos num álbum vazio, no macOS (spec TR)"
         type: boolean
         default: false
+      mac_abrir:
+        description: "Abrir no Mac: instalar em Aplicativos e abrir um .lamina pelo Finder (spec MA)"
+        type: boolean
+        default: false
 
 # Um commit novo cancela a rodada anterior do mesmo PR ou branch.
 concurrency:
@@ -71,6 +75,134 @@ jobs:
       - name: Importar num álbum vazio
         timeout-minutes: 15
         run: /usr/bin/time -l target/release/lamina-app --verificar-importacao fumaca/mil
+
+  # Abrir no Mac (spec MA, seção 7): empacota como a release, instala pelo terminal e pelo .pkg,
+  # confere a pasta, o Info.plist e o programa padrão do .lamina, e abre um álbum como o Finder
+  # (o `open` passa pelo mesmo serviço do duplo clique), com o Lamina fechado e aberto. Só à mão.
+  mac_abrir:
+    name: Abrir no Mac (macOS)
+    if: github.repository == 'alberthpalhares/lamina-albuns' && github.event_name == 'workflow_dispatch' && inputs.mac_abrir
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      VPK: "1.2.161"
+      LSREGISTER: /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show active-toolchain
+      - uses: Swatinem/rust-cache@v2
+      - name: Compilar o Lamina
+        run: cargo build --release -p lamina-app -p lamina-cli -p xtask
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Empacotar como na release
+        run: |
+          dotnet tool install -g vpk --version "$VPK"
+          version=$(cargo pkgid -p lamina-app | sed 's/.*[#@]//')
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          mkdir publish
+          cp target/release/lamina-app publish/
+          cp -r crates/lamina-app/exemplo publish/
+          sed -e "s/@VERSAO@/$version/" -e "s/@VERSAO_CURTA@/${version%%-*}/" \
+            crates/lamina-app/dist/Info.plist > Info.plist
+          vpk pack -u Lamina -v "$version" -p publish --packTitle Lamina --packAuthors "Equipe Lamina" \
+            --channel osx -o releases --icon crates/lamina-app/icons/lamina.icns \
+            --bundleId io.github.alberthpalhares.lamina -e lamina-app --plist Info.plist
+          for f in releases/*Setup.pkg; do sh crates/lamina-app/dist/ajustar-pkg.sh "$f"; done
+          pkgutil --expand releases/*Setup.pkg pkg-aberto
+          grep -o '<domains[^>]*>' pkg-aberto/Distribution
+          grep -q 'enable_currentUserHome="false"' pkg-aberto/Distribution
+          (cd releases && shasum -a 256 *Portable.zip > SHA256SUMS && ls -la)
+      - name: Álbum de teste
+        run: |
+          target/release/xtask fotos fumaca/fotos 8
+          target/release/lamina build fumaca/fotos --saida fumaca/album --laminas 2 \
+            --largura-cm 10 --altura-cm 10 --dpi 100
+          ls fumaca/album
+      - name: 0. O comando do README, exatamente como está, e o instalar.sh desta versão pela internet
+        run: |
+          comando=$(grep -m1 '^curl -fsSL .*instalar\.sh | sh$' README.md)
+          echo "$comando"
+          sh -c "$comando"
+          for script in "o do README" "o desta versão"; do
+            app=/Applications/Lamina.app
+            [ -d "$app" ] || app="$HOME/Applications/Lamina.app"
+            echo "$script instalou em $app"
+            "$app/Contents/MacOS/lamina-app" --verificar exemplo
+            rm -rf /Applications/Lamina.app "$HOME/Applications/Lamina.app"
+            [ "$script" = "o desta versão" ] || sh crates/lamina-app/dist/instalar.sh
+          done
+      - name: 1. Instalar pelo terminal (com um Lamina antigo na pasta pessoal)
+        run: |
+          mkdir -p "$HOME/Applications/Lamina.app/Contents"
+          LAMINA_FONTE="$PWD/releases" sh crates/lamina-app/dist/instalar.sh
+          test -d /Applications/Lamina.app
+          test ! -e "$HOME/Applications/Lamina.app"
+          stat -f 'dono: %Su  %N' /Applications/Lamina.app
+          [ "$(stat -f %Su /Applications/Lamina.app)" = "$(id -un)" ]
+      - name: 2. Instalar pelo .pkg
+        run: |
+          rm -rf /Applications/Lamina.app
+          sudo installer -pkg releases/*Setup.pkg -target /
+          # O postinstall do vpk abre o Lamina: fecha antes de seguir.
+          sleep 5
+          sudo pkill -x lamina-app || true
+          test -d /Applications/Lamina.app
+          test ! -e "$HOME/Applications/Lamina.app"
+          stat -f 'dono: %Su  %N' /Applications/Lamina.app
+          echo "usuário da tela: $(stat -f %Su /dev/console)"
+          [ "$(stat -f %Su /Applications/Lamina.app)" = "$(stat -f %Su /dev/console)" ]
+      - name: 3. O Info.plist declara o .lamina
+        run: |
+          plist=/Applications/Lamina.app/Contents/Info.plist
+          plutil -lint "$plist"
+          plutil -p "$plist"
+          pb() { /usr/libexec/PlistBuddy -c "Print :$1" "$plist"; }
+          [ "$(pb CFBundleDocumentTypes:0:LSItemContentTypes:0)" = io.github.alberthpalhares.lamina.album ]
+          [ "$(pb CFBundleDocumentTypes:0:CFBundleTypeRole)" = Editor ]
+          [ "$(pb CFBundleDocumentTypes:0:LSHandlerRank)" = Owner ]
+          [ "$(pb UTExportedTypeDeclarations:0:UTTypeIdentifier)" = io.github.alberthpalhares.lamina.album ]
+          [ "$(pb UTExportedTypeDeclarations:0:UTTypeTagSpecification:public.filename-extension:0)" = lamina ]
+          [ "$(pb CFBundleVersion)" = "$VERSION" ]
+          codesign -dv /Applications/Lamina.app 2>&1 | grep -E "Format|Signature|Info.plist" || true
+      - name: 4. O Mac liga o .lamina ao Lamina
+        run: |
+          "$LSREGISTER" -f /Applications/Lamina.app
+          "$LSREGISTER" -dump | grep -i -B3 -A12 'io.github.alberthpalhares.lamina.album' | head -60 || true
+          album="$PWD/fumaca/album/fotos.lamina"
+          mdls -name kMDItemContentType -name kMDItemContentTypeTree "$album" || true
+          brew install duti >/dev/null 2>&1 && duti -x lamina || echo "(duti indisponível)"
+          padrao=$(osascript -l JavaScript -e '
+            ObjC.import("AppKit");
+            function run(argv) {
+              const url = $.NSWorkspace.sharedWorkspace.URLForApplicationToOpenURL($.NSURL.fileURLWithPath(argv[0]));
+              return url.isNil() ? "nenhum" : ObjC.unwrap(url.path);
+            }' "$album")
+          echo "programa padrão do .lamina: $padrao"
+          [ "$padrao" = /Applications/Lamina.app ]
+      - name: 5. Duplo clique com o Lamina fechado
+        timeout-minutes: 5
+        run: |
+          relatorio="$RUNNER_TEMP/fechado.txt"
+          open -a /Applications/Lamina.app "$PWD/fumaca/album/fotos.lamina" --args --verificar-abertura "$relatorio"
+          for _ in $(seq 120); do [ -s "$relatorio" ] && break; sleep 1; done
+          cat "$relatorio"
+          grep -q '^aberto: .*fotos\.lamina' "$relatorio"
+          for _ in $(seq 60); do pgrep -x lamina-app >/dev/null || break; sleep 1; done
+          ! pgrep -x lamina-app
+      - name: 6. Duplo clique com o Lamina aberto
+        timeout-minutes: 5
+        run: |
+          relatorio="$RUNNER_TEMP/aberto.txt"
+          open -a /Applications/Lamina.app --args --verificar-abertura "$relatorio"
+          for _ in $(seq 60); do pgrep -x lamina-app >/dev/null && break; sleep 1; done
+          sleep 8
+          # Sem -a: o Mac escolhe o programa padrão do .lamina, como no duplo clique.
+          open "$PWD/fumaca/album/fotos.lamina"
+          for _ in $(seq 120); do [ -s "$relatorio" ] && break; sleep 1; done
+          cat "$relatorio"
+          grep -q '^aberto: .*fotos\.lamina' "$relatorio"
 
   licencas:
     name: Licenças e avisos de segurança

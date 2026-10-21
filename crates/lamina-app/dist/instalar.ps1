@@ -33,14 +33,17 @@ function Install-Lamina {
     } else {
         # Sem versão estável publicada, a versão de teste mais nova, com aviso (Rodada 0, R0-15).
         try {
+            # Com GITHUB_TOKEN (só o CI tem), a consulta não esbarra no limite de 60 por hora.
+            $api = @{ UseBasicParsing = $true }
+            if ($env:GITHUB_TOKEN) { $api.Headers = @{ Authorization = "Bearer $env:GITHUB_TOKEN" } }
             $tag = $null
             if (-not $Beta) {
                 try {
-                    $tag = (Invoke-RestMethod -UseBasicParsing "https://api.github.com/repos/$repo/releases/latest").tag_name
+                    $tag = (Invoke-RestMethod @api "https://api.github.com/repos/$repo/releases/latest").tag_name
                 } catch { $tag = $null }
             }
             if (-not $tag) {
-                $releases = Invoke-RestMethod -UseBasicParsing "https://api.github.com/repos/$repo/releases?per_page=20"
+                $releases = Invoke-RestMethod @api "https://api.github.com/repos/$repo/releases?per_page=20"
                 $tag = $releases[0].tag_name
                 if (-not $Beta -and $tag) {
                     Write-Host "Ainda não há versão estável do Lamina: instalando a versão de teste $tag."

@@ -46,6 +46,8 @@ tempfile = "3"
 dhat = "0.3"
 # Instalador e atualização automática (ADR 0009). Versão presa: o spike provou esta.
 velopack = "=1.2.161"
+# Os arquivos abertos pelo Finder no Mac (spec MA; ADR 0013), presa na versão lida linha a linha.
+fmv-macos-events = "=0.1.0"
 # Esquema JSON do formato do projeto, gerado dos tipos (spec EI, regra 9).
 schemars = "1"
 # PDF de impressão (spec PD; ADR 0007, plano B) e a leitura dele nos testes.

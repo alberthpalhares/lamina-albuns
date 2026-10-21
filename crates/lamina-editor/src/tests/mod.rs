@@ -35,6 +35,7 @@ mod jp_commands;
 mod jp_session;
 mod jp_speed;
 mod jp_view;
+mod ma;
 mod md;
 mod md_more;
 mod mv_arrastar;
