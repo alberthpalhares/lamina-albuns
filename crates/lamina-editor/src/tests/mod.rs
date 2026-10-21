@@ -2,6 +2,7 @@
 //! build`) mora nos testes do binário `lamina`, que roda os dois caminhos.
 
 mod af;
+mod af_neutro;
 mod af_painel;
 mod ap;
 mod auditoria;
