@@ -17,7 +17,9 @@ mod types;
 pub use frame_photo::{Plan, frame_pixels, needed_size, plan};
 pub use place::{Bled, PixelBox, Scale, bleed, pixels, region};
 pub use render::{render_spread, render_spread_with};
-pub use screen::{EMPTY_GRAY, draw_empty_marks, empty_mark};
+pub use screen::{
+    EMPTY_GRAY, INACTIVE_GRAY, ScreenMarks, draw_empty_marks, draw_screen_marks, empty_mark,
+};
 pub use style::Fill;
 pub use text::{
     FAMILIES, Family, TextCheck, check_text, family, known_families, text_image, text_lines,
@@ -101,9 +103,7 @@ mod tx;
 mod af;
 
 #[cfg(test)]
-#[path = "tests/je.rs"]
-mod je;
-
+
 #[cfg(test)]
-#[path = "tests/op.rs"]
-mod op;
+#[path = "tests/rl.rs"]
+mod rl;
