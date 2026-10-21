@@ -83,6 +83,15 @@ impl Editor {
         .is_ok()
     }
 
+    /// Clique duplo no seletor da opacidade (OP-B15): volta a 100% numa edição própria, que nunca
+    /// emenda com o arrasto anterior (o molde de `reset_adjust`, spec AF, regra 14).
+    pub fn reset_opacity(&mut self) -> bool {
+        self.end_adjust();
+        let done = self.set_photo_opacity(100);
+        self.end_adjust();
+        done
+    }
+
     /// Um clique em − ou + da borda ou dos cantos da seção Foto: uma edição por clique (AP).
     pub fn step_photo_style(&mut self, field: LookField, delta: i32) -> bool {
         let Some(style) = self.photo_style() else {

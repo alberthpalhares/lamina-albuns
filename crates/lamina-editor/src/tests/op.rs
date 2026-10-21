@@ -178,6 +178,27 @@ fn op_b10_um_arrasto_uma_edicao() {
 }
 
 #[test]
+fn op_b15_clique_duplo_volta_a_100() {
+    let mut editor = editor_at(three_spreads(), 0);
+    let frame = photo_frames(&editor)[0].0;
+    editor.select_frame(Some(frame));
+    let before = labels(&editor).len();
+    for v in [80, 60, 40] {
+        assert!(editor.set_photo_opacity(v));
+    }
+    // Clique duplo no meio do arrasto, sem soltar: uma edição própria.
+    assert!(editor.reset_opacity());
+    assert_eq!(opacity(&editor, frame), 100);
+    let after = labels(&editor);
+    assert_eq!(after.len(), before + 2, "o arrasto e a volta: {after:?}");
+    assert!(after[before + 1].starts_with("Opacidade da foto"));
+    assert!(!editor.reset_opacity(), "já no neutro, nada muda");
+    assert_eq!(labels(&editor).len(), before + 2);
+    assert!(editor.run(Command::Undo));
+    assert_eq!(opacity(&editor, frame), 40, "o Ctrl+Z desfaz só a volta");
+}
+
+#[test]
 fn op_b11_a_tela_mostra_a_opacidade() {
     let photos: Vec<(u32, u32)> = (0..240).map(|i| if i % 4 == 3 { V } else { H }).collect();
     let mut editor = editor_at(built(spec(30.0, 30.0), &photos, 60), 4);

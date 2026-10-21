@@ -51,6 +51,8 @@ pub fn run_command(app: &Shared, command: Command) {
                 w.set_show_about(true);
             }
         }
+        // A lista de atalhos abre por cima, sem passar pelo editor (spec AT, regra 7).
+        Command::ShowShortcuts => crate::shortcuts::open(&a),
         Command::NewText => new_text(&mut a),
         Command::SaveModel => models::open_save(&mut a),
         Command::Models => models::open_list(&a),

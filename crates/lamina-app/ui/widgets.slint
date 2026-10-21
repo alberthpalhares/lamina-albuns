@@ -121,3 +121,95 @@ export component IconButton inherits Rectangle {
         shown: touch.has-hover;
     }
 }
+
+// Controle deslizante com valor neutro (spec AF, regra 14): arrastar o seletor ou clicar no trilho
+// muda o valor; clique duplo no seletor pede a volta ao neutro (`reset`), que marca o trilho.
+// Serve a endireitar, brilho e contraste, e à opacidade da OP (neutro 100).
+export component NeutralSlider inherits Rectangle {
+    in property <float> minimum: 0;
+    in property <float> maximum: 100;
+    in property <float> neutral: 0;
+    in property <bool> enabled: true;
+    in-out property <float> value;
+    callback changed(float);
+    callback released();
+    callback reset();
+    property <length> knob: 14px;
+    property <length> span: max(1px, root.width - root.knob);
+    property <float> range: max(0.000001, root.maximum - root.minimum);
+    property <length> knob-x: root.span * clamp((root.value - root.minimum) / root.range, 0, 1);
+    property <length> neutral-x: root.span * clamp((root.neutral - root.minimum) / root.range, 0, 1);
+    property <float> start;
+    property <bool> dragging;
+    min-height: 24px;
+    min-width: 60px;
+    function on-knob(x: length) -> bool {
+        return x >= root.knob-x - 2px && x <= root.knob-x + root.knob + 2px;
+    }
+    function value-at(x: length) -> float {
+        return clamp(root.minimum + (x - root.knob / 2) / root.span * root.range, root.minimum, root.maximum);
+    }
+    function set(v: float) {
+        if (v != root.value) {
+            root.value = v;
+            root.changed(v);
+        }
+    }
+    Rectangle {
+        x: root.knob / 2;
+        y: (root.height - self.height) / 2;
+        width: root.span;
+        height: 4px;
+        border-radius: 2px;
+        background: root.enabled ? #5a5a5a : #3c3c3c;
+    }
+    // A marca do neutro no trilho.
+    Rectangle {
+        x: root.neutral-x + root.knob / 2 - 1px;
+        y: (root.height - self.height) / 2;
+        width: 2px;
+        height: 10px;
+        background: root.enabled ? Theme.muted : #5a5a5a;
+    }
+    Rectangle {
+        x: root.knob-x;
+        y: (root.height - self.height) / 2;
+        width: root.knob;
+        height: root.knob;
+        border-radius: root.knob / 2;
+        background: root.enabled ? (touch.pressed || touch.has-hover ? #ffffff : Theme.selected) : #6b6b6b;
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        pointer-event(e) => {
+            if (e.button != PointerEventButton.left) {
+                return;
+            }
+            if (e.kind == PointerEventKind.down) {
+                root.dragging = false;
+                if (!root.on-knob(self.mouse-x)) {
+                    root.set(root.value-at(self.mouse-x));
+                }
+                root.start = root.value;
+            } else if (e.kind == PointerEventKind.up) {
+                root.released();
+            }
+        }
+        // Só arrasta depois de 3 px, para o clique duplo parado não mexer no valor.
+        moved => {
+            if (!self.pressed) {
+                return;
+            }
+            if (!root.dragging && abs(self.mouse-x - self.pressed-x) < 3px) {
+                return;
+            }
+            root.dragging = true;
+            root.set(clamp(root.start + (self.mouse-x - self.pressed-x) / root.span * root.range, root.minimum, root.maximum));
+        }
+        double-clicked => {
+            if (root.on-knob(self.pressed-x)) {
+                root.reset();
+            }
+        }
+    }
+}

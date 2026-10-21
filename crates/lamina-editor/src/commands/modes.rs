@@ -67,26 +67,18 @@ impl Command {
         }
     }
 
-    /// O comando do atalho no modo `mode`. Ctrl+Shift+Z também refaz (costume no macOS e no
-    /// Linux), Backspace também tira a foto (o Delete do Mac) e = vale o +.
+    /// O comando do atalho no modo `mode`. Os alternativos (Ctrl+Shift+Z refaz, Backspace tira a
+    /// foto, = vale o +, F1 abre os atalhos) vêm da tabela `ALIASES` (spec AT, regra 3).
     pub fn from_shortcut_in(shortcut: Shortcut, mode: Mode) -> Option<Command> {
-        if shortcut == Shortcut::ctrl_shift('z') {
-            return Some(Command::Redo);
-        }
         // Sinais e números: o Shift depende do teclado (o + pede Shift no ABNT2), então não conta.
-        let mut shortcut = match shortcut.key {
+        let shortcut = match shortcut.key {
             Key::Char(c) if !c.is_alphabetic() => Shortcut {
                 shift: false,
                 ..shortcut
             },
             _ => shortcut,
         };
-        if shortcut == Shortcut::key(Key::Backspace) {
-            shortcut = Shortcut::key(Key::Delete);
-        }
-        if shortcut == Shortcut::key(Key::Char('=')) {
-            shortcut = Shortcut::key(Key::Char('+'));
-        }
+        let shortcut = crate::shortcuts::main_of(shortcut);
         Command::ALL
             .into_iter()
             .find(|c| c.in_mode(mode) && c.shortcut() == Some(shortcut))

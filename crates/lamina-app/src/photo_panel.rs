@@ -1,5 +1,6 @@
-//! A seção Foto pela janela (spec AF, seção 3): os controles chamam o editor, que decide; a grade
-//! fina do recorte some 1 s depois do último giro.
+//! A seção Foto pela janela (spec AF, seção 3): os controles chamam o editor, que decide; o clique
+//! duplo no seletor volta o controle ao neutro (regra 14); a grade fina do recorte some 1 s depois
+//! do último giro.
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -7,7 +8,7 @@ use std::time::Duration;
 
 use lamina_core::FrameContent;
 use lamina_editor::PALETTE;
-use lamina_editor::editor::AdjustChange;
+use lamina_editor::editor::{AdjustChange, AdjustControl};
 use lamina_editor::forms::{LookField, mm_text};
 use slint::{Color, ComponentHandle, Timer, TimerMode};
 
@@ -34,6 +35,19 @@ fn change(app: &Shared, change: AdjustChange) {
     }
     drop(a);
     if turned {
+        settle_later(app);
+    }
+}
+
+/// Clique duplo no seletor: o controle volta ao neutro numa edição própria (spec AF, regra 14).
+fn reset(app: &Shared, control: AdjustControl) {
+    let mut a = app.borrow_mut();
+    if a.editor.reset_adjust(control) {
+        a.refresh_strip();
+        a.refresh_current();
+    }
+    drop(a);
+    if control == AdjustControl::Angle {
         settle_later(app);
     }
 }
@@ -76,6 +90,12 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     ui.on_restore(move || change(&a, AdjustChange::Restore));
     let a = app.clone();
     ui.on_released(move || a.borrow_mut().editor.end_adjust());
+    let a = app.clone();
+    ui.on_angle_reset(move || reset(&a, AdjustControl::Angle));
+    let a = app.clone();
+    ui.on_brightness_reset(move || reset(&a, AdjustControl::Brightness));
+    let a = app.clone();
+    ui.on_contrast_reset(move || reset(&a, AdjustControl::Contrast));
     connect_style(&ui, app);
     let (a, w) = (app.clone(), window.as_weak());
     ui.on_angle_accepted(move || {
@@ -105,6 +125,8 @@ fn connect_style(ui: &PhotoUi, app: &Shared) {
         let percent = u8::try_from(whole(v).clamp(0, 100)).unwrap_or(100);
         styled(&a, |e| e.set_photo_opacity(percent));
     });
+    let a = app.clone();
+    ui.on_opacity_reset(move || styled(&a, lamina_editor::Editor::reset_opacity));
     let a = app.clone();
     ui.on_border_step(move |d| styled(&a, |e| e.step_photo_style(LookField::Border, d)));
     let a = app.clone();

@@ -31,6 +31,7 @@ mod hand_frames;
 mod layouts;
 mod models;
 mod mounting;
+mod neutral;
 mod organize;
 mod organize_cmd;
 mod organize_moves;
@@ -50,6 +51,7 @@ pub use details::{Details, album_rows};
 pub use dropping::DropPlace;
 pub use group_fields::{Field, GROUP_NOT_A_NUMBER};
 pub use layouts::Panel;
+pub use neutral::AdjustControl;
 pub use organize::{DoubleClick, PaletteTool, SidePanel};
 pub use organize_zoom::{
     MAX_VIEW_ZOOM, VIEW_STEP, Zoom, ZoomMove, real_factor, step_factor, times_label, zoom_about,

@@ -10,7 +10,7 @@ use crate::keys::{Key, Shortcut};
 use crate::{Command, Editor};
 
 /// Na lâmina 1, com o primeiro quadro de foto selecionado.
-fn selected() -> (Editor, usize, PhotoId) {
+pub(super) fn selected() -> (Editor, usize, PhotoId) {
     let mut editor = editor_at(three_spreads(), 1);
     let (frame, photo) = photo_frames(&editor)[0];
     editor.select_frame(Some(frame));
@@ -18,7 +18,7 @@ fn selected() -> (Editor, usize, PhotoId) {
 }
 
 /// Os quadros de foto da lâmina atual: (índice, foto).
-fn photo_frames(editor: &Editor) -> Vec<(usize, PhotoId)> {
+pub(super) fn photo_frames(editor: &Editor) -> Vec<(usize, PhotoId)> {
     let s = editor.session().unwrap();
     s.project().spreads[s.current()]
         .frames
@@ -31,7 +31,7 @@ fn photo_frames(editor: &Editor) -> Vec<(usize, PhotoId)> {
         .collect()
 }
 
-fn adjust_of(editor: &Editor, photo: PhotoId) -> PhotoAdjust {
+pub(super) fn adjust_of(editor: &Editor, photo: PhotoId) -> PhotoAdjust {
     editor
         .session()
         .unwrap()
@@ -41,7 +41,7 @@ fn adjust_of(editor: &Editor, photo: PhotoId) -> PhotoAdjust {
         .adjust
 }
 
-fn labels(editor: &Editor) -> Vec<String> {
+pub(super) fn labels(editor: &Editor) -> Vec<String> {
     let s = editor.session().unwrap();
     s.history_list()
         .steps
