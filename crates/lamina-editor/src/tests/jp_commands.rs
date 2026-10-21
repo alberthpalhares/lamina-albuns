@@ -80,7 +80,6 @@ fn comandos_da_janela_nova_ficam_registrados_e_inertes() {
     let new = [
         (Command::ToggleLayoutBand, "ver.faixa-layouts"),
         (Command::ShowShortcuts, "ajuda.atalhos"),
-        (Command::ShowNews, "ajuda.novidades"),
         (Command::Loupe, "organizar.lupa"),
         (Command::ActualSize, "organizar.tamanho-real"),
         (Command::CalibrateSize, "organizar.calibrar"),

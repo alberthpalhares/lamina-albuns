@@ -31,6 +31,7 @@ impl Editor {
                     | Command::ToggleBeta
                     | Command::SendFeedback
                     | Command::OpenLogs
+                    | Command::ShowNews
             ) || (command == Command::ClearRecents && self.recents.has_unpinned());
         };
         // Atalhos por modo (spec EG, regra 2) e os comandos do modo organizar.
@@ -65,6 +66,8 @@ impl Editor {
             Command::NewText | Command::NewPhotoFrame | Command::Models => true,
             Command::CheckUpdates | Command::ToggleAutoUpdates | Command::ToggleBeta => true,
             Command::SendFeedback | Command::OpenLogs => true,
+            // As novidades valem em qualquer momento (spec NV, regra 5).
+            Command::ShowNews => true,
             Command::SaveModel => self.can_save_model(),
             Command::BringForward | Command::SendBackward => self.can_reorder(),
             Command::Deselect => {
@@ -88,7 +91,7 @@ impl Editor {
             | Command::TurnLeftMore
             | Command::TurnRightMore => self.crop_frame.is_some(),
             // Rodada 0b: já no registro, mas inertes até a spec de cada um ligar (AT, NV, BR e PF).
-            Command::ShowShortcuts | Command::ShowNews | Command::BuildAlbum => false,
+            Command::ShowShortcuts | Command::BuildAlbum => false,
             Command::SelectAllPhotos => false,
             // Os do modo organizar e os de vista já responderam acima.
             Command::Organize
@@ -136,7 +139,8 @@ impl Editor {
     /// Roda os comandos que não precisam de diálogo. `true` = algo mudou. Os de arquivo pedem um
     /// caminho à janela e chamam [`Editor::open`] e a sessão.
     pub fn run(&mut self, command: Command) -> bool {
-        if !self.available(command) {
+        // As novidades são abertas pela janela e não mexem em nada (spec NV, regra 5).
+        if !self.available(command) || command == Command::ShowNews {
             return false;
         }
         // Um comando no meio do arrasto de um quadro descarta o gesto: soltar depois gravaria o

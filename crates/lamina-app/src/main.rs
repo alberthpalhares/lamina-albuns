@@ -35,6 +35,7 @@ mod msg;
 mod new_album;
 mod new_project;
 mod new_project_file;
+mod news;
 mod organize;
 mod palette;
 mod panel;
@@ -85,6 +86,7 @@ type Shared = Rc<RefCell<App>>;
 
 fn connect(window: &AppWindow, app: &Shared) {
     input::connect(window, app);
+    news::connect(window);
     let a = app.clone();
     window.on_go_to(move |index| {
         let Ok(index) = usize::try_from(index) else {
@@ -264,6 +266,11 @@ fn main() -> anyhow::Result<()> {
         }
         a.updates = opened;
         help::start(&a);
+        // As novidades da versão nova, uma vez, antes de a janela aparecer (spec NV, regra 3); o
+        // teste de fumaça não é interrompido.
+        if verifying.is_none() && importing.is_none() {
+            news::on_start(&mut a);
+        }
         updates::show(&a);
     }
     connect(&window, &app);

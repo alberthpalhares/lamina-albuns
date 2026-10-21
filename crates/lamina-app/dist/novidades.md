@@ -1,7 +1,24 @@
 # Novidades do Lamina
 
-As notas de cada versão, em linguagem simples. A release copia daqui a seção da versão
-(`cargo xtask versao`). Versão nova entra no topo.
+As notas de cada versão, em linguagem simples. O Lamina mostra estas notas em "O que há de novo"
+depois de atualizar, e a release copia daqui a seção da versão (`cargo xtask versao`). Versão nova
+entra no topo, como `## [0.1.0-beta.5] - 2026-10-24`; o que ainda não saiu fica em
+`## [Não lançado]`, que o Lamina não mostra.
+
+Cada item diz o que mudou e como ver a mudança, em linguagem de fotógrafo:
+`- **O que mudou.** Explicação curta. Experimente: o que fazer para ver.` O `cargo xtask versao`
+avisa (sem impedir a versão) quando um item não tem "Experimente:". No fim do item, um comentário
+que a página da versão não mostra põe a ilustração (um arquivo de `novidades/`) e o comando do
+botão "Experimente agora": `<!-- imagem: atalhos.jpg; comando: ajuda.atalhos -->`.
+
+## [Não lançado]
+
+- **Atalhos do teclado.** Ajuda → "Atalhos do teclado…" mostra todos os atalhos e os gestos do
+  mouse, com busca. Experimente: aperte F1 e procure “trocar”.
+  <!-- imagem: atalhos.jpg; comando: ajuda.atalhos -->
+- **O que há de novo.** Depois de atualizar, o Lamina mostra o que mudou desde a sua versão, com o
+  que experimentar em cada novidade. Experimente: Ajuda → "O que há de novo…".
+  <!-- imagem: novidades.jpg; comando: ajuda.novidades -->
 
 ## [0.1.0-beta.4] - 2026-10-20
 
