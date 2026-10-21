@@ -8,8 +8,8 @@ use lamina_core::{PhotoId, Project};
 use lamina_editor::forms::photo_text;
 use lamina_editor::motion::{photo_rows, strip_rows};
 use lamina_editor::{
-    Cache, Editor, ExportCheck, Filter, PhotoItem, Session, ThumbList, guarded, photo_info,
-    photo_list, prepare_images,
+    Cache, Editor, ExportCheck, Filter, PhotoItem, Session, guarded, photo_info, photo_list,
+    photos_title, prepare_images,
 };
 use slint::{ComponentHandle, Image};
 
@@ -86,7 +86,8 @@ pub struct App {
     pub recent_query: String,
     /// Quando começou o teste de fumaça da importação (`--verificar-importacao`, spec TR).
     pub verify_import: Option<std::time::Instant>,
-    filter: Filter,
+    /// A grade do painel de fotos: largura, altura, rolagem e as peças com miniatura (spec PF).
+    pub(crate) grid_view: crate::grid::GridView,
     list: Vec<PhotoItem>,
     selected: Option<PhotoId>,
 }
@@ -133,7 +134,7 @@ impl App {
             recent_missing: Vec::new(),
             recent_query: String::new(),
             verify_import: None,
-            filter: Filter::All,
+            grid_view: crate::grid::GridView::default(),
             list: Vec::new(),
             selected: None,
         }
@@ -185,14 +186,28 @@ impl App {
         self.refresh_all();
     }
 
+    /// Troca a aba do painel de fotos: as linhas são refeitas, a seleção fica e a grade volta à
+    /// primeira foto visível, se ela está na aba (spec PF, regras 7 e 11).
     pub fn set_filter(&mut self, filter: Filter) {
-        self.filter = filter;
+        self.editor.set_photo_filter(filter);
         self.refresh_photos();
+        self.restore_grid_scroll();
+        self.show_grid(true);
     }
 
-    /// As fotos na ordem em que o navegador mostra agora.
+    /// As fotos na ordem em que o painel mostra agora.
     pub fn shown_photos(&self) -> Vec<PhotoId> {
         self.list.iter().map(|p| p.id).collect()
+    }
+
+    /// A foto da posição `i` da lista mostrada (sem copiar a lista).
+    pub fn shown_at(&self, i: usize) -> Option<PhotoId> {
+        self.list.get(i).map(|p| p.id)
+    }
+
+    /// Quantas fotos o painel mostra agora.
+    pub fn shown_count(&self) -> usize {
+        self.list.len()
     }
 
     /// Foto `index` do navegador, na lista mostrada agora.
@@ -212,9 +227,11 @@ impl App {
         self.refresh_current();
     }
 
-    /// As miniaturas de todas as fotos (cartões da faixa de layouts).
+    /// As miniaturas das fotos das lâminas e da seleção (faixa, linha do tempo e painel de
+    /// layouts); as do painel de fotos vêm só perto da tela (spec PF, regra 14).
     pub fn thumbs(&mut self, project: &Project) -> HashMap<PhotoId, Image> {
-        self.images.all_thumbs(project)
+        let selection = self.editor.selection().to_vec();
+        self.images.album_thumbs(project, &selection)
     }
 
     /// Faixa de lâminas, com as miniaturas e o marcador de aviso: só as lâminas que mudaram.
@@ -225,7 +242,7 @@ impl App {
         let rows = strip_rows(session);
         let warned: Vec<bool> = rows.iter().map(|(_, r)| r.warned).collect();
         let (project, missing) = (session.project().clone(), session.missing().to_vec());
-        let images = self.images.all_thumbs(&project);
+        let images = self.thumbs(&project);
         crate::roll::edited(self, &rows);
         self.lists.strip.sync(rows, |i| {
             let warning = warned.get(i).copied().unwrap_or(false);
@@ -234,26 +251,36 @@ impl App {
         crate::drops::refresh_timeline(self);
     }
 
-    /// Navegador de fotos e dados da foto selecionada: só as fotos que mudaram.
+    /// Painel de fotos e dados da foto selecionada: só as fotos que mudaram (spec MV, regra 3);
+    /// miniatura só nas peças perto da tela (spec PF, regra 14).
     pub fn refresh_photos(&mut self) {
         let Some(w) = self.window.upgrade() else {
             return;
         };
-        let Some(project) = self.session().map(|s| s.project().clone()) else {
+        let Some(session) = self.session() else {
             return;
         };
-        self.list = photo_list(&project, self.filter);
-        let rows = photo_rows(&self.list, self.editor.selection());
-        let picked: Vec<bool> = rows.iter().map(|(_, r)| r.picked).collect();
-        let ids: Vec<PhotoId> = self.list.iter().map(|p| p.id).collect();
-        let thumbs = self.images.thumbs_for(ThumbList::Browser, &project, &ids);
-        let list = &self.list;
-        self.lists.browser.sync(rows, |i| {
-            let item = &list[i];
-            let picked = picked.get(i).copied().unwrap_or(false);
-            photo_data(item, thumbs.get(&item.id).cloned(), picked)
+        let project = session.project().clone();
+        let title = photos_title(session, self.editor.selection().len());
+        let filter = self.editor.photo_filter();
+        self.list = photo_list(&project, filter);
+        let rows = photo_rows(&self.list, self.editor.selection(), filter);
+        let made: Vec<_> = rows.iter().map(|(_, r)| r.clone()).collect();
+        let (images, window) = (&self.images, self.grid_view.window.clone());
+        let count = self.lists.browser.sync(rows, |i| {
+            let row = &made[i];
+            let aspect = crate::convert::photo_aspect(&project, row.item.id);
+            let thumb = window.contains(&i).then(|| images.thumb(row.item.id));
+            photo_data(row, aspect, thumb.flatten())
         });
-        w.set_filter(match self.filter {
+        if count > 0 {
+            self.show_grid(true);
+        }
+        let summary = title
+            .split_once(" · ")
+            .map_or(title.clone(), |(_, s)| s.to_owned());
+        w.set_strip_photos(summary.into());
+        w.set_filter(match filter {
             Filter::All => 0,
             Filter::Used => 1,
             Filter::Unused => 2,

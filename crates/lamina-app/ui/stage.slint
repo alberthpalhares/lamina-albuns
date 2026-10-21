@@ -10,6 +10,7 @@ import { OrganizeUi, OrganizeBar, OrganizeMarks, OrganizeRulers, OrganizeTools }
 import { Motion } from "motion.slint";
 import { WelcomeScreen } from "welcome.slint";
 import { DragUi } from "drag.slint";
+import { PhotoGridUi } from "photo_strip.slint";
 import { SpreadRoll, RollUi } from "roll.slint";
 import { BandUi } from "band.slint";
 
@@ -149,7 +150,8 @@ export component Stage inherits Rectangle {
     property <length> canvas-width: RollUi.on ? RollUi.width : root.current.aspect > 0
         ? min(self.width - 48px - (OrganizeUi.on ? 18px : 0px), (self.height - 48px - self.top-room) / root.current.aspect) : 0px;
     // A lâmina em destaque cresce com movimento (spec EG, herdado da MV).
-    animate canvas-width { duration: Motion.on ? Motion.navigate-ms * 1ms : 0ms; easing: ease-out; }
+    // Arrastar a divisória do painel de fotos é gesto à mão: a lâmina acompanha sem animar (PF).
+    animate canvas-width { duration: Motion.on && !PhotoGridUi.resizing ? Motion.navigate-ms * 1ms : 0ms; easing: ease-out; }
     // A largura de Ajustar sem a animação, para o tamanho real (spec ZR, regra 7).
     property <length> fit-target: root.current.aspect > 0
         ? min(self.width - 48px - (OrganizeUi.on ? 18px : 0px), (self.height - 48px - self.top-room) / root.current.aspect) : 0px;

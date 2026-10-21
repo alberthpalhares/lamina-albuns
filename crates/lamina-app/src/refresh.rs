@@ -2,7 +2,7 @@
 //! `state.rs`; auditoria do Marco 3, M10).
 
 use lamina_editor::forms::album_info;
-use lamina_editor::{BAR_COMMANDS, Command, bar_tip, strip_titles};
+use lamina_editor::{BAR_COMMANDS, Command, bar_tip, photos_title, strip_titles};
 use slint::SharedString;
 
 use crate::convert::model;
@@ -37,6 +37,9 @@ impl App {
             })
             .collect();
         w.set_bar_tips(model(tips));
+        // O zoom e a altura guardada da grade de fotos (spec PF, regras 4 e 5).
+        w.set_photo_zoom(self.editor.photos_zoom() as f32);
+        self.show_grid_height();
         w.set_can_prev(self.editor.available(Command::PreviousSpread));
         w.set_can_next(self.editor.available(Command::NextSpread));
         w.set_guides(self.editor.guides());
@@ -60,10 +63,16 @@ impl App {
         w.set_counter(session.counter().into());
         w.set_counter_warning(session.page_warning().unwrap_or_default().into());
         // "Lâminas · 4 lâminas (8 páginas)": o nome fica no cabeçalho, aqui vai só o resumo.
-        let [spreads, timeline, photos] = strip_titles(session)
+        let selected = self.editor.selection().len();
+        let [spreads, timeline, _] = strip_titles(session)
             .map(|t| t.split_once(" · ").map_or(t.clone(), |(_, s)| s.to_owned()));
         w.set_strip_spreads(spreads.into());
         w.set_strip_timeline(timeline.into());
+        // O painel de fotos conta a seleção (spec PF, regra 12).
+        let photos = photos_title(session, selected);
+        let photos = photos
+            .split_once(" · ")
+            .map_or(photos.clone(), |(_, s)| s.to_owned());
         w.set_strip_photos(photos.into());
         let index = session.current();
         let warnings: Vec<String> = session

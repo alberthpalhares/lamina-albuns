@@ -23,15 +23,18 @@ pub fn show(app: &mut App, fresh: &[PhotoId]) {
     let Some(session) = app.editor.session() else {
         return;
     };
-    let (project, missing) = (session.project().clone(), session.missing().to_vec());
+    // Sem copiar o projeto: com a grade rolando, chegam miniaturas a cada quadro (spec PF).
+    let (project, missing) = (session.project(), session.missing());
     let current = project
         .spreads
         .get(session.current())
         .is_some_and(|s| has_any(s, &fresh));
     let images = &app.images;
     let thumb = |id: &PhotoId| images.thumb(*id).unwrap_or_default();
+    // Na grade, só as peças perto da tela mostram miniatura (spec PF, regra 14).
+    let window = app.grid_view.window.clone();
     app.lists.browser.patch(
-        |_, (id, _)| fresh.contains(id),
+        |i, (id, _)| window.contains(&i) && fresh.contains(id),
         |_, (id, _), row| row.img = thumb(id),
     );
     app.lists.line.patch(
@@ -42,13 +45,12 @@ pub fn show(app: &mut App, fresh: &[PhotoId]) {
             }
         },
     );
-    crate::roll_connect::refresh_line(app);
-    let images = &app.images;
     let all = images.thumbs_map();
     app.lists.strip.patch(
         |_, (_, row)| has_any(&row.spread, &fresh),
-        |i, (_, row), data| *data = strip_data(&project, i, &missing, all, row.warned),
+        |i, (_, row), data| *data = strip_data(project, i, missing, all, row.warned),
     );
+    crate::roll_connect::refresh_line(app);
     if current {
         // Os cartões da faixa e a lâmina grande mostram a miniatura até a foto nítida chegar.
         app.lists.panel = None;

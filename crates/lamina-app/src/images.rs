@@ -18,6 +18,9 @@ use crate::thumb_loader::{ThumbLoader, ThumbPixels};
 
 pub type Pixels = SharedPixelBuffer<Rgba8Pixel>;
 
+/// Quantas fotos da seleção o painel de layouts pode mostrar numa prévia (uma lâmina cheia).
+const PANEL_PHOTOS: usize = 24;
+
 pub struct Images {
     /// Sobe a cada álbum novo: fotos de um álbum anterior que chegarem são ignoradas.
     epoch: u64,
@@ -100,15 +103,34 @@ impl Images {
         for id in &orders.drop {
             self.thumbs.remove(id);
         }
+        // Pedidas que ninguém mais mostra saem da fila (rolar rápido; spec PF, regra 14).
+        self.thumb_loader.cancel(&orders.cancel);
         self.ask_thumbs(project, &orders.load);
         ids.iter()
             .filter_map(|id| Some((*id, self.thumbs.get(id)?.clone())))
             .collect()
     }
 
-    /// As miniaturas de todas as fotos do projeto (faixa, linha do tempo, painel e lâmina).
-    pub fn all_thumbs(&mut self, project: &Project) -> HashMap<PhotoId, Image> {
-        let ids: Vec<PhotoId> = project.photos.iter().map(|p| p.id).collect();
+    /// As miniaturas das fotos das lâminas (faixa, linha do tempo e lâmina) e de `extra` (a
+    /// seleção, para as prévias do painel de layouts; até uma lâmina cheia). O painel de fotos
+    /// pede as dele à parte, só perto da tela (spec PF, regra 14).
+    pub fn album_thumbs(
+        &mut self,
+        project: &Project,
+        extra: &[PhotoId],
+    ) -> HashMap<PhotoId, Image> {
+        let mut ids: Vec<PhotoId> = project
+            .spreads
+            .iter()
+            .flat_map(|s| &s.frames)
+            .filter_map(|f| match &f.content {
+                FrameContent::Photo { photo, .. } => Some(*photo),
+                _ => None,
+            })
+            .collect();
+        ids.extend(extra.iter().take(PANEL_PHOTOS));
+        ids.sort_unstable();
+        ids.dedup();
         self.thumbs_for(ThumbList::Album, project, &ids)
     }
 

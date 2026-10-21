@@ -14,10 +14,10 @@ pub const THUMBS_KEPT: usize = 300;
 /// Quem pede miniaturas na janela.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ThumbList {
-    /// A faixa de lâminas, a linha do tempo, o painel de layouts e a lâmina grande: hoje, todas
-    /// as fotos do álbum.
+    /// A faixa de lâminas, a linha do tempo, o painel de layouts e a lâmina grande: as fotos
+    /// usadas nas lâminas e as selecionadas para o painel de layouts.
     Album,
-    /// O navegador de fotos: as fotos do filtro; com a grade da spec PF, só as linhas à vista.
+    /// O painel de fotos: só as linhas da grade à vista e a margem (spec PF, regra 14).
     Browser,
 }
 
@@ -28,6 +28,9 @@ pub struct ThumbOrders {
     pub load: Vec<PhotoId>,
     /// Soltar da memória: passaram do limite das que ninguém pede.
     pub drop: Vec<PhotoId>,
+    /// Tirar da fila do trabalhador: pedidas e ainda não lidas, que nenhuma lista pede mais
+    /// (rolar rápido não enfileira leituras velhas; spec PF, regra 14).
+    pub cancel: Vec<PhotoId>,
 }
 
 /// O plano das miniaturas: quem pede o quê, o que está na memória e o que está a caminho.
@@ -50,9 +53,15 @@ impl ThumbPlan {
     pub fn want(&mut self, list: ThumbList, photos: &[PhotoId]) -> ThumbOrders {
         let now: BTreeSet<PhotoId> = photos.iter().copied().collect();
         let before = self.wanted.insert(list, now.clone()).unwrap_or_default();
+        let mut cancel = Vec::new();
         for id in before.difference(&now) {
-            if self.loaded.contains(id) && !self.is_wanted(*id) {
+            if self.is_wanted(*id) {
+                continue;
+            }
+            if self.loaded.contains(id) {
                 self.idle.push_back(*id);
+            } else if self.asked.remove(id) {
+                cancel.push(*id);
             }
         }
         self.idle.retain(|id| !now.contains(id));
@@ -66,6 +75,7 @@ impl ThumbPlan {
         ThumbOrders {
             load,
             drop: self.trim(),
+            cancel,
         }
     }
 

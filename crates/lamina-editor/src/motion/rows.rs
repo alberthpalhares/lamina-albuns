@@ -3,6 +3,7 @@
 //! inserir ou remover para ir da lista velha à nova. O painel de layouts ganha uma chave que não
 //! muda quando só a opção em uso muda.
 
+use std::collections::HashSet;
 use std::iter::once;
 
 use lamina_core::{ActivePages, FrameContent, PageSide, PhotoId, Project, Spread, SpreadId};
@@ -10,7 +11,7 @@ use lamina_layout::LayoutCandidate;
 
 use crate::editor::Panel;
 use crate::edits::timeline;
-use crate::photos::PhotoItem;
+use crate::photos::{Filter, PhotoItem};
 use crate::session::Session;
 use crate::suggestions::List;
 
@@ -146,22 +147,30 @@ fn photos_in(spread: &Spread) -> impl Iterator<Item = PhotoId> + '_ {
     })
 }
 
-/// O que o navegador mostra de uma foto.
+/// O que o painel de fotos mostra de uma foto.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PhotoRow {
     pub item: PhotoItem,
-    /// Faz parte da seleção do navegador.
+    /// Faz parte da seleção do painel.
     pub picked: bool,
+    /// Já usada, na aba Todas: aparece esmaecida (spec PF, regra 11).
+    pub dim: bool,
 }
 
-/// As linhas do navegador, pela foto.
-pub fn photo_rows(items: &[PhotoItem], selection: &[PhotoId]) -> Vec<(PhotoId, PhotoRow)> {
+/// As linhas do painel de fotos da aba `filter`, pela foto.
+pub fn photo_rows(
+    items: &[PhotoItem],
+    selection: &[PhotoId],
+    filter: Filter,
+) -> Vec<(PhotoId, PhotoRow)> {
+    let picked: HashSet<PhotoId> = selection.iter().copied().collect();
     items
         .iter()
         .map(|item| {
             let row = PhotoRow {
                 item: item.clone(),
-                picked: selection.contains(&item.id),
+                picked: picked.contains(&item.id),
+                dim: filter == Filter::All && item.uses > 0,
             };
             (item.id, row)
         })

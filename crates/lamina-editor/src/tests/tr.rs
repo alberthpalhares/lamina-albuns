@@ -107,7 +107,7 @@ fn draw_everything(editor: &mut Editor) {
     let _ = (s.warnings_for(index), s.counter(), s.page_warning());
     let _ = (strip_rows(s), timeline_rows(&project));
     let items = photo_list(&project, Filter::All);
-    let _ = photo_rows(&items, editor.selection());
+    let _ = photo_rows(&items, editor.selection(), Filter::All);
     let area = Area {
         width: 1.0,
         height: 0.5,

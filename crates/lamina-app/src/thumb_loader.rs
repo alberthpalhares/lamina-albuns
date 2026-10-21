@@ -56,6 +56,17 @@ impl ThumbLoader {
         q.items.extend(items);
         wake.notify_all();
     }
+
+    /// Tira da fila os pedidos `ids` ainda não lidos (a grade rolou para longe; spec PF).
+    pub fn cancel(&self, ids: &[PhotoId]) {
+        if ids.is_empty() {
+            return;
+        }
+        let gone: std::collections::HashSet<PhotoId> = ids.iter().copied().collect();
+        let (lock, _) = &*self.queue;
+        let mut q = lock.lock().unwrap_or_else(PoisonError::into_inner);
+        q.items.retain(|(id, _)| !gone.contains(id));
+    }
 }
 
 /// Uma linha de leitura: pega o próximo pedido, lê e manda para a janela.
@@ -104,5 +115,28 @@ mod tests {
         let q = loader.queue.0.lock().unwrap();
         assert_eq!((q.epoch, q.items.len()), (1, 1));
         assert_eq!(q.items[0].0, ids[2]);
+    }
+
+    #[test]
+    fn pedido_cancelado_sai_da_fila() {
+        let loader = ThumbLoader {
+            queue: Arc::default(),
+        };
+        let cm = lamina_core::Mm::from_cm(30.0);
+        let spec =
+            lamina_core::AlbumSpec::new(cm, cm, lamina_core::Dpi::new(300).unwrap()).unwrap();
+        let mut project = lamina_core::Project::new("teste", spec);
+        let ids: Vec<PhotoId> = (0..3)
+            .map(|i| project.add_photo(format!("{i}.jpg"), 10, 10))
+            .collect();
+        let items = ids
+            .iter()
+            .map(|id| (*id, project.photo(*id).unwrap().clone()))
+            .collect();
+        loader.ask(0, items);
+        loader.cancel(&[ids[0], ids[2]]);
+        let q = loader.queue.0.lock().unwrap();
+        let left: Vec<PhotoId> = q.items.iter().map(|(id, _)| *id).collect();
+        assert_eq!(left, [ids[1]]);
     }
 }

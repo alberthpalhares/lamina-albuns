@@ -20,6 +20,7 @@ mod export;
 mod files;
 mod frame_panel;
 mod ghost;
+mod grid;
 mod hand;
 mod help;
 mod history;
@@ -111,6 +112,7 @@ fn connect(window: &AppWindow, app: &Shared) {
         );
     });
     browser::connect(window, app);
+    grid::connect(window, app);
     connect_dialogs(window, app);
     band::connect(window, app);
     drops::connect(window, app);

@@ -39,6 +39,7 @@ mod organize_cmd;
 mod organize_moves;
 mod organize_zoom;
 mod panel_need;
+mod photo_panel;
 mod photo_style;
 mod recents;
 mod report;
@@ -87,6 +88,9 @@ pub struct Editor {
     selection: Vec<PhotoId>,
     /// Última foto clicada sem Shift: começo do intervalo do Shift+clique.
     anchor: Option<PhotoId>,
+    /// A aba do painel de fotos e a primeira foto visível da grade (spec PF, regra 7).
+    photo_filter: Filter,
+    grid_anchor: Option<PhotoId>,
     /// Quadro em modo recorte e o recorte provisório do gesto (spec RC).
     crop_frame: Option<usize>,
     pending_crop: Option<Crop>,
@@ -156,6 +160,8 @@ impl Editor {
             selected_frame: None,
             selection: Vec::new(),
             anchor: None,
+            photo_filter: Filter::All,
+            grid_anchor: None,
             crop_frame: None,
             pending_crop: None,
             turning: false,
@@ -232,6 +238,7 @@ impl Editor {
         self.selected_frame = None;
         self.selection.clear();
         self.anchor = None;
+        self.grid_anchor = None;
         self.crop_frame = None;
         self.pending_crop = None;
         self.turning = false;
