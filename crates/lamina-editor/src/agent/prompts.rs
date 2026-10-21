@@ -59,8 +59,9 @@ pub fn prompt_text(name: &str, arg: &dyn Fn(&str) -> Option<String>) -> Option<S
             let folder = arg("pasta").unwrap_or_else(|| "(pergunte a pasta)".to_owned());
             let spreads = arg("laminas").map_or_else(String::new, |n| format!(" com {n} lâminas"));
             format!(
-                "Crie um álbum com as fotos de {folder}{spreads} usando novo_album. Depois veja \
-                 as miniaturas com ver_fotos, identifique os protagonistas e as melhores fotos de \
+                "Crie um álbum com as fotos de {folder} usando novo_album (ele começa em branco) e \
+                 monte as lâminas{spreads} com montar_album. Depois veja as miniaturas com \
+                 ver_fotos, identifique os protagonistas e as melhores fotos de \
                  cada momento, e proponha ajustes lâmina por lâmina (layouts com sugerir_layouts, \
                  trocas de fotos) para as melhores fotos ficarem nos maiores quadros."
             )

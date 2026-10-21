@@ -30,8 +30,13 @@ pub struct NewAlbumCall {
     /// Nome de um preset, como "Quadrado 30 × 30" (lista em resumo_do_album). Sem preset, a
     /// especificação padrão do Novo álbum.
     pub preset: Option<String>,
-    /// Número de lâminas; sem ele, a sugestão do Lamina (cerca de 4 fotos por lâmina).
+    /// Número de lâminas; só vale com montar: true. Sem ele, a sugestão do Lamina (cerca de 4
+    /// fotos por lâmina).
     pub laminas: Option<usize>,
+    /// Montar as lâminas já, como a caixa "Montar as lâminas agora" do Novo álbum. Sem ele, o
+    /// álbum começa em branco, só com as fotos; use montar_album depois.
+    #[serde(default)]
+    pub montar: bool,
     /// Criar mesmo que o álbum atual tenha alterações não salvas (elas se perdem).
     #[serde(default)]
     pub descartar: bool,
@@ -208,4 +213,11 @@ pub struct RunCommand {
     pub lamina: Option<usize>,
     /// Quadro selecionado antes de rodar (para "editar.tirar-foto", por exemplo).
     pub quadro: Option<usize>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct BuildAlbumCall {
+    /// Número de lâminas novas; sem ele, a sugestão do Lamina (cerca de 4 fotos por lâmina).
+    pub laminas: Option<usize>,
 }

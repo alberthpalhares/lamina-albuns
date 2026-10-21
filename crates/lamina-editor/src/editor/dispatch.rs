@@ -79,6 +79,8 @@ impl Editor {
                     || !self.selection.is_empty()
                     || self.crop_frame.is_some()
             }
+            // No álbum em branco, Enter com mais de 24 fotos responde com o aviso (spec BR).
+            Command::BuildFromSelection if self.is_blank() => !self.selection.is_empty(),
             Command::BuildFromSelection | Command::NewSpreadFromSelection => {
                 !self.selection.is_empty() && self.photo_selection().is_ok()
             }
@@ -94,8 +96,8 @@ impl Editor {
             | Command::TurnRight
             | Command::TurnLeftMore
             | Command::TurnRightMore => self.crop_frame.is_some(),
-            // Rodada 0b: já no registro, mas inerte até a spec dele ligar (BR).
-            Command::BuildAlbum => false,
+            // "Montar o álbum…" abre uma janela (spec BR, regra 12): pode com foto não usada.
+            Command::BuildAlbum => self.can_build_album(),
             Command::SelectAllPhotos => !self.shown_photos().is_empty(),
             // Os do modo organizar e os de vista já responderam acima.
             Command::Organize

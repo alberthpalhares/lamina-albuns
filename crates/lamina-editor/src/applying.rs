@@ -16,6 +16,8 @@ pub fn apply(
     sel: &Selection,
     c: &LayoutCandidate,
 ) -> Result<(), CoreError> {
+    // Numa lâmina sem fotos, as primeiras ganham a borda e os cantos do álbum (spec BR, regra 5).
+    let album = (project.look.border, project.look.radius);
     let Some(spread) = project.spreads.get_mut(index) else {
         return Ok(());
     };
@@ -47,9 +49,7 @@ pub fn apply(
             .and_then(|p| opacities.iter().find(|(q, _)| *q == p))
             .map_or(Opacity::FULL, |(_, o)| *o)
     };
-    let common = styles
-        .first()
-        .map_or((Border::default(), Mm(0.0)), |(_, b, r)| (*b, *r));
+    let common = styles.first().map_or(album, |(_, b, r)| (*b, *r));
     let style_of = |photo: Option<PhotoId>| {
         photo
             .and_then(|p| styles.iter().find(|(q, _, _)| *q == p))

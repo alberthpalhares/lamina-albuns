@@ -137,6 +137,9 @@ pub fn layout_with(
             .ok_or(EditorError::NoFrame)?;
         frames = photos.iter().copied().zip(first.frames).collect();
     }
+    // A borda e os cantos ficam com as fotos da lâmina; numa lâmina sem fotos, as primeiras
+    // ganham os do álbum (spec BR, regra 5).
+    let (border, radius) = photo_style(project, index);
     // Os textos ficam; a lâmina volta ao motor (spec TX, regras 8 e 9).
     let spread = project.spread_mut(id)?;
     spread
@@ -149,9 +152,33 @@ pub fn layout_with(
             photo,
             crop: Crop::default(),
         };
-        project.add_frame(id, rect, content)?;
+        let frame = project.add_frame(id, rect, content)?;
+        if let Some(f) = project
+            .spread_mut(id)?
+            .frames
+            .iter_mut()
+            .find(|f| f.id == frame)
+        {
+            (f.border, f.radius) = (border, radius);
+        }
     }
     Ok(())
+}
+
+/// A borda e os cantos das fotos novas na lâmina `index`: os da primeira foto que está nela ou,
+/// numa lâmina sem fotos, os do álbum (spec BR, regra 5).
+pub fn photo_style(project: &Project, index: usize) -> (lamina_core::Border, lamina_core::Mm) {
+    project
+        .spreads
+        .get(index)
+        .and_then(|s| {
+            s.frames
+                .iter()
+                .find(|f| matches!(f.content, FrameContent::Photo { .. }))
+        })
+        .map_or((project.look.border, project.look.radius), |f| {
+            (f.border, f.radius)
+        })
 }
 
 /// As fotos de cada lâmina, na ordem do álbum (a timeline; regra 8).

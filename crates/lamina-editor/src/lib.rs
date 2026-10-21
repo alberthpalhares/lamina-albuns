@@ -5,6 +5,7 @@
 //! mesmo caminho para montar um álbum novo.
 //!
 //! - [`album`]: novo álbum a partir de uma pasta (importar → sugerir lâminas → Auto Build).
+//! - [`building`]: "Montar o álbum…", as fotos não usadas em lâminas novas (spec BR).
 //! - [`cache`]: catálogo, miniaturas e imagens de tela no cache do sistema.
 //! - [`session`]: o projeto aberto, o arquivo dele, a lâmina atual e as alterações não salvas.
 //! - [`editor`]: a sessão (ou nenhuma), os comandos e a pergunta antes de sair.
@@ -38,6 +39,7 @@ pub mod appearance;
 mod applying;
 pub mod arrange;
 pub mod bar_tips;
+pub mod building;
 pub mod cache;
 pub mod calibration;
 pub mod commands;

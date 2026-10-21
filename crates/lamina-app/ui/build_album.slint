@@ -1,0 +1,82 @@
+// "Montar o álbum…" (spec BR): o que vai acontecer, o número de lâminas com a sugestão, a
+// variedade dos desenhos e o resultado (lâminas e páginas, com o aviso da faixa do laboratório).
+// Só desenho: as contas são do editor (`lamina_editor::building`), pelo Rust.
+
+import { Button, SpinBox, ComboBox } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Shade, Panel } from "widgets.slint";
+
+export global BuildUi {
+    in-out property <bool> show;
+    in property <string> what;
+    in-out property <int> spreads: 1;
+    in property <int> most: 1;
+    in property <string> suggestion;
+    // 0 muita variedade, 1 equilibrado, 2 mais uniforme (os níveis da etapa 2 do Novo álbum).
+    in-out property <int> reuse: 1;
+    in property <string> result;
+    in property <string> warning;
+    in property <string> error;
+    callback changed();
+    callback build();
+    callback closed();
+}
+
+export component BuildAlbumDialog inherits Shade {
+    keys := FocusScope {
+        key-pressed(event) => {
+            if (event.text == Key.Escape) {
+                BuildUi.show = false;
+                BuildUi.closed();
+                return accept;
+            }
+            if (event.text == Key.Return && BuildUi.error == "") {
+                BuildUi.build();
+                return accept;
+            }
+            reject
+        }
+        Panel {
+            width: 520px;
+            height: 330px;
+            VerticalLayout {
+                padding: 24px;
+                spacing: 12px;
+                Text { text: "Montar o álbum"; font-size: 16px; font-weight: 600; color: Theme.text; }
+                Text { text: BuildUi.what; color: Theme.text; wrap: word-wrap; }
+                HorizontalLayout {
+                    spacing: 8px;
+                    Text { text: "Número de lâminas"; width: 170px; color: Theme.text; vertical-alignment: center; }
+                    SpinBox {
+                        width: 110px;
+                        value <=> BuildUi.spreads;
+                        minimum: 1;
+                        maximum: max(1, BuildUi.most);
+                        edited => { BuildUi.changed(); }
+                    }
+                    Text { text: BuildUi.suggestion; color: Theme.muted; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; }
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    Text { text: "Variedade dos desenhos"; width: 170px; color: Theme.text; vertical-alignment: center; }
+                    ComboBox {
+                        model: ["Muita variedade", "Equilibrado", "Mais uniforme"];
+                        current-index <=> BuildUi.reuse;
+                        selected => { BuildUi.changed(); }
+                    }
+                }
+                if BuildUi.error == "": Text { text: BuildUi.result; color: Theme.text; wrap: word-wrap; }
+                if BuildUi.error == "" && BuildUi.warning != "": Text { text: BuildUi.warning; color: Theme.warning; wrap: word-wrap; }
+                if BuildUi.error != "": Text { text: BuildUi.error; color: Theme.warning; wrap: word-wrap; }
+                Rectangle { vertical-stretch: 1; }
+                HorizontalLayout {
+                    alignment: end;
+                    spacing: 8px;
+                    Button { text: "Cancelar"; clicked => { BuildUi.show = false; BuildUi.closed(); } }
+                    Button { text: "Montar"; primary: true; enabled: BuildUi.error == ""; clicked => { BuildUi.build(); } }
+                }
+            }
+        }
+    }
+    init => { keys.focus(); }
+}

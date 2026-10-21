@@ -17,6 +17,7 @@ use crate::{EditorError, Session};
 mod adjust;
 mod arrange_cmd;
 mod band;
+mod build_album;
 mod clipboard;
 mod context;
 mod crop;

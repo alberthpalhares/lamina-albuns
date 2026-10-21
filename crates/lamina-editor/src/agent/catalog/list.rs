@@ -1,9 +1,9 @@
 //! A lista das ferramentas, na ordem da spec IA (seção 3): as do IA-M1 e depois as do IA-M2.
 
 use super::super::calls::{
-    ApplyLayout, BuildSpread, ExportCall, FrameArg, ListPhotos, MovePhoto, MoveSpread,
-    NewAlbumCall, NoArgs, OpenAlbum, PlacePhoto, Position, RunCommand, SaveAlbum, SpreadArg, Steps,
-    SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
+    ApplyLayout, BuildAlbumCall, BuildSpread, ExportCall, FrameArg, ListPhotos, MovePhoto,
+    MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, PlacePhoto, Position, RunCommand, SaveAlbum,
+    SpreadArg, Steps, SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
 };
 use super::super::params::{
     AddText, CropCall, EditText, LookCall, RelinkCall, RespecCall, SaveModel, UseModel,
@@ -26,8 +26,9 @@ fn first_part() -> Vec<ToolInfo> {
         ),
         info::<NewAlbumCall>(
             "novo_album",
-            "Cria um álbum a partir de uma pasta de fotos: importa, sugere as lâminas, monta pelo \
-             Auto Build e grava o .lamina, como o Novo álbum da janela.",
+            "Cria um álbum a partir de uma pasta de fotos e grava o .lamina, como o Novo álbum da \
+             janela: o álbum começa em branco, com todas as fotos e nenhuma lâmina. Com montar: \
+             true, já monta as lâminas pelo Auto Build (laminas só vale com montar).",
         ),
         info::<SaveAlbum>(
             "salvar_album",
@@ -84,6 +85,11 @@ fn first_part() -> Vec<ToolInfo> {
         info::<BuildSpread>(
             "montar_lamina",
             "Cria uma lâmina nova com as fotos escolhidas, no primeiro layout da lista.",
+        ),
+        info::<BuildAlbumCall>(
+            "montar_album",
+            "Monta de uma vez as fotos ainda não usadas em lâminas novas, depois da última, pelo \
+             Auto Build (como Montar o álbum… da janela). Num álbum em branco, monta todas.",
         ),
         info::<Position>("nova_lamina", "Cria uma lâmina vazia."),
         info::<SpreadArg>(

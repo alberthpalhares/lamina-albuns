@@ -103,6 +103,7 @@ fn ia_b14_novo_album_igual_ao_da_janela() {
         "salvar_em": target,
         "preset": "Quadrado 30 × 30",
         "laminas": 8,
+        "montar": true,
     });
     lab.ok("novo_album", args);
 
@@ -124,6 +125,7 @@ fn ia_b14_novo_album_igual_ao_da_janela() {
         export: preset.export,
         style: Default::default(),
         files: Vec::new(),
+        build: true,
     };
     let (built, _) = create_album(&new, &base.cache(), &|_| {}).unwrap();
     std::fs::create_dir_all(base.path("janela")).unwrap();

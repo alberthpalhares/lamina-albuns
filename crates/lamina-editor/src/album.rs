@@ -141,7 +141,7 @@ pub struct NewAlbum {
     /// `None` = nome da pasta.
     pub name: Option<String>,
     pub spec: AlbumSpec,
-    /// `None` = a sugestão.
+    /// `None` = a sugestão (só vale com `build`).
     pub spreads: Option<usize>,
     pub reuse: Reuse,
     /// Favoritos e rejeitados do fotógrafo (spec TL, regra 8); vazio = escolha de sempre.
@@ -156,6 +156,9 @@ pub struct NewAlbum {
     /// Arquivos e pastas soltos na tela inicial (spec IM, regra 6): quando há, são eles que
     /// entram, no lugar de `folder`.
     pub files: Vec<PathBuf>,
+    /// Montar as lâminas agora (spec BR, regra 2): desligado, o álbum começa em branco, só com as
+    /// fotos; ligado, o Auto Build de antes.
+    pub build: bool,
 }
 
 /// Fotos importadas, já num projeto sem lâminas, e as que não deram para importar.
@@ -263,7 +266,9 @@ pub fn suggestion_text(spreads: usize) -> String {
     format!("Sugestão: {spreads} {word} (cerca de {PHOTOS_PER_SPREAD} fotos por lâmina).")
 }
 
-/// O álbum inteiro: importa, sugere (se faltar o número de lâminas) e monta.
+/// O álbum novo: importa e, com `build`, sugere (se faltar o número de lâminas) e monta. Sem
+/// `build`, o álbum começa em branco, com as fotos e sem lâminas (spec BR, regra 2); o relatório
+/// fica vazio.
 pub fn create_album(
     new: &NewAlbum,
     cache: &Cache,
@@ -278,6 +283,13 @@ pub fn create_album(
     imported.project.page_limits = new.limits;
     imported.project.export = new.export;
     crate::new_project::put_style(&mut imported.project, &new.style);
+    if !new.build {
+        let blank = AutoBuild {
+            project: imported.project,
+            report: Vec::new(),
+        };
+        return Ok((blank, imported.failures));
+    }
     progress(Step::Building);
     let spreads = new.spreads.unwrap_or_else(|| suggestion(&imported.project));
     let options = BuildOptions {

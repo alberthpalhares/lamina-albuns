@@ -26,6 +26,8 @@ impl Editor {
     pub fn drop_photos(&mut self, place: DropPlace, photos: &[PhotoId]) -> bool {
         let current = self.session.as_ref().map(crate::Session::current);
         match place {
+            // Na lâmina vazia do álbum em branco, as fotos viram a lâmina 1 (spec BR, regra 4).
+            DropPlace::Spread(_) if self.is_blank() => self.first_spread(photos),
             DropPlace::Frame { spread, frame } if Some(spread) == current => {
                 photos.first().is_some_and(|p| self.drop_photo(frame, *p))
             }
@@ -36,6 +38,24 @@ impl Editor {
             DropPlace::Spread(spread) => self.add_to(spread, photos),
             DropPlace::NewSpread(at) => self.new_spread_with(at, photos),
         }
+    }
+
+    /// O álbum aberto não tem lâminas (o álbum em branco; spec BR).
+    pub fn is_blank(&self) -> bool {
+        self.session
+            .as_ref()
+            .is_some_and(|s| s.project().spreads.is_empty())
+    }
+
+    /// A primeira lâmina à mão (soltar na lâmina vazia ou Enter; spec BR, regra 4): montada como
+    /// "Montar lâmina" faria. Com mais fotos do que uma lâmina leva, nada muda e o aviso aponta
+    /// "Montar o álbum…".
+    pub(super) fn first_spread(&mut self, photos: &[PhotoId]) -> bool {
+        if photos.len() > crate::building::blank_capacity() {
+            self.notice = Some(crate::building::ONE_SPREAD_LIMIT.to_owned());
+            return false;
+        }
+        self.new_spread_with(0, photos)
     }
 
     /// As fotos que um arrasto leva: a seleção inteira, quando a foto arrastada está nela; senão,

@@ -63,8 +63,7 @@ async fn call(client: &Client, name: &'static str, args: Value) -> CallToolResul
 /// O álbum de 2 lâminas criado pela própria IA.
 async fn with_album(client: &Client, dir: &Path) {
     let folder = photos(dir);
-    let args =
-        json!({ "pasta_fotos": folder, "salvar_em": dir.join("album.lamina"), "laminas": 2 });
+    let args = json!({ "pasta_fotos": folder, "salvar_em": dir.join("album.lamina"), "laminas": 2, "montar": true });
     let created = call(client, "novo_album", args).await;
     assert_eq!(created.is_error, Some(false), "{created:?}");
 }

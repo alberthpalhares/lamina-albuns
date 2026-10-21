@@ -21,6 +21,15 @@ pub fn run_command(app: &Shared, command: Command) {
         crate::photo_panel::settle_later(app);
     }
     let mut a = app.borrow_mut();
+    // "Montar o álbum…" pelo menu, que fica sempre ativo: sem fotos não usadas, a mensagem diz
+    // por quê (spec BR, regra 12).
+    if command == Command::BuildAlbum {
+        let normal = a.editor.mode() == lamina_editor::commands::Mode::Normal;
+        if a.session().is_some() && !a.editor.busy() && normal {
+            crate::build_album::open(&mut a);
+        }
+        return;
+    }
     // O menu também obedece: no meio de um trabalho em segundo plano, só o Sobre e a ajuda de
     // sugestões e registros (spec SR, regra 2).
     if !a.editor.available(command) {
@@ -84,7 +93,7 @@ pub fn run_command(app: &Shared, command: Command) {
                     | Command::AdjustPhoto
                     | Command::ToggleLayoutBand
             );
-            a.timed(
+            let done = a.timed(
                 command.label(),
                 |a| a.editor.run(command),
                 |a| {
@@ -95,6 +104,10 @@ pub fn run_command(app: &Shared, command: Command) {
                     }
                 },
             );
+            // Enter no álbum em branco com mais de 24 fotos não muda nada, mas avisa (spec BR).
+            if !done && command == Command::BuildFromSelection {
+                a.refresh_current();
+            }
             return;
         }
     }

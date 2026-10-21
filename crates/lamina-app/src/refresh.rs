@@ -61,6 +61,13 @@ impl App {
         w.set_window_title(format!("{title} — Lamina").into());
         w.set_project_title(title.into());
         w.set_counter(session.counter().into());
+        // O álbum em branco: a lâmina vazia no formato e no fundo do álbum (spec BR).
+        let project = session.project();
+        let canvas = project.spec.canvas_rect();
+        let aspect = canvas.height.get() / canvas.width.get().max(1.0);
+        w.set_blank_aspect(crate::convert::to_f32(aspect));
+        w.set_blank_color(crate::convert::color(project.look.background));
+        w.set_can_build_album(self.editor.available(Command::BuildAlbum));
         w.set_counter_warning(session.page_warning().unwrap_or_default().into());
         // "Lâminas · 4 lâminas (8 páginas)": o nome fica no cabeçalho, aqui vai só o resumo.
         let selected = self.editor.selection().len();

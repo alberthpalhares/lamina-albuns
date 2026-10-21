@@ -3,6 +3,7 @@
 
 import { Button } from "std-widgets.slint";
 import { Theme } from "theme.slint";
+import { DragUi } from "drag.slint";
 
 export global ImportUi {
     // Arquivos de outro programa sobre a janela (o sistema não diz onde: regra 10).
@@ -24,10 +25,43 @@ export component DropOverlay inherits Rectangle {
     }
 }
 
-// O álbum sem lâminas: sem fotos, o convite para importar; com fotos, como montar a primeira.
+// A lâmina vazia do álbum em branco: o tamanho que cabe na área, o fundo do álbum, o contorno em
+// traços e o destaque quando fotos do painel estão sobre ela.
+component BlankSpread inherits HorizontalLayout {
+    in property <float> aspect: 0.5;
+    in property <color> paper: white;
+    in property <length> room-w;
+    in property <length> room-h;
+    alignment: center;
+    property <length> w: max(120px, min(root.room-w - 96px, (root.room-h - 180px) / max(0.1, root.aspect)));
+    sheet := Rectangle {
+        width: root.w;
+        height: root.w * root.aspect;
+        property <bool> over: DragUi.kind == 1
+            && DragUi.x >= self.absolute-position.x && DragUi.x <= self.absolute-position.x + self.width
+            && DragUi.y >= self.absolute-position.y && DragUi.y <= self.absolute-position.y + self.height;
+        background: root.paper;
+        opacity: self.over ? 1 : 0.55;
+        for i in ceil(self.width / 16px): Rectangle { x: i * 16px; y: 0; width: 10px; height: 2px; background: #9a9a9a; }
+        for i in ceil(self.width / 16px): Rectangle { x: i * 16px; y: parent.height - 2px; width: 10px; height: 2px; background: #9a9a9a; }
+        for i in ceil(self.height / 16px): Rectangle { x: 0; y: i * 16px; width: 2px; height: 10px; background: #9a9a9a; }
+        for i in ceil(self.height / 16px): Rectangle { x: parent.width - 2px; y: i * 16px; width: 2px; height: 10px; background: #9a9a9a; }
+        if self.over: Rectangle {
+            border-width: 3px;
+            border-color: #ffd23f;
+        }
+    }
+}
+
+// O álbum sem lâminas: sem fotos, o convite para importar; com fotos, o álbum em branco.
 export component EmptyAlbum inherits VerticalLayout {
     in property <int> photos;
+    // O formato (altura / largura da lâmina) e o fundo do álbum; "Montar o álbum…" disponível.
+    in property <float> aspect: 0.5;
+    in property <color> paper: white;
+    in property <bool> can-build;
     callback import();
+    callback build();
     alignment: center;
     spacing: 12px;
     if root.photos == 0: Text {
@@ -47,10 +81,29 @@ export component EmptyAlbum inherits VerticalLayout {
         alignment: center;
         Button { text: "Importar fotos…  (Ctrl+I)"; primary: true; clicked => { root.import(); } }
     }
+    // O álbum em branco (spec BR): a lâmina vazia no formato e no fundo do álbum, com contorno
+    // pontilhado, que acende enquanto fotos do painel passam sobre ela; e "Montar o álbum…".
+    if root.photos > 0: BlankSpread {
+        aspect: root.aspect;
+        paper: root.paper;
+        room-w: root.width;
+        room-h: root.height;
+    }
     if root.photos > 0: Text {
-        text: "Selecione fotos na faixa de baixo e aperte Enter para montar a primeira lâmina.";
+        text: "A primeira lâmina começa aqui. Selecione fotos no painel de baixo e solte nesta área (ou aperte Enter).";
         color: Theme.muted;
         horizontal-alignment: center;
         wrap: word-wrap;
     }
+    if root.photos > 0: HorizontalLayout {
+        alignment: center;
+        Button { text: "Montar o álbum…"; enabled: root.can-build; clicked => { root.build(); } }
+    }
+    if root.photos > 0: Text {
+        text: "Monta as " + root.photos + " fotos de uma vez.";
+        color: Theme.muted;
+        font-size: 12px;
+        horizontal-alignment: center;
+    }
 }
+

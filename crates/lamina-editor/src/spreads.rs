@@ -86,3 +86,14 @@ fn fix_edges(project: &mut Project) -> Result<(), EditorError> {
     }
     Ok(())
 }
+
+/// Põe as lâminas `new` depois da última ("Montar o álbum…", spec BR, regra 7): a antiga última,
+/// se deixou de ser ponta com página simples, é rearranjada com a 1ª opção do motor.
+pub fn append_spreads(
+    project: &mut Project,
+    new: Vec<lamina_core::Spread>,
+) -> Result<(), EditorError> {
+    let before = pages_by_id(project);
+    project.spreads.extend(new);
+    fix_changed(project, &before)
+}

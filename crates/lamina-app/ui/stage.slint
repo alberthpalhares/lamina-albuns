@@ -22,6 +22,10 @@ export component Stage inherits Rectangle {
     // O álbum sem lâminas (spec IM): quantas lâminas e quantas fotos há.
     in property <int> spread-count;
     in property <int> photo-count;
+    // O álbum em branco (spec BR): o formato e o fundo da lâmina vazia e "Montar o álbum…".
+    in property <float> blank-aspect: 0.5;
+    in property <color> blank-color: white;
+    in property <bool> can-build;
     // Dica embaixo da lâmina: o que dá para fazer com o quadro selecionado.
     in property <string> hint;
     // Recorte (spec RC) e a grade dele (spec AF).
@@ -329,7 +333,11 @@ export component Stage inherits Rectangle {
     }
     if root.has-project && root.spread-count == 0: EmptyAlbum {
         photos: root.photo-count;
+        aspect: root.blank-aspect;
+        paper: root.blank-color;
+        can-build: root.can-build;
         import => { root.command("arquivo.importar"); }
+        build => { root.command("lamina.montar-album"); }
     }
     // O modo organizar: os quadros selecionados e a barra da lâmina em destaque.
     if OrganizeUi.on: OrganizeMarks {
