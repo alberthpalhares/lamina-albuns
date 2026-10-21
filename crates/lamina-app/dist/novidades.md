@@ -13,12 +13,14 @@ botão "Experimente agora": `<!-- imagem: atalhos.png; comando: ajuda.atalhos --
 
 ## [Não lançado]
 
+- **As lâminas lado a lado.** As lâminas vizinhas aparecem dos lados da que você está editando, e a
+  roda do mouse ou dois dedos no touchpad passeiam pelo álbum de lado. Um clique numa vizinha a
+  traz para o meio; passando o mouse, aparecem os atalhos dela e a alça para mudar a lâmina de
+  lugar. Experimente: role a roda do mouse sobre a lâmina e clique na vizinha da direita.
 - **Fotos de uma lâmina para outra.** Arraste a foto de um quadro para outra lâmina: num quadro
   vazio ela entra, num quadro com foto as duas trocam de lugar, e fora dos quadros ela entra como
   uma foto a mais e a lâmina se rearruma. O quadro de onde ela saiu fica vazio, e um Ctrl+Z desfaz
-  nas duas lâminas. Experimente: ligue a faixa de lâminas e arraste uma foto da lâmina para a
-  miniatura de outra lâmina.
-  <!-- comando: ver.faixa-laminas -->
+  nas duas lâminas. Experimente: arraste uma foto da lâmina para um quadro da vizinha ao lado.
 - **A linha do tempo acompanha você.** As fotos da lâmina em que você está ficam destacadas e no
   meio da linha do tempo, e um clique numa foto leva à lâmina dela. Experimente: passe para a
   próxima lâmina com Page Down e clique numa foto da linha do tempo.

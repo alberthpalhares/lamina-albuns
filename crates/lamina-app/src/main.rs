@@ -277,8 +277,7 @@ fn main() -> anyhow::Result<()> {
     editor.set_log(help::error_log());
     let app: Shared = Rc::new(RefCell::new(App::new(&window, Cache::system(), editor, tx)));
     // Ligada por `LAMINA_TEMPOS=1`; o temporizador precisa viver até a janela fechar.
-    let roll_on = app.borrow().roll.on;
-    let (clock, _tick) = timings::Clock::install(window.window(), roll_on);
+    let (clock, _tick) = timings::Clock::install(window.window());
     {
         let mut a = app.borrow_mut();
         a.clock = clock;
