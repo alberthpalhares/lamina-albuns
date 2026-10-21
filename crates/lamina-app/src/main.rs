@@ -81,9 +81,6 @@ mod ui {
 
 pub use ui::*;
 
-// O nome antigo, até a sessão TR liberar o `state.rs` (ele chama `crate::drag::refresh_timeline`).
-use drops as drag;
-
 type Shared = Rc<RefCell<App>>;
 
 fn connect(window: &AppWindow, app: &Shared) {

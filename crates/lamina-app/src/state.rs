@@ -220,7 +220,7 @@ impl App {
             let warning = warned.get(i).copied().unwrap_or(false);
             strip_data(&project, i, &missing, &images, warning)
         });
-        crate::drag::refresh_timeline(self);
+        crate::drops::refresh_timeline(self);
     }
 
     /// Navegador de fotos e dados da foto selecionada: só as fotos que mudaram.
