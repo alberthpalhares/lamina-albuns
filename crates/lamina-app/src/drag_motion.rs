@@ -38,7 +38,11 @@ pub fn connect_motion(window: &AppWindow, app: &Shared) {
             Some(lamina_editor::motion::CrossHit::Frame { rect, .. }) => {
                 crate::convert::boxed(rect)
             }
-            _ => crate::BoxData::default(),
+            // Numa vizinha do rolo, o quadro dela, em frações da lâmina grande (spec ML).
+            _ => crate::roll_connect::neighbor_target(&app, f64::from(fx), f64::from(fy))
+                .and_then(|(_, rect)| rect)
+                .map(crate::convert::boxed)
+                .unwrap_or_default(),
         }
     });
     let a = app.clone();

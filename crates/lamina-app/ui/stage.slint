@@ -225,7 +225,8 @@ export component Stage inherits Rectangle {
         live-hover: root.live-hover;
         live-y: big.y;
         live-h: big.height;
-        photo-drag: DragUi.kind == 1;
+        // Fotos do navegador e fotos de um quadro (spec ML) acendem o destino no rolo.
+        photo-drag: DragUi.kind == 1 || DragUi.kind == 2;
         opacity: RollUi.on ? 1 : 0;
         animate opacity { duration: Motion.fade-ms * 1ms; }
         visible: root.has-project && self.opacity > 0;

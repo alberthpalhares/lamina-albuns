@@ -5,10 +5,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use lamina_editor::DropPlace;
 use lamina_editor::motion::reorder;
 use lamina_editor::motion::{CrossHit, cross_target};
 use lamina_editor::motion::{TimelineKey, timeline_rows};
+use lamina_editor::{CrossTarget, DropPlace};
 
 use crate::state::App;
 use crate::{AppWindow, TimelineItem};
@@ -35,6 +35,34 @@ fn inside(app: &App, fx: f32, fy: f32) -> bool {
     }
     let aspect = crate::convert::aspect(s.project());
     (0.0..=1.0).contains(&fx) && (0.0..=aspect).contains(&fy)
+}
+
+/// Onde cai a foto de um quadro solta em (`fx`, `fy`, frações da lâmina atual): um quadro da
+/// lâmina atual, uma vizinha do rolo ou uma miniatura da faixa (spec ML, regras 7 e 11).
+fn frame_target(app: &App, fx: f32, fy: f32) -> Option<CrossTarget> {
+    let current = app.session()?.current();
+    if let Some(frame) = target(app, fx, fy) {
+        return Some(CrossTarget::Frame {
+            spread: current,
+            frame,
+        });
+    }
+    let roll = crate::roll_connect::neighbor_target(app, f64::from(fx), f64::from(fy));
+    roll.map(|(t, _)| t).or_else(|| strip_target(app))
+}
+
+/// A miniatura da faixa de lâminas sob o ponteiro, com a fração dentro dela (spec ML, ML-B9).
+fn strip_target(app: &App) -> Option<CrossTarget> {
+    use slint::ComponentHandle as _;
+    let w = app.window.upgrade()?;
+    let ui = w.global::<crate::RollUi>();
+    let spread = usize::try_from(ui.get_strip_spread()).ok()?;
+    let (fx, fy) = (f64::from(ui.get_strip_fx()), f64::from(ui.get_strip_fy()));
+    let project = app.session()?.project();
+    Some(match cross_target(project, spread, fx, fy)? {
+        CrossHit::Frame { frame, .. } => CrossTarget::Frame { spread, frame },
+        CrossHit::Spread => CrossTarget::Spread(spread),
+    })
 }
 
 fn after_edit(app: &mut App, changed: bool) {
@@ -96,12 +124,13 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     window.on_drop_frame(move |from, fx, fy| {
         let mut app = a.borrow_mut();
-        let (Ok(from), Some(to)) = (usize::try_from(from), target(&app, fx, fy)) else {
+        let (Ok(from), Some(target)) = (usize::try_from(from), frame_target(&app, fx, fy)) else {
             return;
         };
+        // Na mesma lâmina, troca como sempre (FQ); noutra, enche, troca ou acrescenta (spec ML).
         app.timed(
-            "Trocar fotos",
-            |app| app.editor.drop_frame(from, to),
+            "Mover foto",
+            |app| app.editor.move_photo(from, target),
             App::refresh_all,
         );
     });
