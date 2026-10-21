@@ -24,7 +24,6 @@ env:
   # CLI oficial dos pacotes do Claude Desktop (ADR 0010, adendo), com a versão presa.
   MCPB: "2.1.2"
   REPO_URL: https://github.com/${{ github.repository }}
-  BUNDLE_ID: io.github.alberthpalhares.lamina
 
 jobs:
   confere:
@@ -136,13 +135,21 @@ jobs:
           if [ "${{ needs.confere.outputs.beta }}" = true ]; then pre="--pre"; fi
           vpk download github --repoUrl "$REPO_URL" --channel "$CHANNEL" --token "$GH_TOKEN" $pre -o releases || true
           ls releases > anteriores.txt
+          # No Mac, o Info.plist nosso, com o tipo de documento .lamina e o identificador do app
+          # (spec MA, seção 4; com o plist, o vpk não aceita a opção do identificador).
+          sed -e "s/@VERSAO@/$VERSION/" -e "s/@VERSAO_CURTA@/${VERSION%%-*}/" \
+            crates/lamina-app/dist/Info.plist > Info.plist
           case "${{ matrix.sistema }}" in
             win)   extra=(--runtime win-x64 --icon crates/lamina-app/icons/lamina.ico -e lamina-app.exe) ;;
-            osx)   extra=(--icon crates/lamina-app/icons/lamina.icns --bundleId "$BUNDLE_ID" -e lamina-app) ;;
+            osx)   extra=(--icon crates/lamina-app/icons/lamina.icns -e lamina-app --plist Info.plist) ;;
             linux) extra=(--runtime linux-x64 --icon crates/lamina-app/icons/lamina-512.png -e lamina-app) ;;
           esac
           vpk pack -u Lamina -v "$VERSION" -p publish --packTitle Lamina --packAuthors "Equipe Lamina" \
             --channel "$CHANNEL" --releaseNotes notas.md -o releases "${extra[@]}"
+          # O .pkg só para todos os usuários (/Applications), com o app em nome de quem instala.
+          if [ "${{ matrix.sistema }}" = osx ]; then
+            for f in releases/*Setup.pkg; do sh crates/lamina-app/dist/ajustar-pkg.sh "$f"; done
+          fi
           # Só o que esta versão criou vai para a release (o que veio da anterior já está lá).
           ls releases | grep -vxF -f anteriores.txt > novos.txt || true
           grep -q "releases.$CHANNEL.json" novos.txt || echo "releases.$CHANNEL.json" >> novos.txt
@@ -216,7 +223,11 @@ jobs:
         timeout-minutes: 10
         run: |
           LAMINA_FONTE="$PWD/releases" sh crates/lamina-app/dist/instalar.sh
-          app="$HOME/Applications/Lamina.app"
+          # Na pasta Aplicativos do Mac, declarando o .lamina (spec MA).
+          app="/Applications/Lamina.app"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$app/Contents/Info.plist" | grep -qx "$VERSION"
+          /usr/libexec/PlistBuddy -c 'Print :UTExportedTypeDeclarations:0:UTTypeTagSpecification:public.filename-extension:0' \
+            "$app/Contents/Info.plist" | grep -qx lamina
           codesign -dv "$app" 2>&1 | grep -E "Signature|Format" || true
           lipo -archs "$app/Contents/MacOS/lamina-app"
           "$app/Contents/MacOS/lamina-app" --verificar "$PWD/fumaca/album/fotos.lamina"
@@ -278,6 +289,9 @@ jobs:
         os: [windows-latest, macos-latest, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
+    # Os scripts consultam a API do GitHub; sem login, as máquinas do CI esbarram no limite.
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - name: Comando do README (Windows)
@@ -288,14 +302,17 @@ jobs:
           Start-Sleep -Seconds 5
           Get-Process lamina-app -ErrorAction SilentlyContinue | Stop-Process -Force
           $p = Start-Process "$env:LOCALAPPDATA\Lamina\current\lamina-app.exe" -ArgumentList '--verificar', 'exemplo' -PassThru -RedirectStandardError erro.txt
+          # No Windows PowerShell 5.1, sem guardar o Handle o código de saída vem vazio.
+          $null = $p.Handle
           if (-not $p.WaitForExit(120000)) { $p.Kill(); "verificar passou de 2 min"; exit 1 }
           Get-Content erro.txt -ErrorAction SilentlyContinue
+          "verificar exemplo saiu com $($p.ExitCode)"
           if ($p.ExitCode -ne 0) { exit 1 }
       - name: Comando do README (macOS)
         if: runner.os == 'macOS'
         run: |
           curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.sh | sh
-          "$HOME/Applications/Lamina.app/Contents/MacOS/lamina-app" --verificar exemplo
+          "/Applications/Lamina.app/Contents/MacOS/lamina-app" --verificar exemplo
       - name: Comando do README (Linux)
         if: runner.os == 'Linux'
         run: |

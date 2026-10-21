@@ -14,8 +14,8 @@ export struct LayoutItem {
     favorite: bool,
 }
 
-// O estado da faixa, para a janela, a lâmina (o espaço de cima) e o botão Layouts da barra da
-// lâmina (spec RL, que chama `ver.faixa-layouts`).
+// O estado da faixa, para a janela e a lâmina (o espaço de cima). O botão Layouts da barra da
+// lâmina é da RL e chama `ver.faixa-layouts`.
 export global BandUi {
     in property <bool> open;
     in property <[LayoutItem]> items;
@@ -26,8 +26,6 @@ export global BandUi {
     in property <string> notice;
     // A altura da faixa aberta: a lâmina desce isso em vez de ficar embaixo dela.
     out property <length> height: 156px;
-    // O ícone do botão Layouts (desenho nosso: uma lâmina aberta com três quadros).
-    out property <image> icon: @image-url("../icons/fl/layouts.svg");
     callback apply(int);
     callback favorite(int);
     callback reject(int);
@@ -118,6 +116,24 @@ export component LayoutBand inherits Rectangle {
             scroll.content-x = self.sc-from + (self.sc-to - self.sc-from) * (1 - pow(1 - self.sc-p, 3));
             if (self.sc-p >= 1) {
                 self.sc-running = false;
+            }
+        }
+    }
+    // O relógio só anda quando a janela desenha: este marcador invisível depende dele e mantém os
+    // quadros vindo enquanto rola (medido: sem ele, buracos de ~100 ms). E a reserva da RL (regra
+    // 29): no Slint 1.18.1 o `changed` às vezes não vê o fim; o Timer desliga 50 ms depois.
+    Rectangle {
+        width: 0;
+        height: 0;
+        x: root.sc-p * 1px;
+    }
+    Timer {
+        interval: 16ms;
+        running: root.sc-running;
+        triggered => {
+            if (animation-tick() - root.sc-t0 >= Motion.scroll-ms * 1ms + 50ms) {
+                scroll.content-x = root.sc-to;
+                root.sc-running = false;
             }
         }
     }

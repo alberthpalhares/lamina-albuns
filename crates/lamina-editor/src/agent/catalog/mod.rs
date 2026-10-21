@@ -8,9 +8,9 @@ use serde_json::Value;
 
 use super::ToolError;
 use super::calls::{
-    ApplyLayout, BuildSpread, ExportCall, FrameArg, ListPhotos, MoveSpread, NewAlbumCall, NoArgs,
-    OpenAlbum, PlacePhoto, Position, RunCommand, SaveAlbum, SpreadArg, Steps, SuggestLayouts,
-    SwapPhotos, ViewPhotos, ViewSpread,
+    ApplyLayout, BuildSpread, ExportCall, FrameArg, ListPhotos, MovePhoto, MoveSpread,
+    NewAlbumCall, NoArgs, OpenAlbum, PlacePhoto, Position, RunCommand, SaveAlbum, SpreadArg, Steps,
+    SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
 };
 use super::params::{
     AddText, CropCall, EditText, LookCall, RelinkCall, RespecCall, SaveModel, UseModel,
@@ -50,6 +50,8 @@ pub enum ToolCall {
     PlacePhoto(PlacePhoto),
     #[serde(rename = "trocar_fotos")]
     SwapPhotos(SwapPhotos),
+    #[serde(rename = "mover_foto")]
+    MovePhoto(MovePhoto),
     #[serde(rename = "tirar_foto")]
     ClearFrame(FrameArg),
     #[serde(rename = "montar_lamina")]

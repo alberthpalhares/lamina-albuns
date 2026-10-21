@@ -37,6 +37,10 @@ pub struct Images {
     pub(crate) arrived: bool,
     /// A lâmina está deslizando: as fotos nítidas que chegam esperam o fim (MV-B26).
     sliding: bool,
+    /// Com o rolo (spec RL, regra 9): as fotos nítidas da lâmina viva entram uma por quadro depois
+    /// de ir para ela; até lá, a miniatura (e a imagem pronta da lâmina por baixo).
+    pub(crate) gated: bool,
+    revealed: std::collections::HashSet<PhotoId>,
 }
 
 impl Images {
@@ -54,6 +58,8 @@ impl Images {
             original: None,
             arrived: false,
             sliding: false,
+            gated: false,
+            revealed: std::collections::HashSet::new(),
         }
     }
 
@@ -168,7 +174,7 @@ impl Images {
                 .filter(|(o, _)| *o == id)
                 .map(|(_, img)| img.clone());
             let img = original
-                .or_else(|| self.screens.get(&id).cloned())
+                .or_else(|| self.sharp(id).cloned())
                 .or_else(|| self.thumb(id));
             if let Some(img) = img {
                 images.insert(id, img);
@@ -203,7 +209,7 @@ impl Images {
     pub fn version(&self, id: PhotoId) -> i32 {
         let kind = if self.original_id() == Some(id) {
             2
-        } else if self.screens.contains_key(&id) {
+        } else if self.sharp(id).is_some() {
             1
         } else {
             0
@@ -214,6 +220,30 @@ impl Images {
     /// O número do álbum mostrado (sobe a cada álbum novo).
     pub fn epoch(&self) -> u64 {
         self.epoch
+    }
+
+    /// A foto nítida que a lâmina grande pode mostrar agora.
+    fn sharp(&self, id: PhotoId) -> Option<&Image> {
+        self.screens
+            .get(&id)
+            .filter(|_| !self.gated || self.revealed.contains(&id))
+    }
+
+    /// Outra lâmina viva (rolo): as fotos nítidas voltam a entrar uma por quadro.
+    pub fn reset_reveal(&mut self) {
+        self.revealed.clear();
+    }
+
+    /// A próxima foto nítida de `ids` (a lâmina viva) que já chegou entra: a foto e a imagem dela.
+    pub fn reveal_next(&mut self, ids: &[PhotoId]) -> Option<(PhotoId, Image)> {
+        if !self.gated || self.sliding {
+            return None;
+        }
+        let id = *ids
+            .iter()
+            .find(|id| self.screens.contains_key(id) && !self.revealed.contains(id))?;
+        self.revealed.insert(id);
+        Some((id, self.screens.get(&id)?.clone()))
     }
 
     /// A lâmina começou a deslizar (navegação).

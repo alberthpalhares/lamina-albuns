@@ -1,0 +1,49 @@
+//! O rolo de lâminas na janela, conferido pelos arquivos das telas (spec RL, regras 1 e 23): a
+//! faixa de lâminas é opcional e some sem o cabeçalho; o rolo não cria vagas para as vizinhas
+//! (RL-B1 e RL-B23; a parte com o modelo da janela fica nos testes do `lamina-app`).
+
+use super::tl_common::{editor_at, three_spreads};
+use crate::{Command, Strip, StripsStore};
+
+const BOTTOM: &str = include_str!("../../../lamina-app/ui/bottom.slint");
+const ROLL: &str = include_str!("../../../lamina-app/ui/roll.slint");
+
+#[test]
+fn rl_b23_faixa_de_laminas_desligada_some_sem_cabecalho_e_volta_com_alt_1() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("janela.json");
+    std::fs::write(&file, r#"{ "laminas": false }"#).unwrap();
+    let mut editor = editor_at(three_spreads(), 0);
+    editor.set_strips(StripsStore::load(&file));
+    let open = |e: &crate::Editor| {
+        let s = e.strips();
+        [Strip::Spreads, Strip::Timeline, Strip::Photos].map(|k| s.is_open(k))
+    };
+    assert_eq!(open(&editor), [false, true, true]);
+    // O cabeçalho da faixa de lâminas só existe com ela ligada; os outros dois ficam.
+    assert!(BOTTOM.contains(
+        "if root.has-project && root.spreads-open: StripHeader {\n        name: \"Lâminas\";"
+    ));
+    assert!(BOTTOM.contains("name: \"Linha do tempo\";"));
+    assert!(BOTTOM.contains("name: \"Fotos\";"));
+    // Alt+1 (Visualizar → "Faixa de lâminas") traz a faixa de volta.
+    assert!(editor.run(Command::ToggleSpreads));
+    assert_eq!(open(&editor), [true, true, true]);
+}
+
+#[test]
+fn rl_b1_vizinhas_do_rolo_sao_imagens_sem_vagas() {
+    // O rolo desenha cada lâmina com as colunas da imagem pronta, nunca com a lâmina viva
+    // (`SpreadCanvas`, que tem as vagas).
+    assert!(!ROLL.contains("SpreadCanvas"));
+    assert!(ROLL.contains("export struct RollCell"));
+    let cell = ROLL
+        .split("export struct RollCell {")
+        .nth(1)
+        .and_then(|s| s.split('}').next())
+        .unwrap();
+    assert!(
+        !cell.contains("frames"),
+        "uma linha do rolo não tem quadros"
+    );
+}

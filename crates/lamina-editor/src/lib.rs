@@ -17,6 +17,7 @@
 //! - [`presets`] e [`respec`]: presets e trocar a especificação de um álbum pronto (spec PR).
 //! - [`strips`]: as três faixas de baixo, com título e recolhíveis (spec PN).
 //! - [`recents`]: a lista de recentes e o que a tela inicial mostra (spec TI).
+//! - [`received`]: os arquivos que o sistema entrega ao Lamina (duplo clique; spec MA).
 //! - [`forms`]: campos, passos e textos das janelas (novo álbum, exportar, aparência).
 //! - [`exporting`]: exportar pela janela, com a pré-impressão antes (spec EI).
 //! - [`relink`]: reencontrar fotos que mudaram de pasta (spec EI).
@@ -25,7 +26,9 @@
 //! - [`human`]: cada erro dito ao fotógrafo, com o que fazer e o detalhe (spec EH).
 //! - [`importing`]: fotos entrando num álbum aberto (spec IM).
 //! - [`error_log`] e [`feedback`]: o registro de erros e o formulário de sugestões (spec SR).
-//! - [`motion`]: movimento e fluidez, a medição de tempos e as vagas da lâmina (spec MV).
+//! - [`motion`]: movimento e fluidez, a medição de tempos e as vagas da lâmina (spec MV); o plano
+//!   e as contas do rolo de lâminas (spec RL).
+//! - [`roll_image`]: a imagem de cada lâmina do rolo, só com fotos do cache (spec RL).
 
 pub mod adjusted;
 pub mod agent;
@@ -35,9 +38,11 @@ mod applying;
 pub mod arrange;
 pub mod bar_tips;
 pub mod cache;
+pub mod calibration;
 pub mod commands;
 pub mod editor;
 pub mod edits;
+pub mod edits_cross;
 pub mod error_log;
 pub mod example;
 mod export_form;
@@ -57,12 +62,15 @@ pub mod models;
 pub mod motion;
 pub mod naming;
 pub mod new_project;
+pub mod palette_tips;
 pub mod photos;
 pub mod prefs_store;
 pub mod presets;
+pub mod received;
 pub mod recents;
 pub mod relink;
 pub mod respec;
+pub mod roll_image;
 pub mod rulers;
 pub mod screens;
 pub mod session;
@@ -87,7 +95,7 @@ pub use album::{
 pub use bar_tips::{BAR_COMMANDS, bar_tip};
 pub use cache::Cache;
 pub use commands::{Command, Menu};
-pub use editor::{DropPlace, Editor, Leave, Panel, TextChange};
+pub use editor::{CrossTarget, DropPlace, Editor, Leave, Panel, TextChange};
 pub use error::EditorError;
 pub use error_log::ErrorLog;
 pub use example::{EXAMPLE_COPY, EXAMPLE_DIR, EXAMPLE_FILE, example_target, prepare_example};
@@ -107,6 +115,7 @@ pub use recents::{RECENTS_FILE, Recent, RecentsStore};
 pub use relink::{
     Found, RELINK_LATER, not_found_message, relinked_message, search_folder, search_near,
 };
+pub use roll_image::{ImageSize, RollPainter, RollSource, SpreadImage, render_spread_image};
 pub use screens::{Arrival, ScreenPlan, load_original, load_screen, load_thumb, prepare_images};
 pub use session::{HistoryList, HistoryStep, Session};
 pub use snap::{Grip, SnapLine};

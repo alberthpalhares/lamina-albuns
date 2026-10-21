@@ -1,0 +1,476 @@
+// O rolo de lâminas (spec RL, ADR 0012): as lâminas lado a lado com a atual, rolando na
+// horizontal. Só a lâmina atual é viva (a lâmina grande, em stage.slint); cada outra é uma imagem
+// pronta, feita fora da linha da janela e entregue em colunas (uma coluna sobe por quadro). As
+// contas e as decisões vêm do Rust (lamina-editor, motion/roll*.rs); aqui só se desenha.
+
+import { Theme } from "theme.slint";
+import { Motion } from "motion.slint";
+import { DragUi } from "drag.slint";
+import { Tip } from "widgets.slint";
+
+// Uma lâmina do rolo. Só as lâminas à vista e uma de cada lado ficam no modelo (regra 9). A
+// imagem pronta vem em colunas de 350 px da imagem (`iw` de largura); cada coluna é uma textura e
+// a versão dela (`v`) só muda quando a imagem muda.
+export struct RollCell {
+    index: int,
+    iw: int,
+    c0: image,
+    c1: image,
+    c2: image,
+    c3: image,
+    c4: image,
+    c5: image,
+    v0: int,
+    v1: int,
+    v2: int,
+    v3: int,
+    v4: int,
+    v5: int,
+    warning: bool,
+}
+
+// Um botão da barra da lâmina: o comando, a dica e se pode rodar.
+export struct RollButton {
+    name: string,
+    tip: string,
+    enabled: bool,
+}
+
+// O que está sob o ponteiro num arrasto de fotos (regra 21): 0 nada, 1 lâmina atual, 2 vizinha,
+// 3 vão, 4 "+ Lâmina nova"; o retângulo do destaque, em pixels da área do rolo.
+export struct RollHitData {
+    kind: int,
+    index: int,
+    x: length,
+    y: length,
+    w: length,
+    h: length,
+}
+
+export global RollUi {
+    // O rolo está à vista: há lâminas e não está no modo organizar nem no
+    // recorte (regra 24).
+    in property <bool> on;
+    // A área é larga o bastante para as vizinhas (regra 2).
+    in property <bool> neighbors;
+    // Largura da lâmina, do Rust (`roll_width`).
+    in property <length> width;
+    in property <float> aspect;
+    in property <[RollCell]> cells;
+    in property <int> count;
+    in property <int> current;
+    // A barra da lâmina sob o mouse (regra 15): o selo de cada lâmina e os botões.
+    in property <[string]> badges;
+    in property <[RollButton]> buttons;
+    // A lâmina que sai num deslize do rolo, no lugar dela (regra 13); -1 sem deslize.
+    in property <int> leaving-index: -1;
+    // O trecho da lâmina atual na linha do tempo, do Rust (`timeline_run`, regra 22).
+    in property <length> run-x;
+    in property <length> run-w;
+    // A largura da linha do tempo inteira e o trecho à vista (começo e largura), para o Rust pôr
+    // na tela só os itens perto dele.
+    in property <length> line-w;
+    callback line-window(length, length);
+    // A miniatura da faixa de lâminas sob um quadro arrastado e o ponto nela, em frações da
+    // largura dela (spec ML, regra 11); -1 fora das miniaturas.
+    in-out property <int> strip-spread: -1;
+    in-out property <float> strip-fx;
+    in-out property <float> strip-fy;
+    // A pílula da lâmina atual fora de vista (regra 14).
+    in property <string> pill;
+    in property <bool> pill-left;
+    // O destino da rolagem (em lâminas: a lâmina no centro, com fração). `kick` sobe a cada
+    // destino novo, e o rolo anda de onde está até ele em `kick-ms` (zero = na hora).
+    in property <float> target;
+    in property <int> kick;
+    in property <int> kick-ms;
+    // A posição de agora, para o Rust (a mesma da tela).
+    in-out property <float> pos;
+    in-out property <bool> moving;
+    // A área do rolo, para o Rust.
+    in-out property <length> area-w;
+    in-out property <length> area-h;
+    callback wheel(length, length);
+    callback clicked(int);
+    callback bar(int, string);
+    callback pill-clicked();
+    // Durante um arrasto, o ponteiro em `x` na área: perto das bordas, o rolo anda (regra 19).
+    callback edge(length);
+    callback slide-ended();
+    callback area-changed();
+    // A alça foi solta: a lâmina e o vão (regra 18).
+    callback grip-dropped(int, int);
+    // O vão mais perto do ponteiro durante o arrasto pela alça.
+    pure callback grip-gap(length) -> int;
+    // O que está sob o ponteiro num arrasto de fotos (`x`, `y` na área do rolo).
+    pure callback hit(length, length) -> RollHitData;
+    // Quantos lugares a lâmina anda durante o arrasto pela alça (lâmina, vão, lâmina).
+    pure callback shift(int, int, int) -> int;
+}
+
+// Uma coluna da imagem pronta: o `source` só troca quando a versão muda (ADR 0011, decisão 4).
+component Tile inherits Image {
+    in property <image> img;
+    in property <int> v;
+    property <int> shown-v: -1;
+    init => {
+        self.source = root.img;
+        self.shown-v = root.v;
+    }
+    changed v => {
+        if (self.shown-v != root.v) {
+            self.source = root.img;
+            self.shown-v = root.v;
+        }
+    }
+    image-fit: fill;
+    visible: root.v > 0;
+}
+
+// As colunas da imagem pronta, lado a lado, por cima do número (que nunca fica em branco).
+component Columns inherits Rectangle {
+    in property <RollCell> c;
+    property <float> k: 350.0 / max(1.0, c.iw);
+    background: #2b2b2b;
+    Text {
+        text: c.index + 1;
+        color: #ffffff2e;
+        font-size: max(12px, root.height * 0.3);
+        font-weight: 700;
+    }
+    Tile { x: 0; width: min(1, root.k) * root.width; height: root.height; img: c.c0; v: c.v0; }
+    Tile { x: root.k * root.width; width: max(0, min(root.k, 1 - root.k)) * root.width; height: root.height; img: c.c1; v: c.v1; }
+    Tile { x: 2 * root.k * root.width; width: max(0, min(root.k, 1 - 2 * root.k)) * root.width; height: root.height; img: c.c2; v: c.v2; }
+    Tile { x: 3 * root.k * root.width; width: max(0, min(root.k, 1 - 3 * root.k)) * root.width; height: root.height; img: c.c3; v: c.v3; }
+    Tile { x: 4 * root.k * root.width; width: max(0, min(root.k, 1 - 4 * root.k)) * root.width; height: root.height; img: c.c4; v: c.v4; }
+    Tile { x: 5 * root.k * root.width; width: max(0, min(root.k, 1 - 5 * root.k)) * root.width; height: root.height; img: c.c5; v: c.v5; }
+}
+
+// Um botão de ícone da barra, com a dica embaixo.
+component RollIcon inherits Rectangle {
+    in property <image> icon;
+    in property <string> tip;
+    in property <bool> enabled: true;
+    callback clicked();
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    background: touch.has-hover && root.enabled ? #ffffff26 : transparent;
+    Image {
+        width: 16px;
+        height: 16px;
+        source: root.icon;
+        colorize: root.enabled ? Theme.text : #6b6b6b;
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+    if root.tip != "": Tip {
+        x: (parent.width - self.width) / 2;
+        y: parent.height + 4px;
+        z: 10;
+        text: root.tip;
+        shown: touch.has-hover;
+    }
+}
+
+// A barra da lâmina (regra 15): o selo, os atalhos e a alça.
+component SpreadBar inherits Rectangle {
+    in property <int> index;
+    // A borda esquerda da área do rolo, na janela (o vão é contado na área), e se o ponteiro
+    // está sobre o rolo: soltar fora dele cancela (regra 18).
+    in property <length> origin;
+    in property <bool> inside;
+    out property <bool> touched: touch.has-hover || grip.has-hover || grip.pressed;
+    callback press-grip(length, length);
+    height: 24px;
+    border-radius: 4px;
+    background: #1b1b1bE6;
+    touch := TouchArea { }
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 4px;
+        spacing: 2px;
+        Text {
+            text: root.index >= 0 && root.index < RollUi.badges.length ? RollUi.badges[root.index] : "";
+            color: Theme.text;
+            font-size: 12px;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            overflow: elide;
+        }
+        // O botão Layouts depende da faixa de layouts (spec FL): sem ela, não aparece.
+        for b in RollUi.buttons: RollIcon {
+            visible: b.name != "ver.faixa-layouts" || b.enabled;
+            width: self.visible ? 24px : 0px;
+            icon: b.name == "lamina.organizar" ? @image-url("../icons/rolo/lapis.svg")
+                : b.name == "ver.faixa-layouts" ? @image-url("../icons/rolo/layouts.svg")
+                : b.name == "layout.espelhar" ? @image-url("../icons/rolo/espelhar.svg")
+                : @image-url("../icons/eg/texto.svg");
+            tip: b.tip;
+            enabled: b.enabled;
+            clicked => { RollUi.bar(root.index, b.name); }
+        }
+        Rectangle {
+            width: 24px;
+            Image {
+                width: 16px;
+                height: 16px;
+                source: @image-url("../icons/eg/alca.svg");
+                colorize: grip.has-hover || grip.pressed ? Theme.selected : Theme.muted;
+            }
+            grip := TouchArea {
+                mouse-cursor: grab;
+                pointer-event(e) => {
+                    if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                        DragUi.press-x = self.absolute-position.x + self.mouse-x;
+                        DragUi.press-y = self.absolute-position.y + self.mouse-y;
+                        DragUi.from = root.index;
+                    }
+                    if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                        if (DragUi.kind == 4 && root.inside) {
+                            RollUi.grip-dropped(DragUi.from, RollUi.grip-gap(DragUi.x - root.origin));
+                        }
+                        DragUi.kind = 0;
+                    }
+                }
+                moved => {
+                    let x = self.absolute-position.x + self.mouse-x;
+                    let y = self.absolute-position.y + self.mouse-y;
+                    if (DragUi.kind == 0 && DragUi.far(x, y)) {
+                        DragUi.kind = 4;
+                    }
+                    DragUi.x = x;
+                    DragUi.y = y;
+                }
+            }
+        }
+    }
+}
+
+// O rolo: as vizinhas, o "+ Lâmina nova", a barra, a pílula e o arrasto pela alça. Fica atrás da
+// lâmina grande, que o Stage põe no lugar da lâmina atual (`left(current)`).
+export component SpreadRoll inherits Rectangle {
+    // Em cima da lâmina grande: o contorno e a barra dela (o `hover-fx` do Stage).
+    in property <bool> live-hover;
+    in property <length> live-y;
+    in property <length> live-h;
+    // Um arrasto de fotos do navegador está sobre o rolo.
+    in property <bool> photo-drag;
+    // O mouse foi para uma vizinha: a lâmina grande deixa de estar sob ele.
+    callback left-live();
+
+    property <length> step: RollUi.width + 24px;
+    property <length> x0: (self.width - RollUi.width) / 2;
+    // A borda esquerda da lâmina `i` com o rolo na posição de agora.
+    public pure function left(i: int) -> length {
+        root.x0 + (i - root.pos) * root.step
+    }
+
+    // A rolagem pelo relógio (ADR 0011, decisão 6): guardado por um bool para parar sozinho, com
+    // um Timer de reserva que desliga 50 ms depois do fim (regra 29).
+    property <bool> running;
+    property <duration> t0;
+    property <float> from;
+    property <int> seen: -1;
+    property <float> p: self.running ? min(1, (animation-tick() - self.t0) / max(1ms, RollUi.kick-ms * 1ms)) : 1;
+    out property <float> pos: self.running ? self.from + (RollUi.target - self.from) * (1 - pow(1 - self.p, 3)) : RollUi.target;
+    changed p => {
+        if (self.running && self.p >= 1) {
+            self.stop();
+        }
+    }
+    function stop() {
+        self.running = false;
+        RollUi.moving = false;
+        RollUi.slide-ended();
+    }
+    Timer {
+        interval: 16ms;
+        running: root.running;
+        triggered => {
+            if (animation-tick() - root.t0 >= RollUi.kick-ms * 1ms + 50ms) {
+                root.stop();
+            }
+        }
+    }
+    property <int> kick: RollUi.kick;
+    changed kick => {
+        root.from = root.pos;
+        if (RollUi.kick-ms > 0 && Motion.on) {
+            root.t0 = animation-tick();
+            root.running = true;
+            RollUi.moving = true;
+        } else {
+            root.running = false;
+            RollUi.moving = false;
+        }
+    }
+    changed pos => { RollUi.pos = root.pos; }
+    changed width => { RollUi.area-w = root.width; RollUi.area-changed(); }
+    changed height => { RollUi.area-h = root.height; RollUi.area-changed(); }
+    init => {
+        RollUi.area-w = root.width;
+        RollUi.area-h = root.height;
+        RollUi.pos = root.pos;
+        RollUi.area-changed();
+    }
+
+    property <length> cell-h: RollUi.width * RollUi.aspect;
+    property <length> y0: (self.height - self.cell-h) / 2;
+    // A lâmina arrastada pela alça e o vão de agora (regra 18).
+    property <bool> gripping: DragUi.kind == 4;
+    property <int> gap: self.gripping ? RollUi.grip-gap(DragUi.x - self.absolute-position.x) : -1;
+    // Rolagem nas bordas durante qualquer arrasto sobre o rolo (regra 19).
+    property <bool> over: DragUi.y >= self.absolute-position.y && DragUi.y <= self.absolute-position.y + self.height;
+    Timer {
+        interval: 16ms;
+        running: RollUi.on && DragUi.kind != 0 && root.over;
+        triggered => { RollUi.edge(DragUi.x - root.absolute-position.x); }
+    }
+    property <RollHitData> none;
+    property <RollHitData> hit: root.photo-drag ? RollUi.hit(DragUi.x - root.absolute-position.x, DragUi.y - root.absolute-position.y) : root.none;
+    // A lâmina da barra: a última sob o mouse (a barra fica enquanto o mouse está nela).
+    property <int> bar-index: -1;
+    property <int> hover: -1;
+    changed live-hover => {
+        if (root.live-hover) {
+            root.bar-index = RollUi.current;
+        }
+    }
+
+    for c in RollUi.cells: Rectangle {
+        property <float> off: root.gripping ? RollUi.shift(DragUi.from, root.gap, c.index) : 0;
+        animate off {
+            duration: Motion.reorder-ms * 1ms;
+            easing: cubic-bezier(0.2, 0, 0, 1);
+            enabled: Motion.on;
+        }
+        x: root.left(c.index) + self.off * root.step;
+        y: root.y0;
+        width: RollUi.width;
+        height: root.cell-h;
+        visible: RollUi.neighbors || c.index == RollUi.current;
+        opacity: root.gripping && DragUi.from == c.index ? 0.35 : 1;
+        Columns {
+            c: c;
+        }
+        if c.warning: Rectangle {
+            x: parent.width - 26px;
+            y: 8px;
+            width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            background: Theme.warning;
+            Text { text: "!"; color: black; font-size: 12px; font-weight: 700; }
+        }
+        // A vizinha sob uma foto arrastada acende inteira (a foto entraria nela).
+        if root.hit.kind == 2 && root.hit.index == c.index: Rectangle {
+            border-width: 3px;
+            border-color: #ffd23f;
+        }
+        touch := TouchArea {
+            enabled: c.index != RollUi.current;
+            clicked => { RollUi.clicked(c.index); }
+        }
+        property <bool> hovered: touch.has-hover;
+        changed hovered => {
+            if (self.hovered) {
+                root.hover = c.index;
+                root.bar-index = c.index;
+                root.left-live();
+            } else if (root.hover == c.index) {
+                root.hover = -1;
+            }
+        }
+    }
+
+    // Depois da última lâmina, o "+ Lâmina nova" (o mesmo da faixa, spec IM).
+    if RollUi.neighbors: Rectangle {
+        x: root.left(RollUi.count);
+        y: root.y0;
+        width: RollUi.width;
+        height: root.cell-h;
+        border-radius: 6px;
+        border-width: 2px;
+        border-color: root.hit.kind == 4 ? Theme.selected : #ffffff30;
+        background: root.hit.kind == 4 ? #ffffff18 : transparent;
+        Text {
+            text: "+ Lâmina nova\nsolte fotos aqui";
+            color: Theme.muted;
+            font-size: 16px;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+
+    // O contorno da lâmina atual (a lâmina selecionada, regra 17).
+    Rectangle {
+        x: root.left(RollUi.current) - 2px;
+        y: root.live-y - 2px;
+        width: RollUi.width + 4px;
+        height: root.live-h + 4px;
+        border-width: 2px;
+        border-color: Theme.selected;
+        border-radius: 2px;
+    }
+
+    // O vão de uma lâmina nova (fotos) ou de onde a lâmina arrastada vai ficar (alça).
+    if root.hit.kind == 3 || root.gripping: Rectangle {
+        x: root.left(root.gripping ? root.gap : root.hit.index) - 14px;
+        y: root.y0;
+        width: 4px;
+        height: root.cell-h;
+        border-radius: 2px;
+        background: Theme.selected;
+    }
+
+    // A barra da lâmina sob o mouse, 24 px acima dela.
+    property <bool> bar-on: RollUi.on && root.bar-index >= 0 && root.bar-index < RollUi.count && DragUi.kind == 0 && (root.live-hover || root.hover >= 0 || bar.touched);
+    bar := SpreadBar {
+        x: root.left(root.bar-index);
+        y: root.y0 - 26px;
+        width: RollUi.width;
+        index: root.bar-index;
+        origin: root.absolute-position.x;
+        inside: root.over;
+        opacity: root.bar-on ? 1 : 0;
+        visible: self.opacity > 0;
+        animate opacity { duration: Motion.fade-ms * 1ms; }
+    }
+
+    // A pílula da lâmina atual quando ela saiu de vista (regra 14).
+    if RollUi.pill != "": Rectangle {
+        x: RollUi.pill-left ? 12px : root.width - self.width - 12px;
+        y: root.y0 + root.cell-h / 2 - 16px;
+        width: pill-text.preferred-width + 24px;
+        height: 32px;
+        border-radius: 16px;
+        background: pill-touch.has-hover ? #4a4a4a : #3a3a3a;
+        drop-shadow-blur: 8px;
+        drop-shadow-color: #00000080;
+        pill-text := Text {
+            text: RollUi.pill;
+            color: Theme.text;
+            font-size: 13px;
+        }
+        pill-touch := TouchArea {
+            clicked => { RollUi.pill-clicked(); }
+        }
+    }
+
+    // O fantasma da lâmina arrastada pela alça: a imagem dela com 160 px de largura e o número.
+    for c in RollUi.cells: Rectangle {
+        visible: root.gripping && DragUi.from == c.index;
+        x: DragUi.x - root.absolute-position.x - 80px;
+        y: DragUi.y - root.absolute-position.y - 80px * RollUi.aspect;
+        width: self.visible ? 160px : 0px;
+        height: 160px * RollUi.aspect;
+        drop-shadow-blur: 10px;
+        drop-shadow-color: #00000080;
+        if self.visible: Columns {
+            c: c;
+        }
+    }
+}

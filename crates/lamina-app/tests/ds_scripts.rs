@@ -82,9 +82,11 @@ fn install(release: &Path, home: &Path) -> Output {
             .output()
             .unwrap()
     } else {
+        // A pasta Aplicativos do Mac de mentira não existe: o script cai na pasta pessoal (spec MA).
         Command::new("sh")
             .arg(script("instalar.sh"))
             .env("LAMINA_FONTE", release)
+            .env("LAMINA_APLICATIVOS", home.join("nao-existe"))
             .env("HOME", home)
             .output()
             .unwrap()

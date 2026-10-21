@@ -4,7 +4,6 @@
 use lamina_core::{Mm, Rect};
 
 use super::Editor;
-use super::organize::ZOOMS;
 use crate::hand::{frame_mm, set_rect};
 
 impl Editor {
@@ -49,22 +48,6 @@ impl Editor {
             Ok::<(), crate::EditorError>(())
         })
         .is_ok()
-    }
-
-    /// O zoom da lâmina no modo (1 = "Ajustar").
-    pub fn view_zoom(&self) -> f64 {
-        ZOOMS[self.organize.zoom.min(ZOOMS.len() - 1)]
-    }
-
-    /// + e −: o próximo zoom para cima ou para baixo; `None` volta a "Ajustar".
-    pub(super) fn step_zoom(&mut self, up: Option<bool>) -> bool {
-        let before = self.organize.zoom;
-        self.organize.zoom = match up {
-            Some(true) => (before + 1).min(ZOOMS.len() - 1),
-            Some(false) => before.saturating_sub(1),
-            None => 0,
-        };
-        self.organize.zoom != before
     }
 }
 

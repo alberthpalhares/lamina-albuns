@@ -28,6 +28,7 @@ impl Editor {
             Command::Organize => true,
             Command::SelectAllFrames => on,
             Command::ViewZoomIn | Command::ViewZoomOut | Command::ViewFit => on,
+            Command::Loupe | Command::ActualSize => on,
             Command::Deselect if on => true,
             c if nudge_of(c).is_some() => on && !self.selected_frames().is_empty(),
             _ => return None,
@@ -42,9 +43,11 @@ impl Editor {
         let done = match command {
             Command::Organize => self.set_organizing(!on),
             Command::SelectAllFrames => self.select_all_frames(),
-            Command::ViewZoomIn => self.step_zoom(Some(true)),
-            Command::ViewZoomOut => self.step_zoom(Some(false)),
-            Command::ViewFit => self.step_zoom(None),
+            Command::ViewZoomIn => self.zoom_step(true, None, true).is_some(),
+            Command::ViewZoomOut => self.zoom_step(false, None, true).is_some(),
+            Command::ViewFit => self.zoom_fit().is_some(),
+            Command::ActualSize => self.zoom_real().is_some(),
+            Command::Loupe => self.toggle_loupe(),
             Command::Deselect if on => {
                 had_crop || self.clear_frames() || self.set_organizing(false)
             }
@@ -67,11 +70,11 @@ impl Editor {
         }
     }
 
-    /// O título da lâmina em destaque: "Organizando a lâmina 3 · Esc conclui" (vazio fora do
-    /// modo).
+    /// O título da lâmina em destaque: "Organizando a lâmina 3 · Esc volta" (vazio fora do modo;
+    /// spec ZR, regra 12).
     pub fn organize_title(&self) -> String {
         match (&self.session, self.organizing()) {
-            (Some(s), true) => format!("Organizando a lâmina {} · Esc conclui", s.current() + 1),
+            (Some(s), true) => format!("Organizando a lâmina {} · Esc volta", s.current() + 1),
             _ => String::new(),
         }
     }

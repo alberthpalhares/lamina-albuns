@@ -10,6 +10,7 @@ import { OrganizeUi, OrganizeBar, OrganizeMarks, OrganizeRulers, OrganizeTools }
 import { Motion } from "motion.slint";
 import { WelcomeScreen } from "welcome.slint";
 import { DragUi } from "drag.slint";
+import { SpreadRoll, RollUi } from "roll.slint";
 import { BandUi } from "band.slint";
 
 export component Stage inherits Rectangle {
@@ -65,6 +66,18 @@ export component Stage inherits Rectangle {
         if (root.nav-running && root.nav-p >= 1) {
             root.nav-running = false;
             root.nav-ended();
+        }
+    }
+    // Reserva do relógio (spec RL, regra 29): no Slint 1.18.1, o `changed` às vezes não vê o fim, e a
+    // janela ficaria desenhando parada; este Timer só roda enquanto desliza e desliga 50 ms depois.
+    Timer {
+        interval: 16ms;
+        running: root.nav-running;
+        triggered => {
+            if (animation-tick() - root.nav-t0 >= Motion.navigate-ms * 1ms + 50ms) {
+                root.nav-running = false;
+                root.nav-ended();
+            }
         }
     }
     // `dir`: 1 = para a frente (a nova vem da direita), -1 = para trás.
@@ -127,16 +140,35 @@ export component Stage inherits Rectangle {
     }
 
     // No modo organizar, a barra da lâmina em destaque e as réguas ocupam o topo; a faixa de
-    // layouts empurra a lâmina para baixo, junto com ela (spec FL, regra 12).
-    property <length> top-room: OrganizeUi.on ? 52px : BandUi.open ? BandUi.height : 0px;
-    animate top-room { duration: Motion.on ? Motion.band-ms * 1ms : 0ms; easing: ease-out; }
-    property <length> canvas-width: root.current.aspect > 0
+    // layouts empurra a lâmina (e o rolo) para baixo, junto com ela (spec FL, regra 12).
+    property <length> band-room: BandUi.open ? BandUi.height : 0px;
+    animate band-room { duration: Motion.on ? Motion.band-ms * 1ms : 0ms; easing: ease-out; }
+    property <length> top-room: OrganizeUi.on ? 52px : self.band-room;
+    // Com o rolo (spec RL, regra 2), a largura vem do Rust (`roll_width`), deixando 8% de cada
+    // lado para as vizinhas.
+    property <length> canvas-width: RollUi.on ? RollUi.width : root.current.aspect > 0
         ? min(self.width - 48px - (OrganizeUi.on ? 18px : 0px), (self.height - 48px - self.top-room) / root.current.aspect) : 0px;
     // A lâmina em destaque cresce com movimento (spec EG, herdado da MV).
     animate canvas-width { duration: Motion.on ? Motion.navigate-ms * 1ms : 0ms; easing: ease-out; }
+    // A largura de Ajustar sem a animação, para o tamanho real (spec ZR, regra 7).
+    property <length> fit-target: root.current.aspect > 0
+        ? min(self.width - 48px - (OrganizeUi.on ? 18px : 0px), (self.height - 48px - self.top-room) / root.current.aspect) : 0px;
+    changed fit-target => {
+        OrganizeUi.fit-width = self.fit-target;
+        OrganizeUi.fit-changed();
+    }
+    // O zoom e a vista andam juntos, com a mesma curva: o ponto sob o mouse fica parado (spec ZR,
+    // regras 5 e 6). Fora do modo, o zoom é 1 e a vista é o centro; a saída também anima.
+    property <float> view-zoom: OrganizeUi.zoom;
+    property <length> view-pan-x: OrganizeUi.pan-x;
+    property <length> view-pan-y: OrganizeUi.pan-y;
+    animate view-zoom, view-pan-x, view-pan-y { duration: OrganizeUi.view-ms * 1ms; easing: ease-out; }
+    // O centro de Ajustar, na área: a lupa e o Ctrl+roda medem o ponto a partir dele.
+    property <length> fit-cx: self.width / 2 + (OrganizeUi.on ? 9px : 0px);
+    property <length> fit-cy: self.height / 2 + self.top-room / 2;
     // Clique fora dos quadros: desmarca e sai do modo recorte. Duplo clique abre o
     // modo organizar; arrastar no modo faz o laço (spec EG).
-    TouchArea {
+    bg := TouchArea {
         clicked => {
             if (!root.lasso-moved) {
                 root.frame-selected(-1);
@@ -144,10 +176,15 @@ export component Stage inherits Rectangle {
             root.focus-main();
         }
         double-clicked => { root.frame-double(-1); root.focus-main(); }
-        // Ctrl+roda dá zoom na lâmina no modo organizar.
+        // Ctrl+roda dá zoom na lâmina no modo organizar; com o rolo, a roda e o touchpad rolam as
+        // lâminas de lado (spec RL, regra 11).
         scroll-event(e) => {
             if (OrganizeUi.on && (e.modifiers.control || e.modifiers.meta)) {
-                root.command(e.delta-y > 0 ? "organizar.mais-zoom" : "organizar.menos-zoom");
+                OrganizeUi.wheel(e.delta-y > 0, self.mouse-x - root.fit-cx, self.mouse-y - root.fit-cy);
+                return accept;
+            }
+            if (RollUi.on) {
+                RollUi.wheel(e.delta-x, e.delta-y);
                 return accept;
             }
             return reject;
@@ -162,6 +199,45 @@ export component Stage inherits Rectangle {
             }
         }
     }
+    // O mouse sobre a lâmina grande, para a barra dela (spec RL, regra 15): o movimento acende;
+    // fora dela ou parado por 1,5 s, apaga.
+    property <bool> live-hover;
+    property <float> seen-fx: root.hover-fx;
+    property <bool> bg-hover: bg.has-hover;
+    changed bg-hover => {
+        if (self.bg-hover) {
+            root.live-hover = false;
+        }
+    }
+    changed seen-fx => {
+        root.live-hover = true;
+        live-timer.running = false;
+        live-timer.running = true;
+    }
+    live-timer := Timer {
+        interval: 1500ms;
+        running: false;
+        triggered => {
+            self.running = false;
+            root.live-hover = false;
+        }
+    }
+    // O rolo de lâminas (spec RL): as vizinhas atrás da lâmina grande, que fica no lugar da atual.
+    // Embaixo da faixa de layouts: a área encolhe e o Rust refaz a largura do rolo (spec FL).
+    roll := SpreadRoll {
+        y: root.band-room;
+        width: parent.width;
+        height: parent.height - root.band-room;
+        live-hover: root.live-hover;
+        live-y: big.y - root.band-room;
+        live-h: big.height;
+        // Fotos do navegador e fotos de um quadro (spec ML) acendem o destino no rolo.
+        photo-drag: DragUi.kind == 1 || DragUi.kind == 2;
+        opacity: RollUi.on ? 1 : 0;
+        animate opacity { duration: Motion.fade-ms * 1ms; }
+        visible: root.has-project && self.opacity > 0;
+        left-live => { root.live-hover = false; }
+    }
     if root.hint != "": Text {
         y: parent.height - 22px;
         text: root.hint;
@@ -169,18 +245,20 @@ export component Stage inherits Rectangle {
         font-size: 12px;
     }
     // A lâmina que sai, esmaecendo e deslizando para o lado oposto (spec MV).
-    if root.has-leaving && root.nav-running: SpreadCanvas {
-        x: (parent.width - self.width) / 2 - root.nav-dir * 32px * root.nav-e;
+    // No deslize do rolo, ela fica no lugar dela e anda junto (spec RL, regra 13).
+    if root.has-leaving && (root.nav-running || RollUi.leaving-index >= 0): SpreadCanvas {
+        x: RollUi.leaving-index >= 0 ? roll.left(RollUi.leaving-index) : (parent.width - self.width) / 2 - root.nav-dir * 32px * root.nav-e;
         width: root.canvas-width;
         height: root.canvas-width * root.leaving.aspect;
         data: root.leaving;
         guides: root.guides;
-        opacity: 1 - root.nav-e;
+        opacity: RollUi.leaving-index >= 0 ? 1 : 1 - root.nav-e;
     }
     // Sempre na árvore (some sem projeto) para o arrastar achar a posição dela.
     big := SpreadCanvas {
         // Entra deslizando 32 px e esmaecendo, na direção da navegação.
-        x: (parent.width - self.width) / 2 + (OrganizeUi.on ? 9px + OrganizeUi.pan-x : 0px) + (root.nav-running ? root.nav-dir * 32px * (1 - root.nav-e) : 0px);
+        // Com o rolo, no lugar da lâmina atual (que anda quando o rolo rola).
+        x: (RollUi.on ? roll.left(RollUi.current) : (parent.width - self.width) / 2 + (OrganizeUi.on ? 9px : 0px) + root.view-pan-x) + (root.nav-running ? root.nav-dir * 32px * (1 - root.nav-e) : 0px);
         opacity: root.nav-running ? root.nav-e : 1;
         cropping: root.crop-frame;
         has-preview: root.has-preview;
@@ -200,9 +278,9 @@ export component Stage inherits Rectangle {
         grab-end => { root.frame-release(); root.focus-main(); }
         hover-fx <=> root.hover-fx;
         visible: root.has-project;
-        width: root.canvas-width * (OrganizeUi.on ? OrganizeUi.zoom : 1);
+        width: root.canvas-width * root.view-zoom;
         height: self.width * root.current.aspect;
-        y: (parent.height - self.height) / 2 + root.top-room / 2 + (OrganizeUi.on ? OrganizeUi.pan-y : 0px);
+        y: (parent.height - self.height) / 2 + root.top-room / 2 + root.view-pan-y;
         data: root.current;
         guides: root.guides;
         interactive: true;
@@ -273,6 +351,8 @@ export component Stage inherits Rectangle {
         lx: big.x;
         ly: big.y;
         unit: big.width;
+        cx: root.fit-cx;
+        cy: root.fit-cy;
     }
     if OrganizeUi.on: OrganizeBar {
         y: 0;

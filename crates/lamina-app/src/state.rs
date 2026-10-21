@@ -32,6 +32,8 @@ pub enum Pending {
     /// Fechar o álbum e voltar à tela inicial; abrir o recente da posição dada (spec TI).
     CloseAlbum,
     OpenRecent(usize),
+    /// O álbum que o sistema entregou (duplo clique; spec MA, regra 4).
+    OpenReceived,
 }
 
 pub use crate::msg::Msg;
@@ -77,6 +79,8 @@ pub struct App {
     pub(crate) slot_rows: crate::slots::SlotRows,
     /// Decide se ir para outra lâmina desliza (spec MV, seção 4).
     pub(crate) navigator: lamina_editor::motion::Navigator,
+    /// O rolo de lâminas (spec RL).
+    pub(crate) roll: crate::roll::RollState,
     /// Os recentes que a última conferência não achou e a busca da tela inicial (spec TI).
     pub recent_missing: Vec<PathBuf>,
     pub recent_query: String,
@@ -90,6 +94,10 @@ pub struct App {
 impl App {
     pub fn new(window: &AppWindow, cache: Cache, editor: Editor, tx: Mailbox) -> Self {
         let images = Images::new(&cache, &tx);
+        let roll = crate::roll::RollState::new(&cache, &tx);
+        let mut images = images;
+        // As fotos nítidas da lâmina atual entram uma por quadro, como as colunas do rolo.
+        images.gated = true;
         App {
             window: window.as_weak(),
             editor,
@@ -121,6 +129,7 @@ impl App {
             lists: crate::lists::Lists::new(window),
             slot_rows: crate::slots::SlotRows::new(),
             navigator: lamina_editor::motion::Navigator::default(),
+            roll,
             recent_missing: Vec::new(),
             recent_query: String::new(),
             verify_import: None,
@@ -152,6 +161,7 @@ impl App {
             });
         }
         self.images.clear();
+        self.roll.new_album();
         self.lists.reset();
         self.refresh_all();
     }
@@ -216,6 +226,7 @@ impl App {
         let warned: Vec<bool> = rows.iter().map(|(_, r)| r.warned).collect();
         let (project, missing) = (session.project().clone(), session.missing().to_vec());
         let images = self.images.all_thumbs(&project);
+        crate::roll::edited(self, &rows);
         self.lists.strip.sync(rows, |i| {
             let warning = warned.get(i).copied().unwrap_or(false);
             strip_data(&project, i, &missing, &images, warning)

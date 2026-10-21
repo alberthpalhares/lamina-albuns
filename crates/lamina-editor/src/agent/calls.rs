@@ -142,6 +142,21 @@ pub struct SwapPhotos {
     pub lamina: usize,
     pub quadro_a: usize,
     pub quadro_b: usize,
+    /// A lâmina do `quadro_b`, quando é outra (padrão: a mesma `lamina`).
+    pub lamina_b: Option<usize>,
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct MovePhoto {
+    /// A lâmina e o quadro de onde a foto sai (o quadro fica vazio).
+    pub lamina: usize,
+    pub quadro: usize,
+    /// A lâmina de destino.
+    pub para_lamina: usize,
+    /// O quadro de destino: vazio, a foto vai para ele; com foto, as duas trocam. Sem ele, a foto
+    /// entra como uma a mais e o layout do destino é refeito.
+    pub para_quadro: Option<usize>,
 }
 
 #[derive(Debug, Clone, Deserialize, JsonSchema)]

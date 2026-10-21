@@ -79,6 +79,7 @@ impl App {
         w.set_info_spread(lamina_editor::naming::spread_line(index, count, frames, manual).into());
         w.set_info_warnings(warnings.join("\n").into());
 
+        crate::roll_connect::refresh(self);
         crate::crop::refresh_spread(self);
         if let Some(notice) = self.editor.take_notice() {
             self.notice = notice;

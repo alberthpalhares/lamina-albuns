@@ -7,6 +7,7 @@ import { SpreadCanvas, SpreadData } from "canvas.slint";
 import { Motion } from "motion.slint";
 import { StripTheme } from "strip_header.slint";
 import { DragUi } from "drag.slint";
+import { RollUi } from "roll.slint";
 
 export component SpreadStrip inherits Rectangle {
     in property <[SpreadData]> spreads;
@@ -31,6 +32,18 @@ export component SpreadStrip inherits Rectangle {
             && DragUi.y >= root.absolute-position.y && DragUi.y <= root.absolute-position.y + root.height
     }
     out property <int> photo-gap: DragUi.kind == 1 && root.over() ? root.gap() : -1;
+    // A foto de um quadro arrastada sobre uma miniatura (spec ML, regra 11): a lâmina dela e o ponto
+    // em frações da largura, para a janela soltar ali; o destino acende na miniatura.
+    property <length> item: 84px / max(0.01, root.current-aspect) + 16px;
+    property <length> rel-x: DragUi.x - strip-scroll.absolute-position.x - strip-scroll.content-x - 10px;
+    property <int> body: DragUi.kind == 2 && root.over() ? floor(root.rel-x / root.item) : -1;
+    property <length> in-x: root.rel-x - root.body * root.item - 3px;
+    property <length> in-y: DragUi.y - strip-scroll.absolute-position.y - 8px - 3px;
+    property <length> thumb-w: root.item - 22px;
+    property <int> over-spread: root.body >= 0 && root.body < root.spreads.length && root.in-x >= 0 && root.in-x <= root.thumb-w && root.in-y >= 0 && root.in-y <= 84px ? root.body : -1;
+    changed over-spread => { RollUi.strip-spread = self.over-spread; }
+    changed in-x => { RollUi.strip-fx = self.in-x / max(1px, self.thumb-w); }
+    changed in-y => { RollUi.strip-fy = self.in-y / max(1px, self.thumb-w); }
     // O ponteiro sobre a área de lâmina nova (fotos soltas do Explorador; regra 11).
     out property <bool> new-hover: new-touch.has-hover;
     background: StripTheme.spreads;
@@ -120,7 +133,7 @@ export component SpreadStrip inherits Rectangle {
                         height: parent.height;
                         border-radius: 4px;
                         border-width: 2px;
-                        border-color: i == root.current-index ? Theme.selected : transparent;
+                        border-color: i == root.current-index || i == root.over-spread ? Theme.selected : transparent;
                         opacity: DragUi.kind == 3 && DragUi.from == i ? 0.35 : 1;
                         SpreadCanvas {
                             x: 3px;

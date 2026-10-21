@@ -16,10 +16,10 @@ impl Editor {
             Command::ToggleGuides | Command::ToggleReduceMotion | Command::TogglePanel => true,
             Command::ToggleSpreads | Command::ToggleTimeline | Command::TogglePhotos => true,
             Command::AdjustPhoto => self.photo_adjust().is_some(),
+            // A calibração do tamanho real abre um diálogo da janela, em qualquer modo (ZR).
+            Command::CalibrateSize => true,
             // A faixa de layouts precisa de uma lâmina (spec FL, regra 10).
             Command::ToggleLayoutBand => s.spread_count() > 0,
-            // Rodada 0b: já no registro, mas inertes até a spec de cada um ligar (ZR).
-            Command::Loupe | Command::ActualSize | Command::CalibrateSize => false,
             _ => return None,
         };
         Some(ok)

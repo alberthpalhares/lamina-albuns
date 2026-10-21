@@ -33,6 +33,9 @@ impl Agent {
         editor: &mut Editor,
         a: &SwapPhotos,
     ) -> Result<ToolReply, ToolError> {
+        if let Some(b) = a.lamina_b.filter(|b| *b != a.lamina) {
+            return self.swap_across(editor, (a.lamina, a.quadro_a), (b, a.quadro_b));
+        }
         let p = session(editor)?.project();
         let index = spread_index(p, a.lamina)?;
         let first = photo_frame(p, index, a.quadro_a)?;

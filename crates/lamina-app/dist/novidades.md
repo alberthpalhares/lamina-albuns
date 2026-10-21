@@ -1,7 +1,35 @@
 # Novidades do Lamina
 
-As notas de cada versão, em linguagem simples. A release copia daqui a seção da versão
-(`cargo xtask versao`). Versão nova entra no topo.
+As notas de cada versão, em linguagem simples. O Lamina mostra estas notas em "O que há de novo"
+depois de atualizar, e a release copia daqui a seção da versão (`cargo xtask versao`). Versão nova
+entra no topo, como `## [0.1.0-beta.5] - 2026-10-24`; o que ainda não saiu fica em
+`## [Não lançado]`, que o Lamina não mostra.
+
+Cada item diz o que mudou e como ver a mudança, em linguagem de fotógrafo:
+`- **O que mudou.** Explicação curta. Experimente: o que fazer para ver.` O `cargo xtask versao`
+avisa (sem impedir a versão) quando um item não tem "Experimente:". No fim do item, um comentário
+que a página da versão não mostra põe a ilustração (um arquivo de `novidades/`) e o comando do
+botão "Experimente agora": `<!-- imagem: atalhos.png; comando: ajuda.atalhos -->`.
+
+## [Não lançado]
+
+- **As lâminas lado a lado.** As lâminas vizinhas aparecem dos lados da que você está editando, e a
+  roda do mouse ou dois dedos no touchpad passeiam pelo álbum de lado. Um clique numa vizinha a
+  traz para o meio; passando o mouse, aparecem os atalhos dela e a alça para mudar a lâmina de
+  lugar. Experimente: role a roda do mouse sobre a lâmina e clique na vizinha da direita.
+- **Fotos de uma lâmina para outra.** Arraste a foto de um quadro para outra lâmina: num quadro
+  vazio ela entra, num quadro com foto as duas trocam de lugar, e fora dos quadros ela entra como
+  uma foto a mais e a lâmina se rearruma. O quadro de onde ela saiu fica vazio, e um Ctrl+Z desfaz
+  nas duas lâminas. Experimente: arraste uma foto da lâmina para um quadro da vizinha ao lado.
+- **A linha do tempo acompanha você.** As fotos da lâmina em que você está ficam destacadas e no
+  meio da linha do tempo, e um clique numa foto leva à lâmina dela. Experimente: passe para a
+  próxima lâmina com Page Down e clique numa foto da linha do tempo.
+- **Atalhos do teclado.** Ajuda → "Atalhos do teclado…" mostra todos os atalhos e os gestos do
+  mouse, com busca. Experimente: aperte F1 e procure “trocar”.
+  <!-- imagem: atalhos.png; comando: ajuda.atalhos -->
+- **O que há de novo.** Depois de atualizar, o Lamina mostra o que mudou desde a sua versão, com o
+  que experimentar em cada novidade. Experimente: Ajuda → "O que há de novo…".
+  <!-- imagem: novidades.png; comando: ajuda.novidades -->
 
 ## [0.1.0-beta.4] - 2026-10-20
 

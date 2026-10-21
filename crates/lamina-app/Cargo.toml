@@ -20,6 +20,10 @@ slint = { workspace = true, features = ["unstable-winit-030"] }
 rfd = { workspace = true }
 velopack = { workspace = true }
 
+# O evento "abrir documentos" do Mac (duplo clique no .lamina; spec MA, ADR 0013).
+[target.'cfg(target_os = "macos")'.dependencies]
+fmv-macos-events = { workspace = true }
+
 [dev-dependencies]
 image = { workspace = true }
 tempfile = { workspace = true }

@@ -83,7 +83,12 @@ impl Command {
                 Menu::View,
                 k(Key::Char('-')),
             ),
-            C::ViewFit => ("organizar.ajustar", "Ajustar a lâmina", Menu::View, None),
+            C::ViewFit => (
+                "organizar.ajustar",
+                "Ajustar a lâmina",
+                Menu::View,
+                k(Key::Char('0')),
+            ),
             C::AlignLeft => (
                 "organizar.alinhar-esquerda",
                 "Alinhar à esquerda",

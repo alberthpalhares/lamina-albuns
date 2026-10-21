@@ -32,10 +32,12 @@ mod hand_frames;
 mod layouts;
 mod models;
 mod mounting;
+mod moving;
 mod neutral;
 mod organize;
 mod organize_cmd;
 mod organize_moves;
+mod organize_zoom;
 mod panel_need;
 mod photo_style;
 mod recents;
@@ -52,8 +54,12 @@ pub use details::{Details, album_rows};
 pub use dropping::DropPlace;
 pub use group_fields::{Field, GROUP_NOT_A_NUMBER};
 pub use layouts::Panel;
+pub use moving::CrossTarget;
 pub use neutral::AdjustControl;
-pub use organize::{DoubleClick, SidePanel};
+pub use organize::{DoubleClick, PaletteTool, SidePanel};
+pub use organize_zoom::{
+    MAX_VIEW_ZOOM, VIEW_STEP, Zoom, ZoomMove, real_factor, step_factor, times_label, zoom_about,
+};
 pub use photo_style::PhotoStyle;
 pub use style::Look;
 pub use text_edit::TextChange;
@@ -112,6 +118,16 @@ pub struct Editor {
     panel_need: std::cell::Cell<Option<panel_need::PanelNeed>>,
     /// A faixa de layouts e a prévia na lâmina (spec FL); não vão para o arquivo.
     band: band::BandState,
+    /// A largura de Ajustar e o monitor, para o tamanho real (spec ZR, regras 7 e 10).
+    view: ViewArea,
+}
+
+/// O que a janela informa para o tamanho real: a largura de Ajustar (pixels lógicos, sem a
+/// animação) e o monitor em que ela está.
+#[derive(Debug, Default)]
+struct ViewArea {
+    fit_px: f64,
+    monitor: crate::calibration::Monitor,
 }
 
 impl Default for Editor {
@@ -156,6 +172,10 @@ impl Editor {
             clipboard: None,
             panel_need: std::cell::Cell::new(None),
             band: band::BandState::default(),
+            view: ViewArea {
+                fit_px: 1000.0,
+                monitor: crate::calibration::Monitor::default(),
+            },
         }
     }
 

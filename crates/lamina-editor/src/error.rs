@@ -34,4 +34,10 @@ pub enum EditorError {
     NoExample(String),
     #[error("Não foi possível copiar o álbum de exemplo para {path}: {reason}.")]
     CopyExample { path: String, reason: String },
+    /// Acrescentar numa lâmina que já tem a capacidade dela (spec ML, regra 8).
+    #[error("A lâmina {} já tem {capacity} fotos, o máximo que cabe nela.", spread + 1)]
+    SpreadFull { spread: usize, capacity: usize },
+    /// Acrescentar uma foto que já está na lâmina (spec ML, regra 9).
+    #[error("Esta foto já está na lâmina {}.", spread + 1)]
+    AlreadyInSpread { spread: usize },
 }

@@ -1,13 +1,14 @@
-//! O modo organizar pela janela (spec EG): os cliques com Ctrl e Shift, o laço, o "Concluir" e o
-//! `OrganizeUi` com o título, a seleção e a caixa do grupo. As decisões são do editor.
+//! O modo organizar pela janela (spec EG): os cliques com Ctrl e Shift, o laço, o "Voltar" e o
+//! `OrganizeUi` com o título, a seleção e a caixa do grupo; o zoom, a vista, a lupa e o tamanho
+//! real (spec ZR). As decisões são do editor.
 
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use lamina_editor::editor::Field;
+use lamina_editor::editor::{Field, PaletteTool};
 use lamina_editor::marks::mark_views;
 use lamina_editor::rulers::{Tick, rulers};
-use lamina_editor::{Area, Command, PxRect, spread_view};
+use lamina_editor::{Area, Command, PxRect, bar_tip, spread_view};
 use slint::ComponentHandle;
 
 use crate::convert::{boxed, model};
@@ -49,14 +50,14 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     });
     let a = app.clone();
     ui.on_field_accepted(move |i| field_accepted(&a, i));
+    connect_zoom(&ui, app);
     let a = app.clone();
     ui.on_draw_done(move |tool, x0, y0, x1, y1| {
         let p = |x: f32, y: f32| (f64::from(x), f64::from(y));
         let mut app = a.borrow_mut();
         app.editor.draw_frame(tool == 2, p(x0, y0), p(x1, y1));
-        if let Some(w) = app.window.upgrade() {
-            w.global::<OrganizeUi>().set_tool(0);
-        }
+        // Quadro e Texto voltam a Selecionar depois de desenhar (spec ZR, regra 2).
+        app.editor.set_tool(PaletteTool::Select);
         app.refresh_current();
     });
 }
@@ -74,18 +75,82 @@ fn ticks(list: Vec<Tick>) -> Vec<TickData> {
         .collect()
 }
 
-/// O zoom, a vista e as réguas da lâmina em destaque. Mudar o zoom ou sair do modo volta a vista
-/// para o centro; fora do modo, a paleta volta a Selecionar.
+/// A lupa, o Ctrl+roda, a mão e a largura de Ajustar (spec ZR, regras 4 a 7).
+fn connect_zoom(ui: &OrganizeUi, app: &Shared) {
+    let px = |v: f32| f64::from(v);
+    let a = app.clone();
+    ui.on_loupe(move |alt, x, y| {
+        let mut app = a.borrow_mut();
+        if app
+            .editor
+            .zoom_step(!alt, Some((px(x), px(y))), true)
+            .is_some()
+        {
+            app.refresh_current();
+        }
+    });
+    let a = app.clone();
+    ui.on_wheel(move |up, x, y| {
+        let mut app = a.borrow_mut();
+        if app
+            .editor
+            .zoom_step(up, Some((px(x), px(y))), false)
+            .is_some()
+        {
+            app.refresh_current();
+        }
+    });
+    let a = app.clone();
+    ui.on_pan_done(move || {
+        let mut app = a.borrow_mut();
+        let Some(w) = app.window.upgrade() else {
+            return;
+        };
+        let ui = w.global::<OrganizeUi>();
+        app.editor
+            .set_view_pan(px(ui.get_pan_x()), px(ui.get_pan_y()));
+    });
+    let a = app.clone();
+    ui.on_fit_changed(move || {
+        let mut app = a.borrow_mut();
+        let Some(w) = app.window.upgrade() else {
+            return;
+        };
+        app.editor
+            .set_fit_width(px(w.global::<OrganizeUi>().get_fit_width()));
+        // O 1:1 é recalculado: redimensionar a janela continua no tamanho real (regra 3).
+        if app.editor.organizing() && app.editor.zoom() == lamina_editor::editor::Zoom::Real {
+            app.refresh_current();
+        }
+    });
+}
+
+/// O zoom, a vista, a ferramenta e as réguas da lâmina em destaque, como o editor guarda; a
+/// duração vem da última mudança (a saída do modo também anima).
 fn view(app: &App, ui: &OrganizeUi) {
     #[allow(clippy::cast_possible_truncation)]
-    let zoom = app.editor.view_zoom() as f32;
-    if (ui.get_zoom() - zoom).abs() > f32::EPSILON || !app.editor.organizing() {
-        ui.set_pan_x(0.0);
-        ui.set_pan_y(0.0);
-    }
-    ui.set_zoom(zoom);
+    let f = |v: f64| v as f32;
+    ui.set_view_ms(i32::try_from(app.editor.view_ms()).unwrap_or(0));
+    ui.set_zoom(f(app.editor.view_zoom()));
+    let (x, y) = app.editor.view_pan();
+    ui.set_pan_x(f(x));
+    ui.set_pan_y(f(y));
+    ui.set_tool(app.editor.tool().index());
+    let strips = app.editor.strips();
+    ui.set_spreads_open(strips.spreads);
+    ui.set_panel_open(app.editor.panel_shown());
+    let open = if strips.spreads {
+        "Esconder"
+    } else {
+        "Mostrar"
+    };
+    let key = Command::ToggleSpreads
+        .shortcut()
+        .map(|k| k.text())
+        .unwrap_or_default();
+    ui.set_tip_spreads(format!("{open} a faixa de lâminas ({key})").into());
+    ui.set_tip_panel(bar_tip(Command::TogglePanel, app.editor.panel_shown()).into());
     if !app.editor.organizing() {
-        ui.set_tool(0);
         ui.set_hand(false);
         return;
     }
