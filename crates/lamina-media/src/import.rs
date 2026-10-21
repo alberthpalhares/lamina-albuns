@@ -1,16 +1,15 @@
 //! Importação de uma pasta: metadados, impressão digital e miniatura de cada foto, em paralelo,
-//! reaproveitando o que o catálogo já conhece.
+//! reaproveitando o que o catálogo já conhece. No máximo 4 fotos ao mesmo tempo, e cada arquivo
+//! lido uma vez só (spec TR, regras 1 e 2).
 
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::UNIX_EPOCH;
 
-use rayon::prelude::*;
-
-use crate::fingerprint::fingerprint;
-use crate::thumbnail::{DerivedDirs, derived_path, ensure_derived};
+use crate::derive::{Opened, open, write_derived};
+use crate::thumbnail::{DerivedDirs, derived_path};
 use crate::{
-    Catalog, CatalogEntry, ImageFormat, MediaError, gather_photos, list_photos, read_metadata,
+    Catalog, CatalogEntry, ImageFormat, MediaError, gather_photos, list_photos, map_photos,
 };
 
 /// Resultado de uma importação.
@@ -120,27 +119,25 @@ fn import_list(
         }
     };
     progress(total - pending.len(), total);
-    let results: Vec<_> = pending
-        .into_par_iter()
-        .map(|(path, size, modified)| {
-            let result = process(&path, size, modified, dirs).map_err(|e| (path, e.to_string()));
-            step();
-            result
-        })
-        .collect();
+    // No máximo 4 fotos ao mesmo tempo (spec TR, regra 1), e os resultados na ordem da lista.
+    let results = map_photos(pending, |(path, size, modified)| {
+        let result = process(&path, (size, modified), dirs).map_err(|e| (path, e.to_string()));
+        step();
+        result
+    });
+    let mut fresh = Vec::new();
     for result in results {
         match result {
-            Ok(entry) => {
-                catalog.upsert(&entry)?;
-                report.processed += 1;
-                report
-                    .warnings
-                    .extend(crate::color::profile_problem(&entry.path));
-                report.entries.push(entry);
+            Ok((entry, warning)) => {
+                report.warnings.extend(warning);
+                fresh.push(entry);
             }
             Err(failure) => report.failures.push(failure),
         }
     }
+    catalog.upsert_all(&fresh)?;
+    report.processed = fresh.len();
+    report.entries.extend(fresh);
     report.entries.sort_by(|a, b| {
         (a.taken_at.is_none(), a.taken_at, &a.path).cmp(&(
             b.taken_at.is_none(),
@@ -174,19 +171,36 @@ fn file_stamp(path: &Path) -> Result<(i64, i64), MediaError> {
     Ok((size, modified))
 }
 
+/// Uma foto: o arquivo é lido do disco uma vez só (spec TR, regra 2).
 fn process(
     path: &Path,
-    size: i64,
-    modified: i64,
+    stamp: (i64, i64),
     dirs: DerivedDirs<'_>,
-) -> Result<CatalogEntry, MediaError> {
-    let meta = read_metadata(path)?;
-    let fingerprint = fingerprint(path)?;
-    let thumbnail = ensure_derived(path, &fingerprint, meta.exif_orientation, dirs)?;
-    Ok(CatalogEntry {
+) -> Result<(CatalogEntry, Option<String>), MediaError> {
+    let bytes = std::fs::read(path).map_err(MediaError::io(path))?;
+    process_bytes(path, bytes, stamp, dirs)
+}
+
+/// O trabalho de uma foto a partir do arquivo já lido: a entrada do catálogo, as cópias
+/// reduzidas e o aviso do perfil. Nada mais é lido do disco (TR-B3).
+pub(crate) fn process_bytes(
+    path: &Path,
+    bytes: Vec<u8>,
+    (file_size, modified): (i64, i64),
+    dirs: DerivedDirs<'_>,
+) -> Result<(CatalogEntry, Option<String>), MediaError> {
+    let (opened, decoder) = open(path, bytes)?;
+    let thumbnail = write_derived(path, decoder, &opened, dirs)?;
+    let Opened {
+        fingerprint,
+        metadata: meta,
+        warning,
+        ..
+    } = opened;
+    let entry = CatalogEntry {
         path: path.to_path_buf(),
         fingerprint,
-        file_size: size,
+        file_size,
         modified,
         width: meta.width,
         height: meta.height,
@@ -194,7 +208,8 @@ fn process(
         taken_at: meta.taken_at,
         camera: meta.camera,
         thumbnail,
-    })
+    };
+    Ok((entry, warning))
 }
 
 /// Pasta de cache padrão do sistema para o Lamina (catálogo e miniaturas).

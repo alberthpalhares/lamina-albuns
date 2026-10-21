@@ -8,8 +8,8 @@ use lamina_core::{PhotoId, Project};
 use lamina_editor::forms::photo_text;
 use lamina_editor::motion::{photo_rows, strip_rows};
 use lamina_editor::{
-    Cache, Editor, ExportCheck, Filter, Found, HumanMessage, PhotoItem, Session, Step, guarded,
-    photo_info, photo_list, prepare_images,
+    Cache, Editor, ExportCheck, Filter, PhotoItem, Session, ThumbList, guarded, photo_info,
+    photo_list, prepare_images,
 };
 use slint::{ComponentHandle, Image};
 
@@ -34,48 +34,7 @@ pub enum Pending {
     OpenRecent(usize),
 }
 
-/// Mensagens do trabalho em segundo plano para a linha da janela.
-#[derive(Debug)]
-pub enum Msg {
-    Step(Step),
-    Album(Result<(Project, usize), HumanMessage>),
-    ImagesReady,
-    /// Uma foto de tela lida pelo trabalhador (spec MV, regra 1); `None` sem imagem de tela.
-    Screen {
-        epoch: u64,
-        id: PhotoId,
-        pixels: Option<crate::images::Pixels>,
-    },
-    /// A foto original do quadro em modo recorte (spec RC, regra 9), já em pixels da janela.
-    Original(PhotoId, crate::images::Pixels),
-    /// Andamento e fim da exportação (spec EI): o resumo ou o erro, e a pasta.
-    Exporting(usize, usize),
-    Exported(Result<String, HumanMessage>, PathBuf),
-    /// Andamento e resultado da procura de fotos ausentes (spec EI). `file` é o projeto em que a
-    /// procura começou; `folder`, a pasta escolhida (nenhuma = a procura ao abrir).
-    Searching(usize, usize),
-    Relinked {
-        file: Option<PathBuf>,
-        found: Vec<Found>,
-        folder: Option<PathBuf>,
-    },
-    /// A resposta de uma checagem ou download da atualização (spec DS).
-    Update(lamina_editor::updates::Outcome),
-    /// Uma tarefa em segundo plano entrou em pânico (spec EH, regra 6): a janela se libera.
-    Failed(HumanMessage),
-    /// Os recentes cujo arquivo sumiu e a miniatura gravada (spec TI, regras 4 e 5).
-    RecentsChecked(Vec<PathBuf>),
-    ThumbReady,
-    /// Andamento e fim de uma importação no álbum aberto (spec IM); `file` é o álbum em que ela
-    /// começou.
-    Importing(usize, usize),
-    /// `Some(n)`: soltas na área de lâmina nova, viram a lâmina nova no vão `n` (spec IM, regra 11).
-    Imported(
-        Result<lamina_editor::importing::ImportReport, HumanMessage>,
-        Option<PathBuf>,
-        Option<usize>,
-    ),
-}
+pub use crate::msg::Msg;
 
 pub struct App {
     pub window: slint::Weak<AppWindow>,
@@ -121,6 +80,8 @@ pub struct App {
     /// Os recentes que a última conferência não achou e a busca da tela inicial (spec TI).
     pub recent_missing: Vec<PathBuf>,
     pub recent_query: String,
+    /// Quando começou o teste de fumaça da importação (`--verificar-importacao`, spec TR).
+    pub verify_import: Option<std::time::Instant>,
     filter: Filter,
     list: Vec<PhotoItem>,
     selected: Option<PhotoId>,
@@ -162,6 +123,7 @@ impl App {
             navigator: lamina_editor::motion::Navigator::default(),
             recent_missing: Vec::new(),
             recent_query: String::new(),
+            verify_import: None,
             filter: Filter::All,
             list: Vec::new(),
             selected: None,
@@ -194,9 +156,21 @@ impl App {
         self.refresh_all();
     }
 
+    /// Fotos novas no mesmo álbum (importar): as imagens que a janela já tem ficam, as listas
+    /// ganham só as linhas novas e o trabalhador lê só as miniaturas novas (spec TR, regra 8).
+    pub fn photos_added(&mut self) {
+        self.notice = self
+            .session()
+            .and_then(Session::missing_message)
+            .unwrap_or_default();
+        self.refresh_all();
+    }
+
     /// Imagens geradas no cache: as que faltavam são pedidas de novo e as miniaturas entram.
     pub fn images_ready(&mut self) {
-        self.images.recheck();
+        if let Some(project) = self.session().map(|s| s.project().clone()) {
+            self.images.recheck(&project);
+        }
         self.lists.reset();
         self.refresh_all();
     }
@@ -230,7 +204,7 @@ impl App {
 
     /// As miniaturas de todas as fotos (miniaturas do painel de layouts).
     pub fn thumbs(&mut self, project: &Project) -> HashMap<PhotoId, Image> {
-        self.images.all_thumbs(project, &self.cache)
+        self.images.all_thumbs(project)
     }
 
     /// Faixa de lâminas, com as miniaturas e o marcador de aviso: só as lâminas que mudaram.
@@ -241,14 +215,10 @@ impl App {
         let rows = strip_rows(session);
         let warned: Vec<bool> = rows.iter().map(|(_, r)| r.warned).collect();
         let (project, missing) = (session.project().clone(), session.missing().to_vec());
-        let images = self.images.all_thumbs(&project, &self.cache);
-        let image = |id: PhotoId| images.get(&id).cloned();
+        let images = self.images.all_thumbs(&project);
         self.lists.strip.sync(rows, |i| {
             let warning = warned.get(i).copied().unwrap_or(false);
-            let mut data = spread_data(&project, i, &missing, &image, (warning, SMALL));
-            // A miniatura mostra a foto ajustada (spec AF, regra 7).
-            crate::adjusted::patch_small(&project, i, &images, &mut data);
-            data
+            strip_data(&project, i, &missing, &images, warning)
         });
         crate::drag::refresh_timeline(self);
     }
@@ -264,12 +234,13 @@ impl App {
         self.list = photo_list(&project, self.filter);
         let rows = photo_rows(&self.list, self.editor.selection());
         let picked: Vec<bool> = rows.iter().map(|(_, r)| r.picked).collect();
-        let (images, cache) = (&mut self.images, &self.cache);
+        let ids: Vec<PhotoId> = self.list.iter().map(|p| p.id).collect();
+        let thumbs = self.images.thumbs_for(ThumbList::Browser, &project, &ids);
         let list = &self.list;
         self.lists.browser.sync(rows, |i| {
             let item = &list[i];
             let picked = picked.get(i).copied().unwrap_or(false);
-            photo_data(item, images.thumb(&project, item.id, cache), picked)
+            photo_data(item, thumbs.get(&item.id).cloned(), picked)
         });
         w.set_filter(match self.filter {
             Filter::All => 0,
@@ -283,4 +254,19 @@ impl App {
         let info = self.selected.and_then(|id| photo_info(&project, id));
         w.set_info_photo(info.map(|i| photo_text(&i)).unwrap_or_default().into());
     }
+}
+
+/// A linha da lâmina `i` na faixa, com as miniaturas `images` e o marcador de aviso.
+pub(crate) fn strip_data(
+    project: &Project,
+    i: usize,
+    missing: &[PhotoId],
+    images: &HashMap<PhotoId, Image>,
+    warning: bool,
+) -> crate::SpreadData {
+    let image = |id: PhotoId| images.get(&id).cloned();
+    let mut data = spread_data(project, i, missing, &image, (warning, SMALL));
+    // A miniatura mostra a foto ajustada (spec AF, regra 7).
+    crate::adjusted::patch_small(project, i, images, &mut data);
+    data
 }

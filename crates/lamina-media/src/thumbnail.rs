@@ -3,20 +3,30 @@
 use std::path::{Path, PathBuf};
 
 use image::codecs::jpeg::JpegEncoder;
-use image::{DynamicImage, ImageFormat};
+use image::{DynamicImage, ImageDecoder, ImageFormat, ImageReader};
 
-use crate::{MediaError, decode_with_orientation};
+use crate::MediaError;
+use crate::derive::{derive_file, open, reduced, write_derived};
 
 /// Lado maior das miniaturas, em pixels: nítido na lista e na visão geral das lâminas.
 pub const THUMB_SIZE: u32 = 320;
 
-/// Decodifica a foto, aplica a rotação EXIF e reduz para caber em `max_side`.
+/// Decodifica a foto, reduz para caber em `max_side`, converte para sRGB e aplica a rotação EXIF
+/// (reduzir primeiro: spec TR, regra 3).
 pub fn make_thumbnail(
     path: &Path,
     exif_orientation: u8,
     max_side: u32,
 ) -> Result<DynamicImage, MediaError> {
-    Ok(decode_with_orientation(path, exif_orientation)?.thumbnail(max_side, max_side))
+    let mut decoder = ImageReader::open(path)
+        .map_err(MediaError::io(path))?
+        .with_guessed_format()
+        .map_err(MediaError::io(path))?
+        .into_decoder()
+        .map_err(MediaError::image(path))?;
+    let icc = decoder.icc_profile().ok().flatten();
+    let full = DynamicImage::from_decoder(decoder).map_err(MediaError::image(path))?;
+    Ok(reduced(full, icc.as_deref(), exif_orientation, max_side))
 }
 
 /// Lado maior da imagem de tela: a lâmina grande na janela (spec JP, regra 6).
@@ -55,8 +65,8 @@ pub fn ensure_thumbnail(
     ensure_derived(path, fingerprint, exif_orientation, dirs)
 }
 
-/// Gera o que faltar entre a miniatura e a imagem de tela, decodificando a foto uma vez só, e
-/// devolve o caminho da miniatura.
+/// Gera o que faltar entre a miniatura e a imagem de tela, lendo e decodificando a foto uma vez
+/// só, e devolve o caminho da miniatura. `fingerprint` e `exif_orientation` são os do catálogo.
 pub fn ensure_derived(
     path: &Path,
     fingerprint: &str,
@@ -64,42 +74,58 @@ pub fn ensure_derived(
     dirs: DerivedDirs<'_>,
 ) -> Result<PathBuf, MediaError> {
     let thumb = derived_path(dirs.thumbs, fingerprint);
-    let screen = dirs
+    let screen_missing = dirs
         .screens
-        .map(|d| derived_path(d, fingerprint))
-        .filter(|s| !s.exists());
-    if thumb.exists() && screen.is_none() {
+        .is_some_and(|d| !derived_path(d, fingerprint).exists());
+    if thumb.exists() && !screen_missing {
         return Ok(thumb);
     }
-    let image = decode_with_orientation(path, exif_orientation)?;
-    if !thumb.exists() {
-        std::fs::create_dir_all(dirs.thumbs).map_err(MediaError::io(dirs.thumbs))?;
-        image
-            .thumbnail(THUMB_SIZE, THUMB_SIZE)
-            .to_rgb8()
-            .save_with_format(&thumb, ImageFormat::Jpeg)
-            .map_err(MediaError::image(&thumb))?;
+    let bytes = std::fs::read(path).map_err(MediaError::io(path))?;
+    let (mut opened, decoder) = open(path, bytes)?;
+    fingerprint.clone_into(&mut opened.fingerprint);
+    opened.metadata.exif_orientation = exif_orientation;
+    write_derived(path, decoder, &opened, dirs)
+}
+
+/// Como [`ensure_derived`] para uma foto do projeto: a orientação vem do EXIF e a impressão
+/// digital, se o projeto não tiver, do próprio arquivo, sem lê-lo de novo (spec TR, regra 2).
+pub fn ensure_derived_for(
+    path: &Path,
+    fingerprint: Option<&str>,
+    dirs: DerivedDirs<'_>,
+) -> Result<PathBuf, MediaError> {
+    if let Some(fp) = fingerprint {
+        let thumb = derived_path(dirs.thumbs, fp);
+        let screen_ok = dirs.screens.is_none_or(|d| derived_path(d, fp).exists());
+        if thumb.exists() && screen_ok {
+            return Ok(thumb);
+        }
     }
-    if let Some(screen) = screen {
-        save_screen(&image, &screen)?;
-    }
-    Ok(thumb)
+    derive_file(path, fingerprint, dirs)
+}
+
+/// Grava a miniatura (JPEG na qualidade padrão do codificador, como sempre).
+pub(crate) fn save_thumb(
+    image: &DynamicImage,
+    dir: &Path,
+    target: &Path,
+) -> Result<(), MediaError> {
+    std::fs::create_dir_all(dir).map_err(MediaError::io(dir))?;
+    image
+        .to_rgb8()
+        .save_with_format(target, ImageFormat::Jpeg)
+        .map_err(MediaError::image(target))
 }
 
 /// Grava a imagem de tela (até [`SCREEN_SIZE`] no lado maior; foto menor fica do tamanho dela).
-fn save_screen(image: &DynamicImage, target: &Path) -> Result<(), MediaError> {
+pub(crate) fn save_screen(image: &DynamicImage, target: &Path) -> Result<(), MediaError> {
     if let Some(dir) = target.parent() {
         std::fs::create_dir_all(dir).map_err(MediaError::io(dir))?;
     }
-    let reduced = if image.width().max(image.height()) > SCREEN_SIZE {
-        image.thumbnail(SCREEN_SIZE, SCREEN_SIZE)
-    } else {
-        image.clone()
-    };
     let file = std::fs::File::create(target).map_err(MediaError::io(target))?;
     let mut writer = std::io::BufWriter::new(file);
     let encoder = JpegEncoder::new_with_quality(&mut writer, SCREEN_QUALITY);
-    reduced
+    image
         .to_rgb8()
         .write_with_encoder(encoder)
         .map_err(MediaError::image(target))

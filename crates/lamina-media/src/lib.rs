@@ -7,6 +7,8 @@
 //! - [`color`]: o perfil de cor de cada foto e a conversão para sRGB ou Adobe RGB (spec CT).
 //! - [`fingerprint`]: impressão digital rápida do conteúdo, para reencontrar fotos movidas.
 //! - [`thumbnail`]: miniaturas e imagens de tela com a rotação EXIF aplicada.
+//! - [`derive`]: as cópias reduzidas a partir de uma leitura só do arquivo (spec TR).
+//! - [`pool`]: no máximo 4 fotos lidas ao mesmo tempo (spec TR).
 //! - [`catalog`]: catálogo SQLite, que evita reprocessar fotos que não mudaram.
 //! - [`import`]: tudo junto, em paralelo.
 
@@ -14,11 +16,13 @@ pub mod camera;
 pub mod catalog;
 pub mod color;
 pub mod decode;
+pub mod derive;
 pub mod fingerprint;
 pub mod format;
 pub mod import;
 pub mod metadata;
 pub mod photo_source;
+pub mod pool;
 pub mod thumbnail;
 
 #[cfg(test)]
@@ -27,6 +31,9 @@ mod ct;
 mod error;
 #[cfg(test)]
 mod testutil;
+#[cfg(test)]
+#[path = "tests/tr.rs"]
+mod tr;
 
 pub use camera::{CameraDetails, camera_details};
 pub use catalog::{Catalog, CatalogEntry};
@@ -39,6 +46,8 @@ pub use import::{
 };
 pub use metadata::{PhotoMetadata, read_metadata};
 pub use photo_source::{Loaded, original_source, original_source_in, thumbnail_source};
+pub use pool::{PHOTOS_AT_ONCE, map_photos, photos_at_once};
 pub use thumbnail::{
-    DerivedDirs, SCREEN_SIZE, THUMB_SIZE, derived_path, ensure_derived, ensure_thumbnail,
+    DerivedDirs, SCREEN_SIZE, THUMB_SIZE, derived_path, ensure_derived, ensure_derived_for,
+    ensure_thumbnail,
 };

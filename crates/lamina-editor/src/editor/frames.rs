@@ -86,7 +86,11 @@ impl Editor {
             aspects,
             active,
             whole: true,
-            gap: project.spread_gap(&project.spreads[index]),
+            // Álbum sem lâminas: o espaço do álbum (spec TR, regra 10).
+            gap: project
+                .spreads
+                .get(index)
+                .map_or(project.gap, |s| project.spread_gap(s)),
         })
     }
 
@@ -123,9 +127,12 @@ impl Editor {
         let (Some(s), Some(f)) = (&self.session, self.selected_frame) else {
             return false;
         };
-        s.project().spreads[s.current()]
-            .frames
-            .get(f)
+        // Sem `[]`: depois de desfazer a última lâmina, o quadro selecionado não existe mais
+        // (spec TR, regra 10).
+        s.project()
+            .spreads
+            .get(s.current())
+            .and_then(|spread| spread.frames.get(f))
             .is_some_and(|fr| matches!(fr.content, lamina_core::FrameContent::Photo { .. }))
     }
 
@@ -143,7 +150,15 @@ impl Editor {
             return false;
         };
         let done = self.change("Montar lâmina", |p, i| {
-            p.spreads[i].frames.clear();
+            // Álbum sem lâminas: a seleção monta a primeira (spec TR, regra 10).
+            if p.spreads.is_empty() {
+                p.add_spread();
+            }
+            p.spreads
+                .get_mut(i)
+                .ok_or(EditorError::NoFrame)?
+                .frames
+                .clear();
             crate::suggestions::apply(p, i, &sel, &c)?;
             Ok(())
         });
@@ -229,9 +244,14 @@ impl Editor {
         result.is_ok() && moved
     }
 
-    /// A lâmina nova entra depois da atual: o rótulo diz a posição dela.
+    /// A lâmina nova entra depois da atual (num álbum sem lâminas, é a primeira): o rótulo diz a
+    /// posição dela.
     fn new_spread_label(&self, what: &str) -> String {
-        let at = self.session.as_ref().map_or(0, crate::Session::current) + 2;
+        let at = self
+            .session
+            .as_ref()
+            .map_or(0, |s| (s.current() + 1).min(s.spread_count()))
+            + 1;
         format!("{what} · lâmina {at}")
     }
 

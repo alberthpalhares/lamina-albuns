@@ -96,16 +96,28 @@ pub fn message(app: &mut App, msg: Msg) {
                 };
             match result.map(|report| add(app, &report)) {
                 Ok(Ok(summary)) => {
-                    app.project_changed();
+                    // Só as fotos novas: as imagens que a janela tem ficam (spec TR, regra 8).
+                    app.photos_added();
                     app.notice = summary.text();
                     app.refresh_current();
+                    if app.verify_import.is_some() {
+                        crate::verify::import_done(app, &app.notice);
+                    }
                 }
-                Ok(Err(e)) => crate::files::show_error(app, &e.human()),
-                Err(problem) => crate::files::show_error(app, &problem),
+                Ok(Err(e)) => failed(app, &e.human()),
+                Err(problem) => failed(app, &problem),
             }
         }
         _ => {}
     }
+}
+
+/// A importação falhou: a mensagem na janela (no teste de fumaça, a saída com o motivo).
+fn failed(app: &App, problem: &lamina_editor::HumanMessage) {
+    if app.verify_import.is_some() {
+        crate::verify::import_failed(problem);
+    }
+    crate::files::show_error(app, problem);
 }
 
 /// O gancho do winit: arquivos sobre a janela mostram "Solte para importar"; soltos, vão juntos

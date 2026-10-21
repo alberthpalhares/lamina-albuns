@@ -3,10 +3,7 @@
 use std::path::{Path, PathBuf};
 
 use lamina_core::Photo;
-use lamina_media::fingerprint::fingerprint;
-use lamina_media::{
-    Catalog, DerivedDirs, default_cache_dir, derived_path, ensure_derived, read_metadata,
-};
+use lamina_media::{Catalog, DerivedDirs, default_cache_dir, derived_path, ensure_derived_for};
 
 use crate::EditorError;
 
@@ -59,19 +56,15 @@ impl Cache {
     }
 
     /// Gera a miniatura e a imagem de tela que faltarem (projeto aberto em outra máquina ou com
-    /// o cache limpo). Foto sem impressão digital gravada ganha uma agora.
+    /// o cache limpo), lendo a foto uma vez só (spec TR, regra 2). Foto sem impressão digital
+    /// gravada ganha uma agora.
     pub fn ensure_images(&self, photo: &Photo) -> Result<(), EditorError> {
-        let fp = match &photo.fingerprint {
-            Some(fp) => fp.clone(),
-            None => fingerprint(&photo.path)?,
-        };
         let (thumbs, screens) = (self.thumbs_dir(), self.screens_dir());
         let dirs = DerivedDirs {
             thumbs: &thumbs,
             screens: Some(&screens),
         };
-        let orientation = read_metadata(&photo.path)?.exif_orientation;
-        ensure_derived(&photo.path, &fp, orientation, dirs)?;
+        ensure_derived_for(&photo.path, photo.fingerprint.as_deref(), dirs)?;
         Ok(())
     }
 }

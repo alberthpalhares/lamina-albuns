@@ -101,6 +101,17 @@ impl Catalog {
         Ok(())
     }
 
+    /// Insere ou atualiza várias fotos numa transação só: mil fotos não viram mil gravações no
+    /// disco (spec TR).
+    pub fn upsert_all(&self, entries: &[CatalogEntry]) -> Result<(), MediaError> {
+        let tx = self.conn.unchecked_transaction()?;
+        for entry in entries {
+            self.upsert(entry)?;
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
     /// A foto registrada neste caminho, se houver.
     pub fn get(&self, path: &Path) -> Result<Option<CatalogEntry>, MediaError> {
         let sql = format!("{SELECT} WHERE path = ?1");

@@ -23,10 +23,10 @@ pub fn make(app: &mut App, kind: i32, from: i32) -> Option<GhostData> {
     };
     let img = app
         .images
-        .spread(&project, index, &app.cache)
+        .spread(&project, index)
         .get(&ghost.photo)
         .cloned()
-        .or_else(|| app.images.thumb(&project, ghost.photo, &app.cache))?;
+        .or_else(|| app.images.thumb(ghost.photo))?;
     Some(data(&ghost, img))
 }
 

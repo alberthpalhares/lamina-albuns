@@ -29,8 +29,12 @@ pub fn embedded_profile(path: &Path) -> Option<Vec<u8>> {
 
 /// O aviso da importação quando a foto traz um perfil que não dá para ler (seção 6).
 pub fn profile_problem(path: &Path) -> Option<String> {
-    let icc = embedded_profile(path)?;
-    ColorProfile::new_from_slice(&icc).err().map(|_| {
+    problem_of(path, &embedded_profile(path)?)
+}
+
+/// O mesmo aviso, a partir do perfil já lido com a foto (spec TR, regra 2: sem ler de novo).
+pub fn problem_of(path: &Path, icc: &[u8]) -> Option<String> {
+    ColorProfile::new_from_slice(icc).err().map(|_| {
         let name = path
             .file_name()
             .unwrap_or(path.as_os_str())

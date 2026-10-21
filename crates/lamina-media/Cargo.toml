@@ -15,6 +15,8 @@ kamadak-exif = { workspace = true }
 image = { workspace = true }
 # Converter as fotos com perfil próprio (spec CT; ADR 0007).
 moxcms = { workspace = true }
+# Reduzir as cópias de tela e as miniaturas (spec TR, regra 3; o mesmo redutor do ADR 0006).
+fast_image_resize = { workspace = true }
 rusqlite = { workspace = true }
 blake3 = { workspace = true }
 rayon = { workspace = true }
@@ -22,6 +24,7 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+dhat = { workspace = true }
 
 [lints]
 workspace = true
