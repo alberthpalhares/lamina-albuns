@@ -68,7 +68,8 @@ impl Editor {
             Command::SaveModel => self.can_save_model(),
             Command::BringForward | Command::SendBackward => self.can_reorder(),
             Command::Deselect => {
-                self.selected_frame.is_some()
+                self.band.open
+                    || self.selected_frame.is_some()
                     || !self.selection.is_empty()
                     || self.crop_frame.is_some()
             }
@@ -139,6 +140,12 @@ impl Editor {
         if !self.available(command) {
             return false;
         }
+        // A faixa de layouts (spec FL, regras 2 e 8): o Esc só a fecha; antes dos outros comandos
+        // ela fecha, ou só limpa a prévia nas teclas do menu Layout.
+        if command == Command::Deselect && self.close_band() {
+            return true;
+        }
+        self.close_band_for(command);
         // Um comando no meio do arrasto de um quadro descarta o gesto: soltar depois gravaria o
         // quadro na lâmina errada (auditoria do Marco 3, M2). E encerra a emenda do histórico:
         // digitar depois de um comando é uma edição nova (spec TX, regra 10).

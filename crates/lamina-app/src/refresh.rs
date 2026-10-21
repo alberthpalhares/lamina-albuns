@@ -9,13 +9,15 @@ use crate::convert::model;
 use crate::state::App;
 
 impl App {
-    /// Título, contador, comandos disponíveis e a lâmina atual com o painel dela.
+    /// Título, contador, comandos disponíveis e a lâmina atual com o painel e a faixa de layouts.
     pub fn refresh_current(&mut self) {
         let Some(w) = self.window.upgrade() else {
             return;
         };
         w.set_has_project(self.session().is_some());
         w.set_can_save(self.editor.available(Command::Save));
+        w.set_can_undo(self.editor.available(Command::Undo));
+        w.set_can_redo(self.editor.available(Command::Redo));
         w.set_has_missing(self.editor.available(Command::FindMissing));
         let strips = self.editor.strips();
         w.set_spreads_open(strips.spreads);
@@ -82,7 +84,7 @@ impl App {
             self.notice = notice;
             w.set_notice(self.notice.clone().into());
         }
-        crate::panel::refresh(self);
+        crate::band::refresh(self);
         crate::look::refresh(self);
         crate::history::refresh(self);
         crate::frame_panel::refresh(self);

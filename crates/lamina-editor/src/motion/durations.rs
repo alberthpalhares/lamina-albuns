@@ -18,6 +18,8 @@ pub struct Durations {
     pub sharp: u32,
     /// As lâminas vizinhas abrem espaço ao reordenar.
     pub reorder: u32,
+    /// A faixa de layouts desce e sobe, e a lâmina muda de tamanho junto (spec FL, regra 12).
+    pub band: u32,
 }
 
 impl Durations {
@@ -32,6 +34,7 @@ impl Durations {
             land: 150 * k,
             sharp: 120 * k,
             reorder: 150 * k,
+            band: 200 * k,
         }
     }
 }

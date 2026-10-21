@@ -114,17 +114,10 @@ impl Editor {
             .is_ok_and(|sel| !self.cached_lists(project, &sel).reordered.is_empty())
     }
 
-    /// A lâmina atual como ficaria com a opção `i` do painel (miniaturas do painel).
-    pub fn preview(&self, panel: &Panel, i: usize) -> Option<Project> {
-        let session = self.session.as_ref()?;
-        let (sel, c) = (panel.selection.as_ref()?, panel.options.get(i)?);
-        let mut project = session.project().clone();
-        apply(&mut project, session.current(), sel, c).ok()?;
-        Some(project)
-    }
-
-    /// Aplica a opção `i` do painel da `part` (clique no painel). `true` = trocou.
+    /// Aplica a opção `i` do painel da `part` (clique num cartão da faixa). `true` = trocou.
     pub fn apply_option(&mut self, part: Part, i: usize) -> bool {
+        // A lâmina fica igual à prévia: ela é limpa e nada desliza de novo (spec FL, regra 6).
+        self.clear_hover();
         if part == Part::Spread && !self.selection.is_empty() {
             return self.build_from_selection(i);
         }
@@ -195,9 +188,11 @@ impl Editor {
         }
     }
 
-    /// Estrela ou "×" numa miniatura do painel: favorita ou rejeita a opção `i` da lâmina
+    /// Estrela ou "×" num cartão da faixa: favorita ou rejeita a opção `i` da lâmina
     /// inteira. Rejeitar a que está em uso passa para a seguinte.
     pub fn mark_option(&mut self, i: usize, favorite: bool) -> bool {
+        // A lista de cartões muda: a prévia é limpa (spec FL, regra 9).
+        self.clear_hover();
         let panel = self.panel(Part::Spread);
         let (Some(sel), Some(c)) = (panel.selection.as_ref(), panel.options.get(i)) else {
             return false;

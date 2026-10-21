@@ -10,6 +10,7 @@ import { OrganizeUi, OrganizeBar, OrganizeMarks, OrganizeRulers, OrganizeTools }
 import { Motion } from "motion.slint";
 import { WelcomeScreen } from "welcome.slint";
 import { DragUi } from "drag.slint";
+import { BandUi } from "band.slint";
 
 export component Stage inherits Rectangle {
     in property <bool> has-project;
@@ -125,8 +126,10 @@ export component Stage inherits Rectangle {
         }
     }
 
-    // No modo organizar, a barra da lâmina em destaque e as réguas ocupam o topo.
-    property <length> top-room: OrganizeUi.on ? 52px : 0px;
+    // No modo organizar, a barra da lâmina em destaque e as réguas ocupam o topo; a faixa de
+    // layouts empurra a lâmina para baixo, junto com ela (spec FL, regra 12).
+    property <length> top-room: OrganizeUi.on ? 52px : BandUi.open ? BandUi.height : 0px;
+    animate top-room { duration: Motion.on ? Motion.band-ms * 1ms : 0ms; easing: ease-out; }
     property <length> canvas-width: root.current.aspect > 0
         ? min(self.width - 48px - (OrganizeUi.on ? 18px : 0px), (self.height - 48px - self.top-room) / root.current.aspect) : 0px;
     // A lâmina em destaque cresce com movimento (spec EG, herdado da MV).

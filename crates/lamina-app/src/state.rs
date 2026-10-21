@@ -202,7 +202,7 @@ impl App {
         self.refresh_current();
     }
 
-    /// As miniaturas de todas as fotos (miniaturas do painel de layouts).
+    /// As miniaturas de todas as fotos (cartões da faixa de layouts).
     pub fn thumbs(&mut self, project: &Project) -> HashMap<PhotoId, Image> {
         self.images.all_thumbs(project)
     }

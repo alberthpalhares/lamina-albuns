@@ -36,6 +36,8 @@ impl Editor {
     /// Salva no arquivo da sessão, ou em `target` ("Salvar como"), e põe o álbum no topo da
     /// lista com a lâmina atual (regras 1 e 3).
     pub fn save_to(&mut self, target: Option<&Path>) -> Result<PathBuf, EditorError> {
+        // Salvar fecha a faixa de layouts antes (spec FL, regra 14).
+        self.close_band();
         let session = self.session.as_mut().ok_or(EditorError::NoProject)?;
         let file = match target {
             Some(path) => session.save_as(path)?,

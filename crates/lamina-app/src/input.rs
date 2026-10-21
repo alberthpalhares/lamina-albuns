@@ -26,6 +26,9 @@ pub fn run_command(app: &Shared, command: Command) {
     if !a.editor.available(command) {
         return;
     }
+    // A faixa de layouts fecha antes dos comandos de arquivo e das janelas (spec FL, regra 8); os
+    // do editor passam pelo `Editor::run`, que faz o mesmo.
+    let closed = a.editor.close_band_for(command);
     match command {
         Command::NewAlbum => files::request(&mut a, Pending::NewAlbum),
         Command::Open => files::request(&mut a, Pending::Open),
@@ -74,6 +77,7 @@ pub fn run_command(app: &Shared, command: Command) {
                     | Command::ToggleReduceMotion
                     | Command::TogglePanel
                     | Command::AdjustPhoto
+                    | Command::ToggleLayoutBand
             );
             a.timed(
                 command.label(),
@@ -86,7 +90,11 @@ pub fn run_command(app: &Shared, command: Command) {
                     }
                 },
             );
+            return;
         }
+    }
+    if closed {
+        a.refresh_current();
     }
 }
 

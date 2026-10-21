@@ -16,6 +16,7 @@ use crate::{EditorError, Session};
 
 mod adjust;
 mod arrange_cmd;
+mod band;
 mod clipboard;
 mod context;
 mod crop;
@@ -42,6 +43,7 @@ mod text_edit;
 
 pub use adjust::{AdjustChange, BAD_ANGLE, BAD_SCALE, CropGrid, parse_angle};
 pub use arrange_cmd::NEED_THREE;
+pub use band::{Band, Card};
 pub use context::ContextEntry;
 pub use crop::{ZOOM_STEP, crop_for, set_crop};
 pub use details::{Details, album_rows};
@@ -104,6 +106,8 @@ pub struct Editor {
     clipboard: Option<clipboard::Clip>,
     /// O pedido do painel temporário (spec JE, regra 5); some sozinho quando acaba.
     panel_need: std::cell::Cell<Option<panel_need::PanelNeed>>,
+    /// A faixa de layouts e a prévia na lâmina (spec FL); não vão para o arquivo.
+    band: band::BandState,
 }
 
 impl Default for Editor {
@@ -147,6 +151,7 @@ impl Editor {
             group: None,
             clipboard: None,
             panel_need: std::cell::Cell::new(None),
+            band: band::BandState::default(),
         }
     }
 
@@ -211,6 +216,8 @@ impl Editor {
         self.group = None;
         // As fotos copiadas são do álbum anterior.
         self.clipboard = None;
+        // A faixa mostrava as opções de uma lâmina do álbum anterior (spec FL).
+        self.band = band::BandState::default();
     }
 
     /// Passa a usar o estado das faixas de `store` (lido de `janela.json`). O aviso de leitura,

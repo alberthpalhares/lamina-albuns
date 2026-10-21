@@ -9,7 +9,7 @@ import { SpreadData, FrameData, BoxData } from "canvas.slint";
 import { ConfirmDialog, MessageDialog, BusyOverlay } from "dialogs.slint";
 import { NewProjectDialog, NewProjectUi, FormatCard, DrawData } from "new_project.slint";
 import { ImportUi, DropOverlay } from "importing.slint";
-import { LayoutItem } from "layouts.slint";
+import { BandUi, LayoutBand, LayoutItem } from "band.slint";
 import { LookUi, Swatch } from "look.slint";
 import { FrameUi } from "frame.slint";
 import { AboutDialog } from "about.slint";
@@ -34,7 +34,7 @@ import { TopBar, NoticeBar } from "topbar.slint";
 import { Stage } from "stage.slint";
 import { BottomStrips } from "bottom.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi }
+export { SpreadData, FrameData, BoxData, LayoutItem, BandUi, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -85,14 +85,9 @@ export component AppWindow inherits Window {
     callback update-dismiss();
     in property <bool> can-undo;
     in property <bool> can-redo;
-    in property <bool> can-layout;
-    in property <bool> can-left;
-    in property <bool> can-right;
-    in property <bool> can-mirror;
-    in property <bool> can-mark;
 
-    // Painel de layouts (spec TL).
-    in-out property <int> panel-tab;
+    // A aba do painel da direita: Detalhes, a de partida (os layouts ficam na faixa, spec FL).
+    in-out property <int> panel-tab: 1;
     // O painel da direita aberto (Alt+4) e a aba Detalhes (spec AF).
     in property <bool> panel-open: true;
     // As dicas da barra de cima (spec JE): Início, Fotos, Painel e Exportar.
@@ -100,13 +95,6 @@ export component AppWindow inherits Window {
     in property <[DetailRow]> details;
     in property <int> details-kind;
     in property <string> details-count;
-    in property <[LayoutItem]> layouts;
-    in property <int> layout-in-use: -1;
-    in property <int> layout-list;
-    in property <bool> has-reordered;
-    in property <string> layout-count;
-    in property <string> layout-notice;
-    in property <string> layout-explanation;
 
     in-out property <bool> show-confirm;
     in-out property <bool> show-message;
@@ -226,10 +214,6 @@ export component AppWindow inherits Window {
     callback lasso-done <=> stage.lasso-done;
     callback move-spread <=> bottom.move-spread;
     callback cut-moved <=> bottom.cut-moved;
-    callback layout-apply(int);
-    callback layout-favorite(int);
-    callback layout-reject(int);
-    callback layout-list-changed(int);
 
     public function focus-main() {
         keys.focus();
@@ -329,7 +313,7 @@ export component AppWindow inherits Window {
             MenuItem { title: "Espelhar lâmina  (E)"; enabled: root.has-project; activated => { root.command("layout.espelhar"); } }
             MenuItem { title: "Favoritar layout  (F)"; enabled: root.has-project; activated => { root.command("layout.favoritar"); } }
             MenuItem { title: "Rejeitar layout  (X)"; enabled: root.has-project; activated => { root.command("layout.rejeitar"); } }
-            MenuItem { title: root.layout-list == 1 ? "Mostrar na ordem  (R)" : "Mostrar reordenadas  (R)"; enabled: root.has-project; activated => { root.command("layout.reordenadas"); } }
+            MenuItem { title: BandUi.list == 1 ? "Mostrar na ordem  (R)" : "Mostrar reordenadas  (R)"; enabled: root.has-project; activated => { root.command("layout.reordenadas"); } }
         }
         Menu {
             title: "Visualizar";
@@ -339,6 +323,8 @@ export component AppWindow inherits Window {
             MenuItem { title: (root.timeline-open ? "✓ " : "    ") + "Linha do tempo  (Alt+2)"; enabled: root.has-project; activated => { root.command("ver.linha-do-tempo"); } }
             MenuItem { title: (root.photos-open ? "✓ " : "    ") + "Fotos  (Alt+3)"; enabled: root.has-project; activated => { root.command("ver.fotos"); } }
             MenuItem { title: (root.panel-open ? "✓ " : "    ") + "Mostrar painel  (Alt+4)"; enabled: root.has-project; activated => { root.command("ver.painel"); } }
+            // Sem a marca: o título fixo não refaz a barra a cada abrir e fechar (spec MV, regra 16).
+            MenuItem { title: "    Faixa de layouts  (L)"; enabled: root.has-project; activated => { root.command("ver.faixa-layouts"); } }
             MenuSeparator { }
             MenuItem { title: (root.reduce-motion ? "✓ " : "    ") + "Reduzir movimento"; activated => { root.command("ver.reduzir-movimento"); } }
         }
@@ -431,20 +417,12 @@ export component AppWindow inherits Window {
                     focus-main => { root.focus-main(); }
                 }
 
-                // Painel da direita: layouts (padrão) e informações.
+                // Painel da direita: Detalhes (padrão), Aparência, Quadro e Histórico.
                 if root.has-project && root.panel-open: RightPanel {
                     tab <=> root.panel-tab;
                     details: root.details;
                     details-kind: root.details-kind;
                     details-count: root.details-count;
-                    layouts: root.layouts;
-                    layout-in-use: root.layout-in-use;
-                    layout-list: root.layout-list;
-                    has-reordered: root.has-reordered;
-                    layout-count: root.layout-count;
-                    layout-notice: root.layout-notice;
-                    layout-explanation: root.layout-explanation;
-                    aspect: root.current.aspect;
                     history: root.history;
                     history-pos: root.history-pos;
                     info-album: root.info-album;
@@ -453,10 +431,6 @@ export component AppWindow inherits Window {
                     info-frame: root.info-frame;
                     info-frame-warn: root.info-frame-warn;
                     info-photo: root.info-photo;
-                    layout-apply(i) => { root.layout-apply(i); }
-                    layout-favorite(i) => { root.layout-favorite(i); }
-                    layout-reject(i) => { root.layout-reject(i); }
-                    layout-list-changed(i) => { root.layout-list-changed(i); }
                     history-go(i) => { root.history-go(i); }
                     done => { root.focus-main(); }
                 }
@@ -485,6 +459,24 @@ export component AppWindow inherits Window {
                 }
             }
         }
+    }
+
+    // A faixa de layouts (spec FL) desce sobre a área da lâmina; com ela aberta, o primeiro clique
+    // fora dela só a fecha (regra 2).
+    if root.has-project && BandUi.open: TouchArea {
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                BandUi.close();
+                root.focus-main();
+            }
+        }
+    }
+    if root.has-project: LayoutBand {
+        x: stage.absolute-position.x;
+        y: stage.absolute-position.y;
+        width: stage.width;
+        aspect: root.current.aspect;
+        done => { root.focus-main(); }
     }
 
     if NewProjectUi.show: NewProjectDialog {

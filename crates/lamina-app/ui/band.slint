@@ -1,0 +1,262 @@
+// A faixa de layouts (spec FL): desce sobre a área da lâmina com os layouts para as fotos dela,
+// numa fileira que rola na horizontal. Parar o mouse num cartão pede a prévia na lâmina grande;
+// o clique aplica; ☆ e × marcam. Só desenho: os cartões, a opção em uso e o aviso vêm do editor.
+
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { SpreadCanvas, SpreadData } from "canvas.slint";
+import { Motion } from "motion.slint";
+
+export struct LayoutItem {
+    data: SpreadData,
+    title: string,
+    score: string,
+    favorite: bool,
+}
+
+// O estado da faixa, para a janela, a lâmina (o espaço de cima) e o botão Layouts da barra da
+// lâmina (spec RL, que chama `ver.faixa-layouts`).
+export global BandUi {
+    in property <bool> open;
+    in property <[LayoutItem]> items;
+    in property <int> in-use: -1;
+    // 0 = na ordem, 1 = reordenadas.
+    in property <int> list;
+    in property <bool> has-reordered;
+    in property <string> notice;
+    // A altura da faixa aberta: a lâmina desce isso em vez de ficar embaixo dela.
+    out property <length> height: 156px;
+    // O ícone do botão Layouts (desenho nosso: uma lâmina aberta com três quadros).
+    out property <image> icon: @image-url("../icons/fl/layouts.svg");
+    callback apply(int);
+    callback favorite(int);
+    callback reject(int);
+    callback list-changed(int);
+    // O mouse entrou (true) ou saiu (false) do cartão; a janela espera ele parar.
+    callback hover(int, bool);
+    // O mouse saiu da faixa: a lâmina volta na hora.
+    callback leave();
+    // Clique fora da faixa: fecha sem mudar nada.
+    callback close();
+}
+
+component Tab inherits Rectangle {
+    in property <string> text;
+    in property <bool> active;
+    in property <bool> enabled: true;
+    callback clicked();
+    width: label.preferred-width;
+    label := Text {
+        text: root.text;
+        font-size: 12px;
+        color: !root.enabled ? #6b6b6b : root.active ? Theme.selected : Theme.muted;
+        font-weight: root.active ? 700 : 400;
+    }
+    Rectangle {
+        y: parent.height - 2px;
+        height: 2px;
+        background: root.active ? Theme.selected : transparent;
+    }
+    TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+}
+
+component SmallButton inherits Rectangle {
+    in property <string> text;
+    in property <color> glyph-color: Theme.text;
+    callback clicked();
+    width: 22px;
+    height: 22px;
+    border-radius: 11px;
+    background: touch.has-hover ? #00000099 : #00000060;
+    Text { text: root.text; color: root.glyph-color; font-size: 13px; }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+export component LayoutBand inherits Rectangle {
+    // A proporção da lâmina (altura ÷ largura), para a largura dos cartões.
+    in property <float> aspect;
+    callback done();
+    // Desce e sobe em `Motion.band-ms` (regra 12); com "Reduzir movimento", de uma vez.
+    property <float> shown: BandUi.open ? 1 : 0;
+    animate shown { duration: Motion.on ? Motion.band-ms * 1ms : 0ms; easing: ease-out; }
+    height: BandUi.height * self.shown;
+    visible: self.shown > 0;
+    clip: true;
+
+    property <length> thumb-h: 96px;
+    property <length> card-w: self.thumb-h / max(0.1, root.aspect) + 8px;
+    property <length> gap: 8px;
+    property <length> pad: 12px;
+
+    // O cartão em uso fica visível (regra 8): a fileira rola até ele e para de acompanhar quando
+    // o fotógrafo rola (spec MV, regra 10).
+    property <int> in-use: BandUi.in-use;
+    property <bool> open: BandUi.open;
+    changed in-use => { root.show-in-use(); }
+    changed open => { root.show-in-use(); }
+    function show-in-use() {
+        if (root.in-use < 0 || !root.open) {
+            return;
+        }
+        let item = root.card-w + root.gap;
+        let left = root.pad + root.in-use * item;
+        let seen = scroll.visible-width;
+        if (left + scroll.content-x < 0px || left + root.card-w + scroll.content-x > seen) {
+            root.follow(max(min(0px, seen / 2 - left - root.card-w / 2), seen - row.preferred-width));
+        }
+    }
+    property <bool> sc-running;
+    property <duration> sc-t0;
+    property <length> sc-from;
+    property <length> sc-to;
+    property <float> sc-p: self.sc-running ? min(1, (animation-tick() - self.sc-t0) / max(1ms, Motion.scroll-ms * 1ms)) : 1;
+    changed sc-p => {
+        if (self.sc-running) {
+            scroll.content-x = self.sc-from + (self.sc-to - self.sc-from) * (1 - pow(1 - self.sc-p, 3));
+            if (self.sc-p >= 1) {
+                self.sc-running = false;
+            }
+        }
+    }
+    function follow(target: length) {
+        if (Motion.on && Motion.scroll-ms > 0) {
+            root.sc-from = scroll.content-x;
+            root.sc-to = target;
+            root.sc-t0 = animation-tick();
+            root.sc-running = true;
+        } else {
+            scroll.content-x = target;
+        }
+    }
+    // A roda vertical rola a fileira (spec MV, regra 10); giros seguidos somam ao destino.
+    function wheel(dy: length) {
+        let base = root.sc-running ? root.sc-to : scroll.content-x;
+        root.follow(max(scroll.visible-width - row.preferred-width, min(0px, base + dy)));
+    }
+
+    // Toda a faixa: saber quando o mouse sai e não deixar o clique cair na lâmina embaixo.
+    area := TouchArea {
+        y: root.height - BandUi.height;
+        height: BandUi.height;
+        changed has-hover => {
+            if (!self.has-hover) {
+                BandUi.leave();
+            }
+        }
+        Rectangle {
+            background: Theme.panel;
+            drop-shadow-blur: 12px;
+            drop-shadow-color: #00000080;
+        }
+        VerticalLayout {
+            padding-top: 6px;
+            padding-bottom: 4px;
+            spacing: 4px;
+            HorizontalLayout {
+                height: 22px;
+                padding-left: root.pad;
+                padding-right: root.pad;
+                spacing: 16px;
+                Tab {
+                    text: "Na ordem";
+                    active: BandUi.list == 0;
+                    clicked => { BandUi.list-changed(0); root.done(); }
+                }
+                Tab {
+                    text: "Reordenadas";
+                    active: BandUi.list == 1;
+                    enabled: BandUi.has-reordered;
+                    clicked => { BandUi.list-changed(1); root.done(); }
+                }
+                Text {
+                    text: BandUi.notice;
+                    color: Theme.warning;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                }
+            }
+            scroll := ScrollView {
+                mouse-drag-pan-enabled: false;
+                content-width: row.preferred-width;
+                content-height: self.visible-height;
+                scrolled => { root.sc-running = false; }
+                TouchArea {
+                    width: row.preferred-width;
+                    height: scroll.visible-height;
+                    scroll-event(e) => {
+                        if (e.delta-y != 0) {
+                            root.wheel(e.delta-y);
+                            return accept;
+                        }
+                        reject
+                    }
+                }
+                row := HorizontalLayout {
+                    height: scroll.visible-height;
+                    padding-left: root.pad;
+                    padding-right: root.pad;
+                    spacing: root.gap;
+                    alignment: start;
+                    for item[i] in BandUi.items: card := TouchArea {
+                        width: root.card-w;
+                        clicked => { BandUi.apply(i); root.done(); }
+                        changed has-hover => { BandUi.hover(i, self.has-hover); }
+                        Rectangle {
+                            border-radius: 4px;
+                            border-width: 2px;
+                            border-color: i == BandUi.in-use ? Theme.selected : card.has-hover ? #ffffff70 : transparent;
+                            background: card.has-hover ? #ffffff14 : transparent;
+                        }
+                        VerticalLayout {
+                            padding: 4px;
+                            spacing: 3px;
+                            alignment: start;
+                            Rectangle {
+                                height: root.thumb-h;
+                                SpreadCanvas {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    data: item.data;
+                                    small: true;
+                                }
+                                HorizontalLayout {
+                                    y: 0;
+                                    height: 30px;
+                                    alignment: end;
+                                    padding: 4px;
+                                    spacing: 4px;
+                                    if card.has-hover || item.favorite: SmallButton {
+                                        text: item.favorite ? "★" : "☆";
+                                        glyph-color: item.favorite ? Theme.warning : Theme.text;
+                                        clicked => { BandUi.favorite(i); root.done(); }
+                                    }
+                                    if card.has-hover: SmallButton {
+                                        text: "×";
+                                        clicked => { BandUi.reject(i); root.done(); }
+                                    }
+                                }
+                            }
+                            HorizontalLayout {
+                                spacing: 4px;
+                                Text {
+                                    text: item.title;
+                                    color: i == BandUi.in-use ? Theme.selected : Theme.text;
+                                    font-size: 11px;
+                                    font-weight: i == BandUi.in-use ? 700 : 400;
+                                    overflow: elide;
+                                    horizontal-stretch: 1;
+                                }
+                                Text { text: item.score; color: Theme.muted; font-size: 11px; }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

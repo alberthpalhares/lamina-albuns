@@ -1,5 +1,5 @@
 //! Miniaturas que chegaram do trabalhador (spec TR, regra 6): só as linhas delas mudam no
-//! navegador, na linha do tempo e na faixa de lâminas; a lâmina grande e o painel de layouts se
+//! navegador, na linha do tempo e na faixa de lâminas; a lâmina grande e a faixa de layouts se
 //! refazem se alguma é da lâmina atual.
 
 use std::collections::HashSet;
@@ -48,9 +48,9 @@ pub fn show(app: &mut App, fresh: &[PhotoId]) {
         |i, (_, row), data| *data = strip_data(&project, i, &missing, all, row.warned),
     );
     if current {
-        // As prévias do painel e a lâmina grande mostram a miniatura até a foto nítida chegar.
+        // Os cartões da faixa e a lâmina grande mostram a miniatura até a foto nítida chegar.
         app.lists.panel = None;
-        crate::panel::refresh(app);
+        crate::band::refresh(app);
         app.images.arrived = true;
     }
 }
