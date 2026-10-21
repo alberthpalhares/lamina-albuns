@@ -25,7 +25,9 @@
 //! - [`human`]: cada erro dito ao fotógrafo, com o que fazer e o detalhe (spec EH).
 //! - [`importing`]: fotos entrando num álbum aberto (spec IM).
 //! - [`error_log`] e [`feedback`]: o registro de erros e o formulário de sugestões (spec SR).
-//! - [`motion`]: movimento e fluidez, a medição de tempos e as vagas da lâmina (spec MV).
+//! - [`motion`]: movimento e fluidez, a medição de tempos e as vagas da lâmina (spec MV); o plano
+//!   e as contas do rolo de lâminas (spec RL).
+//! - [`roll_image`]: a imagem de cada lâmina do rolo, só com fotos do cache (spec RL).
 
 pub mod adjusted;
 pub mod agent;
@@ -62,6 +64,7 @@ pub mod presets;
 pub mod recents;
 pub mod relink;
 pub mod respec;
+pub mod roll_image;
 pub mod rulers;
 pub mod screens;
 pub mod session;
@@ -104,6 +107,7 @@ pub use recents::{RECENTS_FILE, Recent, RecentsStore};
 pub use relink::{
     Found, RELINK_LATER, not_found_message, relinked_message, search_folder, search_near,
 };
+pub use roll_image::{ImageSize, RollPainter, RollSource, SpreadImage, render_spread_image};
 pub use screens::{Arrival, ScreenPlan, load_original, load_screen, load_thumb, prepare_images};
 pub use session::{HistoryList, HistoryStep, Session};
 pub use snap::{Grip, SnapLine};

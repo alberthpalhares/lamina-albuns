@@ -21,7 +21,7 @@ pub enum Fill {
     Side(PageSide),
 }
 
-fn color(c: Rgb) -> Color {
+pub(crate) fn color(c: Rgb) -> Color {
     Color::from_rgba8(c.r, c.g, c.b, 255)
 }
 
@@ -64,7 +64,7 @@ pub fn styled(frame: &Frame) -> bool {
 
 /// Raio de cada canto em pixels (cima-esquerda, cima-direita, baixo-direita, baixo-esquerda).
 /// Cantos que caem na sangria ficam retos (regra 5); o raio para na metade do lado menor.
-fn corners(frame: &Frame, bled: &Bled, scale: Scale, at: PixelBox) -> [f32; 4] {
+pub(crate) fn corners(frame: &Frame, bled: &Bled, scale: Scale, at: PixelBox) -> [f32; 4] {
     #[allow(clippy::cast_possible_truncation)]
     let r = (frame.radius.get() * scale.x) as f32;
     let limit = at.width().min(at.height()) as f32 / 2.0;
@@ -118,7 +118,7 @@ fn rounded(x: f32, y: f32, w: f32, h: f32, r: [f32; 4]) -> Option<Path> {
     p.finish()
 }
 
-fn box_path(at: PixelBox, r: [f32; 4]) -> Option<Path> {
+pub(crate) fn box_path(at: PixelBox, r: [f32; 4]) -> Option<Path> {
     rounded(
         at.x0 as f32,
         at.y0 as f32,
@@ -176,7 +176,13 @@ fn opaque(rgba: &[u8]) -> Vec<u8> {
 
 /// A borda: um anel entre o contorno do quadro no corte final e o mesmo contorno recuado da
 /// espessura (regra 4).
-fn draw_border(pixmap: &mut Pixmap, frame: &Frame, bled: &Bled, scale: Scale, radii: [f32; 4]) {
+pub(crate) fn draw_border(
+    pixmap: &mut Pixmap,
+    frame: &Frame,
+    bled: &Bled,
+    scale: Scale,
+    radii: [f32; 4],
+) {
     let width = frame.border.width.get();
     if width <= 0.0 {
         return;
