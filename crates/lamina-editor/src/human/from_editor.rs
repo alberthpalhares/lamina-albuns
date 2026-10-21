@@ -34,6 +34,20 @@ impl Human for EditorError {
                 "Não foi possível preparar o álbum de exemplo.".to_owned(),
                 CHECK_DISK.to_owned(),
             ),
+            EditorError::SpreadFull { spread, capacity } => (
+                format!(
+                    "A lâmina {} já tem {capacity} fotos, o máximo que cabe nela.",
+                    spread + 1
+                ),
+                "Solte a foto sobre um quadro para trocar, ou leve-a para outra lâmina.".to_owned(),
+            ),
+            EditorError::AlreadyInSpread { spread } => (
+                format!("Esta foto já está na lâmina {}.", spread + 1),
+                format!(
+                    "Para mudá-la de lugar dentro dela, vá até a lâmina {} e arraste lá.",
+                    spread + 1
+                ),
+            ),
             EditorError::NoFrame => return bug(details),
             EditorError::Media(e) => return e.human(),
             EditorError::Build(e) => return e.human(),

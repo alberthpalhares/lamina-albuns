@@ -112,3 +112,38 @@ pub fn reorder(from: usize, gap: usize, count: usize) -> Reorder {
         .collect();
     Reorder { to, shift }
 }
+
+/// Onde uma foto solta numa lâmina cai (spec ML, regra 7).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum CrossHit {
+    /// Um quadro de foto (vazio ou com foto) e o retângulo dele: o destaque, a soltura e o pouso.
+    Frame { frame: usize, rect: PxRect },
+    /// A lâmina, fora dos quadros de foto: a foto entra como uma a mais.
+    Spread,
+}
+
+/// O alvo no ponto (`x`, `y`, em frações da largura) da lâmina `index`. Só quadros de foto contam:
+/// um texto conta como fora dos quadros, e um texto por cima de uma foto deixa valer a foto
+/// (regra 7). `None` fora da lâmina.
+pub fn cross_target(project: &Project, index: usize, x: f64, y: f64) -> Option<CrossHit> {
+    let area = unit_area(project);
+    if !(0.0..=1.0).contains(&x) || !(0.0..=area.height).contains(&y) {
+        return None;
+    }
+    let view = spread_view(project, index, area, &[])?;
+    let hit = view.frames.iter().enumerate().rev().find(|(_, f)| {
+        let r = f.rect;
+        !matches!(f.kind, FrameKind::Text { .. })
+            && x >= r.x
+            && x <= r.x + r.width
+            && y >= r.y
+            && y <= r.y + r.height
+    });
+    Some(match hit {
+        Some((frame, f)) => CrossHit::Frame {
+            frame,
+            rect: f.rect,
+        },
+        None => CrossHit::Spread,
+    })
+}

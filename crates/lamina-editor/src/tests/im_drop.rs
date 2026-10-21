@@ -92,7 +92,7 @@ fn im_b9_soltar_na_lamina_atual_fora_de_quadro() {
     layout_with(&mut project, 3, &three).unwrap();
     let extra = spread_photos(&project, 0)[..2].to_vec();
     let mut editor = editor_at(project, 3);
-    assert!(editor.drop_photos(DropPlace::Spread, &extra));
+    assert!(editor.drop_photos(DropPlace::Spread(3), &extra));
     let after = editor.session().unwrap().project();
     let mut want = three.clone();
     want.extend(&extra);
@@ -117,7 +117,13 @@ fn im_b10_soltar_sobre_um_quadro_continua_igual() {
     let mut today = editor_at(project.clone(), 0);
     assert!(today.drop_photo(0, photo));
     let mut now = editor_at(project, 0);
-    assert!(now.drop_photos(DropPlace::Frame(0), &[photo]));
+    assert!(now.drop_photos(
+        DropPlace::Frame {
+            spread: 0,
+            frame: 0
+        },
+        &[photo]
+    ));
     assert_eq!(
         now.session().unwrap().project(),
         today.session().unwrap().project()

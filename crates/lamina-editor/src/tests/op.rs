@@ -312,7 +312,7 @@ fn op_b12_foto_nova_entra_com_100() {
         set(&mut editor, *q, |f| f.opacity = Opacity::new(30).unwrap());
     }
     let spare = editor.session().unwrap().project().photos[0].id;
-    let place = crate::editor::DropPlace::Spread;
+    let place = crate::editor::DropPlace::Spread(1);
     assert!(editor.drop_photos(place, &[spare]));
     let s = editor.session().unwrap();
     let new = s.project().spreads[1]
