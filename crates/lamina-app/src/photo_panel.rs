@@ -7,8 +7,10 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use lamina_core::FrameContent;
+use lamina_editor::PALETTE;
 use lamina_editor::editor::{AdjustChange, AdjustControl};
-use slint::{ComponentHandle, Timer, TimerMode};
+use lamina_editor::forms::{LookField, mm_text};
+use slint::{Color, ComponentHandle, Timer, TimerMode};
 
 use crate::state::App;
 use crate::{AppWindow, PhotoUi};
@@ -94,6 +96,7 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     ui.on_brightness_reset(move || reset(&a, AdjustControl::Brightness));
     let a = app.clone();
     ui.on_contrast_reset(move || reset(&a, AdjustControl::Contrast));
+    connect_style(&ui, app);
     let (a, w) = (app.clone(), window.as_weak());
     ui.on_angle_accepted(move || {
         let Some(w) = w.upgrade() else {
@@ -113,6 +116,35 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         let result = a.borrow_mut().editor.set_scale_text(&text);
         typed(&a, &w, result);
     });
+}
+
+/// Opacidade, borda, cor da borda e cantos (spec OP): a lâmina muda na hora.
+fn connect_style(ui: &PhotoUi, app: &Shared) {
+    let a = app.clone();
+    ui.on_opacity_moved(move |v| {
+        let percent = u8::try_from(whole(v).clamp(0, 100)).unwrap_or(100);
+        styled(&a, |e| e.set_photo_opacity(percent));
+    });
+    let a = app.clone();
+    ui.on_border_step(move |d| styled(&a, |e| e.step_photo_style(LookField::Border, d)));
+    let a = app.clone();
+    ui.on_radius_step(move |d| styled(&a, |e| e.step_photo_style(LookField::Radius, d)));
+    let a = app.clone();
+    ui.on_border_pick(move |i| {
+        let Some((_, c)) = usize::try_from(i).ok().and_then(|i| PALETTE.get(i)) else {
+            return;
+        };
+        styled(&a, |e| e.pick_photo_border_color(*c));
+    });
+}
+
+/// Uma mudança da aparência da foto: a faixa e a lâmina redesenham.
+fn styled(app: &Shared, change: impl FnOnce(&mut lamina_editor::Editor) -> bool) {
+    let mut a = app.borrow_mut();
+    if change(&mut a.editor) {
+        a.refresh_strip();
+        a.refresh_current();
+    }
 }
 
 /// Um campo digitado: a mensagem do editor (já humana) ou o redesenho.
@@ -157,6 +189,15 @@ pub fn refresh(app: &App) {
             .into(),
     );
     ui.set_note(shared_note(app).into());
+    if let Some(style) = app.editor.photo_style() {
+        ui.set_size(style.size.into());
+        ui.set_opacity(f32::from(style.opacity.get()));
+        ui.set_border(mm_text(style.border.width.get()).into());
+        let c = style.border.color;
+        ui.set_border_color(Color::from_rgb_u8(c.r, c.g, c.b));
+        ui.set_radius(mm_text(style.radius.get()).into());
+    }
+    ui.set_style_note(app.editor.photo_style_note().into());
 }
 
 /// "Vale para esta foto em todos os quadros" quando a foto está em mais de um quadro do álbum.

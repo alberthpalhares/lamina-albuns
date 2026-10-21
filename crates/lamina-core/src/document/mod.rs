@@ -11,6 +11,9 @@ mod crop;
 mod ids;
 mod migration;
 mod mounting;
+mod opacity;
+#[cfg(test)]
+mod opacity_tests;
 mod paths;
 mod photo;
 mod print;
@@ -24,6 +27,7 @@ pub use content::{Border, Frame, FrameContent, Rgb, Spread};
 pub use crop::{Crop, PixelRegion};
 pub use ids::{FrameId, PhotoId, SpreadId};
 pub use mounting::{AlbumLook, CropLevel, LIGHT_MAX_CROP, Mounting};
+pub use opacity::Opacity;
 pub use paths::{lexical_path, relative_path, validate_project_name};
 pub use photo::{Orientation, Photo, PhotoAdjust};
 pub use print::{ExportPrefs, OutputFormat, PageLimits};

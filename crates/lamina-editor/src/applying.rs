@@ -1,7 +1,9 @@
 //! Aplicar uma opção de layout na lâmina (spec TL, regras 3 e 4): as fotos da seleção vão para
 //! os quadros do candidato, com borda, cantos e, num modelo do fotógrafo, os textos dele (spec MD).
 
-use lamina_core::{Border, CoreError, Crop, Frame, FrameContent, Mm, PhotoId, Project, RelRect};
+use lamina_core::{
+    Border, CoreError, Crop, Frame, FrameContent, Mm, Opacity, PhotoId, Project, RelRect,
+};
 use lamina_layout::LayoutCandidate;
 
 use crate::suggestions::{Selection, photo_of};
@@ -33,6 +35,18 @@ pub fn apply(
         .iter()
         .filter_map(|f| photo_of(f).map(|p| (p, f.border, f.radius)))
         .collect();
+    // A opacidade segue a foto, mas foto nova entra com 100: transparência é efeito de uma foto,
+    // não estilo da lâmina (spec OP, regra 9).
+    let opacities: Vec<(PhotoId, Opacity)> = spread
+        .frames
+        .iter()
+        .filter_map(|f| photo_of(f).map(|p| (p, f.opacity)))
+        .collect();
+    let opacity_of = |photo: Option<PhotoId>| {
+        photo
+            .and_then(|p| opacities.iter().find(|(q, _)| *q == p))
+            .map_or(Opacity::FULL, |(_, o)| *o)
+    };
     let common = styles
         .first()
         .map_or((Border::default(), Mm(0.0)), |(_, b, r)| (*b, *r));
@@ -89,6 +103,7 @@ pub fn apply(
         {
             frame.border = border;
             frame.radius = radius;
+            frame.opacity = opacity_of(photo);
         }
     }
     finish(project, index, sel, c)

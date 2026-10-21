@@ -47,6 +47,8 @@ pub struct FrameView {
     pub border_color: Rgb,
     /// Raio de cada canto: cima-esquerda, cima-direita, baixo-direita, baixo-esquerda (regra 5).
     pub radii: [f64; 4],
+    /// A opacidade da foto, de 0 a 1 (spec OP, regra 6): só a foto fica translúcida.
+    pub opacity: f64,
 }
 
 /// A lâmina pronta para desenhar.
@@ -168,6 +170,7 @@ pub fn spread_view(
                     corner(right, bottom),
                     corner(left, bottom),
                 ],
+                opacity: f64::from(frame.opacity.fraction()),
             }
         })
         .collect();

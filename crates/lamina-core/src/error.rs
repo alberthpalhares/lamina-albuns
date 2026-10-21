@@ -34,6 +34,9 @@ pub enum CoreError {
     )]
     InvalidAdjust { photo: String },
 
+    #[error("opacidade {value}% fora da faixa (0 a 100) num quadro da lâmina {spread}")]
+    InvalidOpacity { value: u8, spread: usize },
+
     #[error("recorte inválido: {0}")]
     InvalidCrop(String),
 

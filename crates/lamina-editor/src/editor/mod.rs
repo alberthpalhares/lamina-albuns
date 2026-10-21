@@ -35,6 +35,8 @@ mod neutral;
 mod organize;
 mod organize_cmd;
 mod organize_moves;
+mod panel_need;
+mod photo_style;
 mod recents;
 mod report;
 mod style;
@@ -50,6 +52,7 @@ pub use group_fields::{Field, GROUP_NOT_A_NUMBER};
 pub use layouts::Panel;
 pub use neutral::AdjustControl;
 pub use organize::{DoubleClick, SidePanel};
+pub use photo_style::PhotoStyle;
 pub use style::Look;
 pub use text_edit::TextChange;
 
@@ -103,6 +106,8 @@ pub struct Editor {
     group: Option<group_gesture::GroupGesture>,
     /// A área de cópia do modo organizar (spec EG, regra 12); não vai para o arquivo.
     clipboard: Option<clipboard::Clip>,
+    /// O pedido do painel temporário (spec JE, regra 5); some sozinho quando acaba.
+    panel_need: std::cell::Cell<Option<panel_need::PanelNeed>>,
 }
 
 impl Default for Editor {
@@ -145,6 +150,7 @@ impl Editor {
             organize: organize::Organizing::default(),
             group: None,
             clipboard: None,
+            panel_need: std::cell::Cell::new(None),
         }
     }
 
@@ -197,6 +203,7 @@ impl Editor {
     /// dos Marcos 2 e 3, M2).
     fn forget_view(&mut self) {
         self.gesture = None;
+        self.panel_need.set(None);
         self.selected_frame = None;
         self.selection.clear();
         self.anchor = None;
