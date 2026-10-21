@@ -39,6 +39,7 @@ mod new_album;
 mod new_project;
 mod new_project_file;
 mod news;
+mod news_player;
 mod opened;
 mod organize;
 mod palette;

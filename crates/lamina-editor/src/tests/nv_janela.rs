@@ -31,8 +31,10 @@ fn nv_b12_ilustracao_e_comando_de_cada_novidade() {
     );
     // No arquivo de verdade, toda imagem existe e todo comando existe.
     let folder = Path::new(env!("CARGO_MANIFEST_DIR")).join("../lamina-app/dist/novidades");
-    let sections = parse(REAL);
+    // O "Não lançado" conta como uma versão: as ilustrações dele também precisam existir.
+    let sections = parse(&REAL.replace("## [Não lançado]", "## [9.9.9]"));
     let all: Vec<_> = sections.iter().flat_map(|s| &s.items).collect();
+    assert!(all.iter().any(|i| i.image.is_some()));
     for item in &all {
         if let Some(image) = &item.image {
             let bytes = std::fs::read(folder.join(image)).unwrap();
