@@ -9,16 +9,16 @@ Cada item diz o que mudou e como ver a mudança, em linguagem de fotógrafo:
 `- **O que mudou.** Explicação curta. Experimente: o que fazer para ver.` O `cargo xtask versao`
 avisa (sem impedir a versão) quando um item não tem "Experimente:". No fim do item, um comentário
 que a página da versão não mostra põe a ilustração (um arquivo de `novidades/`) e o comando do
-botão "Experimente agora": `<!-- imagem: atalhos.jpg; comando: ajuda.atalhos -->`.
+botão "Experimente agora": `<!-- imagem: atalhos.png; comando: ajuda.atalhos -->`.
 
 ## [Não lançado]
 
 - **Atalhos do teclado.** Ajuda → "Atalhos do teclado…" mostra todos os atalhos e os gestos do
   mouse, com busca. Experimente: aperte F1 e procure “trocar”.
-  <!-- imagem: atalhos.jpg; comando: ajuda.atalhos -->
+  <!-- imagem: atalhos.png; comando: ajuda.atalhos -->
 - **O que há de novo.** Depois de atualizar, o Lamina mostra o que mudou desde a sua versão, com o
   que experimentar em cada novidade. Experimente: Ajuda → "O que há de novo…".
-  <!-- imagem: novidades.jpg; comando: ajuda.novidades -->
+  <!-- imagem: novidades.png; comando: ajuda.novidades -->
 
 ## [0.1.0-beta.4] - 2026-10-20
 

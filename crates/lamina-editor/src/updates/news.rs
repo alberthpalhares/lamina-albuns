@@ -2,8 +2,11 @@
 //! release (`cargo xtask versao`), e quais versões a janela "O que há de novo" mostra. Nada aqui
 //! lê a hora do computador (regra 10).
 
+mod animation;
 mod item;
 mod page;
+
+pub use animation::{Animation, Frame};
 
 use item::{clean, item};
 pub use page::{
