@@ -8,8 +8,8 @@ use crate::DetailRow;
 use crate::convert::model;
 use crate::state::App;
 
-/// A aba Detalhes, no painel da direita.
-const DETAILS_TAB: i32 = 1;
+/// A aba Detalhes, no painel da direita (a de partida; spec FL, regra 11).
+pub(crate) const DETAILS_TAB: i32 = 1;
 
 pub fn refresh(app: &mut App) {
     let Some(w) = app.window.upgrade() else {

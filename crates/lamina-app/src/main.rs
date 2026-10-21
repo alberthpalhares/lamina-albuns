@@ -7,6 +7,7 @@
 #![windows_subsystem = "windows"]
 
 mod adjusted;
+mod band;
 mod browser;
 mod calibrate;
 mod context;
@@ -43,7 +44,6 @@ mod news_player;
 mod opened;
 mod organize;
 mod palette;
-mod panel;
 mod photo_panel;
 mod presets;
 mod recents;
@@ -71,8 +71,8 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use lamina_editor::{
-    Cache, Command, Editor, Install, MODELS_FILE, ModelsStore, PREFS_FILE, PRESETS_FILE, Part,
-    PrefsStore, PresetsStore, RECENTS_FILE, RecentsStore, STRIPS_FILE, StripsStore, config_dir,
+    Cache, Editor, Install, MODELS_FILE, ModelsStore, PREFS_FILE, PRESETS_FILE, PrefsStore,
+    PresetsStore, RECENTS_FILE, RecentsStore, STRIPS_FILE, StripsStore, config_dir,
 };
 use slint::{CloseRequestResponse, ComponentHandle, Timer, TimerMode};
 
@@ -112,7 +112,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     });
     browser::connect(window, app);
     connect_dialogs(window, app);
-    connect_layouts(window, app);
+    band::connect(window, app);
     drops::connect(window, app);
     drag_motion::connect_motion(window, app);
     organize::connect(window, app);
@@ -129,43 +129,6 @@ fn connect(window: &AppWindow, app: &Shared) {
     importing::connect(window, app);
     calibrate::connect(window, app);
     roll_connect::connect(window, app);
-}
-
-/// O painel de layouts: clique aplica; a estrela e o "×" marcam a opção (spec TL, seção 3).
-fn connect_layouts(window: &AppWindow, app: &Shared) {
-    let a = app.clone();
-    window.on_layout_apply(move |i| {
-        let Ok(i) = usize::try_from(i) else {
-            return;
-        };
-        a.borrow_mut().timed(
-            "Aplicar a opção do painel",
-            |app| app.editor.apply_option(Part::Spread, i),
-            |app| {
-                app.refresh_strip();
-                app.refresh_current();
-            },
-        );
-    });
-    let a = app.clone();
-    window.on_layout_favorite(move |i| mark(&a, i, true));
-    let a = app.clone();
-    window.on_layout_reject(move |i| mark(&a, i, false));
-    let a = app.clone();
-    window.on_layout_list_changed(move |list| {
-        let mut app = a.borrow_mut();
-        if (list == 1) != app.editor.reordered() && app.editor.run(Command::ToggleReordered) {
-            app.refresh_current();
-        }
-    });
-}
-
-fn mark(app: &Shared, i: i32, favorite: bool) {
-    let mut app = app.borrow_mut();
-    if usize::try_from(i).is_ok_and(|i| app.editor.mark_option(i, favorite)) {
-        app.refresh_strip();
-        app.refresh_current();
-    }
 }
 
 fn connect_dialogs(window: &AppWindow, app: &Shared) {

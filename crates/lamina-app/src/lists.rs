@@ -80,12 +80,12 @@ impl<K: PartialEq, V: PartialEq, T: Clone + 'static> Synced<K, V, T> {
     }
 }
 
-/// As listas da janela que mudam linha a linha e a chave das prévias do painel de layouts.
+/// As listas da janela que mudam linha a linha e a chave dos cartões da faixa de layouts.
 pub struct Lists {
     pub strip: Synced<lamina_core::SpreadId, lamina_editor::motion::StripRow, crate::SpreadData>,
     pub line: Synced<lamina_editor::motion::TimelineKey, usize, crate::TimelineItem>,
     pub browser: Synced<lamina_core::PhotoId, lamina_editor::motion::PhotoRow, crate::PhotoData>,
-    /// As prévias do painel mostradas agora (MV-B17): igual, o painel não é refeito.
+    /// Os cartões da faixa mostrados agora (MV-B17, FL-B12): igual, não são refeitos.
     pub panel: Option<lamina_editor::motion::PanelKey>,
 }
 

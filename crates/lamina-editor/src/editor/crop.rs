@@ -187,10 +187,13 @@ impl Editor {
             .is_ok()
     }
 
-    /// O projeto como a janela mostra: com o recorte provisório e o quadro do gesto (spec TX)
-    /// onde estão agora.
+    /// O projeto como a janela mostra: com o recorte provisório, o quadro do gesto (spec TX)
+    /// onde estão agora e a prévia da faixa de layouts (spec FL, regra 3).
     pub fn view_project(&self) -> Option<Cow<'_, Project>> {
         let s = self.session.as_ref()?;
+        if let Some(preview) = self.band_preview() {
+            return Some(Cow::Owned(preview));
+        }
         let pending = self.crop_frame.zip(self.pending_crop);
         let gesture = self.gesture_rect();
         if pending.is_none() && gesture.is_none() && !self.group_moving() {

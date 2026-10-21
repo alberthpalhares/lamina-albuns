@@ -149,18 +149,9 @@ impl Editor {
         let (Some(sel), Some(c)) = (panel.selection, panel.options.get(option).cloned()) else {
             return false;
         };
+        // A mesma montagem da prévia na lâmina (spec FL, regra 3).
         let done = self.change("Montar lâmina", |p, i| {
-            // Álbum sem lâminas: a seleção monta a primeira (spec TR, regra 10).
-            if p.spreads.is_empty() {
-                p.add_spread();
-            }
-            p.spreads
-                .get_mut(i)
-                .ok_or(EditorError::NoFrame)?
-                .frames
-                .clear();
-            crate::suggestions::apply(p, i, &sel, &c)?;
-            Ok(())
+            super::band::apply_choice(p, i, (&sel, &c), true)
         });
         if done {
             self.selection.clear();

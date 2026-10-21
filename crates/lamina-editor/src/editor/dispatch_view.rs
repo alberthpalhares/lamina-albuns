@@ -1,6 +1,6 @@
 //! O registro de comandos no editor, parte de vista: navegar entre as lâminas, as faixas, o
-//! painel, as guias, o movimento e o zoom. Só mudam o que a janela mostra, nunca o álbum (a
-//! janela redesenha só a lâmina atual).
+//! painel, a faixa de layouts, as guias, o movimento e o zoom. Só mudam o que a janela mostra,
+//! nunca o álbum (a janela redesenha só a lâmina atual).
 
 use super::Editor;
 use crate::{Command, Strip};
@@ -18,8 +18,8 @@ impl Editor {
             Command::AdjustPhoto => self.photo_adjust().is_some(),
             // A calibração do tamanho real abre um diálogo da janela, em qualquer modo (ZR).
             Command::CalibrateSize => true,
-            // Rodada 0b: já no registro, mas inerte até a spec dela ligar (FL).
-            Command::ToggleLayoutBand => false,
+            // A faixa de layouts precisa de uma lâmina (spec FL, regra 10).
+            Command::ToggleLayoutBand => s.spread_count() > 0,
             _ => return None,
         };
         Some(ok)
@@ -42,6 +42,11 @@ impl Editor {
                 true
             }
             Command::ToggleReduceMotion => self.toggle_reduce_motion(),
+            Command::ToggleLayoutBand => {
+                // Os quadros da prévia são outros: abrir desmarca o quadro (spec FL, regra 2).
+                self.selected_frame = None;
+                self.toggle_band()
+            }
             Command::NextSpread
             | Command::PreviousSpread
             | Command::FirstSpread

@@ -11,6 +11,7 @@ import { Motion } from "motion.slint";
 import { WelcomeScreen } from "welcome.slint";
 import { DragUi } from "drag.slint";
 import { SpreadRoll, RollUi } from "roll.slint";
+import { BandUi } from "band.slint";
 
 export component Stage inherits Rectangle {
     in property <bool> has-project;
@@ -138,8 +139,11 @@ export component Stage inherits Rectangle {
         }
     }
 
-    // No modo organizar, a barra da lâmina em destaque e as réguas ocupam o topo.
-    property <length> top-room: OrganizeUi.on ? 52px : 0px;
+    // No modo organizar, a barra da lâmina em destaque e as réguas ocupam o topo; a faixa de
+    // layouts empurra a lâmina (e o rolo) para baixo, junto com ela (spec FL, regra 12).
+    property <length> band-room: BandUi.open ? BandUi.height : 0px;
+    animate band-room { duration: Motion.on ? Motion.band-ms * 1ms : 0ms; easing: ease-out; }
+    property <length> top-room: OrganizeUi.on ? 52px : self.band-room;
     // Com o rolo (spec RL, regra 2), a largura vem do Rust (`roll_width`), deixando 8% de cada
     // lado para as vizinhas.
     property <length> canvas-width: RollUi.on ? RollUi.width : root.current.aspect > 0
@@ -219,11 +223,13 @@ export component Stage inherits Rectangle {
         }
     }
     // O rolo de lâminas (spec RL): as vizinhas atrás da lâmina grande, que fica no lugar da atual.
+    // Embaixo da faixa de layouts: a área encolhe e o Rust refaz a largura do rolo (spec FL).
     roll := SpreadRoll {
+        y: root.band-room;
         width: parent.width;
-        height: parent.height;
+        height: parent.height - root.band-room;
         live-hover: root.live-hover;
-        live-y: big.y;
+        live-y: big.y - root.band-room;
         live-h: big.height;
         // Fotos do navegador e fotos de um quadro (spec ML) acendem o destino no rolo.
         photo-drag: DragUi.kind == 1 || DragUi.kind == 2;

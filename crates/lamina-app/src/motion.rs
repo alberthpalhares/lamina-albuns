@@ -18,5 +18,6 @@ pub fn refresh(w: &AppWindow, durations: Durations, reduce: bool) {
     m.set_land_ms(ms(durations.land));
     m.set_sharp_ms(ms(durations.sharp));
     m.set_reorder_ms(ms(durations.reorder));
+    m.set_band_ms(ms(durations.band));
     w.set_reduce_motion(reduce);
 }

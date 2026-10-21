@@ -117,8 +117,10 @@ impl Editor {
         // Com o painel escondido, ele aparece enquanto o modo estiver aberto (spec JE, regra 5).
         self.ask_panel_for_mode(on);
         if on {
-            // O modo abre a aba Detalhes (spec AF, regra 10).
+            // O modo abre a aba Detalhes (spec AF, regra 10) e fecha a faixa de layouts (spec FL,
+            // regra 10).
             self.wants_details = true;
+            self.close_band();
         } else {
             self.selected_frame = None;
         }
