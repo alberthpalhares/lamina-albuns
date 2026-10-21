@@ -52,6 +52,8 @@ pub fn run_command(app: &Shared, command: Command) {
         }
         // A lista de atalhos abre por cima, sem passar pelo editor (spec AT, regra 7).
         Command::ShowShortcuts => crate::shortcuts::open(&a),
+        // As novidades abrem por cima, sem passar pelo editor (spec NV, regra 5).
+        Command::ShowNews => crate::news::open_help(&a),
         Command::NewText => new_text(&mut a),
         Command::SaveModel => models::open_save(&mut a),
         Command::Models => models::open_list(&a),
