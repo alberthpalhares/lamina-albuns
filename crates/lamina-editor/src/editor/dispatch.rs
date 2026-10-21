@@ -31,6 +31,7 @@ impl Editor {
                     | Command::ToggleBeta
                     | Command::SendFeedback
                     | Command::OpenLogs
+                    | Command::ShowShortcuts
             ) || (command == Command::ClearRecents && self.recents.has_unpinned());
         };
         // Atalhos por modo (spec EG, regra 2) e os comandos do modo organizar.
@@ -65,6 +66,8 @@ impl Editor {
             Command::NewText | Command::NewPhotoFrame | Command::Models => true,
             Command::CheckUpdates | Command::ToggleAutoUpdates | Command::ToggleBeta => true,
             Command::SendFeedback | Command::OpenLogs => true,
+            // A lista de atalhos vale em qualquer momento (spec AT, regra 7).
+            Command::ShowShortcuts => true,
             Command::SaveModel => self.can_save_model(),
             Command::BringForward | Command::SendBackward => self.can_reorder(),
             Command::Deselect => {
@@ -88,7 +91,7 @@ impl Editor {
             | Command::TurnLeftMore
             | Command::TurnRightMore => self.crop_frame.is_some(),
             // Rodada 0b: já no registro, mas inertes até a spec de cada um ligar (AT, NV, BR e PF).
-            Command::ShowShortcuts | Command::ShowNews | Command::BuildAlbum => false,
+            Command::ShowNews | Command::BuildAlbum => false,
             Command::SelectAllPhotos => false,
             // Os do modo organizar e os de vista já responderam acima.
             Command::Organize
@@ -136,7 +139,9 @@ impl Editor {
     /// Roda os comandos que não precisam de diálogo. `true` = algo mudou. Os de arquivo pedem um
     /// caminho à janela e chamam [`Editor::open`] e a sessão.
     pub fn run(&mut self, command: Command) -> bool {
-        if !self.available(command) {
+        // A lista de atalhos é aberta pela janela e não mexe em nada: nem o recorte, nem o modo
+        // organizar, nem a seleção (spec AT, regra 7).
+        if !self.available(command) || command == Command::ShowShortcuts {
             return false;
         }
         // Um comando no meio do arrasto de um quadro descarta o gesto: soltar depois gravaria o

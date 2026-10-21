@@ -33,8 +33,9 @@ import { DragUi } from "drag.slint";
 import { TopBar, NoticeBar } from "topbar.slint";
 import { Stage } from "stage.slint";
 import { BottomStrips } from "bottom.slint";
+import { ShortcutsUi, ShortcutsDialog, ShortcutGroup, ShortcutRow } from "shortcuts.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi }
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, ShortcutsUi, ShortcutGroup, ShortcutRow }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -344,6 +345,8 @@ export component AppWindow inherits Window {
         }
         Menu {
             title: "Ajuda";
+            MenuItem { title: "Atalhos do teclado…  (Ctrl+/)"; activated => { root.command("ajuda.atalhos"); } }
+            MenuSeparator { }
             MenuItem { title: "Verificar atualizações agora"; activated => { root.command("ajuda.verificar-atualizacoes"); } }
             MenuItem { title: (root.auto-updates ? "✓ " : "    ") + "Verificar atualizações automaticamente"; activated => { root.command("ajuda.atualizar-automaticamente"); } }
             MenuItem { title: (root.beta-updates ? "✓ " : "    ") + "Receber versões de teste (beta)"; activated => { root.command("ajuda.versoes-de-teste"); } }
@@ -357,7 +360,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(event) => {
-            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || root.busy-text != "") {
+            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || ShortcutsUi.show || root.busy-text != "") {
                 return reject;
             }
             // No modo organizar, Espaço segurado é a mão (spec EG, seção 3).
@@ -525,6 +528,9 @@ export component AppWindow inherits Window {
     if PresetUi.show-name: PresetNameDialog { }
     if ModelUi.show-name: ModelNameDialog { }
     if ModelUi.show-list: ModelsDialog { }
+    if ShortcutsUi.show: ShortcutsDialog {
+        closed => { root.focus-main(); }
+    }
     if root.show-message: MessageDialog {
         title: root.message-title;
         message: root.message-text;
