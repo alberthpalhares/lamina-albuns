@@ -137,6 +137,9 @@ mod ei;
 #[path = "tests/ex.rs"]
 mod ex;
 #[cfg(test)]
+#[path = "tests/je.rs"]
+mod je;
+#[cfg(test)]
 #[path = "tests/pd.rs"]
 mod pd;
 #[cfg(test)]

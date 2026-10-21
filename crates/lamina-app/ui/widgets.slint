@@ -8,6 +8,8 @@ export component BarButton inherits Rectangle {
     in property <bool> enabled: true;
     // O botão principal da barra, com fundo (auditoria da Fase 4, achado 25).
     in property <bool> primary;
+    // O mouse em cima, para quem põe um balão de dica no botão (Exportar, spec JE).
+    out property <bool> hovered: touch.has-hover;
     callback clicked();
     width: label.preferred-width + 24px;
     border-radius: 4px;
@@ -95,6 +97,8 @@ export component IconButton inherits Rectangle {
     in property <string> tip;
     in property <bool> checked;
     in property <bool> enabled: true;
+    // Onde o balão fica, para não sair da janela: -1 começa no botão, 0 no meio, 1 termina nele.
+    in property <int> tip-side;
     callback clicked();
     width: 32px;
     height: 32px;
@@ -111,7 +115,7 @@ export component IconButton inherits Rectangle {
         clicked => { root.clicked(); }
     }
     if root.tip != "": Tip {
-        x: (parent.width - self.width) / 2;
+        x: root.tip-side < 0 ? 0px : root.tip-side > 0 ? parent.width - self.width : (parent.width - self.width) / 2;
         y: parent.height + 4px;
         text: root.tip;
         shown: touch.has-hover;

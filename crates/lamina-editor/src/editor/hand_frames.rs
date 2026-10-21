@@ -8,8 +8,13 @@ use crate::hand::{add_empty_frame, add_frame_at, add_text, page_for, remove_fram
 
 impl Editor {
     /// T: texto novo na página pedida (a do mouse), selecionado (regra 11).
+    /// O painel aparece com o texto novo, se estava escondido (spec JE, regra 5).
     pub fn new_text(&mut self, side: Option<PageSide>) -> bool {
-        self.new_frame("Novo texto", side, true)
+        let done = self.new_frame("Novo texto", side, true);
+        if done {
+            self.ask_panel_for_selected();
+        }
+        done
     }
 
     /// Lâmina → Novo quadro de foto: um quadro vazio no centro da página.

@@ -132,6 +132,17 @@ component Slot inherits Rectangle {
     border-bottom-right-radius: f.br * self.unit;
     border-bottom-left-radius: f.bl * self.unit;
     background: f.kind == 2 || f.has-img ? transparent : #8a8a8a;
+    // O X do quadro vazio (spec JE, regra 1): só na tela, de canto a canto, recortado pelos
+    // cantos; nunca num quadro de foto (carregando ou ausente) nem num texto.
+    if f.kind == 0 && !f.has-img: Path {
+        width: 100%;
+        height: 100%;
+        viewbox-width: 1;
+        viewbox-height: 1;
+        commands: "M0 0 L1 1 M1 0 L0 1";
+        stroke: #ffffff59;
+        stroke-width: root.small ? 1px : 1.5px;
+    }
     // O texto muda de imagem a cada edição: vai direto.
     if f.has-img && f.kind == 2: Image {
         x: (root.ix - root.fx) * root.unit;
