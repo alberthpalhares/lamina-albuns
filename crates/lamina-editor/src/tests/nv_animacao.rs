@@ -118,3 +118,23 @@ fn nv_b16_reduzir_movimento_deixa_o_primeiro_quadro_parado() {
     assert_eq!(color(animation.first()), RED);
     assert!(animation.advance().is_none());
 }
+
+/// Toda imagem de `dist/novidades/` vai dentro do programa (`build.rs`): uma que nenhuma nota
+/// cita só pesaria no instalador.
+#[test]
+fn as_ilustracoes_embutidas_sao_todas_citadas() {
+    let folder = Path::new(env!("CARGO_MANIFEST_DIR")).join("../lamina-app/dist/novidades");
+    let sections = parse(&REAL.replace("## [Não lançado]", "## [9.9.9]"));
+    let cited: Vec<&String> = sections
+        .iter()
+        .flat_map(|s| &s.items)
+        .filter_map(|i| i.image.as_ref())
+        .collect();
+    for entry in std::fs::read_dir(folder).unwrap() {
+        let name = entry.unwrap().file_name().to_string_lossy().into_owned();
+        assert!(
+            cited.iter().any(|c| **c == name),
+            "{name} está em dist/novidades, mas nenhuma nota cita"
+        );
+    }
+}
