@@ -96,7 +96,7 @@ pub fn parse_angle(text: &str) -> Result<i32, &'static str> {
 
 impl Editor {
     /// Os quadros de foto selecionados e as fotos deles (cada foto uma vez, na ordem).
-    fn photo_targets(&self) -> (Vec<usize>, Vec<PhotoId>) {
+    pub(super) fn photo_targets(&self) -> (Vec<usize>, Vec<PhotoId>) {
         let Some(s) = self.session.as_ref() else {
             return (Vec::new(), Vec::new());
         };
@@ -136,26 +136,42 @@ impl Editor {
         if !self.can_adjust(change) {
             return false;
         }
-        let (_, photos) = self.photo_targets();
+        let (frames, photos) = self.photo_targets();
+        // "Restaurar a foto" também volta a opacidade dos quadros a 100 (spec OP, regra 10).
+        let restore = change == AdjustChange::Restore;
         if change.turns() {
             self.turning = true;
         }
         let Some(s) = self.session.as_mut() else {
             return false;
         };
-        let unchanged = photos.iter().all(|id| {
-            s.project().photo(*id).is_ok_and(|p| {
-                let mut a = p.adjust;
-                change.apply(&mut a);
-                a == p.adjust
-            })
-        });
+        let index = s.current();
+        let opaque = !restore
+            || s.project().spreads.get(index).is_some_and(|sp| {
+                frames
+                    .iter()
+                    .filter_map(|f| sp.frames.get(*f))
+                    .all(|f| f.opacity.is_full())
+            });
+        let unchanged = opaque
+            && photos.iter().all(|id| {
+                s.project().photo(*id).is_ok_and(|p| {
+                    let mut a = p.adjust;
+                    change.apply(&mut a);
+                    a == p.adjust
+                })
+            });
         if unchanged {
             return false;
         }
         let apply = |p: &mut lamina_core::Project| {
             for photo in p.photos.iter_mut().filter(|ph| photos.contains(&ph.id)) {
                 change.apply(&mut photo.adjust);
+            }
+            if restore {
+                super::photo_style::each(p, index, &frames, |f| {
+                    f.opacity = lamina_core::Opacity::FULL;
+                });
             }
             Ok::<(), crate::EditorError>(())
         };
