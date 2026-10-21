@@ -17,18 +17,63 @@ botão "Experimente agora": `<!-- imagem: atalhos.png; comando: ajuda.atalhos --
   roda do mouse ou dois dedos no touchpad passeiam pelo álbum de lado. Um clique numa vizinha a
   traz para o meio; passando o mouse, aparecem os atalhos dela e a alça para mudar a lâmina de
   lugar. Experimente: role a roda do mouse sobre a lâmina e clique na vizinha da direita.
+  <!-- imagem: rolo.png -->
 - **Fotos de uma lâmina para outra.** Arraste a foto de um quadro para outra lâmina: num quadro
   vazio ela entra, num quadro com foto as duas trocam de lugar, e fora dos quadros ela entra como
   uma foto a mais e a lâmina se rearruma. O quadro de onde ela saiu fica vazio, e um Ctrl+Z desfaz
   nas duas lâminas. Experimente: arraste uma foto da lâmina para um quadro da vizinha ao lado.
+  <!-- imagem: fotos-entre-laminas.png -->
 - **A linha do tempo acompanha você.** As fotos da lâmina em que você está ficam destacadas e no
   meio da linha do tempo, e um clique numa foto leva à lâmina dela. Experimente: passe para a
   próxima lâmina com Page Down e clique numa foto da linha do tempo.
+  <!-- imagem: linha-do-tempo.png -->
+- **Faixa de layouts.** Aperte L (ou o botão Layouts sobre a lâmina) e os layouts descem numa
+  faixa por cima da lâmina; pare o mouse num deles e a lâmina já mostra as fotos nos lugares novos,
+  sem gravar nada. Clique para ficar com ele; Esc ou um clique fora fecha sem mudar nada.
+  Experimente: aperte L e passe o mouse pelos layouts.
+  <!-- imagem: faixa-de-layouts.png; comando: ver.faixa-layouts -->
+- **Painel de fotos em grade.** O painel mostra várias fileiras e rola para baixo; o zoom do
+  cabeçalho (ou Ctrl+roda) deixa as miniaturas menores ou maiores, a divisória dá mais altura ao
+  painel e um retângulo arrastado no vão entre as fotos seleciona várias de uma vez. Experimente:
+  arraste um retângulo entre as fotos e veja quantas foram selecionadas.
+  <!-- imagem: painel-de-fotos.png -->
+- **O álbum começa em branco.** O Novo álbum abre com todas as fotos no painel e nenhuma lâmina:
+  você monta aos poucos, soltando as fotos na lâmina vazia. Quer tudo de uma vez? "Montar o
+  álbum…", no cabeçalho do painel de fotos, monta as fotos que sobraram, e um Ctrl+Z desfaz tudo.
+  Experimente: crie um álbum com uma pasta de fotos e solte três fotos na lâmina vazia.
+  <!-- imagem: album-em-branco.png; comando: lamina.montar-album -->
+- **Muitas fotos sem travar.** Importar 1.000 fotos de uma vez não fecha mais o Lamina: ele lê
+  poucas fotos por vez, usa bem menos memória e as miniaturas vão aparecendo sem travar a janela.
+  Experimente: Arquivo → "Importar fotos…" e escolha uma pasta grande.
+  <!-- imagem: muitas-fotos.png; comando: arquivo.importar -->
+- **Janela enxuta.** A barra de cima ficou só com o essencial, e o painel da direita começa
+  escondido, deixando a lâmina maior; ele aparece sozinho quando você ajusta uma foto ou escreve um
+  texto. O quadro vazio ganhou um X na tela, que não sai na exportação. Experimente: clique em
+  Painel para mostrar ou esconder; o Lamina lembra a escolha.
+  <!-- imagem: janela-enxuta.png; comando: ver.painel -->
 - **Atalhos do teclado.** Ajuda → "Atalhos do teclado…" mostra todos os atalhos e os gestos do
   mouse, com busca. Experimente: aperte F1 e procure “trocar”.
   <!-- imagem: atalhos.png; comando: ajuda.atalhos -->
+- **Lupa e tamanho real no modo organizar.** A lupa (Z) aproxima no ponto clicado, até 8×; o 1:1
+  mostra a lâmina no tamanho de verdade, calibrado com um cartão de banco, e Ajustar (0) volta à
+  lâmina inteira. Cada botão da paleta diz o que faz e a tecla. Experimente: aperte O para
+  organizar a lâmina, depois Z, e clique num rosto.
+  <!-- imagem: zoom.png; comando: lamina.organizar -->
+- **Opacidade, borda e cantos da foto.** Com uma foto clicada, a seção Foto ganhou opacidade,
+  borda, cor da borda e cantos, que mudam a lâmina na hora; a foto translúcida deixa ver o fundo, e
+  o JPEG e o PDF saem iguais à tela. Experimente: clique numa foto sobre um fundo colorido e leve a
+  opacidade para 50%.
+  <!-- imagem: opacidade.png -->
+- **Clique duplo volta ao neutro.** Nos controles de endireitar, brilho e contraste da foto, dois
+  cliques no seletor levam o valor de volta ao zero, e um Ctrl+Z desfaz só isso. Experimente: em
+  "Ajustar a foto…", arraste o brilho e dê dois cliques no seletor.
+  <!-- imagem: seletor-neutro.png; comando: foto.ajustar -->
+- **No Mac, o Lamina na pasta Aplicativos.** Instalado, o Lamina fica na pasta Aplicativos, como os
+  outros programas, e dois cliques num arquivo .lamina abrem o álbum, com o Lamina aberto ou
+  fechado. Experimente: no Finder, dê dois cliques num álbum .lamina.
+  <!-- imagem: mac.png -->
 - **O que há de novo.** Depois de atualizar, o Lamina mostra o que mudou desde a sua versão, com o
-  que experimentar em cada novidade. Experimente: Ajuda → "O que há de novo…".
+  que experimentar em cada novidade, numa animação curta. Experimente: Ajuda → "O que há de novo…".
   <!-- imagem: novidades.png; comando: ajuda.novidades -->
 
 ## [0.1.0-beta.4] - 2026-10-20
