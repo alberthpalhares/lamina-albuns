@@ -45,7 +45,7 @@ fn empty_editor() -> Editor {
 }
 
 /// `count` fotos do catálogo, uma por minuto a partir das 10h.
-fn report(count: usize) -> ImportReport {
+pub(super) fn report(count: usize) -> ImportReport {
     let entries = (0..count)
         .map(|i| CatalogEntry {
             path: PathBuf::from(format!("/fotos/p{i:04}.jpg")),

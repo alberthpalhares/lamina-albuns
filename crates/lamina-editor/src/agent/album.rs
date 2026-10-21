@@ -13,6 +13,10 @@ use super::{
 };
 use crate::{Editor, NewAlbum, SpecFields, Step, create_album, folder_name};
 
+/// `laminas` sem `montar` no `novo_album` (spec BR, regra 14).
+pub const SPREADS_NEED_BUILD: &str = "O número de lâminas só vale com montar: true. Sem montar, \
+                                      o álbum começa em branco; use montar_album depois.";
+
 impl Agent {
     /// Abre `file` ao começar (`lamina mcp <álbum>`): a pasta dele passa a ser permitida.
     pub fn start_with(&mut self, editor: &mut Editor, file: &Path) -> Result<(), ToolError> {
@@ -53,6 +57,10 @@ impl Agent {
         a: &NewAlbumCall,
         progress: super::Progress<'_>,
     ) -> Result<ToolReply, ToolError> {
+        // O número de lâminas só vale montando (spec BR, regra 14): nada é criado.
+        if a.laminas.is_some() && !a.montar {
+            return Err(ToolError::Refused(SPREADS_NEED_BUILD.to_owned()));
+        }
         let folder = self.roots.check(Path::new(&a.pasta_fotos))?;
         let target = self.roots.check(&lamina_file(&a.salvar_em))?;
         if target.exists() {
@@ -116,6 +124,7 @@ impl Agent {
             export,
             style: Default::default(),
             files: Vec::new(),
+            build: a.montar,
         })
     }
 

@@ -78,8 +78,8 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         let Some(photo) = app.photo_at(i) else {
             return;
         };
-        // Sobre um quadro, como sempre (FQ); na lâmina, fora dos quadros, as fotos entram nela; no
-        // álbum ainda sem lâminas, viram a primeira (spec IM, regras 7 e 8).
+        // Sobre um quadro, como sempre (FQ); na lâmina, fora dos quadros, as fotos entram nela; na
+        // lâmina vazia do álbum em branco, viram a primeira (IM, regras 7 e 8; BR, regra 4).
         let current = app.session().map_or(0, lamina_editor::Session::current);
         let place = match (target(&app, fx, fy), inside(&app, fx, fy)) {
             (Some(frame), _) => DropPlace::Frame {
@@ -88,7 +88,7 @@ pub fn connect(window: &AppWindow, app: &Shared) {
             },
             (None, true) => DropPlace::Spread(current),
             (None, false) if app.session().is_some_and(|s| s.spread_count() == 0) => {
-                DropPlace::NewSpread(0)
+                DropPlace::Spread(0)
             }
             // Fora da lâmina atual, no rolo: um vão ou o "+ Lâmina nova" (spec RL, regra 20).
             (None, false) => {
@@ -102,11 +102,15 @@ pub fn connect(window: &AppWindow, app: &Shared) {
             DropPlace::Frame { .. } => vec![photo],
             _ => app.editor.drag_photos(photo),
         };
-        app.timed(
+        let done = app.timed(
             "Soltar fotos",
             |app| app.editor.drop_photos(place, &photos),
             App::refresh_all,
         );
+        // Mais de 24 fotos na lâmina vazia: nada muda, e o aviso aparece (spec BR, regra 4).
+        if !done {
+            app.refresh_current();
+        }
     });
     let a = app.clone();
     window.on_drop_photos_gap(move |i, gap| {

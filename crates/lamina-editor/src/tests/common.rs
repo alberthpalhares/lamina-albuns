@@ -73,6 +73,7 @@ impl Base {
             export: lamina_core::ExportPrefs::default(),
             style: Default::default(),
             files: Vec::new(),
+            build: true,
         }
     }
 

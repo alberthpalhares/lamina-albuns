@@ -29,6 +29,8 @@ pub fn reset(app: &mut App) {
         let ui = w.global::<NewProjectUi>();
         ui.set_name("Álbum novo".into());
         ui.set_no_photos(false);
+        // "Montar as lâminas agora" vem desmarcada toda vez (spec BR, regra 2).
+        ui.set_build(false);
         ui.set_photos(0);
         ui.set_photos_text("Nenhuma pasta escolhida".into());
     }
@@ -97,6 +99,11 @@ pub fn refresh(app: &App) {
     if let (Some(spec), true, true) = (&spec, with_photos, app.new_photos > 0) {
         let suggested = suggestion_within(app.new_photos, spec, limits);
         ui.set_suggestion(suggestion_text(suggested).into());
+        ui.set_build_text(
+            format!("Montar as lâminas agora (sugestão: {suggested} lâminas)").into(),
+        );
+    }
+    if let (Some(spec), true, true) = (&spec, with_photos && ui.get_build(), app.new_photos > 0) {
         let spreads = usize::try_from(ui.get_spreads()).unwrap_or(0);
         if let Err(e) = check_spreads(app.new_photos, spreads, spec) {
             error = error.or(Some(e.human().line()));
@@ -196,8 +203,11 @@ fn create(app: &mut App) {
         export: app.new_export,
         style: wizard.style(),
         files: std::mem::take(&mut app.new_files),
+        build: ui.get_build(),
     };
     ui.set_show(false);
+    // "Montar o álbum…" começa com a variedade usada por último nesta sessão (spec BR, regra 9).
+    w.global::<crate::BuildUi>().set_reuse(ui.get_reuse());
     app.wizard = None;
     // O cartão marcado na próxima vez é o deste álbum (regra 1).
     app.editor

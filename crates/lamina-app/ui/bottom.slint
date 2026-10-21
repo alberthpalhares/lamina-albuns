@@ -63,6 +63,8 @@ export component BottomStrips inherits VerticalLayout {
     in property <[PhotoData]> photos;
     in property <int> selected-photo;
     in property <int> filter;
+    // "Montar o álbum…" no cabeçalho do painel de fotos (spec BR): apagado sem foto não usada.
+    in property <bool> can-build;
     callback command(string);
     callback focus-main();
     callback go-to(int);
@@ -174,6 +176,7 @@ export component BottomStrips inherits VerticalLayout {
                     changed(v) => { root.photo-zoom-to(round(v / 8) * 8); }
                 }
                 BarButton { text: "+ Fotos"; clicked => { root.command("arquivo.importar"); } }
+                BarButton { text: "Montar o álbum…"; enabled: root.can-build; clicked => { root.command("lamina.montar-album"); } }
             }
             if root.photos-open: PhotoGrid {
                 height: root.photo-shown;

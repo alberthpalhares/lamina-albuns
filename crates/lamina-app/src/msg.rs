@@ -47,6 +47,8 @@ pub enum Msg {
         id: PhotoId,
         pixels: Option<crate::thumb_loader::ThumbPixels>,
     },
+    /// "Montar o álbum…" terminou (spec BR): o álbum montado, as lâminas novas e as fotos.
+    Built(Result<(Project, usize, usize), HumanMessage>),
     /// Andamento e fim de uma importação no álbum aberto (spec IM); `file` é o álbum em que ela
     /// começou.
     Importing(usize, usize),

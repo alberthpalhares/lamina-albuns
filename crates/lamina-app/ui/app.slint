@@ -9,6 +9,7 @@ import { SpreadData, FrameData, BoxData } from "canvas.slint";
 import { ConfirmDialog, MessageDialog, BusyOverlay } from "dialogs.slint";
 import { NewProjectDialog, NewProjectUi, FormatCard, DrawData } from "new_project.slint";
 import { ImportUi, DropOverlay } from "importing.slint";
+import { BuildUi, BuildAlbumDialog } from "build_album.slint";
 import { BandUi, LayoutBand, LayoutItem } from "band.slint";
 import { LookUi, Swatch } from "look.slint";
 import { FrameUi } from "frame.slint";
@@ -38,6 +39,7 @@ import { ShortcutsUi, ShortcutsDialog, ShortcutGroup, ShortcutRow } from "shortc
 import { NewsUi, NewsDialog, NewsEntryData } from "news.slint";
 import { RollUi, RollCell, RollButton, RollHitData } from "roll.slint";
 
+export { BuildUi }
 export { CalibrateUi, SpreadData, FrameData, BoxData, LayoutItem, BandUi, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, ShortcutsUi, ShortcutGroup, ShortcutRow, NewsUi, NewsEntryData, RollUi, RollCell, RollButton, RollHitData }
 
 export component AppWindow inherits Window {
@@ -132,6 +134,10 @@ export component AppWindow inherits Window {
     callback ex-replace();
     callback ex-back();
     in property <bool> has-missing;
+    // O álbum em branco e "Montar o álbum…" (spec BR).
+    in property <float> blank-aspect: 0.5;
+    in property <color> blank-color: white;
+    in property <bool> can-build-album;
     // Fora da faixa de páginas do laboratório (spec PR): ao lado do contador.
     in property <string> counter-warning;
     // Faixas de baixo (spec PN): o resumo de cada uma e se está aberta.
@@ -296,6 +302,8 @@ export component AppWindow inherits Window {
             MenuItem { title: "Trazer para a frente"; enabled: root.has-project; activated => { root.command("lamina.frente"); } }
             MenuItem { title: "Enviar para trás"; enabled: root.has-project; activated => { root.command("lamina.tras"); } }
             MenuSeparator { }
+            MenuItem { title: "Montar o álbum…"; enabled: root.has-project; activated => { root.command("lamina.montar-album"); } }
+            MenuSeparator { }
             MenuItem { title: "Organizar lâmina  (O)"; enabled: root.has-project; activated => { root.command("lamina.organizar"); } }
             Menu {
                 title: "Alinhar";
@@ -370,7 +378,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(event) => {
-            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || CalibrateUi.show || ShortcutsUi.show || NewsUi.show || root.busy-text != "") {
+            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || CalibrateUi.show || ShortcutsUi.show || NewsUi.show || BuildUi.show || root.busy-text != "") {
                 return reject;
             }
             // No modo organizar, Espaço segurado é a mão (spec EG, seção 3).
@@ -429,6 +437,9 @@ export component AppWindow inherits Window {
                     selected-frame: root.selected-frame;
                     spread-count: root.spreads.length;
                     photo-count: root.photos.length;
+                    blank-aspect: root.blank-aspect;
+                    blank-color: root.blank-color;
+                    can-build: root.can-build-album;
                     hint: root.hint;
                     crop-frame: root.crop-frame;
                     has-preview: root.has-preview;
@@ -477,6 +488,7 @@ export component AppWindow inherits Window {
                 photos: root.photos;
                 selected-photo: root.selected-photo;
                 filter: root.filter;
+                can-build: root.can-build-album;
                 photo-zoom <=> root.photo-zoom;
                 photo-columns: root.photo-columns;
                 photo-scroll <=> root.photo-scroll;
@@ -581,6 +593,7 @@ export component AppWindow inherits Window {
             root.focus-main();
         }
     }
+    if BuildUi.show: BuildAlbumDialog { }
     if CalibrateUi.show: CalibrateDialog { }
     if RecentsUi.show-clear: ClearRecentsDialog {
         closed => { root.focus-main(); }

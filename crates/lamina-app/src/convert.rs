@@ -19,7 +19,7 @@ pub fn aspect(project: &Project) -> f32 {
 
 // As medidas da tela cabem com folga em f32 (frações e pixels).
 #[allow(clippy::cast_possible_truncation)]
-fn to_f32(v: f64) -> f32 {
+pub fn to_f32(v: f64) -> f32 {
     v as f32
 }
 
@@ -32,7 +32,7 @@ pub fn boxed(r: PxRect) -> BoxData {
     }
 }
 
-fn color(c: Rgb) -> Color {
+pub fn color(c: Rgb) -> Color {
     Color::from_rgb_u8(c.r, c.g, c.b)
 }
 

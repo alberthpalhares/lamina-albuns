@@ -16,6 +16,7 @@ use crate::{Cache, Editor, Part, Preset};
 use lookup::{edit_on, frame_index, photo_frame, photo_id, session, session_mut, spread_index};
 
 mod album;
+mod building;
 mod calls;
 mod catalog;
 mod commands;
@@ -42,10 +43,12 @@ mod spreads;
 mod texts;
 mod values;
 
+pub use album::SPREADS_NEED_BUILD;
 pub use calls::{
-    ApplyLayout, BuildSpread, ColorArg, ExportCall, FormatArg, FrameArg, ListPhotos, MovePhoto,
-    MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, PartArg, PhotoFilter, PlacePhoto, Position,
-    RunCommand, SaveAlbum, SpreadArg, Steps, SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
+    ApplyLayout, BuildAlbumCall, BuildSpread, ColorArg, ExportCall, FormatArg, FrameArg,
+    ListPhotos, MovePhoto, MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, PartArg, PhotoFilter,
+    PlacePhoto, Position, RunCommand, SaveAlbum, SpreadArg, Steps, SuggestLayouts, SwapPhotos,
+    ViewPhotos, ViewSpread,
 };
 pub use catalog::{ToolCall, ToolInfo, tools};
 pub use error::ToolError;
@@ -154,6 +157,7 @@ impl Agent {
             ToolCall::MovePhoto(a) => self.move_photo(editor, &a),
             ToolCall::ClearFrame(a) => self.clear(editor, &a),
             ToolCall::BuildSpread(a) => self.build_spread(editor, &a),
+            ToolCall::BuildAlbum(a) => self.build_album(editor, &a, progress),
             ToolCall::NewSpread(a) => self.new_spread(editor, a.posicao),
             ToolCall::DeleteSpread(a) => self.delete_spread(editor, a.lamina),
             ToolCall::MoveSpread(a) => self.move_spread(editor, &a),

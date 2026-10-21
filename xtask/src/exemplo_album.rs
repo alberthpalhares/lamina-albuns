@@ -39,6 +39,7 @@ pub fn build(dir: &Path) -> Result<(), String> {
         export: lamina_core::ExportPrefs::default(),
         style: Default::default(),
         files: Vec::new(),
+        build: true,
     };
     let (built, _) = create_album(&new, &cache, &|_| {}).map_err(|e| e.to_string())?;
     let file = dir.join(EXAMPLE_FILE);

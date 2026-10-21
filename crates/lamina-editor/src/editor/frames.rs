@@ -145,6 +145,11 @@ impl Editor {
 
     /// Enter ou clique numa opção com seleção: a lâmina atual só com as fotos dela (regra 5).
     pub(super) fn build_from_selection(&mut self, option: usize) -> bool {
+        // No álbum em branco, Enter faz o mesmo que soltar na lâmina vazia (spec BR, regra 4).
+        if self.is_blank() {
+            let photos = self.selection.clone();
+            return self.first_spread(&photos);
+        }
         let panel = self.panel(crate::Part::Spread);
         let (Some(sel), Some(c)) = (panel.selection, panel.options.get(option).cloned()) else {
             return false;

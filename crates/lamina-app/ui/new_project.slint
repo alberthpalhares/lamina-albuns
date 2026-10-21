@@ -79,6 +79,9 @@ export global NewProjectUi {
     in property <string> file;
     in property <string> photos-text;
     in-out property <bool> no-photos;
+    // "Montar as lâminas agora" (spec BR, regra 2): desmarcada, o álbum começa em branco.
+    in-out property <bool> build;
+    in property <string> build-text: "Montar as lâminas agora";
     in-out property <int> spreads: 1;
     in property <int> photos;
     in property <string> suggestion;
@@ -436,6 +439,11 @@ component StepThree inherits VerticalLayout {
         CheckBox { text: "Começar sem fotos (importo depois)"; checked <=> NewProjectUi.no-photos; toggled => { NewProjectUi.file-changed(); } }
     }
     if !NewProjectUi.no-photos && NewProjectUi.photos > 0: HorizontalLayout {
+        spacing: 8px;
+        Rectangle { width: 150px; }
+        CheckBox { text: NewProjectUi.build-text; checked <=> NewProjectUi.build; toggled => { NewProjectUi.file-changed(); } }
+    }
+    if !NewProjectUi.no-photos && NewProjectUi.photos > 0 && NewProjectUi.build: HorizontalLayout {
         spacing: 8px;
         Label { text: "Número de lâminas"; width: 150px; }
         SpinBox { value <=> NewProjectUi.spreads; minimum: 1; maximum: max(1, NewProjectUi.photos); edited => { NewProjectUi.file-changed(); } }

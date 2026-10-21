@@ -9,6 +9,7 @@
 mod adjusted;
 mod band;
 mod browser;
+mod build_album;
 mod calibrate;
 mod context;
 mod convert;
@@ -112,6 +113,7 @@ fn connect(window: &AppWindow, app: &Shared) {
         );
     });
     browser::connect(window, app);
+    build_album::connect(window, app);
     grid::connect(window, app);
     connect_dialogs(window, app);
     band::connect(window, app);

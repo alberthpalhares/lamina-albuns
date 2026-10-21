@@ -69,6 +69,7 @@ fn album(dir: &Path) -> PathBuf {
         export: lamina_core::ExportPrefs::default(),
         style: Default::default(),
         files: Vec::new(),
+        build: true,
     };
     let (built, _) = create_album(&new, &Cache::new(dir.join("cache")), &|_| {}).unwrap();
     Session::new_unsaved(built.project)

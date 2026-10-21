@@ -51,6 +51,7 @@ pub(super) fn is_dialog(command: Command) -> bool {
     matches!(
         command,
         C::NewAlbum
+            | C::BuildAlbum
             | C::Open
             | C::OpenExample
             | C::Save
@@ -80,6 +81,7 @@ fn tool_for(command: Command) -> Option<&'static str> {
         Command::FindMissing => Some("reencontrar_fotos"),
         Command::Specification => Some("trocar_especificacao"),
         Command::SaveModel => Some("salvar_modelo"),
+        Command::BuildAlbum => Some("montar_album"),
         _ => None,
     }
 }
