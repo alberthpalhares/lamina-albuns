@@ -24,7 +24,6 @@ env:
   # CLI oficial dos pacotes do Claude Desktop (ADR 0010, adendo), com a versão presa.
   MCPB: "2.1.2"
   REPO_URL: https://github.com/${{ github.repository }}
-  BUNDLE_ID: io.github.alberthpalhares.lamina
 
 jobs:
   confere:
@@ -136,12 +135,13 @@ jobs:
           if [ "${{ needs.confere.outputs.beta }}" = true ]; then pre="--pre"; fi
           vpk download github --repoUrl "$REPO_URL" --channel "$CHANNEL" --token "$GH_TOKEN" $pre -o releases || true
           ls releases > anteriores.txt
-          # No Mac, o Info.plist nosso, com o tipo de documento .lamina (spec MA, seção 4).
+          # No Mac, o Info.plist nosso, com o tipo de documento .lamina e o identificador do app
+          # (spec MA, seção 4; com o plist, o vpk não aceita a opção do identificador).
           sed -e "s/@VERSAO@/$VERSION/" -e "s/@VERSAO_CURTA@/${VERSION%%-*}/" \
             crates/lamina-app/dist/Info.plist > Info.plist
           case "${{ matrix.sistema }}" in
             win)   extra=(--runtime win-x64 --icon crates/lamina-app/icons/lamina.ico -e lamina-app.exe) ;;
-            osx)   extra=(--icon crates/lamina-app/icons/lamina.icns --bundleId "$BUNDLE_ID" -e lamina-app --plist Info.plist) ;;
+            osx)   extra=(--icon crates/lamina-app/icons/lamina.icns -e lamina-app --plist Info.plist) ;;
             linux) extra=(--runtime linux-x64 --icon crates/lamina-app/icons/lamina-512.png -e lamina-app) ;;
           esac
           vpk pack -u Lamina -v "$VERSION" -p publish --packTitle Lamina --packAuthors "Equipe Lamina" \

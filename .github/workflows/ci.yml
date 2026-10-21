@@ -108,7 +108,7 @@ jobs:
             crates/lamina-app/dist/Info.plist > Info.plist
           vpk pack -u Lamina -v "$version" -p publish --packTitle Lamina --packAuthors "Equipe Lamina" \
             --channel osx -o releases --icon crates/lamina-app/icons/lamina.icns \
-            --bundleId io.github.alberthpalhares.lamina -e lamina-app --plist Info.plist
+            -e lamina-app --plist Info.plist
           for f in releases/*Setup.pkg; do sh crates/lamina-app/dist/ajustar-pkg.sh "$f"; done
           pkgutil --expand releases/*Setup.pkg pkg-aberto
           grep -o '<domains[^>]*>' pkg-aberto/Distribution

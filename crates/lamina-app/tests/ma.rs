@@ -148,6 +148,8 @@ fn ma_b7_o_pacote_declara_o_lamina() {
             std::fs::read_to_string(format!("{DIR}/../../.github/workflows/{workflow}")).unwrap();
         assert!(yml.contains("--plist Info.plist"), "{workflow}");
         assert!(yml.contains("dist/ajustar-pkg.sh"), "{workflow}");
+        // O vpk recusa --bundleId com --plist: o identificador vem do Info.plist.
+        assert!(!yml.contains("--bundleId"), "{workflow}");
     }
 }
 

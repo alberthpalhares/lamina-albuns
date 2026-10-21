@@ -231,6 +231,8 @@ fn main() -> anyhow::Result<()> {
         eprintln!("--verificar-importacao: {reason}");
         std::process::exit(1);
     }
+    // A verificação da abertura (spec MA): sem o relatório, sai com 1 antes da janela.
+    let opening = opened::requested();
     #[cfg(target_os = "linux")]
     if verifying.is_none() {
         install::linux_desktop();
@@ -266,7 +268,6 @@ fn main() -> anyhow::Result<()> {
     recents::check(&app.borrow());
     // `lamina-app projeto.lamina` abre o projeto direto: o duplo clique no Windows e no Linux e a
     // volta depois de atualizar (spec DS, regra 5; spec MA, regra 9). No Mac, chega por evento.
-    let opening = opened::requested();
     if let Some(album) = &verifying {
         files::open_file(&mut app.borrow_mut(), album);
     } else if importing.is_none() && opening.is_none() {
