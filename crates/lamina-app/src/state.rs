@@ -79,6 +79,8 @@ pub struct App {
     pub(crate) slot_rows: crate::slots::SlotRows,
     /// Decide se ir para outra lâmina desliza (spec MV, seção 4).
     pub(crate) navigator: lamina_editor::motion::Navigator,
+    /// O rolo de lâminas (spec RL), ligado por `LAMINA_ROLO=1` até o portão G1.
+    pub(crate) roll: crate::roll::RollState,
     /// Os recentes que a última conferência não achou e a busca da tela inicial (spec TI).
     pub recent_missing: Vec<PathBuf>,
     pub recent_query: String,
@@ -92,6 +94,9 @@ pub struct App {
 impl App {
     pub fn new(window: &AppWindow, cache: Cache, editor: Editor, tx: Mailbox) -> Self {
         let images = Images::new(&cache, &tx);
+        let roll = crate::roll::RollState::new(&cache, &tx);
+        let mut images = images;
+        images.gated = roll.on;
         App {
             window: window.as_weak(),
             editor,
@@ -123,6 +128,7 @@ impl App {
             lists: crate::lists::Lists::new(window),
             slot_rows: crate::slots::SlotRows::new(),
             navigator: lamina_editor::motion::Navigator::default(),
+            roll,
             recent_missing: Vec::new(),
             recent_query: String::new(),
             verify_import: None,
@@ -154,6 +160,7 @@ impl App {
             });
         }
         self.images.clear();
+        self.roll.new_album();
         self.lists.reset();
         self.refresh_all();
     }
@@ -218,6 +225,7 @@ impl App {
         let warned: Vec<bool> = rows.iter().map(|(_, r)| r.warned).collect();
         let (project, missing) = (session.project().clone(), session.missing().to_vec());
         let images = self.images.all_thumbs(&project);
+        crate::roll::edited(self, &rows);
         self.lists.strip.sync(rows, |i| {
             let warning = warned.get(i).copied().unwrap_or(false);
             strip_data(&project, i, &missing, &images, warning)

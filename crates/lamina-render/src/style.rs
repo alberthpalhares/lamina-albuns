@@ -21,7 +21,7 @@ pub enum Fill {
     Side(PageSide),
 }
 
-fn color(c: Rgb) -> Color {
+pub(crate) fn color(c: Rgb) -> Color {
     Color::from_rgba8(c.r, c.g, c.b, 255)
 }
 
@@ -178,7 +178,13 @@ fn opaque(rgba: &[u8]) -> Vec<u8> {
 
 /// A borda: um anel entre o contorno do quadro no corte final e o mesmo contorno recuado da
 /// espessura (regra 4).
-fn draw_border(pixmap: &mut Pixmap, frame: &Frame, bled: &Bled, scale: Scale, radii: [f32; 4]) {
+pub(crate) fn draw_border(
+    pixmap: &mut Pixmap,
+    frame: &Frame,
+    bled: &Bled,
+    scale: Scale,
+    radii: [f32; 4],
+) {
     let width = frame.border.width.get();
     if width <= 0.0 {
         return;

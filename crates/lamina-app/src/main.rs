@@ -26,6 +26,7 @@ mod images;
 mod importing;
 mod input;
 mod install;
+mod line_window;
 mod lists;
 mod loader;
 mod look;
@@ -47,6 +48,11 @@ mod presets;
 mod recents;
 mod refresh;
 mod relink;
+mod roll;
+mod roll_cells;
+mod roll_connect;
+mod roll_stats;
+mod roll_worker;
 mod shortcuts;
 mod slots;
 mod spec_dialog;
@@ -121,6 +127,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     recents::connect(window, app);
     importing::connect(window, app);
     calibrate::connect(window, app);
+    roll_connect::connect(window, app);
 }
 
 /// O painel de layouts: clique aplica; a estrela e o "×" marcam a opção (spec TL, seção 3).
@@ -244,6 +251,13 @@ fn main() -> anyhow::Result<()> {
     if verifying.is_none() {
         install::linux_desktop();
     }
+    // Medir na máquina compartilhada (`LAMINA_SEM_FOCO=1`, portão G1 da spec RL): a janela abre
+    // sem tomar o foco, e o teclado de quem está trabalhando em outra janela continua lá.
+    if std::env::var("LAMINA_SEM_FOCO").is_ok_and(|v| v == "1") {
+        slint::BackendSelector::new()
+            .with_winit_window_attributes_hook(|a| a.with_active(false))
+            .select()?;
+    }
     let window = AppWindow::new()?;
     // Abre maximizada: numa tela pequena, as faixas de baixo ficariam fora (auditoria da Fase 4, 7).
     window.window().set_maximized(true);
@@ -262,7 +276,8 @@ fn main() -> anyhow::Result<()> {
     editor.set_log(help::error_log());
     let app: Shared = Rc::new(RefCell::new(App::new(&window, Cache::system(), editor, tx)));
     // Ligada por `LAMINA_TEMPOS=1`; o temporizador precisa viver até a janela fechar.
-    let (clock, _tick) = timings::Clock::install(window.window());
+    let roll_on = app.borrow().roll.on;
+    let (clock, _tick) = timings::Clock::install(window.window(), roll_on);
     {
         let mut a = app.borrow_mut();
         a.clock = clock;
