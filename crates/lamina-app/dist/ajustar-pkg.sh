@@ -28,11 +28,20 @@ grep -q 'enable_currentUserHome="true"' "$DIST" \
 sed 's/enable_currentUserHome="true"/enable_currentUserHome="false"/' "$DIST" > "$TEMP/dist"
 mv "$TEMP/dist" "$DIST"
 
-COMP=$(find "$TEMP/x" -maxdepth 1 -name '*.pkg' | head -n 1)
-[ -f "$COMP/Scripts" ] || { echo "ajustar-pkg: o pacote do vpk não tem Scripts" >&2; exit 1; }
-mkdir "$TEMP/s"
-(cd "$TEMP/s" && gzip -dc "$COMP/Scripts" | cpio -i -d --quiet)
-POST="$TEMP/s/postinstall"
+COMP=$(find "$TEMP/x" -mindepth 1 -maxdepth 1 -name '*.pkg' | head -n 1)
+# Os scripts vêm como arquivo (cpio com gzip) ou, em alguns pkgutil, já como pasta.
+if [ -d "$COMP/Scripts" ]; then
+    SCRIPTS="$COMP/Scripts"
+elif [ -f "$COMP/Scripts" ]; then
+    SCRIPTS="$TEMP/s"
+    mkdir "$SCRIPTS"
+    (cd "$SCRIPTS" && gzip -dc "$COMP/Scripts" | cpio -i -d --quiet)
+else
+    echo "ajustar-pkg: o pacote do vpk não tem Scripts; o que veio:" >&2
+    find "$TEMP/x" -maxdepth 3 >&2
+    exit 1
+fi
+POST="$SCRIPTS/postinstall"
 [ -f "$POST" ] || { echo "ajustar-pkg: o pacote do vpk não tem postinstall" >&2; exit 1; }
 
 # As linhas novas entram logo depois da primeira (#!/bin/sh), antes de o vpk abrir o app.
@@ -50,7 +59,9 @@ NOVO
 } > "$TEMP/postinstall"
 mv "$TEMP/postinstall" "$POST"
 chmod 755 "$POST"
-(cd "$TEMP/s" && find . | cpio -o -H odc --quiet | gzip -c) > "$COMP/Scripts"
+if [ "$SCRIPTS" = "$TEMP/s" ]; then
+    (cd "$TEMP/s" && find . | cpio -o -H odc --quiet | gzip -c) > "$COMP/Scripts"
+fi
 
 pkgutil --flatten "$TEMP/x" "$TEMP/novo.pkg"
 mv "$TEMP/novo.pkg" "$PKG"
