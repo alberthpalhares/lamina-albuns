@@ -79,3 +79,18 @@ pub fn later(delay: std::time::Duration, f: fn(&mut App)) {
         }
     });
 }
+
+/// Como [`later`], de novo a cada `delay` até `f` devolver `true`; com o estado ocupado, tenta na
+/// próxima vez. Janela fechada: para.
+pub fn until(delay: std::time::Duration, f: fn(&mut App) -> bool) {
+    slint::Timer::single_shot(delay, move || {
+        let app = INBOX.with_borrow(|inbox| inbox.as_ref().and_then(|(_, app)| app.upgrade()));
+        let done = match &app {
+            Some(app) => app.try_borrow_mut().is_ok_and(|mut app| f(&mut app)),
+            None => true,
+        };
+        if !done {
+            until(delay, f);
+        }
+    });
+}

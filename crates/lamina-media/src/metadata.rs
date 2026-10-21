@@ -24,15 +24,19 @@ pub struct PhotoMetadata {
 
 /// Lê dimensões do cabeçalho e metadados EXIF. Fotos sem EXIF são aceitas.
 pub fn read_metadata(path: &Path) -> Result<PhotoMetadata, MediaError> {
-    let (raw_w, raw_h) = ImageReader::open(path)
+    let raw = ImageReader::open(path)
         .map_err(MediaError::io(path))?
         .with_guessed_format()
         .map_err(MediaError::io(path))?
         .into_dimensions()
         .map_err(MediaError::image(path))?;
-    let exif = read_exif(path);
+    Ok(metadata_from(raw, read_exif(path).as_ref()))
+}
+
+/// Os metadados a partir das medidas do arquivo (antes da rotação) e do EXIF já lido: a
+/// importação tira os dois da mesma leitura (spec TR, regra 2).
+pub(crate) fn metadata_from((raw_w, raw_h): (u32, u32), exif: Option<&Exif>) -> PhotoMetadata {
     let exif_orientation = exif
-        .as_ref()
         .and_then(|e| e.get_field(Tag::Orientation, In::PRIMARY))
         .and_then(|f| f.value.get_uint(0))
         .and_then(|v| u8::try_from(v).ok())
@@ -44,23 +48,30 @@ pub fn read_metadata(path: &Path) -> Result<PhotoMetadata, MediaError> {
     } else {
         (raw_w, raw_h)
     };
-    let text = |tag| exif.as_ref().and_then(|e| ascii(e, tag));
+    let text = |tag| exif.and_then(|e| ascii(e, tag));
     let taken_at = text(Tag::DateTimeOriginal)
         .or_else(|| text(Tag::DateTime))
         .and_then(|t| CaptureTime::from_exif(&t));
-    Ok(PhotoMetadata {
+    PhotoMetadata {
         width,
         height,
         exif_orientation,
         taken_at,
         camera: text(Tag::Model),
-    })
+    }
 }
 
 fn read_exif(path: &Path) -> Option<Exif> {
     let file = File::open(path).ok()?;
     exif::Reader::new()
         .read_from_container(&mut BufReader::new(file))
+        .ok()
+}
+
+/// O EXIF do arquivo já lido inteiro.
+pub(crate) fn exif_of(bytes: &[u8]) -> Option<Exif> {
+    exif::Reader::new()
+        .read_from_container(&mut std::io::Cursor::new(bytes))
         .ok()
 }
 

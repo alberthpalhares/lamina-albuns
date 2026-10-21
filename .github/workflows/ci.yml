@@ -16,6 +16,10 @@ on:
         description: "Rodar também no Windows e no macOS"
         type: boolean
         default: true
+      importacao:
+        description: "Teste de fumaça: importar 1.000 fotos num álbum vazio, no macOS (spec TR)"
+        type: boolean
+        default: false
 
 # Um commit novo cancela a rodada anterior do mesmo PR ou branch.
 concurrency:
@@ -48,6 +52,25 @@ jobs:
       # A mesma porta de verificação que a equipe roda localmente.
       - name: Porta de verificação
         run: cargo xtask verify
+
+  # O teste de fumaça da importação (spec TR, regra 9): a janela de verdade, um álbum sem fotos e
+  # sem lâminas e 1.000 fotos de 24 MP. Só à mão; a memória máxima sai no fim do passo.
+  importacao:
+    name: Fumaça da importação (macOS)
+    if: github.repository == 'alberthpalhares/lamina-albuns' && github.event_name == 'workflow_dispatch' && inputs.importacao
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show active-toolchain
+      - uses: Swatinem/rust-cache@v2
+      - name: Compilar o Lamina
+        run: cargo build --release -p lamina-app -p xtask
+      - name: 1.000 fotos de 24 MP
+        run: cargo run --release -q -p xtask -- fotos fumaca/mil 1000 --lado 6000
+      - name: Importar num álbum vazio
+        timeout-minutes: 15
+        run: /usr/bin/time -l target/release/lamina-app --verificar-importacao fumaca/mil
 
   licencas:
     name: Licenças e avisos de segurança

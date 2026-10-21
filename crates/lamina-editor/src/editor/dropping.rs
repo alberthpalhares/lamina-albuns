@@ -96,12 +96,20 @@ impl Editor {
         at: usize,
     ) -> Result<ImportSummary, EditorError> {
         let session = self.session_mut().ok_or(EditorError::NoProject)?;
+        let fresh = crate::importing::fresh_count(session.project(), report);
+        let at = at.min(session.spread_count());
+        let room = room_at(session.project(), at);
         // Sem foto nova, nada de lâmina vazia: o mesmo resumo de importar (IM-B13).
-        if crate::importing::fresh_count(session.project(), report) == 0 {
+        if fresh == 0 {
             return self.add_photos(report);
         }
+        if fresh > room {
+            // Mais do que cabe numa lâmina: todas entram, sem lâmina nova (spec TR, regra 11).
+            let mut summary = self.add_photos(report)?;
+            summary.over_capacity = Some(room);
+            return Ok(summary);
+        }
         let session = self.session_mut().ok_or(EditorError::NoProject)?;
-        let at = at.min(session.spread_count());
         let known: Vec<PhotoId> = session.project().photos.iter().map(|p| p.id).collect();
         let mut summary = ImportSummary::default();
         let label = format!("Importar fotos numa lâmina nova · lâmina {}", at + 1);
@@ -118,6 +126,15 @@ impl Editor {
         self.go(at);
         Ok(summary)
     }
+}
+
+/// Quantas fotos cabem numa lâmina nova no vão `at` (as pontas com página simples levam menos).
+fn room_at(project: &Project, at: usize) -> usize {
+    let pages = project
+        .spec
+        .edges()
+        .active_pages(at, project.spreads.len() + 1);
+    lamina_layout::MAX_PER_PAGE * (usize::from(pages.left) + usize::from(pages.right))
 }
 
 /// "5 fotos", "1 foto".

@@ -40,6 +40,24 @@ pub fn fingerprint(path: &Path) -> Result<String, MediaError> {
     Ok(hasher.finalize().to_hex()[..32].to_owned())
 }
 
+/// A mesma impressão digital de [`fingerprint`], a partir do arquivo já lido inteiro (spec TR,
+/// regra 2): a importação lê cada foto uma vez só.
+pub fn fingerprint_of(bytes: &[u8]) -> String {
+    let len = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(&len.to_le_bytes());
+    let head = usize::try_from(SAMPLE)
+        .unwrap_or(usize::MAX)
+        .min(bytes.len());
+    hasher.update(&bytes[..head]);
+    if len > SAMPLE {
+        let tail_start = (len - SAMPLE).max(SAMPLE);
+        let tail_start = usize::try_from(tail_start).unwrap_or(bytes.len());
+        hasher.update(&bytes[tail_start..]);
+    }
+    hasher.finalize().to_hex()[..32].to_owned()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -81,6 +99,20 @@ mod tests {
             original,
             fingerprint(&write(dir.path(), "c.jpg", &tail)).unwrap()
         );
+    }
+
+    #[test]
+    fn tr_b4_a_impressao_digital_dos_bytes_e_a_de_sempre() {
+        let dir = tempfile::tempdir().unwrap();
+        for len in [3, 64 * 1024, 64 * 1024 + 1, 100_000, 300_000] {
+            let data = content(len);
+            let path = write(dir.path(), &format!("{len}.jpg"), &data);
+            assert_eq!(
+                fingerprint(&path).unwrap(),
+                fingerprint_of(&data),
+                "{len} bytes"
+            );
+        }
     }
 
     #[test]

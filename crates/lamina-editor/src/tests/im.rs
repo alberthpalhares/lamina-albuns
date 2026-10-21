@@ -254,6 +254,7 @@ fn resumo_conta_formato_e_leitura() {
         unsupported: 1,
         not_photos: 2,
         unreadable: vec![("x.jpg".into(), "sem permissão de acesso".into())],
+        ..ImportSummary::default()
     };
     assert_eq!(
         summary.text(),

@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use image::RgbaImage;
 use lamina_core::{FrameContent, Photo, PhotoId, Project};
-use rayon::prelude::*;
 
 use crate::Cache;
 
@@ -168,19 +167,29 @@ pub fn load_screen(photo: &Photo, cache: &Cache) -> Option<Arc<RgbaImage>> {
     image::open(path).ok().map(|i| Arc::new(i.into_rgba8()))
 }
 
+/// A miniatura da foto, lida do cache em RGB (spec TR, regra 6); `None` se ela ainda não existe
+/// ou não abre. Roda fora da linha da janela.
+pub fn load_thumb(photo: &Photo, cache: &Cache) -> Option<image::RgbImage> {
+    let path = cache.thumbnail(photo)?;
+    image::open(path).ok().map(image::DynamicImage::into_rgb8)
+}
+
 /// Gera, em paralelo, a miniatura e a imagem de tela das fotos que ainda não têm, começando
-/// pelas da lâmina `first`. Devolve quantas falharam (foto ausente ou ilegível). Roda fora da
-/// linha da janela.
+/// pelas da lâmina `first`, com no máximo 4 fotos ao mesmo tempo (spec TR, regra 1). Devolve
+/// quantas falharam (foto ausente ou ilegível). Roda fora da linha da janela.
 pub fn prepare_images(project: &Project, first: usize, cache: &Cache) -> usize {
     let mut order = photos_around(project, first);
     let rest = project.photos.iter().map(|p| p.id);
     let rest: Vec<PhotoId> = rest.filter(|id| !order.contains(id)).collect();
     order.extend(rest);
-    order
-        .par_iter()
+    let missing: Vec<&Photo> = order
+        .iter()
         .filter_map(|id| project.photo(*id).ok())
         .filter(|p| cache.screen(p).is_none() || cache.thumbnail(p).is_none())
-        .filter(|p| cache.ensure_images(p).is_err())
+        .collect();
+    lamina_media::map_photos(missing, |p| cache.ensure_images(p).is_err())
+        .into_iter()
+        .filter(|failed| *failed)
         .count()
 }
 

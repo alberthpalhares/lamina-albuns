@@ -203,9 +203,11 @@ impl Editor {
             return Ok(false);
         };
         let index = s.current();
-        let Some(FrameContent::Photo { crop, .. }) = s.project().spreads[index]
-            .frames
-            .get(frame)
+        let Some(FrameContent::Photo { crop, .. }) = s
+            .project()
+            .spreads
+            .get(index)
+            .and_then(|spread| spread.frames.get(frame))
             .map(|f| f.content.clone())
         else {
             return Ok(false);
