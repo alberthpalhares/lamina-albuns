@@ -1,8 +1,9 @@
 // A seção Foto (spec AF, seção 3): endireitar, escala, brilho, contraste, preto e branco e
-// restaurar. Só desenho: o editor decide e o Rust preenche o `PhotoUi`.
+// restaurar; clique duplo no seletor de um controle volta ao neutro (regra 14). Só desenho: o editor decide e o Rust preenche o `PhotoUi`.
 
-import { Button, CheckBox, LineEdit, Slider } from "std-widgets.slint";
+import { Button, CheckBox, LineEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
+import { NeutralSlider } from "widgets.slint";
 
 export global PhotoUi {
     in property <bool> has-photo;
@@ -27,6 +28,10 @@ export global PhotoUi {
     callback contrast-moved(float);
     // Soltou um controle: a próxima mudança é outra edição.
     callback released();
+    // Clique duplo no seletor: o controle volta ao neutro (regra 14).
+    callback angle-reset();
+    callback brightness-reset();
+    callback contrast-reset();
     callback bw-toggled(bool);
     callback restore();
 }
@@ -41,13 +46,14 @@ export component PhotoSection inherits VerticalLayout {
     Text { text: "Foto"; color: Theme.text; font-weight: 700; }
     if PhotoUi.note != "": Text { text: PhotoUi.note; color: Theme.muted; font-size: 11px; wrap: word-wrap; }
     Label { text: PhotoUi.can-turn ? "Endireitar" : "Endireitar (selecione um quadro só)"; }
-    Slider {
+    NeutralSlider {
         enabled: PhotoUi.can-turn;
         minimum: -45;
         maximum: 45;
         value <=> PhotoUi.angle-value;
         changed(v) => { PhotoUi.angle-moved(v); }
         released => { PhotoUi.released(); }
+        reset => { PhotoUi.angle-reset(); }
     }
     HorizontalLayout {
         spacing: 4px;
@@ -72,20 +78,22 @@ export component PhotoSection inherits VerticalLayout {
         }
     }
     Label { text: "Brilho  " + round(PhotoUi.brightness); }
-    Slider {
+    NeutralSlider {
         minimum: -100;
         maximum: 100;
         value <=> PhotoUi.brightness;
         changed(v) => { PhotoUi.brightness-moved(v); }
         released => { PhotoUi.released(); }
+        reset => { PhotoUi.brightness-reset(); }
     }
     Label { text: "Contraste  " + round(PhotoUi.contrast); }
-    Slider {
+    NeutralSlider {
         minimum: -100;
         maximum: 100;
         value <=> PhotoUi.contrast;
         changed(v) => { PhotoUi.contrast-moved(v); }
         released => { PhotoUi.released(); }
+        reset => { PhotoUi.contrast-reset(); }
     }
     CheckBox {
         text: "Preto e branco";

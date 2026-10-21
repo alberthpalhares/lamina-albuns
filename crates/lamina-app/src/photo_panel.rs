@@ -1,12 +1,13 @@
-//! A seção Foto pela janela (spec AF, seção 3): os controles chamam o editor, que decide; a grade
-//! fina do recorte some 1 s depois do último giro.
+//! A seção Foto pela janela (spec AF, seção 3): os controles chamam o editor, que decide; o clique
+//! duplo no seletor volta o controle ao neutro (regra 14); a grade fina do recorte some 1 s depois
+//! do último giro.
 
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Duration;
 
 use lamina_core::FrameContent;
-use lamina_editor::editor::AdjustChange;
+use lamina_editor::editor::{AdjustChange, AdjustControl};
 use slint::{ComponentHandle, Timer, TimerMode};
 
 use crate::state::App;
@@ -32,6 +33,19 @@ fn change(app: &Shared, change: AdjustChange) {
     }
     drop(a);
     if turned {
+        settle_later(app);
+    }
+}
+
+/// Clique duplo no seletor: o controle volta ao neutro numa edição própria (spec AF, regra 14).
+fn reset(app: &Shared, control: AdjustControl) {
+    let mut a = app.borrow_mut();
+    if a.editor.reset_adjust(control) {
+        a.refresh_strip();
+        a.refresh_current();
+    }
+    drop(a);
+    if control == AdjustControl::Angle {
         settle_later(app);
     }
 }
@@ -74,6 +88,12 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     ui.on_restore(move || change(&a, AdjustChange::Restore));
     let a = app.clone();
     ui.on_released(move || a.borrow_mut().editor.end_adjust());
+    let a = app.clone();
+    ui.on_angle_reset(move || reset(&a, AdjustControl::Angle));
+    let a = app.clone();
+    ui.on_brightness_reset(move || reset(&a, AdjustControl::Brightness));
+    let a = app.clone();
+    ui.on_contrast_reset(move || reset(&a, AdjustControl::Contrast));
     let (a, w) = (app.clone(), window.as_weak());
     ui.on_angle_accepted(move || {
         let Some(w) = w.upgrade() else {
