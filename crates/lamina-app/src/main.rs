@@ -43,6 +43,7 @@ mod presets;
 mod recents;
 mod refresh;
 mod relink;
+mod shortcuts;
 mod slots;
 mod spec_dialog;
 mod state;
@@ -85,6 +86,7 @@ type Shared = Rc<RefCell<App>>;
 
 fn connect(window: &AppWindow, app: &Shared) {
     input::connect(window, app);
+    shortcuts::connect(window);
     let a = app.clone();
     window.on_go_to(move |index| {
         let Ok(index) = usize::try_from(index) else {

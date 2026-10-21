@@ -66,6 +66,7 @@ pub mod respec;
 pub mod rulers;
 pub mod screens;
 pub mod session;
+pub mod shortcuts;
 pub mod snap;
 pub mod spreads;
 pub mod strips;
@@ -96,7 +97,7 @@ pub use exporting::{
 };
 pub use feedback::{FEEDBACK_FORM, feedback_address};
 pub use human::{Human, HumanMessage, guarded};
-pub use keys::{Key, Shortcut};
+pub use keys::{Key, Platform, Shortcut};
 pub use lamina_render::text_image;
 pub use models::{MODELS_FILE, ModelError, ModelsStore, model_from_spread};
 pub use photos::{Filter, PhotoInfo, PhotoItem, photo_info, photo_list, used_photos};
