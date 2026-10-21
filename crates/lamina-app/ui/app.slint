@@ -13,6 +13,7 @@ import { LayoutItem } from "layouts.slint";
 import { LookUi, Swatch } from "look.slint";
 import { FrameUi } from "frame.slint";
 import { AboutDialog } from "about.slint";
+import { CalibrateUi, CalibrateDialog } from "calibrate.slint";
 import { ModelNameDialog, ModelsDialog, ModelUi } from "models.slint";
 import { HistoryItem } from "history.slint";
 import { ExportDialog } from "export.slint";
@@ -34,7 +35,7 @@ import { TopBar, NoticeBar } from "topbar.slint";
 import { Stage } from "stage.slint";
 import { BottomStrips } from "bottom.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi }
+export { CalibrateUi, SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -341,6 +342,10 @@ export component AppWindow inherits Window {
             MenuItem { title: (root.panel-open ? "✓ " : "    ") + "Mostrar painel  (Alt+4)"; enabled: root.has-project; activated => { root.command("ver.painel"); } }
             MenuSeparator { }
             MenuItem { title: (root.reduce-motion ? "✓ " : "    ") + "Reduzir movimento"; activated => { root.command("ver.reduzir-movimento"); } }
+            MenuSeparator { }
+            MenuItem { title: "Lupa  (Z)"; enabled: OrganizeUi.on; activated => { root.command("organizar.lupa"); } }
+            MenuItem { title: "Tamanho real (1:1)  (1)"; enabled: OrganizeUi.on; activated => { root.command("organizar.tamanho-real"); } }
+            MenuItem { title: "Calibrar o tamanho real…"; enabled: root.has-project; activated => { root.command("organizar.calibrar"); } }
         }
         Menu {
             title: "Ajuda";
@@ -357,7 +362,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(event) => {
-            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || root.busy-text != "") {
+            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || CalibrateUi.show || root.busy-text != "") {
                 return reject;
             }
             // No modo organizar, Espaço segurado é a mão (spec EG, seção 3).
@@ -544,6 +549,7 @@ export component AppWindow inherits Window {
             root.focus-main();
         }
     }
+    if CalibrateUi.show: CalibrateDialog { }
     if RecentsUi.show-clear: ClearRecentsDialog {
         closed => { root.focus-main(); }
     }

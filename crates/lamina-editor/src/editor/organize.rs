@@ -8,8 +8,45 @@ use super::Editor;
 use crate::commands::Mode;
 use crate::view::{Area, spread_view};
 
-/// Os zooms da lâmina no modo: "Ajustar", 2× e 4× (regra 14).
-pub(super) const ZOOMS: [f64; 3] = [1.0, 2.0, 4.0];
+/// A ferramenta da paleta (spec ZR, regra 2): mora no editor, para a tecla Z e as dicas.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum PaletteTool {
+    #[default]
+    Select,
+    Frame,
+    Text,
+    Hand,
+    Magnifier,
+}
+
+impl PaletteTool {
+    pub const ALL: [PaletteTool; 5] = [
+        PaletteTool::Select,
+        PaletteTool::Frame,
+        PaletteTool::Text,
+        PaletteTool::Hand,
+        PaletteTool::Magnifier,
+    ];
+
+    /// A posição na paleta (0 a 4), a mesma da janela.
+    pub fn index(self) -> i32 {
+        match self {
+            PaletteTool::Select => 0,
+            PaletteTool::Frame => 1,
+            PaletteTool::Text => 2,
+            PaletteTool::Hand => 3,
+            PaletteTool::Magnifier => 4,
+        }
+    }
+
+    /// A ferramenta da posição `i`; fora de 0 a 4, Selecionar.
+    pub fn from_index(i: i32) -> PaletteTool {
+        PaletteTool::ALL
+            .into_iter()
+            .find(|t| t.index() == i)
+            .unwrap_or_default()
+    }
+}
 
 /// O estado do modo organizar.
 #[derive(Debug, Default)]
@@ -18,7 +55,12 @@ pub(super) struct Organizing {
     /// A lâmina da seleção e os quadros, na ordem dos cliques (o primeiro é a referência).
     spread: Option<SpreadId>,
     ids: Vec<FrameId>,
-    pub(super) zoom: usize,
+    /// O zoom, a vista (pixels a partir do centro de Ajustar), a duração da última mudança e a
+    /// ferramenta (spec ZR).
+    pub(super) zoom: super::organize_zoom::Zoom,
+    pub(super) pan: (f64, f64),
+    pub(super) ms: u32,
+    pub(super) tool: PaletteTool,
 }
 
 /// O que o duplo clique na lâmina fez.
@@ -61,13 +103,15 @@ impl Editor {
         }
     }
 
-    /// Entra ou sai do modo. Sair desmarca os quadros e volta ao zoom "Ajustar".
+    /// Entra ou sai do modo. Sair desmarca os quadros e volta ao zoom "Ajustar"; a tela anima a
+    /// saída (spec ZR, regra 12), o editor sai na hora.
     pub(super) fn set_organizing(&mut self, on: bool) -> bool {
         if self.session.is_none() || self.organize.on == on {
             return false;
         }
         self.organize = Organizing {
             on,
+            ms: if on { 0 } else { self.durations().navigate },
             ..Organizing::default()
         };
         // Com o painel escondido, ele aparece enquanto o modo estiver aberto (spec JE, regra 5).

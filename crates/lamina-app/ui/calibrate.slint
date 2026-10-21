@@ -1,0 +1,76 @@
+// Visualizar → "Calibrar o tamanho real…" (spec ZR, regra 8): um retângulo do tamanho de um cartão
+// de banco (85,6 × 53,98 mm), o monitor da janela e o controle que aumenta ou diminui o retângulo
+// até ele ficar igual a um cartão encostado na tela. Só desenho: o Rust guarda a calibração.
+
+import { Button, Slider } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Shade, Panel } from "widgets.slint";
+
+export global CalibrateUi {
+    in-out property <bool> show;
+    // "DISPLAY2 · 3840 × 2160 · escala 150%".
+    in property <string> monitor;
+    // A largura do retângulo em pixels lógicos, e os limites (1 a 20 pixels físicos por mm).
+    in-out property <float> width: 324;
+    in property <float> min-width: 60;
+    in property <float> max-width: 1000;
+    in property <bool> calibrated;
+    callback save(float);
+    callback forget();
+}
+
+export component CalibrateDialog inherits Shade {
+    Panel {
+        width: max(560px, CalibrateUi.width * 1px + 80px);
+        height: 220px + CalibrateUi.width * 1px * 53.98 / 85.6;
+        VerticalLayout {
+            padding: 24px;
+            spacing: 12px;
+            Text {
+                text: "Calibrar o tamanho real";
+                color: Theme.text;
+                font-size: 16px;
+                font-weight: 700;
+            }
+            Text {
+                text: "Encoste um cartão de banco (ou de crédito, ou de loja) na tela e ajuste até o retângulo ficar do mesmo tamanho.";
+                color: Theme.text;
+                wrap: word-wrap;
+            }
+            Text { text: CalibrateUi.monitor; color: Theme.muted; font-size: 12px; }
+            HorizontalLayout {
+                alignment: center;
+                Rectangle {
+                    width: CalibrateUi.width * 1px;
+                    height: CalibrateUi.width * 1px * 53.98 / 85.6;
+                    border-radius: CalibrateUi.width * 1px * 3.18 / 85.6;
+                    border-width: 1px;
+                    border-color: #ffffffb0;
+                    background: #3b6ea5;
+                }
+            }
+            Slider {
+                minimum: CalibrateUi.min-width;
+                maximum: CalibrateUi.max-width;
+                value <=> CalibrateUi.width;
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: end;
+                if CalibrateUi.calibrated: Button {
+                    text: "Voltar à estimativa";
+                    clicked => { CalibrateUi.forget(); }
+                }
+                Button {
+                    text: "Cancelar";
+                    clicked => { CalibrateUi.show = false; }
+                }
+                Button {
+                    text: "Guardar";
+                    primary: true;
+                    clicked => { CalibrateUi.save(CalibrateUi.width); }
+                }
+            }
+        }
+    }
+}

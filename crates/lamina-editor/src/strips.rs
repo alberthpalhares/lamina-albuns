@@ -155,6 +155,8 @@ pub struct StripsStore {
     pub strips: Strips,
     /// Aviso de leitura para a janela mostrar uma vez.
     pub warning: Option<String>,
+    /// As calibrações do tamanho real, por monitor (spec ZR, regra 8); fora do `Strips`.
+    pub(crate) calibrations: Vec<crate::calibration::Calibration>,
 }
 
 impl StripsStore {
@@ -170,12 +172,16 @@ impl StripsStore {
             path: Some(path.to_path_buf()),
             strips: Strips::without_file(install),
             warning: None,
+            calibrations: Vec::new(),
         };
         let Ok(text) = std::fs::read_to_string(path) else {
             return store;
         };
         match serde_json::from_str::<Strips>(&text) {
-            Ok(strips) => store.strips = strips.upgraded(),
+            Ok(strips) => {
+                store.strips = strips.upgraded();
+                store.calibrations = crate::calibration::read_list(&text);
+            }
             Err(_) => {
                 store.strips = Strips::fresh();
                 store.warning = Some(STRIPS_UNREADABLE.to_owned());
@@ -189,15 +195,32 @@ impl StripsStore {
         let Some(path) = &self.path else {
             return Ok(());
         };
-        write(path, &self.strips)
+        write(path, &self.strips, &self.calibrations)
             .map_err(|reason| format!("Não foi possível guardar o estado dos painéis: {reason}."))
     }
 }
 
-fn write(path: &Path, strips: &Strips) -> Result<(), String> {
+/// O arquivo inteiro: o estado das faixas e as calibrações (que só vão quando há alguma).
+#[derive(Serialize)]
+struct WindowFile<'a> {
+    #[serde(flatten)]
+    strips: &'a Strips,
+    #[serde(rename = "tamanho_real", skip_serializing_if = "<[_]>::is_empty")]
+    calibrations: &'a [crate::calibration::Calibration],
+}
+
+fn write(
+    path: &Path,
+    strips: &Strips,
+    calibrations: &[crate::calibration::Calibration],
+) -> Result<(), String> {
     let folder = path.parent().unwrap_or(Path::new("."));
     std::fs::create_dir_all(folder).map_err(|e| e.to_string())?;
-    let json = serde_json::to_string_pretty(strips).map_err(|e| e.to_string())?;
+    let file = WindowFile {
+        strips,
+        calibrations,
+    };
+    let json = serde_json::to_string_pretty(&file).map_err(|e| e.to_string())?;
     let mut tmp = tempfile::NamedTempFile::new_in(folder).map_err(|e| e.to_string())?;
     tmp.write_all(json.as_bytes()).map_err(|e| e.to_string())?;
     tmp.persist(path).map_err(|e| e.error.to_string())?;

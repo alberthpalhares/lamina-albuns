@@ -17,7 +17,8 @@ impl Command {
     pub fn in_mode(self, mode: Mode) -> bool {
         use Command as C;
         match self {
-            // Só fora do modo: as setas trocam o layout; Enter, F, X e R; o zoom do recorte; L, a
+            // Só fora do modo: as setas trocam o layout; Enter, F, X e R; o zoom do recorte e o 0 que
+            // encaixa a foto (no modo, o 0 é Ajustar; spec ZR); L, a
             // faixa de layouts; Ctrl+A, as fotos mostradas (no modo, o Ctrl+A é dos quadros).
             C::NextLayout
             | C::PreviousLayout
@@ -32,10 +33,11 @@ impl Command {
             | C::NewSpreadFromSelection
             | C::ZoomIn
             | C::ZoomOut
+            | C::ResetCrop
             | C::ToggleLayoutBand
             | C::SelectAllPhotos => mode == Mode::Normal,
             // Só no modo: mover a seleção, selecionar todos, o zoom da lâmina, Alinhar, Igualar e
-            // Distribuir; Z, a lupa.
+            // Distribuir; Z, a lupa; 1, o tamanho real (spec ZR).
             C::NudgeLeft
             | C::NudgeRight
             | C::NudgeUp
@@ -59,7 +61,8 @@ impl Command {
             | C::EqualSize
             | C::DistributeAcross
             | C::DistributeDown
-            | C::Loupe => mode == Mode::Organize,
+            | C::Loupe
+            | C::ActualSize => mode == Mode::Organize,
             _ => true,
         }
     }

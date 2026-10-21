@@ -6,6 +6,7 @@ import { Theme } from "theme.slint";
 import { BoxData } from "canvas.slint";
 import { LookPanel } from "look.slint";
 import { PhotoUi, PhotoSection } from "photo.slint";
+import { IconButton } from "widgets.slint";
 
 // Uma marca do ímã de mesmo tamanho ou de espaçamento igual: a linha e o texto, em frações da
 // largura da lâmina.
@@ -25,7 +26,7 @@ export struct TickData {
 
 export global OrganizeUi {
     in property <bool> on;
-    // "Organizando a lâmina 3 · Esc conclui".
+    // "Organizando a lâmina 3 · Esc volta".
     in property <string> title;
     // "2 quadros" (vazio sem seleção).
     in property <string> count;
@@ -51,17 +52,33 @@ export global OrganizeUi {
     in property <string> field-error;
     // "Selecione três quadros ou mais." enquanto Distribuir não vale.
     in property <string> hint;
-    // O zoom da lâmina (1 = "Ajustar") e a vista arrastada pela mão, em pixels.
+    // O zoom da lâmina (1 = "Ajustar") e a vista arrastada pela mão, em pixels a partir do centro
+    // de Ajustar; a duração do movimento vem do editor (spec ZR, regra 6).
     in property <float> zoom: 1;
     in-out property <length> pan-x;
     in-out property <length> pan-y;
-    // A paleta: 0 = Selecionar, 1 = Quadro, 2 = Texto, 3 = Mão. Espaço segurado também é a mão.
+    in-out property <int> view-ms;
+    // A largura de Ajustar sem a animação, para o tamanho real (spec ZR, regra 7).
+    in-out property <length> fit-width;
+    // A paleta: 0 = Selecionar, 1 = Quadro, 2 = Texto, 3 = Mão, 4 = Lupa. Espaço segurado também
+    // é a mão.
     in-out property <int> tool;
+    // As dicas dos botões da barra: a faixa de lâminas e o painel.
+    in property <string> tip-spreads;
+    in property <string> tip-panel;
+    in property <bool> spreads-open;
+    in property <bool> panel-open;
     in-out property <bool> hand;
     // As réguas.
     in property <[TickData]> ticks-x;
     in property <[TickData]> ticks-y;
     callback done();
+    // A lupa (Alt afasta) e o Ctrl+roda, no ponto a partir do centro de Ajustar; a mão soltou a
+    // vista; a largura de Ajustar mudou.
+    callback loupe(bool, length, length);
+    callback wheel(bool, length, length);
+    callback pan-done();
+    callback fit-changed();
     // Um quadro (1) ou texto (2) desenhado, em frações da largura da lâmina.
     callback draw-done(int, float, float, float, float);
     // 0 = X, 1 = Y, 2 = largura, 3 = altura.
@@ -85,8 +102,29 @@ export component OrganizeBar inherits Rectangle {
             vertical-alignment: center;
             horizontal-stretch: 1;
         }
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                icon: @image-url("../icons/zr/faixa.svg");
+                tip: OrganizeUi.tip-spreads;
+                tip-side: 1;
+                checked: OrganizeUi.spreads-open;
+                clicked => { OrganizeUi.command("ver.faixa-laminas"); }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                icon: @image-url("../icons/zr/painel.svg");
+                tip: OrganizeUi.tip-panel;
+                tip-side: 1;
+                checked: OrganizeUi.panel-open;
+                clicked => { OrganizeUi.command("ver.painel"); }
+            }
+        }
+        // Voltar no lugar de Concluir (spec ZR, regra 12): a tela anima a saída.
         Button {
-            text: "Concluir";
+            text: "Voltar";
             clicked => { OrganizeUi.done(); }
         }
     }
@@ -158,20 +196,36 @@ export component OrganizeTools inherits TouchArea {
     in property <length> lx;
     in property <length> ly;
     in property <length> unit;
+    // O centro de Ajustar, na área: a lupa mede o ponto a partir dele (spec ZR, regra 5).
+    in property <length> cx;
+    in property <length> cy;
     property <bool> panning: OrganizeUi.hand || OrganizeUi.tool == 3;
+    property <bool> loupe: OrganizeUi.tool == 4 && !OrganizeUi.hand;
+    property <bool> alt;
     property <length> px;
     property <length> py;
     property <length> start-x;
     property <length> start-y;
     mouse-cursor: root.panning ? (self.pressed ? grabbing : grab) : crosshair;
     pointer-event(e) => {
+        root.alt = e.modifiers.alt;
         if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
             root.px = self.mouse-x;
             root.py = self.mouse-y;
             root.start-x = OrganizeUi.pan-x;
             root.start-y = OrganizeUi.pan-y;
+            // A mão acompanha na hora, sem animar (MV, regra 6).
+            if (root.panning) {
+                OrganizeUi.view-ms = 0;
+            }
         }
-        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up && !root.panning) {
+        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up && root.panning) {
+            OrganizeUi.pan-done();
+        }
+        // A lupa: um passo por clique, sem selecionar nem abrir o recorte (spec ZR, regra 2).
+        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up && root.loupe) {
+            OrganizeUi.loupe(e.modifiers.alt, self.mouse-x - root.cx, self.mouse-y - root.cy);
+        } else if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up && !root.panning) {
             OrganizeUi.draw-done(OrganizeUi.tool,
                 (root.px - root.lx) / root.unit, (root.py - root.ly) / root.unit,
                 (self.mouse-x - root.lx) / root.unit, (self.mouse-y - root.ly) / root.unit);
@@ -183,7 +237,16 @@ export component OrganizeTools inherits TouchArea {
             OrganizeUi.pan-y = root.start-y + self.mouse-y - root.py;
         }
     }
-    if root.pressed && !root.panning: Rectangle {
+    // O sinal da lupa ao lado da cruz (o Slint não tem o ponteiro de lupa; desenho nosso).
+    if root.loupe && root.has-hover: Text {
+        x: root.mouse-x + 10px;
+        y: root.mouse-y + 8px;
+        text: root.alt ? "−" : "+";
+        color: white;
+        font-size: 14px;
+        font-weight: 700;
+    }
+    if root.pressed && !root.panning && !root.loupe: Rectangle {
         x: min(root.px, root.mouse-x);
         y: min(root.py, root.mouse-y);
         width: abs(root.mouse-x - root.px);

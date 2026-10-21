@@ -121,12 +121,19 @@ fn failed(app: &App, problem: &lamina_editor::HumanMessage) {
 }
 
 /// O gancho do winit: arquivos sobre a janela mostram "Solte para importar"; soltos, vão juntos
-/// para a importação depois de uma pausa curta.
+/// para a importação depois de uma pausa curta. O mesmo gancho lê o monitor (spec ZR, regra 10).
 pub fn connect(window: &AppWindow, app: &Shared) {
     let pending: Rc<RefCell<Vec<PathBuf>>> = Rc::default();
     let a = app.clone();
     let weak = window.as_weak();
-    window.window().on_winit_window_event(move |_, event| {
+    window.window().on_winit_window_event(move |window, event| {
+        if crate::monitor::may_change(event)
+            && let Ok(mut app) = a.try_borrow_mut()
+            && crate::monitor::read(&mut app, window)
+            && app.editor.organizing()
+        {
+            app.refresh_current();
+        }
         let show = |on: bool| {
             if let Some(w) = weak.upgrade() {
                 w.global::<ImportUi>().set_dropping(on);

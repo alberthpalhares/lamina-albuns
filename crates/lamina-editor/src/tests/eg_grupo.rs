@@ -263,8 +263,9 @@ fn eg_b22_reguas_e_zoom() {
     let zero = (trim.x.get() - canvas.x.get(), trim.y.get() - canvas.y.get());
     assert_eq!(ruler_origin(&project), zero, "a régua marca 0 no corte");
     let mut editor = grouped(three(), &[0]);
+    // O primeiro + dá 1,5× (spec ZR, regra 4).
     assert!(editor.run(Command::ViewZoomIn));
-    assert!((editor.view_zoom() - 2.0).abs() < 1e-9);
+    assert!((editor.view_zoom() - 1.5).abs() < 1e-9);
     assert!(editor.run(Command::ViewFit));
     assert!((editor.view_zoom() - 1.0).abs() < 1e-9);
 }
