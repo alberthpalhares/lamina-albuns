@@ -1,0 +1,102 @@
+// Linha do tempo (spec FQ, regra 8): as fotos na ordem do álbum e um corte entre as lâminas.
+// Arrastar um corte leva fotos de uma lâmina para a vizinha.
+
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Motion } from "motion.slint";
+import { StripTheme } from "strip_header.slint";
+import { DragUi } from "drag.slint";
+
+// Uma posição da timeline: uma foto, ou o corte depois da lâmina `spread`.
+export struct TimelineItem {
+    img: image,
+    cut: bool,
+    spread: int,
+}
+
+export component TimelineStrip inherits Rectangle {
+    in property <[TimelineItem]> timeline;
+    callback cut-moved(int, int);
+    callback focus-main();
+    background: StripTheme.timeline;
+    Rectangle { y: 0; height: 1px; background: StripTheme.line; }
+
+    // A roda vertical rola a faixa (spec MV, regra 10), suave pelo relógio; giros seguidos somam.
+    property <bool> sc-running;
+    property <duration> sc-t0;
+    property <length> sc-from;
+    property <length> sc-to;
+    property <float> sc-p: self.sc-running ? min(1, (animation-tick() - self.sc-t0) / max(1ms, Motion.scroll-ms * 1ms)) : 1;
+    changed sc-p => {
+        if (self.sc-running) {
+            line-scroll.content-x = self.sc-from + (self.sc-to - self.sc-from) * (1 - pow(1 - self.sc-p, 3));
+            if (self.sc-p >= 1) {
+                self.sc-running = false;
+            }
+        }
+    }
+    function wheel(dy: length) {
+        let base = root.sc-running ? root.sc-to : line-scroll.content-x;
+        let target = max(line-scroll.visible-width - line.preferred-width, min(0px, base + dy));
+        if (Motion.on && Motion.scroll-ms > 0) {
+            root.sc-from = line-scroll.content-x;
+            root.sc-to = target;
+            root.sc-t0 = animation-tick();
+            root.sc-running = true;
+        } else {
+            line-scroll.content-x = target;
+        }
+    }
+    line-scroll := ScrollView {
+        // Arrastar é para levar a foto (ou o corte), não para rolar.
+        mouse-drag-pan-enabled: false;
+        content-width: line.preferred-width;
+        content-height: self.height;
+        scrolled => { root.sc-running = false; }
+        TouchArea {
+            width: line.preferred-width;
+            height: line-scroll.height;
+            scroll-event(e) => {
+                if (e.delta-y != 0) {
+                    root.wheel(e.delta-y);
+                    return accept;
+                }
+                reject
+            }
+        }
+        line := HorizontalLayout {
+            padding: 6px;
+            spacing: 2px;
+            for t in root.timeline: Rectangle {
+                width: t.cut ? 14px : 46px;
+                if !t.cut: Image {
+                    width: 44px;
+                    height: 44px;
+                    source: t.img;
+                    image-fit: contain;
+                }
+                if t.cut: Rectangle {
+                    cut-touch := TouchArea {
+                        mouse-cursor: ew-resize;
+                        pointer-event(e) => {
+                            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                                DragUi.press-x = self.absolute-position.x + self.mouse-x;
+                            }
+                            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                                let dx = self.absolute-position.x + self.mouse-x - DragUi.press-x;
+                                root.cut-moved(t.spread, round(dx / 48px));
+                                root.focus-main();
+                            }
+                        }
+                    }
+                    Rectangle {
+                        x: 5px;
+                        width: 4px;
+                        border-radius: 2px;
+                        background: cut-touch.has-hover || cut-touch.pressed ? Theme.selected : Theme.muted;
+                    }
+                }
+            }
+        }
+    }
+}

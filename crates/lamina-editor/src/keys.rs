@@ -17,6 +17,8 @@ pub enum Key {
     Backspace,
     Escape,
     Enter,
+    /// A ajuda (spec AT: os atalhos do teclado).
+    F1,
 }
 
 impl Key {
@@ -35,6 +37,7 @@ impl Key {
             "Backspace" => Key::Backspace,
             "Escape" => Key::Escape,
             "Enter" => Key::Enter,
+            "F1" => Key::F1,
             _ => {
                 let mut chars = name.chars();
                 let c = chars.next()?;
@@ -130,6 +133,7 @@ impl Shortcut {
             Key::Backspace => "Backspace".into(),
             Key::Escape => "Esc".into(),
             Key::Enter => "Enter".into(),
+            Key::F1 => "F1".into(),
         };
         let ctrl = if self.ctrl { "Ctrl+" } else { "" };
         let shift = if self.shift { "Shift+" } else { "" };

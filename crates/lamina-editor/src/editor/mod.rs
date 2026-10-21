@@ -21,6 +21,7 @@ mod context;
 mod crop;
 mod details;
 mod dispatch;
+mod dispatch_view;
 mod dropping;
 mod frames;
 mod group_fields;

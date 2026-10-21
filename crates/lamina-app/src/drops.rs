@@ -1,5 +1,6 @@
-//! Fotos nos quadros pela janela (spec FQ): soltar fotos e quadros na lâmina, seleção no
-//! navegador, mover lâminas na faixa e cortes na timeline. As decisões são do editor.
+//! Fotos nos quadros pela janela (spec FQ): soltar fotos e quadros na lâmina, mover lâminas na
+//! faixa e cortes na timeline. As decisões são do editor. O movimento do arrasto fica em
+//! `drag_motion.rs`, e o clique no navegador em `browser.rs`.
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -38,22 +39,6 @@ fn after_edit(app: &mut App, changed: bool) {
 }
 
 pub fn connect(window: &AppWindow, app: &Shared) {
-    let a = app.clone();
-    window.on_photo_pressed(move |i, ctrl, shift| {
-        let edit = |app: &mut App| {
-            let shown = app.shown_photos();
-            if let Ok(index) = usize::try_from(i) {
-                app.editor.click_photo(&shown, index, ctrl, shift);
-            }
-            true
-        };
-        let show = |app: &mut App| {
-            let id = app.photo_at(i);
-            app.select_photo(id);
-            app.refresh_current();
-        };
-        a.borrow_mut().timed("Clicar numa foto", edit, show);
-    });
     let a = app.clone();
     window.on_drop_photo(move |i, fx, fy| {
         let mut app = a.borrow_mut();
@@ -168,45 +153,4 @@ pub fn refresh_timeline(app: &mut App) {
         })
         .collect();
     app.lists.line.sync(rows, |i| items[i].clone());
-}
-
-/// O arrasto (spec MV, regra 12): o fantasma, o quadro de destino e as lâminas abrindo espaço.
-pub fn connect_motion(window: &AppWindow, app: &Shared) {
-    let a = app.clone();
-    window.on_drag_started(move |kind, from| {
-        let mut app = a.borrow_mut();
-        if let Some(ghost) = crate::ghost::make(&mut app, kind, from)
-            && let Some(w) = app.window.upgrade()
-        {
-            w.set_ghost(ghost);
-        }
-    });
-    let a = app.clone();
-    window.on_drop_at(move |fx, fy| {
-        let app = a.borrow();
-        let target = app.session().and_then(|s| {
-            lamina_editor::motion::drop_target(
-                s.project(),
-                s.current(),
-                f64::from(fx),
-                f64::from(fy),
-            )
-        });
-        target
-            .map(|(_, r)| crate::convert::boxed(r))
-            .unwrap_or_default()
-    });
-    let a = app.clone();
-    window.on_spread_shift(move |from, gap, i| {
-        let app = a.borrow();
-        let count = app.session().map_or(0, |s| s.spread_count());
-        let (Ok(from), Ok(gap), Ok(i)) = (
-            usize::try_from(from),
-            usize::try_from(gap),
-            usize::try_from(i),
-        ) else {
-            return 0;
-        };
-        reorder(from, gap, count).shift.get(i).copied().unwrap_or(0)
-    });
 }

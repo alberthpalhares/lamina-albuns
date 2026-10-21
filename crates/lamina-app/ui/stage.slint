@@ -1,0 +1,281 @@
+// A área da lâmina (spec janela-principal): a lâmina grande, a que sai ao navegar, o destaque de
+// soltar, as camadas do modo organizar e a tela de boas-vindas. Os dados chegam pela janela
+// principal (app.slint); o estado do arrastar mora no global DragUi.
+
+import { Theme } from "theme.slint";
+import { SpreadCanvas, SpreadData, BoxData } from "canvas.slint";
+import { EmptyAlbum } from "importing.slint";
+import { GhostData } from "ghost.slint";
+import { OrganizeUi, OrganizeBar, OrganizeMarks, OrganizeRulers, OrganizeTools } from "organize.slint";
+import { Motion } from "motion.slint";
+import { WelcomeScreen } from "welcome.slint";
+import { DragUi } from "drag.slint";
+
+export component Stage inherits Rectangle {
+    in property <bool> has-project;
+    in property <SpreadData> current;
+    in property <bool> guides;
+    in property <int> selected-frame: -1;
+    // O álbum sem lâminas (spec IM): quantas lâminas e quantas fotos há.
+    in property <int> spread-count;
+    in property <int> photo-count;
+    // Dica embaixo da lâmina: o que dá para fazer com o quadro selecionado.
+    in property <string> hint;
+    // Recorte (spec RC) e a grade dele (spec AF).
+    in property <int> crop-frame: -1;
+    in property <bool> has-preview;
+    in property <BoxData> preview;
+    in property <image> preview-img;
+    in property <bool> crop-grid-thirds;
+    in property <bool> crop-grid-fine;
+    // O mouse na lâmina, para o T (spec TX).
+    in-out property <float> hover-fx: -1;
+    // O fantasma do arrasto, para o pouso (spec MV, regra 12).
+    in property <GhostData> ghost;
+    callback command(string);
+    callback focus-main();
+    callback frame-double(int);
+    callback crop-drag(float, float);
+    callback crop-end();
+    callback crop-wheel(float);
+    callback frame-grab(int, int, length, length, length);
+    callback frame-drag(length, length, bool, bool);
+    callback organize-press(int, bool, bool, length, length, length);
+    callback frame-release();
+    callback frame-selected(int);
+    callback frame-clicked(int, bool, bool);
+    callback context-requested(int, length, length);
+    callback drop-frame(int, float, float);
+    // O quadro onde a soltura cairia, em frações da largura da lâmina (spec MV, regra 12).
+    pure callback drop-at(float, float) -> BoxData;
+    clip: true;
+
+    // Ir para outra lâmina (spec MV, seção 4): a lâmina que sai e o relógio do deslize, guardado
+    // por um bool para parar sozinho (ADR 0011, decisão 6).
+    in property <SpreadData> leaving;
+    in property <bool> has-leaving;
+    property <bool> nav-running: false;
+    property <duration> nav-t0;
+    property <int> nav-dir: 1;
+    property <float> nav-p: root.nav-running ? min(1, (animation-tick() - root.nav-t0) / max(1ms, Motion.navigate-ms * 1ms)) : 1;
+    property <float> nav-e: 1 - pow(1 - root.nav-p, 3);
+    callback nav-ended();
+    changed nav-p => {
+        if (root.nav-running && root.nav-p >= 1) {
+            root.nav-running = false;
+            root.nav-ended();
+        }
+    }
+    // `dir`: 1 = para a frente (a nova vem da direita), -1 = para trás.
+    public function start-nav(dir: int) {
+        root.nav-dir = dir;
+        root.nav-t0 = animation-tick();
+        root.nav-running = true;
+    }
+
+    // Onde o ponteiro está na lâmina grande, em frações da largura dela.
+    public pure function frac-x() -> float { (DragUi.x - big.absolute-position.x) / big.width }
+    public pure function frac-y() -> float { (DragUi.y - big.absolute-position.y) / big.width }
+
+    // Soltou: se cai num quadro e há movimento, o fantasma pousa nele.
+    public function land() {
+        let t = root.drop-at(root.frac-x(), root.frac-y());
+        if (t.w <= 0 || !Motion.on || Motion.land-ms <= 0) {
+            return;
+        }
+        DragUi.land-w0 = root.ghost.w * 1px;
+        DragUi.land-h0 = root.ghost.h * 1px;
+        DragUi.land-x0 = DragUi.x - DragUi.land-w0 / 2;
+        DragUi.land-y0 = DragUi.y - DragUi.land-h0 / 2;
+        DragUi.land-x1 = big.absolute-position.x + t.x * big.width;
+        DragUi.land-y1 = big.absolute-position.y + t.y * big.width;
+        DragUi.land-w1 = t.w * big.width;
+        DragUi.land-h1 = t.h * big.width;
+        DragUi.land-t0 = animation-tick();
+        DragUi.landing = true;
+    }
+
+    // O laço do modo organizar: os dois cantos em frações da largura da lâmina e o Shift.
+    callback lasso-done(float, float, float, float, bool);
+    out property <bool> lasso-moved;
+    function background-event(kind: int, x: length, y: length, shift: bool) {
+        if (!OrganizeUi.on) {
+            return;
+        }
+        if (kind == 0) {
+            OrganizeUi.lassoing = true;
+            root.lasso-moved = false;
+            OrganizeUi.lasso-x0 = x;
+            OrganizeUi.lasso-y0 = y;
+            OrganizeUi.lasso-x1 = x;
+            OrganizeUi.lasso-y1 = y;
+        } else if (kind == 1 && OrganizeUi.lassoing) {
+            OrganizeUi.lasso-x1 = x;
+            OrganizeUi.lasso-y1 = y;
+            root.lasso-moved = root.lasso-moved || abs(x - OrganizeUi.lasso-x0) > 4px || abs(y - OrganizeUi.lasso-y0) > 4px;
+        } else if (kind == 2 && OrganizeUi.lassoing) {
+            OrganizeUi.lassoing = false;
+            if (root.lasso-moved) {
+                let bx = big.absolute-position.x;
+                let by = big.absolute-position.y;
+                root.lasso-done((OrganizeUi.lasso-x0 - bx) / big.width, (OrganizeUi.lasso-y0 - by) / big.width, (x - bx) / big.width, (y - by) / big.width, shift);
+            } else {
+                root.frame-selected(-1);
+            }
+        }
+    }
+
+    // No modo organizar, a barra da lâmina em destaque e as réguas ocupam o topo.
+    property <length> top-room: OrganizeUi.on ? 52px : 0px;
+    property <length> canvas-width: root.current.aspect > 0
+        ? min(self.width - 48px - (OrganizeUi.on ? 18px : 0px), (self.height - 48px - self.top-room) / root.current.aspect) : 0px;
+    // A lâmina em destaque cresce com movimento (spec EG, herdado da MV).
+    animate canvas-width { duration: Motion.on ? Motion.navigate-ms * 1ms : 0ms; easing: ease-out; }
+    // Clique fora dos quadros: desmarca e sai do modo recorte. Duplo clique abre o
+    // modo organizar; arrastar no modo faz o laço (spec EG).
+    TouchArea {
+        clicked => {
+            if (!root.lasso-moved) {
+                root.frame-selected(-1);
+            }
+            root.focus-main();
+        }
+        double-clicked => { root.frame-double(-1); root.focus-main(); }
+        // Ctrl+roda dá zoom na lâmina no modo organizar.
+        scroll-event(e) => {
+            if (OrganizeUi.on && (e.modifiers.control || e.modifiers.meta)) {
+                root.command(e.delta-y > 0 ? "organizar.mais-zoom" : "organizar.menos-zoom");
+                return accept;
+            }
+            return reject;
+        }
+        moved => { root.background-event(1, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, false); }
+        pointer-event(e) => {
+            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                root.background-event(0, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, e.modifiers.shift);
+            }
+            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                root.background-event(2, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, e.modifiers.shift);
+            }
+        }
+    }
+    if root.hint != "": Text {
+        y: parent.height - 22px;
+        text: root.hint;
+        color: Theme.muted;
+        font-size: 12px;
+    }
+    // A lâmina que sai, esmaecendo e deslizando para o lado oposto (spec MV).
+    if root.has-leaving && root.nav-running: SpreadCanvas {
+        x: (parent.width - self.width) / 2 - root.nav-dir * 32px * root.nav-e;
+        width: root.canvas-width;
+        height: root.canvas-width * root.leaving.aspect;
+        data: root.leaving;
+        guides: root.guides;
+        opacity: 1 - root.nav-e;
+    }
+    // Sempre na árvore (some sem projeto) para o arrastar achar a posição dela.
+    big := SpreadCanvas {
+        // Entra deslizando 32 px e esmaecendo, na direção da navegação.
+        x: (parent.width - self.width) / 2 + (OrganizeUi.on ? 9px + OrganizeUi.pan-x : 0px) + (root.nav-running ? root.nav-dir * 32px * (1 - root.nav-e) : 0px);
+        opacity: root.nav-running ? root.nav-e : 1;
+        cropping: root.crop-frame;
+        has-preview: root.has-preview;
+        preview: root.preview;
+        preview-img: root.preview-img;
+        frame-double(i) => { root.frame-double(i); root.focus-main(); }
+        context(i, x, y) => { root.context-requested(i, x, y); }
+        grid-thirds: root.crop-grid-thirds;
+        grid-fine: root.crop-grid-fine;
+        crop-drag(dx, dy) => { root.crop-drag(dx, dy); }
+        crop-end() => { root.crop-end(); root.focus-main(); }
+        crop-wheel(n) => { root.crop-wheel(n); }
+        grab(i, n, x, y, w) => { root.frame-grab(i, n, x, y, w); }
+        grab-move(x, y, alt, shift) => { root.frame-drag(x, y, alt, shift); }
+        organizing: OrganizeUi.on;
+        organize-press(i, ctrl, shift, x, y, w) => { root.organize-press(i, ctrl, shift, x, y, w); }
+        grab-end => { root.frame-release(); root.focus-main(); }
+        hover-fx <=> root.hover-fx;
+        visible: root.has-project;
+        width: root.canvas-width * (OrganizeUi.on ? OrganizeUi.zoom : 1);
+        height: self.width * root.current.aspect;
+        y: (parent.height - self.height) / 2 + root.top-room / 2 + (OrganizeUi.on ? OrganizeUi.pan-y : 0px);
+        data: root.current;
+        guides: root.guides;
+        interactive: true;
+        selected: root.selected-frame;
+        drop-shadow-blur: 16px;
+        drop-shadow-color: #00000080;
+        frame-down(i, x, y) => {
+            DragUi.press-x = x;
+            DragUi.press-y = y;
+            DragUi.from = i;
+        }
+        back-press(k, x, y, shift) => { root.background-event(k, x, y, shift); }
+        frame-move(i, x, y, img) => {
+            // No modo organizar nenhuma foto troca de quadro (spec EG, regra 4).
+            if (DragUi.kind == 0 && DragUi.far(x, y) && !OrganizeUi.on) {
+                DragUi.kind = 2;
+                DragUi.img = img;
+            }
+            DragUi.x = x;
+            DragUi.y = y;
+        }
+        frame-up(i, x, y, ctrl, shift) => {
+            if (DragUi.kind == 2) {
+                root.land();
+                root.drop-frame(DragUi.from, root.frac-x(), root.frac-y());
+            } else {
+                root.frame-clicked(i, ctrl, shift);
+            }
+            DragUi.kind = 0;
+            root.focus-main();
+        }
+    }
+    // Destaque do quadro de destino durante o arrasto: o mesmo da soltura (spec MV,
+    // regra 12).
+    if DragUi.kind == 1 || DragUi.kind == 2: Rectangle {
+        property <BoxData> t: root.drop-at(root.frac-x(), root.frac-y());
+        visible: self.t.w > 0;
+        x: big.x + self.t.x * big.width;
+        y: big.y + self.t.y * big.width;
+        width: self.t.w * big.width;
+        height: self.t.h * big.width;
+        border-width: 3px;
+        border-color: #ffd23f;
+    }
+    if root.has-project && root.spread-count == 0: EmptyAlbum {
+        photos: root.photo-count;
+        import => { root.command("arquivo.importar"); }
+    }
+    // O modo organizar: os quadros selecionados e a barra da lâmina em destaque.
+    if OrganizeUi.on: OrganizeMarks {
+        x: big.x;
+        y: big.y;
+        width: big.width;
+        height: big.height;
+        unit: big.width;
+    }
+    if OrganizeUi.on: OrganizeRulers {
+        y: 34px;
+        width: parent.width;
+        height: parent.height - 34px;
+        lx: big.x;
+        ly: big.y - 34px;
+        unit: big.width;
+    }
+    if OrganizeUi.on && (OrganizeUi.tool != 0 || OrganizeUi.hand): OrganizeTools {
+        width: parent.width;
+        height: parent.height;
+        lx: big.x;
+        ly: big.y;
+        unit: big.width;
+    }
+    if OrganizeUi.on: OrganizeBar {
+        y: 0;
+        width: parent.width;
+    }
+    if !root.has-project: WelcomeScreen {
+        command(name) => { root.command(name); }
+    }
+}

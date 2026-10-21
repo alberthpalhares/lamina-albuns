@@ -106,7 +106,7 @@ fn new_text(app: &mut App) {
 /// O nome da tecla especial (o Slint manda um caractere próprio para cada uma) ou o próprio texto.
 fn key_name(text: &str) -> String {
     use slint::platform::Key as K;
-    const NAMES: [(K, &str); 12] = [
+    const NAMES: [(K, &str); 13] = [
         (K::PageDown, "PageDown"),
         (K::PageUp, "PageUp"),
         (K::Home, "Home"),
@@ -119,6 +119,7 @@ fn key_name(text: &str) -> String {
         (K::Return, "Enter"),
         (K::UpArrow, "Up"),
         (K::DownArrow, "Down"),
+        (K::F1, "F1"),
     ];
     let mut chars = text.chars();
     if let (Some(c), None) = (chars.next(), chars.next())
@@ -177,6 +178,7 @@ mod tests {
             (K::LeftArrow, "Left"),
             (K::Return, "Enter"),
             (K::Escape, "Escape"),
+            (K::F1, "F1"),
         ] {
             assert_eq!(key_name(&char::from(key).to_string()), name);
             assert!(Key::from_name(&key_name(&char::from(key).to_string())).is_some());

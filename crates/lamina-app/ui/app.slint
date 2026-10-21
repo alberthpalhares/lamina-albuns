@@ -1,12 +1,14 @@
 // Janela principal do Lamina (spec `janela-principal`). Só desenho: os dados e as decisões vêm
-// do lamina-editor, pelo Rust (src/).
+// do lamina-editor, pelo Rust (src/). Aqui ficam a janela, as propriedades, o menu, o teclado e
+// os diálogos; a barra do projeto, a área da lâmina e as faixas de baixo estão em topbar.slint,
+// stage.slint e bottom.slint, e o estado do arrastar no global DragUi (drag.slint).
 
 import { Button, ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
-import { SpreadCanvas, SpreadData, FrameData, BoxData } from "canvas.slint";
+import { SpreadData, FrameData, BoxData } from "canvas.slint";
 import { ConfirmDialog, MessageDialog, BusyOverlay } from "dialogs.slint";
 import { NewProjectDialog, NewProjectUi, FormatCard, DrawData } from "new_project.slint";
-import { ImportUi, DropOverlay, EmptyAlbum } from "importing.slint";
+import { ImportUi, DropOverlay } from "importing.slint";
 import { LayoutItem } from "layouts.slint";
 import { LookUi, Swatch } from "look.slint";
 import { FrameUi } from "frame.slint";
@@ -15,8 +17,8 @@ import { ModelNameDialog, ModelsDialog, ModelUi } from "models.slint";
 import { HistoryItem } from "history.slint";
 import { ExportDialog } from "export.slint";
 import { PresetNameDialog, PresetsDialog, PresetUi } from "spec.slint";
-import { StripHeader, SpreadStrip, TimelineStrip, PhotoStrip, PhotoData, TimelineItem } from "strips.slint";
-import { BarButton, FilterTab } from "widgets.slint";
+import { TimelineItem } from "timeline.slint";
+import { PhotoData } from "photo_strip.slint";
 import { UpdateBar } from "update_bar.slint";
 import { RightPanel } from "panel.slint";
 import { DragGhost, GhostData } from "ghost.slint";
@@ -24,9 +26,13 @@ import { ContextUi, ContextMenu, ContextRow } from "context.slint";
 import { PaletteUi, FloatingPalette, PaletteWindow } from "palette.slint";
 import { PhotoUi } from "photo.slint";
 import { DetailRow } from "side.slint";
-import { OrganizeUi, OrganizeBar, OrganizeMarks, OrganizeRulers, OrganizeTools, LassoBox, MarkData, TickData } from "organize.slint";
+import { OrganizeUi, LassoBox, MarkData, TickData } from "organize.slint";
 import { Motion } from "motion.slint";
-import { WelcomeScreen, ClearRecentsDialog, RecentsUi, RecentCard, RecentItem } from "welcome.slint";
+import { ClearRecentsDialog, RecentsUi, RecentCard, RecentItem } from "welcome.slint";
+import { DragUi } from "drag.slint";
+import { TopBar, NoticeBar } from "topbar.slint";
+import { Stage } from "stage.slint";
+import { BottomStrips } from "bottom.slint";
 
 export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi }
 
@@ -50,27 +56,14 @@ export component AppWindow inherits Window {
     in property <bool> guides: true;
     // "Reduzir movimento" ligado (spec MV, regra 14): a marca no menu Visualizar.
     in property <bool> reduce-motion;
-    // Ir para outra lâmina (spec MV, seção 4): a lâmina que sai e o relógio do deslize, guardado
-    // por um bool para parar sozinho (ADR 0011, decisão 6).
+    // Ir para outra lâmina (spec MV, seção 4): a lâmina que sai. O deslize e o relógio dele são da
+    // área da lâmina (stage.slint).
     in property <SpreadData> leaving;
     in property <bool> has-leaving;
-    in-out property <bool> nav-running: false;
-    property <duration> nav-t0;
-    property <int> nav-dir: 1;
-    property <float> nav-p: root.nav-running ? min(1, (animation-tick() - root.nav-t0) / max(1ms, Motion.navigate-ms * 1ms)) : 1;
-    property <float> nav-e: 1 - pow(1 - root.nav-p, 3);
-    callback nav-ended();
-    changed nav-p => {
-        if (root.nav-running && root.nav-p >= 1) {
-            root.nav-running = false;
-            root.nav-ended();
-        }
-    }
+    callback nav-ended <=> stage.nav-ended;
     // `dir`: 1 = para a frente (a nova vem da direita), -1 = para trás.
     public function start-nav(dir: int) {
-        root.nav-dir = dir;
-        root.nav-t0 = animation-tick();
-        root.nav-running = true;
+        stage.start-nav(dir);
     }
     in property <SpreadData> current;
     in property <int> current-index;
@@ -160,63 +153,30 @@ export component AppWindow inherits Window {
 
     callback command(string);
     callback key(string, bool, bool, bool) -> bool;
-    callback go-to(int);
+    callback go-to <=> bottom.go-to;
     callback photo-clicked(int);
-    callback photo-double-clicked(int);
-    callback filter-changed(int);
+    callback photo-double-clicked <=> bottom.photo-double-clicked;
+    callback filter-changed <=> bottom.filter-changed;
     callback confirm(int);
-    // Arrastar (spec FQ): 0 nada, 1 foto do navegador, 2 quadro, 3 lâmina na faixa.
-    in-out property <int> drag-kind;
-    in-out property <int> drag-from: -1;
-    in-out property <image> drag-img;
-    in-out property <length> drag-x;
-    in-out property <length> drag-y;
-    in-out property <length> press-x;
-    in-out property <length> press-y;
-    // Arrastar (spec MV, regra 12): o fantasma vem do editor quando o arrasto começa; o destaque é
-    // o quadro onde a soltura cairia; ao soltar num quadro, o fantasma pousa nele.
+    // Arrastar (spec FQ; spec MV, regra 12): o gesto mora no global DragUi. O fantasma vem do
+    // editor quando o arrasto começa; o destaque é o quadro onde a soltura cairia; ao soltar num
+    // quadro, o fantasma pousa nele.
     in property <GhostData> ghost;
     callback drag-started(int, int);
-    pure callback drop-at(float, float) -> BoxData;
-    pure callback spread-shift(int, int, int) -> int;
+    pure callback drop-at <=> stage.drop-at;
+    pure callback spread-shift <=> bottom.spread-shift;
+    property <int> drag-kind: DragUi.kind;
     changed drag-kind => {
         if (root.drag-kind == 1 || root.drag-kind == 2) {
-            root.drag-started(root.drag-kind, root.drag-from);
+            root.drag-started(root.drag-kind, DragUi.from);
         }
     }
-    property <bool> landing;
-    property <duration> land-t0;
-    property <length> land-x0;
-    property <length> land-y0;
-    property <length> land-w0;
-    property <length> land-h0;
-    property <length> land-x1;
-    property <length> land-y1;
-    property <length> land-w1;
-    property <length> land-h1;
-    property <float> land-p: root.landing ? min(1, (animation-tick() - root.land-t0) / max(1ms, Motion.land-ms * 1ms)) : 1;
+    property <float> land-p: DragUi.landing ? min(1, (animation-tick() - DragUi.land-t0) / max(1ms, Motion.land-ms * 1ms)) : 1;
     property <float> land-e: 1 - pow(1 - root.land-p, 3);
     changed land-p => {
-        if (root.landing && root.land-p >= 1) {
-            root.landing = false;
+        if (DragUi.landing && root.land-p >= 1) {
+            DragUi.landing = false;
         }
-    }
-    // Soltou: se cai num quadro e há movimento, o fantasma pousa nele.
-    function land() {
-        let t = root.drop-at(root.frac-x(), root.frac-y());
-        if (t.w <= 0 || !Motion.on || Motion.land-ms <= 0) {
-            return;
-        }
-        root.land-w0 = root.ghost.w * 1px;
-        root.land-h0 = root.ghost.h * 1px;
-        root.land-x0 = root.drag-x - root.land-w0 / 2;
-        root.land-y0 = root.drag-y - root.land-h0 / 2;
-        root.land-x1 = big.absolute-position.x + t.x * big.width;
-        root.land-y1 = big.absolute-position.y + t.y * big.width;
-        root.land-w1 = t.w * big.width;
-        root.land-h1 = t.h * big.width;
-        root.land-t0 = animation-tick();
-        root.landing = true;
     }
     in property <int> selected-frame: -1;
     in property <[TimelineItem]> timeline;
@@ -233,64 +193,37 @@ export component AppWindow inherits Window {
     in property <image> preview-img;
     in property <string> info-frame;
     in property <bool> info-frame-warn;
-    callback frame-double(int);
-    callback crop-drag(float, float);
-    callback crop-end();
-    callback crop-wheel(float);
+    callback frame-double <=> stage.frame-double;
+    callback crop-drag <=> stage.crop-drag;
+    callback crop-end <=> stage.crop-end;
+    callback crop-wheel <=> stage.crop-wheel;
     // Quadros à mão (spec TX): alças e arrasto do texto; o mouse na lâmina para o T.
-    callback frame-grab(int, int, length, length, length);
-    callback frame-drag(length, length, bool, bool);
-    callback organize-press(int, bool, bool, length, length, length);
-    callback frame-release();
+    callback frame-grab <=> stage.frame-grab;
+    callback frame-drag <=> stage.frame-drag;
+    callback organize-press <=> stage.organize-press;
+    callback frame-release <=> stage.frame-release;
     in-out property <float> hover-fx: -1;
     // Dica embaixo da lâmina: o que dá para fazer com o quadro selecionado.
     in property <string> hint;
-    callback photo-pressed(int, bool, bool);
+    callback photo-pressed <=> bottom.photo-pressed;
     callback drop-photo(int, float, float);
     // Fotos do navegador soltas num vão da faixa de lâminas: (foto arrastada, vão).
-    callback drop-photos-gap(int, int);
+    callback drop-photos-gap <=> bottom.drop-photos-gap;
     // O ponteiro sobre a área de lâmina nova, para os arquivos soltos do Explorador (spec IM).
-    out property <bool> new-spread-hover: spread-strip.new-hover;
-    callback drop-frame(int, float, float);
-    callback frame-selected(int);
+    out property <bool> new-spread-hover: bottom.new-spread-hover;
+    callback drop-frame <=> stage.drop-frame;
+    callback frame-selected <=> stage.frame-selected;
     // Clique num quadro, com Ctrl (ou Cmd) e Shift: no modo organizar, soma ou tira (spec EG).
-    callback frame-clicked(int, bool, bool);
+    callback frame-clicked <=> stage.frame-clicked;
     // A grade do recorte (spec AF).
     in property <bool> crop-grid-thirds;
     in property <bool> crop-grid-fine;
     // Clique direito na lâmina: o menu de contexto (spec EG, regra 13).
-    callback context-requested(int, length, length);
+    callback context-requested <=> stage.context-requested;
     // O laço do modo organizar: os dois cantos em frações da largura da lâmina e o Shift.
-    callback lasso-done(float, float, float, float, bool);
-    property <bool> lasso-moved;
-    function background-event(kind: int, x: length, y: length, shift: bool) {
-        if (!OrganizeUi.on) {
-            return;
-        }
-        if (kind == 0) {
-            OrganizeUi.lassoing = true;
-            root.lasso-moved = false;
-            OrganizeUi.lasso-x0 = x;
-            OrganizeUi.lasso-y0 = y;
-            OrganizeUi.lasso-x1 = x;
-            OrganizeUi.lasso-y1 = y;
-        } else if (kind == 1 && OrganizeUi.lassoing) {
-            OrganizeUi.lasso-x1 = x;
-            OrganizeUi.lasso-y1 = y;
-            root.lasso-moved = root.lasso-moved || abs(x - OrganizeUi.lasso-x0) > 4px || abs(y - OrganizeUi.lasso-y0) > 4px;
-        } else if (kind == 2 && OrganizeUi.lassoing) {
-            OrganizeUi.lassoing = false;
-            if (root.lasso-moved) {
-                let bx = big.absolute-position.x;
-                let by = big.absolute-position.y;
-                root.lasso-done((OrganizeUi.lasso-x0 - bx) / big.width, (OrganizeUi.lasso-y0 - by) / big.width, (x - bx) / big.width, (y - by) / big.width, shift);
-            } else {
-                root.frame-selected(-1);
-            }
-        }
-    }
-    callback move-spread(int, int);
-    callback cut-moved(int, int);
+    callback lasso-done <=> stage.lasso-done;
+    callback move-spread <=> bottom.move-spread;
+    callback cut-moved <=> bottom.cut-moved;
     callback layout-apply(int);
     callback layout-favorite(int);
     callback layout-reject(int);
@@ -304,15 +237,6 @@ export component AppWindow inherits Window {
     public function open-url(url: string) -> bool {
         return Platform.open-url(url);
     }
-
-    // Começa a arrastar só depois de 6 px, para um clique não virar arrasto.
-    function far(x: length, y: length) -> bool {
-        abs(x - root.press-x) > 6px || abs(y - root.press-y) > 6px
-    }
-
-    // Onde o ponteiro está na lâmina grande, em frações da largura dela.
-    function frac-x() -> float { (root.drag-x - big.absolute-position.x) / big.width }
-    function frac-y() -> float { (root.drag-y - big.absolute-position.y) / big.width }
 
     // O menu nativo fica estável durante a edição (spec MV, regra 16): mudar o título ou o
     // "enabled" de um item faz o Slint 1.18 refazer a barra inteira e o Windows redimensionar a
@@ -451,33 +375,14 @@ export component AppWindow inherits Window {
         }
 
         VerticalLayout {
-            // Barra do projeto.
-            Rectangle {
-                height: 44px;
-                background: Theme.bar;
-                HorizontalLayout {
-                    padding-left: 16px;
-                    padding-right: 8px;
-                    spacing: 16px;
-                    // Início: fecha o álbum e volta à tela inicial (spec TI, regra 6).
-                    if root.has-project: BarButton { text: "Início"; clicked => { root.command("arquivo.fechar"); } }
-                    Text {
-                        text: root.project-title;
-                        color: Theme.text;
-                        font-size: 15px;
-                        font-weight: 600;
-                        vertical-alignment: center;
-                    }
-                    Text { text: root.counter; color: Theme.muted; vertical-alignment: center; }
-                    if root.counter-warning != "": Text { text: root.counter-warning; color: Theme.warning; vertical-alignment: center; }
-                    Rectangle { horizontal-stretch: 1; }
-                    BarButton { text: "Novo"; clicked => { root.command("arquivo.novo"); } }
-                    BarButton { text: "Abrir"; clicked => { root.command("arquivo.abrir"); } }
-                    BarButton { text: "Salvar"; enabled: root.can-save; clicked => { root.command("arquivo.salvar"); } }
-                    BarButton { text: "Texto"; enabled: root.has-project; clicked => { root.command("lamina.novo-texto"); } }
-                    BarButton { text: root.panel-open ? "Esconder painel" : "Mostrar painel"; enabled: root.has-project; clicked => { root.command("ver.painel"); } }
-                    BarButton { text: "Exportar"; primary: true; enabled: root.has-project; clicked => { root.command("arquivo.exportar"); } }
-                }
+            TopBar {
+                has-project: root.has-project;
+                project-title: root.project-title;
+                counter: root.counter;
+                counter-warning: root.counter-warning;
+                can-save: root.can-save;
+                panel-open: root.panel-open;
+                command(name) => { root.command(name); }
             }
 
             if root.update-bar != "": UpdateBar {
@@ -486,178 +391,36 @@ export component AppWindow inherits Window {
                 dismiss => { root.update-dismiss(); }
             }
 
-            if root.notice != "": Rectangle {
-                height: 30px;
-                background: #4a3f1f;
-                HorizontalLayout {
-                    padding-left: 16px;
-                    padding-right: 8px;
-                    spacing: 12px;
-                    Text { text: root.notice; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
-                    if root.has-missing: BarButton { text: "Procurar fotos…"; clicked => { root.command("arquivo.procurar-fotos"); } }
-                }
+            if root.notice != "": NoticeBar {
+                text: root.notice;
+                has-missing: root.has-missing;
+                command(name) => { root.command(name); }
             }
 
             HorizontalLayout {
                 vertical-stretch: 1;
                 // Lâmina atual.
-                area := Rectangle {
+                stage := Stage {
                     horizontal-stretch: 1;
-                    clip: true;
-                    // No modo organizar, a barra da lâmina em destaque e as réguas ocupam o topo.
-                    property <length> top-room: OrganizeUi.on ? 52px : 0px;
-                    property <length> canvas-width: root.current.aspect > 0
-                        ? min(self.width - 48px - (OrganizeUi.on ? 18px : 0px), (self.height - 48px - self.top-room) / root.current.aspect) : 0px;
-                    // A lâmina em destaque cresce com movimento (spec EG, herdado da MV).
-                    animate canvas-width { duration: Motion.on ? Motion.navigate-ms * 1ms : 0ms; easing: ease-out; }
-                    // Clique fora dos quadros: desmarca e sai do modo recorte.
-                    // Clique fora dos quadros: desmarca e sai do modo recorte. Duplo clique abre o
-                    // modo organizar; arrastar no modo faz o laço (spec EG).
-                    TouchArea {
-                        clicked => {
-                            if (!root.lasso-moved) {
-                                root.frame-selected(-1);
-                            }
-                            root.focus-main();
-                        }
-                        double-clicked => { root.frame-double(-1); root.focus-main(); }
-                        // Ctrl+roda dá zoom na lâmina no modo organizar.
-                        scroll-event(e) => {
-                            if (OrganizeUi.on && (e.modifiers.control || e.modifiers.meta)) {
-                                root.command(e.delta-y > 0 ? "organizar.mais-zoom" : "organizar.menos-zoom");
-                                return accept;
-                            }
-                            return reject;
-                        }
-                        moved => { root.background-event(1, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, false); }
-                        pointer-event(e) => {
-                            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
-                                root.background-event(0, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, e.modifiers.shift);
-                            }
-                            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
-                                root.background-event(2, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, e.modifiers.shift);
-                            }
-                        }
-                    }
-                    if root.hint != "": Text {
-                        y: parent.height - 22px;
-                        text: root.hint;
-                        color: Theme.muted;
-                        font-size: 12px;
-                    }
-                    // A lâmina que sai, esmaecendo e deslizando para o lado oposto (spec MV).
-                    if root.has-leaving && root.nav-running: SpreadCanvas {
-                        x: (parent.width - self.width) / 2 - root.nav-dir * 32px * root.nav-e;
-                        width: area.canvas-width;
-                        height: area.canvas-width * root.leaving.aspect;
-                        data: root.leaving;
-                        guides: root.guides;
-                        opacity: 1 - root.nav-e;
-                    }
-                    // Sempre na árvore (some sem projeto) para o arrastar achar a posição dela.
-                    big := SpreadCanvas {
-                        // Entra deslizando 32 px e esmaecendo, na direção da navegação.
-                        x: (parent.width - self.width) / 2 + (OrganizeUi.on ? 9px + OrganizeUi.pan-x : 0px) + (root.nav-running ? root.nav-dir * 32px * (1 - root.nav-e) : 0px);
-                        opacity: root.nav-running ? root.nav-e : 1;
-                        cropping: root.crop-frame;
-                        has-preview: root.has-preview;
-                        preview: root.preview;
-                        preview-img: root.preview-img;
-                        frame-double(i) => { root.frame-double(i); root.focus-main(); }
-                        context(i, x, y) => { root.context-requested(i, x, y); }
-                        grid-thirds: root.crop-grid-thirds;
-                        grid-fine: root.crop-grid-fine;
-                        crop-drag(dx, dy) => { root.crop-drag(dx, dy); }
-                        crop-end() => { root.crop-end(); root.focus-main(); }
-                        crop-wheel(n) => { root.crop-wheel(n); }
-                        grab(i, n, x, y, w) => { root.frame-grab(i, n, x, y, w); }
-                        grab-move(x, y, alt, shift) => { root.frame-drag(x, y, alt, shift); }
-                        organizing: OrganizeUi.on;
-                        organize-press(i, ctrl, shift, x, y, w) => { root.organize-press(i, ctrl, shift, x, y, w); }
-                        grab-end => { root.frame-release(); root.focus-main(); }
-                        hover-fx <=> root.hover-fx;
-                        visible: root.has-project;
-                        width: area.canvas-width * (OrganizeUi.on ? OrganizeUi.zoom : 1);
-                        height: self.width * root.current.aspect;
-                        y: (parent.height - self.height) / 2 + area.top-room / 2 + (OrganizeUi.on ? OrganizeUi.pan-y : 0px);
-                        data: root.current;
-                        guides: root.guides;
-                        interactive: true;
-                        selected: root.selected-frame;
-                        drop-shadow-blur: 16px;
-                        drop-shadow-color: #00000080;
-                        frame-down(i, x, y) => {
-                            root.press-x = x;
-                            root.press-y = y;
-                            root.drag-from = i;
-                        }
-                        back-press(k, x, y, shift) => { root.background-event(k, x, y, shift); }
-                        frame-move(i, x, y, img) => {
-                            // No modo organizar nenhuma foto troca de quadro (spec EG, regra 4).
-                            if (root.drag-kind == 0 && root.far(x, y) && !OrganizeUi.on) {
-                                root.drag-kind = 2;
-                                root.drag-img = img;
-                            }
-                            root.drag-x = x;
-                            root.drag-y = y;
-                        }
-                        frame-up(i, x, y, ctrl, shift) => {
-                            if (root.drag-kind == 2) {
-                                root.land();
-                                root.drop-frame(root.drag-from, root.frac-x(), root.frac-y());
-                            } else {
-                                root.frame-clicked(i, ctrl, shift);
-                            }
-                            root.drag-kind = 0;
-                            root.focus-main();
-                        }
-                    }
-                    // Destaque do quadro de destino durante o arrasto: o mesmo da soltura (spec MV,
-                    // regra 12).
-                    if root.drag-kind == 1 || root.drag-kind == 2: Rectangle {
-                        property <BoxData> t: root.drop-at(root.frac-x(), root.frac-y());
-                        visible: self.t.w > 0;
-                        x: big.x + self.t.x * big.width;
-                        y: big.y + self.t.y * big.width;
-                        width: self.t.w * big.width;
-                        height: self.t.h * big.width;
-                        border-width: 3px;
-                        border-color: #ffd23f;
-                    }
-                    if root.has-project && root.spreads.length == 0: EmptyAlbum {
-                        photos: root.photos.length;
-                        import => { root.command("arquivo.importar"); }
-                    }
-                    // O modo organizar: os quadros selecionados e a barra da lâmina em destaque.
-                    if OrganizeUi.on: OrganizeMarks {
-                        x: big.x;
-                        y: big.y;
-                        width: big.width;
-                        height: big.height;
-                        unit: big.width;
-                    }
-                    if OrganizeUi.on: OrganizeRulers {
-                        y: 34px;
-                        width: parent.width;
-                        height: parent.height - 34px;
-                        lx: big.x;
-                        ly: big.y - 34px;
-                        unit: big.width;
-                    }
-                    if OrganizeUi.on && (OrganizeUi.tool != 0 || OrganizeUi.hand): OrganizeTools {
-                        width: parent.width;
-                        height: parent.height;
-                        lx: big.x;
-                        ly: big.y;
-                        unit: big.width;
-                    }
-                    if OrganizeUi.on: OrganizeBar {
-                        y: 0;
-                        width: parent.width;
-                    }
-                    if !root.has-project: WelcomeScreen {
-                        command(name) => { root.command(name); }
-                    }
+                    has-project: root.has-project;
+                    current: root.current;
+                    guides: root.guides;
+                    selected-frame: root.selected-frame;
+                    spread-count: root.spreads.length;
+                    photo-count: root.photos.length;
+                    hint: root.hint;
+                    crop-frame: root.crop-frame;
+                    has-preview: root.has-preview;
+                    preview: root.preview;
+                    preview-img: root.preview-img;
+                    crop-grid-thirds: root.crop-grid-thirds;
+                    crop-grid-fine: root.crop-grid-fine;
+                    hover-fx <=> root.hover-fx;
+                    ghost: root.ghost;
+                    leaving: root.leaving;
+                    has-leaving: root.has-leaving;
+                    command(name) => { root.command(name); }
+                    focus-main => { root.focus-main(); }
                 }
 
                 // Painel da direita: layouts (padrão) e informações.
@@ -690,78 +453,28 @@ export component AppWindow inherits Window {
                     done => { root.focus-main(); }
                 }
             }
-            // As três faixas de baixo (spec PN): cabeçalho com nome e resumo, e o conteúdo, que
-            // recolhe. A faixa de lâminas fica sempre na árvore (só some sem projeto ou
-            // recolhida) para rolar até a lâmina atual.
-            if root.has-project: StripHeader {
-                name: "Lâminas";
-                summary: root.strip-spreads;
-                open: root.spreads-open;
-                toggled => { root.command("ver.faixa-laminas"); }
-            }
-            spread-strip := SpreadStrip {
-                visible: root.has-project && root.spreads-open;
-                height: self.visible ? 128px : 0px;
+            bottom := BottomStrips {
+                has-project: root.has-project;
+                strip-spreads: root.strip-spreads;
+                strip-timeline: root.strip-timeline;
+                strip-photos: root.strip-photos;
+                spreads-open: root.spreads-open;
+                timeline-open: root.timeline-open;
+                photos-open: root.photos-open;
                 spreads: root.spreads;
                 current-index: root.current-index;
                 current-aspect: root.current.aspect;
-                spread-shift(f, g, i) => { return root.spread-shift(f, g, i); }
-                drag-kind <=> root.drag-kind;
-                drag-from <=> root.drag-from;
-                drag-x <=> root.drag-x;
-                drag-y <=> root.drag-y;
-                press-x <=> root.press-x;
-                press-y <=> root.press-y;
-                go-to(i) => { root.go-to(i); }
-                move-spread(from, to) => { root.move-spread(from, to); }
-                focus-main => { root.focus-main(); }
-            }
-            if root.has-project && !OrganizeUi.on: StripHeader {
-                name: "Linha do tempo";
-                summary: root.strip-timeline;
-                open: root.timeline-open;
-                toggled => { root.command("ver.linha-do-tempo"); }
-            }
-            if root.has-project && root.timeline-open && !OrganizeUi.on: TimelineStrip {
-                height: 58px;
                 timeline: root.timeline;
-                press-x <=> root.press-x;
-                cut-moved(spread, delta) => { root.cut-moved(spread, delta); }
-                focus-main => { root.focus-main(); }
-            }
-            if root.has-project && !OrganizeUi.on: StripHeader {
-                name: "Fotos";
-                summary: root.strip-photos;
-                open: root.photos-open;
-                toggled => { root.command("ver.fotos"); }
-                FilterTab { text: "Todas"; active: root.filter == 0; clicked => { root.filter-changed(0); } }
-                FilterTab { text: "Usadas"; active: root.filter == 1; clicked => { root.filter-changed(1); } }
-                FilterTab { text: "Não usadas"; active: root.filter == 2; clicked => { root.filter-changed(2); } }
-                BarButton { text: "+ Fotos"; clicked => { root.command("arquivo.importar"); } }
-            }
-            if root.has-project && root.photos-open && !OrganizeUi.on: PhotoStrip {
-                height: 144px;
                 photos: root.photos;
                 selected-photo: root.selected-photo;
-                drag-kind <=> root.drag-kind;
-                drag-from <=> root.drag-from;
-                drag-img <=> root.drag-img;
-                drag-x <=> root.drag-x;
-                drag-y <=> root.drag-y;
-                press-x <=> root.press-x;
-                press-y <=> root.press-y;
-                photo-double-clicked(i) => { root.photo-double-clicked(i); }
-                photo-pressed(i, ctrl, shift) => { root.photo-pressed(i, ctrl, shift); }
-                dropped => {
-                    // Sobre a faixa de lâminas, uma lâmina nova no vão (spec IM, regra 7).
-                    if (spread-strip.visible && spread-strip.photo-gap >= 0) {
-                        root.drop-photos-gap(root.drag-from, spread-strip.photo-gap);
-                    } else {
-                        root.land();
-                        root.drop-photo(root.drag-from, root.frac-x(), root.frac-y());
-                    }
-                }
+                filter: root.filter;
+                command(name) => { root.command(name); }
                 focus-main => { root.focus-main(); }
+                // Fora da faixa de lâminas, a foto cai na lâmina grande (num quadro ou nela).
+                photos-dropped => {
+                    stage.land();
+                    root.drop-photo(DragUi.from, stage.frac-x(), stage.frac-y());
+                }
             }
         }
     }
@@ -826,16 +539,16 @@ export component AppWindow inherits Window {
     if RecentsUi.show-clear: ClearRecentsDialog {
         closed => { root.focus-main(); }
     }
-    if root.drag-kind == 1 || root.drag-kind == 2 || root.landing: DragGhost {
+    if DragUi.kind == 1 || DragUi.kind == 2 || DragUi.landing: DragGhost {
         ghost: root.ghost;
-        landing: root.landing;
-        width: root.landing ? root.land-w0 + (root.land-w1 - root.land-w0) * root.land-e : root.ghost.w * 1px;
-        height: root.landing ? root.land-h0 + (root.land-h1 - root.land-h0) * root.land-e : root.ghost.h * 1px;
-        x: root.landing ? root.land-x0 + (root.land-x1 - root.land-x0) * root.land-e : root.drag-x - self.width / 2;
-        y: root.landing ? root.land-y0 + (root.land-y1 - root.land-y0) * root.land-e : root.drag-y - self.height / 2;
-        opacity: root.landing ? 0.85 * (1 - root.land-p) + 0.15 : 0.85;
+        landing: DragUi.landing;
+        width: DragUi.landing ? DragUi.land-w0 + (DragUi.land-w1 - DragUi.land-w0) * root.land-e : root.ghost.w * 1px;
+        height: DragUi.landing ? DragUi.land-h0 + (DragUi.land-h1 - DragUi.land-h0) * root.land-e : root.ghost.h * 1px;
+        x: DragUi.landing ? DragUi.land-x0 + (DragUi.land-x1 - DragUi.land-x0) * root.land-e : DragUi.x - self.width / 2;
+        y: DragUi.landing ? DragUi.land-y0 + (DragUi.land-y1 - DragUi.land-y0) * root.land-e : DragUi.y - self.height / 2;
+        opacity: DragUi.landing ? 0.85 * (1 - root.land-p) + 0.15 : 0.85;
     }
-    if OrganizeUi.lassoing && root.lasso-moved: LassoBox { }
+    if OrganizeUi.lassoing && stage.lasso-moved: LassoBox { }
     if ImportUi.dropping: DropOverlay { }
     // A paleta do modo organizar, flutuando em qualquer ponto da janela (ou destacada).
     if OrganizeUi.on && !PaletteUi.detached: FloatingPalette {
