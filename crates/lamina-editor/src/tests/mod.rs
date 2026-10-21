@@ -4,6 +4,8 @@
 mod af;
 mod af_painel;
 mod ap;
+mod at;
+mod at_busca;
 mod auditoria;
 mod auditoria_m3;
 mod common;

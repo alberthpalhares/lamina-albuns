@@ -1,0 +1,161 @@
+// Ajuda → "Atalhos do teclado…" (spec AT): a lista de atalhos e gestos, com busca. Só desenho: a
+// lista, a busca e o texto das teclas saem do `lamina-editor` (`shortcuts::sheet`).
+
+import { Button, LineEdit, ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Panel } from "widgets.slint";
+
+// Uma linha: o que faz e as teclas (o principal e os alternativos) ou, num gesto, como fazer.
+export struct ShortcutRow {
+    does: string,
+    keys: [string],
+    gesture: bool,
+}
+
+export struct ShortcutGroup {
+    title: string,
+    rows: [ShortcutRow],
+}
+
+export global ShortcutsUi {
+    in-out property <bool> show;
+    in-out property <string> query;
+    // A lista em duas colunas (janela larga) e numa só (estreita).
+    in property <[ShortcutGroup]> left;
+    in property <[ShortcutGroup]> right;
+    in property <[ShortcutGroup]> all;
+    // Busca sem resultado: a frase e a dica embaixo; vazio = há resultado.
+    in property <string> empty;
+    in property <string> hint;
+    callback search(string);
+}
+
+// Uma tecla desenhada como teclinha.
+component Keycap inherits Rectangle {
+    in property <string> text;
+    width: max(24px, label.preferred-width + 12px);
+    height: 22px;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: #ffffff40;
+    background: #ffffff14;
+    label := Text {
+        text: root.text;
+        color: Theme.text;
+        font-size: 12px;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+component GroupView inherits VerticalLayout {
+    in property <ShortcutGroup> group;
+    spacing: 6px;
+    padding-bottom: 14px;
+    Text { text: root.group.title; font-size: 15px; font-weight: 700; color: Theme.text; }
+    for row in root.group.rows: HorizontalLayout {
+        spacing: 12px;
+        Text {
+            text: row.does;
+            color: Theme.text;
+            wrap: word-wrap;
+            horizontal-stretch: 1;
+            vertical-alignment: center;
+        }
+        if row.gesture: Text {
+            text: row.keys[0];
+            color: Theme.muted;
+            wrap: word-wrap;
+            horizontal-stretch: 1;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+        }
+        if !row.gesture: HorizontalLayout {
+            spacing: 4px;
+            alignment: end;
+            for key[i] in row.keys: HorizontalLayout {
+                spacing: 4px;
+                if i > 0: Text { text: "ou"; color: Theme.muted; font-size: 12px; vertical-alignment: center; }
+                Keycap { text: key; }
+            }
+        }
+    }
+}
+
+export component ShortcutsDialog inherits Rectangle {
+    callback closed();
+    background: #000000a0;
+    // Um clique fora da janela fecha (regra 8).
+    TouchArea {
+        clicked => {
+            ShortcutsUi.show = false;
+            root.closed();
+        }
+    }
+    FocusScope {
+        key-pressed(event) => {
+            if (event.text == Key.Escape) {
+                ShortcutsUi.show = false;
+                root.closed();
+                return accept;
+            }
+            reject
+        }
+        Panel {
+            width: min(root.width - 40px, 980px);
+            height: min(root.height - 40px, 760px);
+            // Cliques dentro da janela não fecham.
+            TouchArea { }
+            VerticalLayout {
+                padding: 24px;
+                spacing: 12px;
+                Text { text: "Atalhos do teclado e do mouse"; font-size: 20px; font-weight: 700; color: Theme.text; }
+                search := LineEdit {
+                    placeholder-text: "Buscar: “lâmina”, “salvar” ou “ctrl+z”";
+                    text <=> ShortcutsUi.query;
+                    edited(text) => { ShortcutsUi.search(text); }
+                }
+                if ShortcutsUi.empty != "": VerticalLayout {
+                    spacing: 4px;
+                    Text { text: ShortcutsUi.empty; color: Theme.text; wrap: word-wrap; }
+                    Text { text: ShortcutsUi.hint; color: Theme.muted; wrap: word-wrap; }
+                }
+                ScrollView {
+                    vertical-stretch: 1;
+                    // Duas colunas; numa janela estreita, uma só (seção 4).
+                    if root.width >= 760px: HorizontalLayout {
+                        spacing: 32px;
+                        padding-right: 12px;
+                        VerticalLayout {
+                            alignment: start;
+                            horizontal-stretch: 1;
+                            for g in ShortcutsUi.left: GroupView { group: g; }
+                        }
+                        VerticalLayout {
+                            alignment: start;
+                            horizontal-stretch: 1;
+                            for g in ShortcutsUi.right: GroupView { group: g; }
+                        }
+                    }
+                    if root.width < 760px: VerticalLayout {
+                        alignment: start;
+                        padding-right: 12px;
+                        for g in ShortcutsUi.all: GroupView { group: g; }
+                    }
+                }
+                HorizontalLayout {
+                    alignment: end;
+                    Button {
+                        text: "Fechar";
+                        clicked => {
+                            ShortcutsUi.show = false;
+                            root.closed();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // O cursor já começa na busca (regra 8).
+    init => { search.focus(); }
+}
