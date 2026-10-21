@@ -10,6 +10,7 @@ import { SpreadStrip } from "spread_strip.slint";
 import { TimelineStrip, TimelineItem } from "timeline.slint";
 import { PhotoStrip, PhotoData } from "photo_strip.slint";
 import { DragUi } from "drag.slint";
+import { Motion } from "motion.slint";
 
 export component BottomStrips inherits VerticalLayout {
     in property <bool> has-project;
@@ -43,7 +44,9 @@ export component BottomStrips inherits VerticalLayout {
     // O ponteiro sobre a área de lâmina nova, para os arquivos soltos do Explorador (spec IM).
     out property <bool> new-spread-hover: spread-strip.new-hover;
 
-    if root.has-project: StripHeader {
+    // Desligada, a faixa de lâminas some inteira, com o cabeçalho (spec PN, regra 1; JE, regra 7):
+    // volta por Visualizar → "Faixa de lâminas" (Alt+1).
+    if root.has-project && root.spreads-open: StripHeader {
         name: "Lâminas";
         summary: root.strip-spreads;
         open: root.spreads-open;
@@ -60,42 +63,53 @@ export component BottomStrips inherits VerticalLayout {
         move-spread(from, to) => { root.move-spread(from, to); }
         focus-main => { root.focus-main(); }
     }
-    if root.has-project && !OrganizeUi.on: StripHeader {
-        name: "Linha do tempo";
-        summary: root.strip-timeline;
-        open: root.timeline-open;
-        toggled => { root.command("ver.linha-do-tempo"); }
-    }
-    if root.has-project && root.timeline-open && !OrganizeUi.on: TimelineStrip {
-        height: 58px;
-        timeline: root.timeline;
-        cut-moved(spread, delta) => { root.cut-moved(spread, delta); }
-        focus-main => { root.focus-main(); }
-    }
-    if root.has-project && !OrganizeUi.on: StripHeader {
-        name: "Fotos";
-        summary: root.strip-photos;
-        open: root.photos-open;
-        toggled => { root.command("ver.fotos"); }
-        FilterTab { text: "Todas"; active: root.filter == 0; clicked => { root.filter-changed(0); } }
-        FilterTab { text: "Usadas"; active: root.filter == 1; clicked => { root.filter-changed(1); } }
-        FilterTab { text: "Não usadas"; active: root.filter == 2; clicked => { root.filter-changed(2); } }
-        BarButton { text: "+ Fotos"; clicked => { root.command("arquivo.importar"); } }
-    }
-    if root.has-project && root.photos-open && !OrganizeUi.on: PhotoStrip {
-        height: 144px;
-        photos: root.photos;
-        selected-photo: root.selected-photo;
-        photo-double-clicked(i) => { root.photo-double-clicked(i); }
-        photo-pressed(i, ctrl, shift) => { root.photo-pressed(i, ctrl, shift); }
-        dropped => {
-            // Sobre a faixa de lâminas, uma lâmina nova no vão (spec IM, regra 7).
-            if (spread-strip.visible && spread-strip.photo-gap >= 0) {
-                root.drop-photos-gap(DragUi.from, spread-strip.photo-gap);
-            } else {
-                root.photos-dropped();
+    // No modo organizar, a linha do tempo e as fotos deslizam para fora e voltam ao sair, na
+    // altura de cada uma (spec ZR, regra 12); faixas recolhidas continuam recolhidas.
+    if root.has-project: Rectangle {
+        height: OrganizeUi.on ? 0px : rest.preferred-height;
+        animate height { duration: Motion.on ? Motion.navigate-ms * 1ms : 0ms; easing: ease-out; }
+        clip: true;
+        rest := VerticalLayout {
+            y: parent.height - self.preferred-height;
+            height: self.preferred-height;
+            StripHeader {
+                name: "Linha do tempo";
+                summary: root.strip-timeline;
+                open: root.timeline-open;
+                toggled => { root.command("ver.linha-do-tempo"); }
+            }
+            if root.timeline-open: TimelineStrip {
+                height: 58px;
+                timeline: root.timeline;
+                cut-moved(spread, delta) => { root.cut-moved(spread, delta); }
+                focus-main => { root.focus-main(); }
+            }
+            StripHeader {
+                name: "Fotos";
+                summary: root.strip-photos;
+                open: root.photos-open;
+                toggled => { root.command("ver.fotos"); }
+                FilterTab { text: "Todas"; active: root.filter == 0; clicked => { root.filter-changed(0); } }
+                FilterTab { text: "Usadas"; active: root.filter == 1; clicked => { root.filter-changed(1); } }
+                FilterTab { text: "Não usadas"; active: root.filter == 2; clicked => { root.filter-changed(2); } }
+                BarButton { text: "+ Fotos"; clicked => { root.command("arquivo.importar"); } }
+            }
+            if root.photos-open: PhotoStrip {
+                height: 144px;
+                photos: root.photos;
+                selected-photo: root.selected-photo;
+                photo-double-clicked(i) => { root.photo-double-clicked(i); }
+                photo-pressed(i, ctrl, shift) => { root.photo-pressed(i, ctrl, shift); }
+                dropped => {
+                    // Sobre a faixa de lâminas, uma lâmina nova no vão (spec IM, regra 7).
+                    if (spread-strip.visible && spread-strip.photo-gap >= 0) {
+                        root.drop-photos-gap(DragUi.from, spread-strip.photo-gap);
+                    } else {
+                        root.photos-dropped();
+                    }
+                }
+                focus-main => { root.focus-main(); }
             }
         }
-        focus-main => { root.focus-main(); }
     }
 }

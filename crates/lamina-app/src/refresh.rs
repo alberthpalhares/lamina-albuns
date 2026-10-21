@@ -2,8 +2,10 @@
 //! `state.rs`; auditoria do Marco 3, M10).
 
 use lamina_editor::forms::album_info;
-use lamina_editor::{Command, strip_titles};
+use lamina_editor::{BAR_COMMANDS, Command, bar_tip, strip_titles};
+use slint::SharedString;
 
+use crate::convert::model;
 use crate::state::App;
 
 impl App {
@@ -19,7 +21,20 @@ impl App {
         w.set_spreads_open(strips.spreads);
         w.set_timeline_open(strips.timeline);
         w.set_photos_open(strips.photos);
-        w.set_panel_open(strips.panel);
+        // O painel aparece pela escolha guardada ou por um pedido em curso (spec JE, regra 5).
+        let panel = self.editor.panel_shown();
+        w.set_panel_open(panel);
+        let tips: Vec<SharedString> = BAR_COMMANDS
+            .iter()
+            .map(|&c| {
+                let open = match c {
+                    Command::TogglePhotos => strips.photos,
+                    _ => panel,
+                };
+                bar_tip(c, open).into()
+            })
+            .collect();
+        w.set_bar_tips(model(tips));
         w.set_can_prev(self.editor.available(Command::PreviousSpread));
         w.set_can_next(self.editor.available(Command::NextSpread));
         w.set_guides(self.editor.guides());

@@ -18,6 +18,7 @@ pub(super) fn migrate(mut value: Value, from: u32) -> Result<Value, CoreError> {
             2 => v2_para_v3(value)?,
             3 => v3_para_v4(value)?,
             4 => v4_para_v5(value),
+            5 => v5_para_v6(value),
             _ => {
                 return Err(CoreError::Migration {
                     from: version,
@@ -121,6 +122,13 @@ fn v3_para_v4(mut value: Value) -> Result<Value, CoreError> {
 /// muda no arquivo além da versão.
 fn v4_para_v5(mut value: Value) -> Value {
     value["schema_version"] = json!(5);
+    value
+}
+
+/// v5 → v6 (spec OP): os quadros ganham a opacidade, que começa em 100 e não é gravada; nada muda
+/// no arquivo além da versão.
+fn v5_para_v6(mut value: Value) -> Value {
+    value["schema_version"] = json!(6);
     value
 }
 

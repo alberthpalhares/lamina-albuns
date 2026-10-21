@@ -41,6 +41,11 @@ pub struct LookCall {
     pub cor_borda: Option<String>,
     /// Cantos arredondados das fotos, de 0 a 10 mm.
     pub cantos_mm: Option<f64>,
+    /// Opacidade das fotos, de 0 (some) a 100 (opaca, o normal), em %.
+    pub opacidade: Option<i64>,
+    /// Só este quadro de foto (a partir de 1) recebe borda, cantos e opacidade; sem ele, todas as
+    /// fotos da lâmina.
+    pub quadro: Option<usize>,
 }
 
 /// A página de um texto novo.

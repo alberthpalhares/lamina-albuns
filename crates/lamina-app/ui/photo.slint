@@ -1,8 +1,12 @@
-// A seção Foto (spec AF, seção 3): endireitar, escala, brilho, contraste, preto e branco e
-// restaurar. Só desenho: o editor decide e o Rust preenche o `PhotoUi`.
+// A seção Foto (spec AF, seção 3; spec OP): o tamanho do quadro, endireitar, escala, brilho,
+// contraste, preto e branco, opacidade, borda, cor da borda, cantos e restaurar; clique duplo no
+// seletor de endireitar, brilho ou contraste volta ao neutro (AF, regra 14). Só desenho: o editor
+// decide e o Rust preenche o `PhotoUi`.
 
-import { Button, CheckBox, LineEdit, Slider } from "std-widgets.slint";
+import { Button, CheckBox, LineEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
+import { LookUi, Stepper, Swatches } from "look.slint";
+import { NeutralSlider } from "widgets.slint";
 
 export global PhotoUi {
     in property <bool> has-photo;
@@ -27,8 +31,26 @@ export global PhotoUi {
     callback contrast-moved(float);
     // Soltou um controle: a próxima mudança é outra edição.
     callback released();
+    // Clique duplo no seletor: o controle volta ao neutro (AF, regra 14).
+    callback angle-reset();
+    callback brightness-reset();
+    callback contrast-reset();
     callback bw-toggled(bool);
     callback restore();
+    // Spec OP: "Quadro de 12,4 × 8,3 cm" (um quadro só), a opacidade em %, a borda e os cantos
+    // ("1,5 mm") e a cor da borda; "Vale para os N quadros selecionados" com vários.
+    in property <string> size;
+    in-out property <float> opacity: 100;
+    in property <string> border;
+    in property <color> border-color;
+    in property <string> radius;
+    in property <string> style-note;
+    callback opacity-moved(float);
+    // Clique duplo no seletor da opacidade: volta a 100% (spec OP, OP-B15).
+    callback opacity-reset();
+    callback border-step(int);
+    callback border-pick(int);
+    callback radius-step(int);
 }
 
 component Label inherits Text {
@@ -39,15 +61,17 @@ component Label inherits Text {
 export component PhotoSection inherits VerticalLayout {
     spacing: 6px;
     Text { text: "Foto"; color: Theme.text; font-weight: 700; }
+    if PhotoUi.size != "": Text { text: PhotoUi.size; color: Theme.muted; font-size: 12px; }
     if PhotoUi.note != "": Text { text: PhotoUi.note; color: Theme.muted; font-size: 11px; wrap: word-wrap; }
     Label { text: PhotoUi.can-turn ? "Endireitar" : "Endireitar (selecione um quadro só)"; }
-    Slider {
+    NeutralSlider {
         enabled: PhotoUi.can-turn;
         minimum: -45;
         maximum: 45;
         value <=> PhotoUi.angle-value;
         changed(v) => { PhotoUi.angle-moved(v); }
         released => { PhotoUi.released(); }
+        reset => { PhotoUi.angle-reset(); }
     }
     HorizontalLayout {
         spacing: 4px;
@@ -72,26 +96,48 @@ export component PhotoSection inherits VerticalLayout {
         }
     }
     Label { text: "Brilho  " + round(PhotoUi.brightness); }
-    Slider {
+    NeutralSlider {
         minimum: -100;
         maximum: 100;
         value <=> PhotoUi.brightness;
         changed(v) => { PhotoUi.brightness-moved(v); }
         released => { PhotoUi.released(); }
+        reset => { PhotoUi.brightness-reset(); }
     }
     Label { text: "Contraste  " + round(PhotoUi.contrast); }
-    Slider {
+    NeutralSlider {
         minimum: -100;
         maximum: 100;
         value <=> PhotoUi.contrast;
         changed(v) => { PhotoUi.contrast-moved(v); }
         released => { PhotoUi.released(); }
+        reset => { PhotoUi.contrast-reset(); }
     }
     CheckBox {
         text: "Preto e branco";
         checked <=> PhotoUi.bw;
         toggled => { PhotoUi.bw-toggled(self.checked); }
     }
+    if PhotoUi.style-note != "": Text { text: PhotoUi.style-note; color: Theme.muted; font-size: 11px; wrap: word-wrap; }
+    Label { text: "Opacidade  " + round(PhotoUi.opacity) + "%"; }
+    NeutralSlider {
+        minimum: 0;
+        maximum: 100;
+        neutral: 100;
+        value <=> PhotoUi.opacity;
+        changed(v) => { PhotoUi.opacity-moved(v); }
+        released => { PhotoUi.released(); }
+        reset => { PhotoUi.opacity-reset(); }
+    }
+    Label { text: "Borda"; }
+    Stepper { value: PhotoUi.border; step(d) => { PhotoUi.border-step(d); } }
+    Swatches {
+        palette: LookUi.palette;
+        chosen: PhotoUi.border-color;
+        pick(i) => { PhotoUi.border-pick(i); }
+    }
+    Label { text: "Cantos"; }
+    Stepper { value: PhotoUi.radius; step(d) => { PhotoUi.radius-step(d); } }
     Button { text: "Restaurar a foto"; clicked => { PhotoUi.restore(); } }
     if PhotoUi.error != "": Text { text: PhotoUi.error; color: #e57373; wrap: word-wrap; }
 }

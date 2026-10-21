@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 use super::{Recent, key};
 use crate::Command;
+use crate::shortcuts::fold;
 
 /// Quantos álbuns o menu "Abrir recente ▸" mostra (regra 7).
 pub const MENU_RECENTS: usize = 10;
@@ -154,23 +155,6 @@ pub fn when_text(opened_at: i64, clock: Clock) -> String {
     } else {
         format!("{} de {month} de {}", day.day(), day.year())
     }
-}
-
-/// Minúsculas e sem acentos, para a busca.
-fn fold(text: &str) -> String {
-    text.chars()
-        .flat_map(char::to_lowercase)
-        .map(|c| match c {
-            'á' | 'à' | 'â' | 'ã' | 'ä' => 'a',
-            'é' | 'è' | 'ê' | 'ë' => 'e',
-            'í' | 'ì' | 'î' | 'ï' => 'i',
-            'ó' | 'ò' | 'ô' | 'õ' | 'ö' => 'o',
-            'ú' | 'ù' | 'û' | 'ü' => 'u',
-            'ç' => 'c',
-            'ñ' => 'n',
-            other => other,
-        })
-        .collect()
 }
 
 /// A pasta de `file`, como o cartão mostra.

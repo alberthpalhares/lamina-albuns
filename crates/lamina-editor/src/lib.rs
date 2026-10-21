@@ -34,7 +34,9 @@ pub mod album;
 pub mod appearance;
 mod applying;
 pub mod arrange;
+pub mod bar_tips;
 pub mod cache;
+pub mod calibration;
 pub mod commands;
 pub mod editor;
 pub mod edits;
@@ -57,6 +59,7 @@ pub mod models;
 pub mod motion;
 pub mod naming;
 pub mod new_project;
+pub mod palette_tips;
 pub mod photos;
 pub mod prefs_store;
 pub mod presets;
@@ -67,6 +70,7 @@ pub mod respec;
 pub mod rulers;
 pub mod screens;
 pub mod session;
+pub mod shortcuts;
 pub mod snap;
 pub mod spreads;
 pub mod strips;
@@ -84,6 +88,7 @@ pub use album::{
     Imported, NewAlbum, SpecFields, Step, check_spreads, count_photos, create_album, folder_name,
     import_project, project_from, suggestion, suggestion_for, suggestion_text, suggestion_within,
 };
+pub use bar_tips::{BAR_COMMANDS, bar_tip};
 pub use cache::Cache;
 pub use commands::{Command, Menu};
 pub use editor::{DropPlace, Editor, Leave, Panel, TextChange};
@@ -96,7 +101,7 @@ pub use exporting::{
 };
 pub use feedback::{FEEDBACK_FORM, feedback_address};
 pub use human::{Human, HumanMessage, guarded};
-pub use keys::{Key, Shortcut};
+pub use keys::{Key, Platform, Shortcut};
 pub use lamina_render::text_image;
 pub use models::{MODELS_FILE, ModelError, ModelsStore, model_from_spread};
 pub use photos::{Filter, PhotoInfo, PhotoItem, photo_info, photo_list, used_photos};
@@ -109,7 +114,10 @@ pub use relink::{
 pub use screens::{Arrival, ScreenPlan, load_original, load_screen, load_thumb, prepare_images};
 pub use session::{HistoryList, HistoryStep, Session};
 pub use snap::{Grip, SnapLine};
-pub use strips::{STRIPS_FILE, STRIPS_UNREADABLE, Strip, Strips, StripsStore, strip_titles};
+pub use strips::{
+    Install, STRIPS_FILE, STRIPS_UNREADABLE, STRIPS_VERSION, Strip, Strips, StripsStore,
+    strip_titles,
+};
 pub use suggestions::{List, Part, Unavailable};
 pub use text::{
     BAD_COLOR, PALETTE, color_hex, family_name, frame_dpi_text, option_title, parse_color,

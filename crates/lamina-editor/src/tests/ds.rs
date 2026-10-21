@@ -239,22 +239,23 @@ fn ds_b8_agora_nao_e_a_atualizacao_ao_fechar() {
     assert!(!installed("0.1.0").applies_on_exit());
 }
 
+/// A versão nova é lembrada uma vez, na abertura, e o aviso "Lamina atualizado para X." deu lugar à
+/// janela de novidades (spec NV, NV-B3 e NV-B9).
 #[test]
-fn ds_b9_aviso_de_atualizado_uma_vez() {
+fn ds_b9_versao_nova_lembrada_uma_vez() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("atualizacoes.json");
     std::fs::write(&path, r#"{"automatico": false, "ultima_versao": "0.1.0"}"#).unwrap();
     let mut u = Updates::new(UpdatesStore::load(&path), v("0.2.0"), true);
-    assert_eq!(
-        u.on_open().notice.as_deref(),
-        Some("Lamina atualizado para 0.2.0.")
-    );
+    assert_eq!(u.on_start().news_since, Some(v("0.1.0")));
+    assert_eq!(u.on_open().notice, None, "sem o aviso antigo");
     let saved = std::fs::read_to_string(&path).unwrap();
     assert!(saved.contains("\"ultima_versao\": \"0.2.0\""), "{saved}");
     let mut again = Updates::new(UpdatesStore::load(&path), v("0.2.0"), true);
-    assert_eq!(again.on_open().notice, None);
-    // A primeira abertura (sem arquivo) não avisa nada.
+    assert_eq!(again.on_start(), Step::default());
+    // A primeira abertura (sem arquivo) não mostra nada.
     let mut first = updates(UpdatePrefs::default(), "0.1.0", true);
+    assert_eq!(first.on_start().news_since, None);
     assert_eq!(first.on_open().notice, None);
 }
 
@@ -338,7 +339,8 @@ fn ds_b12_nao_instalado() {
         u.check_now(),
         Step {
             notice: Some(NOT_INSTALLED.to_owned()),
-            job: None
+            job: None,
+            news_since: None,
         }
     );
 }
@@ -397,9 +399,11 @@ fn versao_de_teste_instalada_liga_as_versoes_de_teste() {
     )
     .unwrap();
     let mut beta = Updates::new(UpdatesStore::load(&path), v("0.1.0-beta.4"), true);
+    assert_eq!(beta.on_start().news_since, Some(v("0.1.0-beta.3")));
     assert_eq!(
-        beta.on_open().notice.as_deref(),
-        Some("Lamina atualizado para 0.1.0-beta.4.")
+        beta.on_open().notice,
+        None,
+        "a janela de novidades substitui o aviso (NV-B9)"
     );
     assert!(UpdatesStore::load(&path).prefs.beta);
     // Desligado no menu: fica desligado nas próximas aberturas.

@@ -7,6 +7,7 @@
 //! download ([`Job::Download`]). Com tudo baixado, a barra aparece ([`Updates::bar`]).
 
 pub mod association;
+pub mod news;
 mod store;
 mod version;
 
@@ -133,11 +134,13 @@ pub enum Phase {
     Applying(Version),
 }
 
-/// O que o app faz depois de uma resposta: um aviso e o próximo trabalho.
+/// O que o app faz depois de uma resposta: um aviso, o próximo trabalho e, na abertura, a versão
+/// anterior do fotógrafo quando há novidades a mostrar (spec NV).
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Step {
     pub notice: Option<String>,
     pub job: Option<Job>,
+    pub news_since: Option<Version>,
 }
 
 /// A atualização da abertura atual e as preferências.
@@ -171,8 +174,39 @@ impl Updates {
         &self.phase
     }
 
-    /// Ao abrir a janela: o aviso de atualizado (DS-B9), o de preferências ilegíveis (DS-B11) e
-    /// a checagem automática, uma vez só (DS-B1, B2 e B12).
+    /// Na abertura, antes de a janela aparecer (spec NV, regra 3): o Lamina instalado lembra a
+    /// versão que roda e devolve a anterior em `news_since` quando ela é menor. Grava antes de a
+    /// janela de novidades aparecer, então ela abre uma vez só. O Lamina compilado pela equipe não
+    /// grava nada, para não esconder as novidades da versão instalada na mesma máquina.
+    pub fn on_start(&mut self) -> Step {
+        let current = self.current.to_string();
+        let last = self.store.prefs.last_version.clone();
+        if !self.installed || last.as_deref() == Some(current.as_str()) {
+            return Step::default();
+        }
+        let news_since = last
+            .as_deref()
+            .and_then(Version::parse)
+            .filter(|l| *l < self.current);
+        Step {
+            notice: self.store.remember_version(&current).err(),
+            job: None,
+            news_since,
+        }
+    }
+
+    /// `LAMINA_NOVIDADES=<versão>` (spec NV, seção 3): a janela como se o Lamina viesse de
+    /// `previous`, sem gravar nada, para a equipe conferir no Lamina compilado.
+    pub fn simulate_start(&self, previous: &str) -> Step {
+        Step {
+            news_since: Version::parse(previous),
+            ..Step::default()
+        }
+    }
+
+    /// Ao abrir a janela: o aviso de preferências ilegíveis (DS-B11), as versões de teste numa
+    /// versão de teste instalada e a checagem automática, uma vez só (DS-B1, B2 e B12). A versão
+    /// nova é lembrada antes, em [`Updates::on_start`] (spec NV, regra 7).
     pub fn on_open(&mut self) -> Step {
         let mut notices = Vec::new();
         if let Some(warning) = self.store.warning.take() {
@@ -189,20 +223,6 @@ impl Updates {
         {
             notices.push(e);
         }
-        let current = self.current.to_string();
-        let last = self.store.prefs.last_version.clone();
-        if last.as_deref() != Some(current.as_str()) {
-            let newer = last
-                .as_deref()
-                .and_then(Version::parse)
-                .is_some_and(|l| l < self.current);
-            if newer {
-                notices.push(format!("Lamina atualizado para {current}."));
-            }
-            if let Err(e) = self.store.remember_version(&current) {
-                notices.push(e);
-            }
-        }
         let job = if self.installed && self.store.prefs.automatic && !self.checked {
             self.checked = true;
             self.start_check(false)
@@ -212,6 +232,7 @@ impl Updates {
         Step {
             notice: (!notices.is_empty()).then(|| notices.join(" ")),
             job,
+            news_since: None,
         }
     }
 
@@ -221,6 +242,7 @@ impl Updates {
             return Step {
                 notice: Some(NOT_INSTALLED.to_owned()),
                 job: None,
+                news_since: None,
             };
         }
         if let Phase::Dismissed(v) = &self.phase {
@@ -231,6 +253,7 @@ impl Updates {
         Step {
             notice: None,
             job: self.start_check(true),
+            news_since: None,
         }
     }
 
@@ -255,6 +278,7 @@ impl Updates {
                 Step {
                     notice: None,
                     job: Some(Job::Download { channel, version }),
+                    news_since: None,
                 }
             }
             Outcome::UpToDate { manual } => {
@@ -262,6 +286,7 @@ impl Updates {
                 Step {
                     notice: manual.then(|| format!("{UP_TO_DATE} ({}).", self.current)),
                     job: None,
+                    news_since: None,
                 }
             }
             Outcome::CheckFailed { manual, error } => {
@@ -271,7 +296,10 @@ impl Updates {
                     UpdateError::NotInstalled => Some(NOT_INSTALLED.to_owned()),
                     UpdateError::Failed(_) => Some(CHECK_FAILED.to_owned()),
                 };
-                Step { notice, job: None }
+                Step {
+                    notice,
+                    ..Step::default()
+                }
             }
             Outcome::Downloaded(version) => {
                 self.phase = Phase::Ready(version);

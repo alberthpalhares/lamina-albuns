@@ -1,6 +1,6 @@
 //! As faixas de baixo da janela (spec PN): lâminas, linha do tempo e fotos, cada uma com título e
 //! recolhível. Quais estão recolhidas fica em `janela.json`, na pasta de configuração, e vale na
-//! próxima vez que o Lamina abrir.
+//! próxima vez que o Lamina abrir. A versão do arquivo e a instalação nova são da spec JE.
 
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
@@ -13,9 +13,33 @@ use crate::photos::used_photos;
 /// Arquivo do estado da janela, ao lado das preferências de layout.
 pub const STRIPS_FILE: &str = "janela.json";
 
-/// Aviso quando o arquivo não lê (regra 4).
+/// Aviso quando o arquivo não lê (PN, regra 4; JE, seção 6).
 pub const STRIPS_UNREADABLE: &str =
-    "Não foi possível ler o estado dos painéis; todos foram abertos.";
+    "Não foi possível ler as preferências da janela; voltaram ao padrão.";
+
+/// A versão do estado da janela (spec JE, regra 7): um arquivo de antes da 2 é lido com a faixa
+/// de lâminas antiga desligada, uma vez só.
+pub const STRIPS_VERSION: u8 = 2;
+
+/// Quem abre o Lamina (spec JE, regra 2): sem `janela.json`, a instalação nova começa com o
+/// painel da direita escondido e quem já usava (tem `ultima_versao` em `atualizacoes.json`), com
+/// ele aberto.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Install {
+    New,
+    Existing,
+}
+
+impl Install {
+    /// Pela última versão aberta gravada em `atualizacoes.json` (spec DS).
+    pub fn from_last_version(last: Option<&str>) -> Install {
+        if last.is_some() {
+            Install::Existing
+        } else {
+            Install::New
+        }
+    }
+}
 
 /// Uma das três faixas, de cima para baixo.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -31,6 +55,9 @@ pub enum Strip {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Strips {
+    /// A versão do estado da janela (spec JE). Arquivo sem o campo vale 0 (de antes da JE).
+    #[serde(rename = "versao", default)]
+    pub version: u8,
     #[serde(rename = "laminas")]
     pub spreads: bool,
     #[serde(rename = "linha_do_tempo")]
@@ -51,9 +78,12 @@ pub struct Strips {
     pub reduce_motion: bool,
 }
 
+/// Tudo aberto: o editor só na memória (testes e linha de comando) e os campos que faltam num
+/// arquivo antigo. A instalação nova é [`Strips::fresh`].
 impl Default for Strips {
     fn default() -> Self {
         Strips {
+            version: STRIPS_VERSION,
             spreads: true,
             timeline: true,
             photos: true,
@@ -66,6 +96,37 @@ impl Default for Strips {
 }
 
 impl Strips {
+    /// O padrão de uma instalação nova e de um arquivo ilegível (spec JE, regras 2 e 7): o painel
+    /// escondido e a faixa de lâminas antiga desligada; a linha do tempo e as fotos abertas.
+    pub fn fresh() -> Self {
+        Strips {
+            spreads: false,
+            panel: false,
+            ..Strips::default()
+        }
+    }
+
+    /// Sem `janela.json`, como fica a janela de quem já usava ou de quem acabou de instalar.
+    fn without_file(install: Install) -> Self {
+        match install {
+            Install::New => Strips::fresh(),
+            Install::Existing => Strips {
+                spreads: false,
+                ..Strips::default()
+            },
+        }
+    }
+
+    /// Um arquivo de antes da versão 2 desliga a faixa de lâminas antiga uma vez (regra 7); um de
+    /// versão maior (um Lamina mais novo) vale como está.
+    fn upgraded(mut self) -> Self {
+        if self.version < STRIPS_VERSION {
+            self.spreads = false;
+            self.version = STRIPS_VERSION;
+        }
+        self
+    }
+
     pub fn is_open(self, strip: Strip) -> bool {
         match strip {
             Strip::Spreads => self.spreads,
@@ -94,21 +155,37 @@ pub struct StripsStore {
     pub strips: Strips,
     /// Aviso de leitura para a janela mostrar uma vez.
     pub warning: Option<String>,
+    /// As calibrações do tamanho real, por monitor (spec ZR, regra 8); fora do `Strips`.
+    pub(crate) calibrations: Vec<crate::calibration::Calibration>,
 }
 
 impl StripsStore {
-    /// Lê o arquivo. Sem arquivo, todas abertas; ilegível, todas abertas com aviso.
+    /// Lê o arquivo de quem já usava o Lamina ([`Install::Existing`]).
     pub fn load(path: &Path) -> Self {
+        StripsStore::load_for(path, Install::Existing)
+    }
+
+    /// Lê o arquivo (spec JE, regra 2). Sem arquivo, o padrão de `install`; ilegível, o padrão
+    /// novo com aviso. Nada é gravado até a próxima mudança.
+    pub fn load_for(path: &Path, install: Install) -> Self {
         let mut store = StripsStore {
             path: Some(path.to_path_buf()),
-            ..StripsStore::default()
+            strips: Strips::without_file(install),
+            warning: None,
+            calibrations: Vec::new(),
         };
         let Ok(text) = std::fs::read_to_string(path) else {
             return store;
         };
-        match serde_json::from_str(&text) {
-            Ok(strips) => store.strips = strips,
-            Err(_) => store.warning = Some(STRIPS_UNREADABLE.to_owned()),
+        match serde_json::from_str::<Strips>(&text) {
+            Ok(strips) => {
+                store.strips = strips.upgraded();
+                store.calibrations = crate::calibration::read_list(&text);
+            }
+            Err(_) => {
+                store.strips = Strips::fresh();
+                store.warning = Some(STRIPS_UNREADABLE.to_owned());
+            }
         }
         store
     }
@@ -118,15 +195,32 @@ impl StripsStore {
         let Some(path) = &self.path else {
             return Ok(());
         };
-        write(path, &self.strips)
+        write(path, &self.strips, &self.calibrations)
             .map_err(|reason| format!("Não foi possível guardar o estado dos painéis: {reason}."))
     }
 }
 
-fn write(path: &Path, strips: &Strips) -> Result<(), String> {
+/// O arquivo inteiro: o estado das faixas e as calibrações (que só vão quando há alguma).
+#[derive(Serialize)]
+struct WindowFile<'a> {
+    #[serde(flatten)]
+    strips: &'a Strips,
+    #[serde(rename = "tamanho_real", skip_serializing_if = "<[_]>::is_empty")]
+    calibrations: &'a [crate::calibration::Calibration],
+}
+
+fn write(
+    path: &Path,
+    strips: &Strips,
+    calibrations: &[crate::calibration::Calibration],
+) -> Result<(), String> {
     let folder = path.parent().unwrap_or(Path::new("."));
     std::fs::create_dir_all(folder).map_err(|e| e.to_string())?;
-    let json = serde_json::to_string_pretty(strips).map_err(|e| e.to_string())?;
+    let file = WindowFile {
+        strips,
+        calibrations,
+    };
+    let json = serde_json::to_string_pretty(&file).map_err(|e| e.to_string())?;
     let mut tmp = tempfile::NamedTempFile::new_in(folder).map_err(|e| e.to_string())?;
     tmp.write_all(json.as_bytes()).map_err(|e| e.to_string())?;
     tmp.persist(path).map_err(|e| e.error.to_string())?;

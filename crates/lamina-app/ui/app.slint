@@ -13,6 +13,7 @@ import { LayoutItem } from "layouts.slint";
 import { LookUi, Swatch } from "look.slint";
 import { FrameUi } from "frame.slint";
 import { AboutDialog } from "about.slint";
+import { CalibrateUi, CalibrateDialog } from "calibrate.slint";
 import { ModelNameDialog, ModelsDialog, ModelUi } from "models.slint";
 import { HistoryItem } from "history.slint";
 import { ExportDialog } from "export.slint";
@@ -33,8 +34,10 @@ import { DragUi } from "drag.slint";
 import { TopBar, NoticeBar } from "topbar.slint";
 import { Stage } from "stage.slint";
 import { BottomStrips } from "bottom.slint";
+import { ShortcutsUi, ShortcutsDialog, ShortcutGroup, ShortcutRow } from "shortcuts.slint";
+import { NewsUi, NewsDialog, NewsEntryData } from "news.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi }
+export { CalibrateUi, SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, ShortcutsUi, ShortcutGroup, ShortcutRow, NewsUi, NewsEntryData }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -95,6 +98,8 @@ export component AppWindow inherits Window {
     in-out property <int> panel-tab;
     // O painel da direita aberto (Alt+4) e a aba Detalhes (spec AF).
     in property <bool> panel-open: true;
+    // As dicas da barra de cima (spec JE): Início, Fotos, Painel e Exportar.
+    in property <[string]> bar-tips: ["", "", "", ""];
     in property <[DetailRow]> details;
     in property <int> details-kind;
     in property <string> details-count;
@@ -339,9 +344,16 @@ export component AppWindow inherits Window {
             MenuItem { title: (root.panel-open ? "✓ " : "    ") + "Mostrar painel  (Alt+4)"; enabled: root.has-project; activated => { root.command("ver.painel"); } }
             MenuSeparator { }
             MenuItem { title: (root.reduce-motion ? "✓ " : "    ") + "Reduzir movimento"; activated => { root.command("ver.reduzir-movimento"); } }
+            MenuSeparator { }
+            MenuItem { title: "Lupa  (Z)"; enabled: OrganizeUi.on; activated => { root.command("organizar.lupa"); } }
+            MenuItem { title: "Tamanho real (1:1)  (1)"; enabled: OrganizeUi.on; activated => { root.command("organizar.tamanho-real"); } }
+            MenuItem { title: "Calibrar o tamanho real…"; enabled: root.has-project; activated => { root.command("organizar.calibrar"); } }
         }
         Menu {
             title: "Ajuda";
+            MenuItem { title: "Atalhos do teclado…  (Ctrl+/)"; activated => { root.command("ajuda.atalhos"); } }
+            MenuItem { title: "O que há de novo…"; activated => { root.command("ajuda.novidades"); } }
+            MenuSeparator { }
             MenuItem { title: "Verificar atualizações agora"; activated => { root.command("ajuda.verificar-atualizacoes"); } }
             MenuItem { title: (root.auto-updates ? "✓ " : "    ") + "Verificar atualizações automaticamente"; activated => { root.command("ajuda.atualizar-automaticamente"); } }
             MenuItem { title: (root.beta-updates ? "✓ " : "    ") + "Receber versões de teste (beta)"; activated => { root.command("ajuda.versoes-de-teste"); } }
@@ -355,7 +367,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(event) => {
-            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || root.busy-text != "") {
+            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || CalibrateUi.show || ShortcutsUi.show || NewsUi.show || root.busy-text != "") {
                 return reject;
             }
             // No modo organizar, Espaço segurado é a mão (spec EG, seção 3).
@@ -376,12 +388,18 @@ export component AppWindow inherits Window {
 
         VerticalLayout {
             TopBar {
+                // Por cima do resto, para os balões de dica dos botões descerem sobre a lâmina.
+                z: 10;
                 has-project: root.has-project;
                 project-title: root.project-title;
                 counter: root.counter;
                 counter-warning: root.counter-warning;
-                can-save: root.can-save;
+                photos-open: root.photos-open;
                 panel-open: root.panel-open;
+                tip-home: root.bar-tips[0];
+                tip-photos: root.bar-tips[1];
+                tip-panel: root.bar-tips[2];
+                tip-export: root.bar-tips[3];
                 command(name) => { root.command(name); }
             }
 
@@ -517,6 +535,18 @@ export component AppWindow inherits Window {
     if PresetUi.show-name: PresetNameDialog { }
     if ModelUi.show-name: ModelNameDialog { }
     if ModelUi.show-list: ModelsDialog { }
+    if ShortcutsUi.show: ShortcutsDialog {
+        closed => { root.focus-main(); }
+    }
+    // Abaixo da mensagem de erro: um erro ao reabrir o álbum fica por cima (spec NV, regra 6).
+    if NewsUi.show: NewsDialog {
+        closed => { root.focus-main(); }
+        send-feedback => { root.command("ajuda.enviar-sugestao"); }
+        try-now(name) => {
+            root.focus-main();
+            root.command(name);
+        }
+    }
     if root.show-message: MessageDialog {
         title: root.message-title;
         message: root.message-text;
@@ -536,6 +566,7 @@ export component AppWindow inherits Window {
             root.focus-main();
         }
     }
+    if CalibrateUi.show: CalibrateDialog { }
     if RecentsUi.show-clear: ClearRecentsDialog {
         closed => { root.focus-main(); }
     }

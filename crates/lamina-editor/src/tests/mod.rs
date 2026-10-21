@@ -2,8 +2,11 @@
 //! build`) mora nos testes do binário `lamina`, que roda os dois caminhos.
 
 mod af;
+mod af_neutro;
 mod af_painel;
 mod ap;
+mod at;
+mod at_busca;
 mod auditoria;
 mod auditoria_m3;
 mod common;
@@ -30,6 +33,7 @@ mod ia_read;
 mod ia_style;
 mod im;
 mod im_drop;
+mod je;
 mod jp_album;
 mod jp_commands;
 mod jp_session;
@@ -49,6 +53,9 @@ mod mv_vagas;
 mod np;
 mod np_create;
 mod np_more;
+mod nv;
+mod nv_janela;
+mod op;
 mod pc;
 mod pn;
 mod pr;
@@ -61,3 +68,4 @@ mod tl_common;
 mod tl_prefs;
 mod tr;
 mod tx;
+mod zr;

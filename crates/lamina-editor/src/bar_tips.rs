@@ -1,0 +1,31 @@
+//! A barra de cima enxuta (spec JE, regras 8 a 10): os comandos dos botões, na ordem da tela, e a
+//! dica de cada um, com a ação que o clique faz e o atalho tirado do registro de comandos (nunca
+//! escrito à mão no Slint).
+
+use crate::Command;
+
+/// Os comandos que a barra de cima chama, da esquerda para a direita (JE-B9).
+pub const BAR_COMMANDS: [Command; 4] = [
+    Command::CloseAlbum,
+    Command::TogglePhotos,
+    Command::TogglePanel,
+    Command::Export,
+];
+
+/// A dica do botão da barra que roda `command`. `open` diz se o que o botão mostra e esconde está
+/// aberto agora (Fotos e Painel): a dica diz o que o clique vai fazer.
+pub fn bar_tip(command: Command, open: bool) -> String {
+    let action = match command {
+        Command::CloseAlbum => "Início: fechar o álbum",
+        Command::TogglePhotos if open => "Esconder fotos",
+        Command::TogglePhotos => "Mostrar fotos",
+        Command::TogglePanel if open => "Esconder painel",
+        Command::TogglePanel => "Mostrar painel",
+        Command::Export => "Exportar",
+        other => other.label().trim_end_matches('…'),
+    };
+    match command.shortcut() {
+        Some(key) => format!("{action} ({})", key.text()),
+        None => action.to_owned(),
+    }
+}

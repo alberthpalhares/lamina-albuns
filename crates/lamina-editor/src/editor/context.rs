@@ -68,10 +68,10 @@ impl Editor {
         }
     }
 
-    /// O rótulo do registro; Delete diz o que vai fazer, e Organizar vira "Concluir" no modo.
+    /// O rótulo do registro; Delete diz o que vai fazer, e Organizar vira "Voltar" no modo (spec ZR).
     fn context_label(&self, command: Command) -> String {
         match command {
-            Command::Organize if self.organizing() => "Concluir".to_owned(),
+            Command::Organize if self.organizing() => "Voltar".to_owned(),
             Command::ClearFrame => {
                 let photo = self.selected_frames().iter().any(|f| {
                     self.session.as_ref().is_some_and(|s| {

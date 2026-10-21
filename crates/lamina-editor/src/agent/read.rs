@@ -163,6 +163,7 @@ fn frame_data(p: &Project, index: usize, i: usize, f: &Frame) -> Value {
         },
         "borda_mm": round(f.border.width.get()),
         "cantos_mm": round(f.radius.get()),
+        "opacidade": f.opacity.get(),
     });
     let extra = match &f.content {
         FrameContent::Empty => json!({ "tipo": "vazio" }),

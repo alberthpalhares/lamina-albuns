@@ -9,7 +9,7 @@ export struct Swatch {
     name: string,
 }
 
-component Stepper inherits HorizontalLayout {
+export component Stepper inherits HorizontalLayout {
     in property <string> value;
     callback step(int);
     spacing: 8px;
@@ -74,6 +74,8 @@ export global LookUi {
 }
 
 export component LookPanel inherits VerticalLayout {
+    // Borda e cantos aqui; no modo organizar, com a seção Foto à vista, eles ficam só nela (OP).
+    in property <bool> frame-style: true;
     // Depois de um clique, o teclado volta para a lâmina.
     callback done();
     spacing: 8px;
@@ -124,16 +126,16 @@ export component LookPanel inherits VerticalLayout {
     }
     if LookUi.hex-error != "": Text { text: LookUi.hex-error; color: Theme.warning; font-size: 12px; }
 
-    Label { text: LookUi.only-frame ? "Borda (quadro selecionado)" : "Borda (todas as fotos da lâmina)"; }
-    Stepper { value: LookUi.border; step(d) => { LookUi.border-step(d); root.done(); } }
-    Swatches {
+    if root.frame-style: Label { text: LookUi.only-frame ? "Borda (quadro selecionado)" : "Borda (todas as fotos da lâmina)"; }
+    if root.frame-style: Stepper { value: LookUi.border; step(d) => { LookUi.border-step(d); root.done(); } }
+    if root.frame-style: Swatches {
         palette: LookUi.palette;
         chosen: LookUi.border-color;
         pick(i) => { LookUi.border-pick(i); root.done(); }
     }
 
-    Label { text: LookUi.only-frame ? "Cantos (quadro selecionado)" : "Cantos (todas as fotos da lâmina)"; }
-    Stepper { value: LookUi.radius; step(d) => { LookUi.radius-step(d); root.done(); } }
+    if root.frame-style: Label { text: LookUi.only-frame ? "Cantos (quadro selecionado)" : "Cantos (todas as fotos da lâmina)"; }
+    if root.frame-style: Stepper { value: LookUi.radius; step(d) => { LookUi.radius-step(d); root.done(); } }
 
     Rectangle { vertical-stretch: 1; }
     Button { text: "Aplicar a todas as lâminas"; clicked => { LookUi.apply-all(); root.done(); } }

@@ -17,7 +17,8 @@ impl Command {
     pub fn in_mode(self, mode: Mode) -> bool {
         use Command as C;
         match self {
-            // Só fora do modo: as setas trocam o layout; Enter, F, X e R; o zoom do recorte; L, a
+            // Só fora do modo: as setas trocam o layout; Enter, F, X e R; o zoom do recorte e o 0 que
+            // encaixa a foto (no modo, o 0 é Ajustar; spec ZR); L, a
             // faixa de layouts; Ctrl+A, as fotos mostradas (no modo, o Ctrl+A é dos quadros).
             C::NextLayout
             | C::PreviousLayout
@@ -32,10 +33,11 @@ impl Command {
             | C::NewSpreadFromSelection
             | C::ZoomIn
             | C::ZoomOut
+            | C::ResetCrop
             | C::ToggleLayoutBand
             | C::SelectAllPhotos => mode == Mode::Normal,
             // Só no modo: mover a seleção, selecionar todos, o zoom da lâmina, Alinhar, Igualar e
-            // Distribuir; Z, a lupa.
+            // Distribuir; Z, a lupa; 1, o tamanho real (spec ZR).
             C::NudgeLeft
             | C::NudgeRight
             | C::NudgeUp
@@ -59,31 +61,24 @@ impl Command {
             | C::EqualSize
             | C::DistributeAcross
             | C::DistributeDown
-            | C::Loupe => mode == Mode::Organize,
+            | C::Loupe
+            | C::ActualSize => mode == Mode::Organize,
             _ => true,
         }
     }
 
-    /// O comando do atalho no modo `mode`. Ctrl+Shift+Z também refaz (costume no macOS e no
-    /// Linux), Backspace também tira a foto (o Delete do Mac) e = vale o +.
+    /// O comando do atalho no modo `mode`. Os alternativos (Ctrl+Shift+Z refaz, Backspace tira a
+    /// foto, = vale o +, F1 abre os atalhos) vêm da tabela `ALIASES` (spec AT, regra 3).
     pub fn from_shortcut_in(shortcut: Shortcut, mode: Mode) -> Option<Command> {
-        if shortcut == Shortcut::ctrl_shift('z') {
-            return Some(Command::Redo);
-        }
         // Sinais e números: o Shift depende do teclado (o + pede Shift no ABNT2), então não conta.
-        let mut shortcut = match shortcut.key {
+        let shortcut = match shortcut.key {
             Key::Char(c) if !c.is_alphabetic() => Shortcut {
                 shift: false,
                 ..shortcut
             },
             _ => shortcut,
         };
-        if shortcut == Shortcut::key(Key::Backspace) {
-            shortcut = Shortcut::key(Key::Delete);
-        }
-        if shortcut == Shortcut::key(Key::Char('=')) {
-            shortcut = Shortcut::key(Key::Char('+'));
-        }
+        let shortcut = crate::shortcuts::main_of(shortcut);
         Command::ALL
             .into_iter()
             .find(|c| c.in_mode(mode) && c.shortcut() == Some(shortcut))

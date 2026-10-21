@@ -8,6 +8,7 @@
 
 mod adjusted;
 mod browser;
+mod calibrate;
 mod context;
 mod convert;
 mod crop;
@@ -30,11 +31,13 @@ mod loader;
 mod look;
 mod mailbox;
 mod models;
+mod monitor;
 mod motion;
 mod msg;
 mod new_album;
 mod new_project;
 mod new_project_file;
+mod news;
 mod opened;
 mod organize;
 mod palette;
@@ -44,6 +47,7 @@ mod presets;
 mod recents;
 mod refresh;
 mod relink;
+mod shortcuts;
 mod slots;
 mod spec_dialog;
 mod state;
@@ -60,8 +64,8 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use lamina_editor::{
-    Cache, Command, Editor, MODELS_FILE, ModelsStore, PREFS_FILE, PRESETS_FILE, Part, PrefsStore,
-    PresetsStore, RECENTS_FILE, RecentsStore, STRIPS_FILE, StripsStore, config_dir,
+    Cache, Command, Editor, Install, MODELS_FILE, ModelsStore, PREFS_FILE, PRESETS_FILE, Part,
+    PrefsStore, PresetsStore, RECENTS_FILE, RecentsStore, STRIPS_FILE, StripsStore, config_dir,
 };
 use slint::{CloseRequestResponse, ComponentHandle, Timer, TimerMode};
 
@@ -86,6 +90,8 @@ type Shared = Rc<RefCell<App>>;
 
 fn connect(window: &AppWindow, app: &Shared) {
     input::connect(window, app);
+    shortcuts::connect(window);
+    news::connect(window);
     let a = app.clone();
     window.on_go_to(move |index| {
         let Ok(index) = usize::try_from(index) else {
@@ -114,6 +120,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     history::connect(window, app);
     recents::connect(window, app);
     importing::connect(window, app);
+    calibrate::connect(window, app);
 }
 
 /// O painel de layouts: clique aplica; a estrela e o "×" marcam a opção (spec TL, seção 3).
@@ -243,7 +250,14 @@ fn main() -> anyhow::Result<()> {
     let (tx, rx) = mailbox::Mailbox::new();
     let prefs = PrefsStore::load(&config_dir().join(PREFS_FILE));
     let mut editor = Editor::with_prefs(prefs);
-    editor.set_strips(StripsStore::load(&config_dir().join(STRIPS_FILE)));
+    // `atualizacoes.json` antes de `janela.json`: sem ele, é uma instalação nova e o painel da
+    // direita começa escondido (spec JE, regras 2 e 3).
+    let opened = updates::state();
+    let install = Install::from_last_version(opened.store.prefs.last_version.as_deref());
+    editor.set_strips(StripsStore::load_for(
+        &config_dir().join(STRIPS_FILE),
+        install,
+    ));
     editor.set_recents(RecentsStore::load(&config_dir().join(RECENTS_FILE)));
     editor.set_log(help::error_log());
     let app: Shared = Rc::new(RefCell::new(App::new(&window, Cache::system(), editor, tx)));
@@ -258,8 +272,13 @@ fn main() -> anyhow::Result<()> {
         if let Some(warning) = a.presets.warning.take() {
             a.notice = warning;
         }
-        a.updates = updates::state();
+        a.updates = opened;
         help::start(&a);
+        // As novidades da versão nova, uma vez, antes de a janela aparecer (spec NV, regra 3); o
+        // teste de fumaça não é interrompido.
+        if verifying.is_none() && importing.is_none() {
+            news::on_start(&mut a);
+        }
         updates::show(&a);
     }
     connect(&window, &app);

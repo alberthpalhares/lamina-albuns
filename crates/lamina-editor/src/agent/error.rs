@@ -105,6 +105,10 @@ pub enum ToolError {
          meio da foto)."
     )]
     BadCrop,
+    #[error("O quadro {frame} da lâmina {spread} está vazio. Escolha um quadro com foto.")]
+    NoPhotoHere { spread: usize, frame: usize },
+    #[error("Use quadro ou todas, não os dois.")]
+    FrameAndAll,
     #[error("A cor {text} não existe. Use uma cor como #F5F0E6 ou um nome da paleta: {palette}.")]
     BadColor { text: String, palette: String },
     /// Um número fora da faixa da janela ("O espaço vai de 0 a 20 mm.").

@@ -6,7 +6,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use lamina_editor::Command;
-use slint::ComponentHandle;
+use lamina_editor::editor::PaletteTool;
+use slint::{ComponentHandle, SharedString};
 
 use crate::state::App;
 use crate::{AppWindow, OrganizeUi, PaletteUi, PaletteWindow};
@@ -28,7 +29,9 @@ fn wire(ui: &PaletteUi, app: &Shared) {
     });
     let a = app.clone();
     ui.on_pick_tool(move |tool| {
-        let app = a.borrow();
+        // A ferramenta mora no editor (spec ZR, regra 2).
+        let mut app = a.borrow_mut();
+        app.editor.set_tool(PaletteTool::from_index(tool));
         if let Some(w) = app.window.upgrade() {
             w.global::<OrganizeUi>().set_tool(tool);
         }
@@ -71,14 +74,18 @@ pub fn refresh(app: &App) {
     let Some(w) = app.window.upgrade() else {
         return;
     };
-    let tool = w.global::<OrganizeUi>().get_tool();
-    let zoom = match app.editor.view_zoom() {
-        z if z <= 1.0 => "Ajustar".to_owned(),
-        z => format!("{z}×"),
-    };
+    let tool = app.editor.tool().index();
+    let zoom = app.editor.zoom_label();
+    let tips: Vec<SharedString> = app
+        .editor
+        .palette_tips()
+        .into_iter()
+        .map(Into::into)
+        .collect();
     let fill = |ui: PaletteUi, detached: bool| {
         ui.set_tool(tool);
         ui.set_zoom(zoom.as_str().into());
+        ui.set_tips(crate::convert::model(tips.clone()));
         ui.set_can_align(app.editor.available(Command::AlignLeft));
         ui.set_can_distribute(app.editor.available(Command::DistributeAcross));
         ui.set_detached(detached);

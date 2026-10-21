@@ -45,11 +45,16 @@ pub fn run_command(app: &Shared, command: Command) {
         Command::ImportPhotos => crate::importing::pick(&mut a, false),
         Command::ImportFolder => crate::importing::pick(&mut a, true),
         Command::Presets => spec_dialog::open_list(&mut a),
+        Command::CalibrateSize => crate::calibrate::open(&mut a),
         Command::About => {
             if let Some(w) = a.window.upgrade() {
                 w.set_show_about(true);
             }
         }
+        // A lista de atalhos abre por cima, sem passar pelo editor (spec AT, regra 7).
+        Command::ShowShortcuts => crate::shortcuts::open(&a),
+        // As novidades abrem por cima, sem passar pelo editor (spec NV, regra 5).
+        Command::ShowNews => crate::news::open_help(&a),
         Command::NewText => new_text(&mut a),
         Command::SaveModel => models::open_save(&mut a),
         Command::Models => models::open_list(&a),

@@ -10,14 +10,24 @@ use crate::{Command, Editor, Key, Shortcut};
 fn jp_b12_registro_de_comandos() {
     let names: HashSet<_> = Command::ALL.iter().map(|c| c.name()).collect();
     assert_eq!(names.len(), Command::ALL.len(), "nomes repetidos");
-    // Sem repetir dentro do mesmo modo (spec EG, regra 2: as setas movem no modo organizar).
-    let shortcuts: Vec<Shortcut> = Command::ALL
-        .iter()
-        .filter(|c| c.in_mode(crate::commands::Mode::Normal))
-        .filter_map(|c| c.shortcut())
-        .collect();
-    let unique: HashSet<_> = shortcuts.iter().collect();
-    assert_eq!(unique.len(), shortcuts.len(), "atalhos repetidos");
+    // Sem repetir dentro do mesmo modo (spec EG, regra 2: as setas movem no modo organizar), nos
+    // dois modos; nenhum alternativo é atalho principal (spec AT, regra 10).
+    for mode in [Mode::Normal, Mode::Organize] {
+        let shortcuts: Vec<Shortcut> = Command::ALL
+            .iter()
+            .filter(|c| c.in_mode(mode))
+            .filter_map(|c| c.shortcut())
+            .collect();
+        let unique: HashSet<_> = shortcuts.iter().collect();
+        assert_eq!(
+            unique.len(),
+            shortcuts.len(),
+            "atalhos repetidos em {mode:?}"
+        );
+    }
+    for (alias, _) in crate::shortcuts::ALIASES {
+        assert!(Command::ALL.iter().all(|c| c.shortcut() != Some(alias)));
+    }
     // As setas e Ctrl+Z/Ctrl+Y ficaram reservadas no JP e passaram para o TL (TL-B12).
 
     let mut editor = Editor::new();
@@ -79,11 +89,6 @@ fn comandos_da_janela_nova_ficam_registrados_e_inertes() {
     // Rodada 0b: os comandos entram na tabela antes das specs, mas nenhum roda ainda.
     let new = [
         (Command::ToggleLayoutBand, "ver.faixa-layouts"),
-        (Command::ShowShortcuts, "ajuda.atalhos"),
-        (Command::ShowNews, "ajuda.novidades"),
-        (Command::Loupe, "organizar.lupa"),
-        (Command::ActualSize, "organizar.tamanho-real"),
-        (Command::CalibrateSize, "organizar.calibrar"),
         (Command::BuildAlbum, "lamina.montar-album"),
         (Command::SelectAllPhotos, "editar.selecionar-fotos"),
     ];
@@ -104,7 +109,7 @@ fn comandos_da_janela_nova_ficam_registrados_e_inertes() {
 }
 
 #[test]
-fn l_z_ctrl_a_e_ctrl_barra_levam_aos_comandos_novos_e_f1_ainda_nao() {
+fn l_z_ctrl_a_ctrl_barra_e_f1_levam_aos_comandos_novos() {
     let key = |c| Shortcut::key(Key::Char(c));
     let in_mode = Command::from_shortcut_in;
     // Ctrl+A: as fotos mostradas fora do modo; no modo organizar, os quadros (spec EG).
@@ -128,10 +133,13 @@ fn l_z_ctrl_a_e_ctrl_barra_levam_aos_comandos_novos_e_f1_ainda_nao() {
         Some(Command::ShowShortcuts)
     );
     assert_eq!(Shortcut::ctrl('/').text(), "Ctrl+/");
-    // O F1 já é uma tecla, ainda sem comando (a spec AT liga).
+    // O F1 é o alternativo do Ctrl+/ (spec AT, regra 3).
     assert_eq!(Key::from_name("F1"), Some(Key::F1));
     assert_eq!(Shortcut::key(Key::F1).text(), "F1");
-    assert_eq!(Command::from_shortcut(Shortcut::key(Key::F1)), None);
+    assert_eq!(
+        Command::from_shortcut(Shortcut::key(Key::F1)),
+        Some(Command::ShowShortcuts)
+    );
     // Nunca Ctrl+número: o dono usa o ZoomIt.
     for c in Command::ALL {
         if let Some(s) = c.shortcut() {

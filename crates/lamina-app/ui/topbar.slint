@@ -1,9 +1,10 @@
-// O topo da janela (spec janela-principal): a barra do projeto (Início, título, contador e os
-// botões) e a barra de aviso logo abaixo. Cada botão roda um comando do registro pelo nome
-// estável.
+// O topo da janela (spec janela-principal; barra enxuta da spec JE): Início, o título com o
+// contador, e à direita só Fotos, Painel e Exportar. Novo, Abrir e Salvar ficam no menu Arquivo e
+// o Texto na barra da lâmina. Cada botão roda um comando do registro pelo nome estável; as dicas
+// vêm do editor (`bar_tip`).
 
 import { Theme } from "theme.slint";
-import { BarButton } from "widgets.slint";
+import { BarButton, IconButton, Tip } from "widgets.slint";
 
 export component TopBar inherits Rectangle {
     in property <bool> has-project;
@@ -11,33 +12,80 @@ export component TopBar inherits Rectangle {
     in property <string> counter;
     // Fora da faixa de páginas do laboratório (spec PR): ao lado do contador.
     in property <string> counter-warning;
-    in property <bool> can-save;
+    // Fotos e Painel acesos quando abertos (JE, regra 9).
+    in property <bool> photos-open;
     in property <bool> panel-open;
+    // As dicas de Início, Fotos, Painel e Exportar, com o atalho do registro.
+    in property <string> tip-home;
+    in property <string> tip-photos;
+    in property <string> tip-panel;
+    in property <string> tip-export;
     callback command(string);
     height: 44px;
     background: Theme.bar;
     HorizontalLayout {
-        padding-left: 16px;
+        padding-left: 12px;
         padding-right: 8px;
-        spacing: 16px;
+        spacing: 12px;
+        alignment: stretch;
         // Início: fecha o álbum e volta à tela inicial (spec TI, regra 6).
-        if root.has-project: BarButton { text: "Início"; clicked => { root.command("arquivo.fechar"); } }
+        if root.has-project: VerticalLayout {
+            alignment: center;
+            IconButton {
+                icon: @image-url("../icons/je/inicio.svg");
+                tip: root.tip-home;
+                tip-side: -1;
+                clicked => { root.command("arquivo.fechar"); }
+            }
+        }
         Text {
             text: root.project-title;
             color: Theme.text;
             font-size: 15px;
             font-weight: 600;
             vertical-alignment: center;
+            overflow: elide;
+            min-width: 40px;
+            horizontal-stretch: 0;
         }
-        Text { text: root.counter; color: Theme.muted; vertical-alignment: center; }
-        if root.counter-warning != "": Text { text: root.counter-warning; color: Theme.warning; vertical-alignment: center; }
+        Text { text: root.counter; color: Theme.muted; vertical-alignment: center; overflow: elide; min-width: 0px; }
+        if root.counter-warning != "": Text { text: root.counter-warning; color: Theme.warning; vertical-alignment: center; overflow: elide; min-width: 0px; }
         Rectangle { horizontal-stretch: 1; }
-        BarButton { text: "Novo"; clicked => { root.command("arquivo.novo"); } }
-        BarButton { text: "Abrir"; clicked => { root.command("arquivo.abrir"); } }
-        BarButton { text: "Salvar"; enabled: root.can-save; clicked => { root.command("arquivo.salvar"); } }
-        BarButton { text: "Texto"; enabled: root.has-project; clicked => { root.command("lamina.novo-texto"); } }
-        BarButton { text: root.panel-open ? "Esconder painel" : "Mostrar painel"; enabled: root.has-project; clicked => { root.command("ver.painel"); } }
-        BarButton { text: "Exportar"; primary: true; enabled: root.has-project; clicked => { root.command("arquivo.exportar"); } }
+        if root.has-project: VerticalLayout {
+            alignment: center;
+            IconButton {
+                icon: @image-url("../icons/je/fotos.svg");
+                tip: root.tip-photos;
+                tip-side: 1;
+                checked: root.photos-open;
+                clicked => { root.command("ver.fotos"); }
+            }
+        }
+        if root.has-project: VerticalLayout {
+            alignment: center;
+            IconButton {
+                icon: @image-url("../icons/je/painel.svg");
+                tip: root.tip-panel;
+                tip-side: 1;
+                checked: root.panel-open;
+                clicked => { root.command("ver.painel"); }
+            }
+        }
+        if root.has-project: VerticalLayout {
+            alignment: center;
+            export := BarButton {
+                height: 32px;
+                text: "Exportar";
+                primary: true;
+                clicked => { root.command("arquivo.exportar"); }
+                Tip {
+                    x: parent.width - self.width;
+                    y: parent.height + 4px;
+                    text: root.tip-export;
+                    shown: export.hovered;
+                }
+            }
+        }
     }
 }
 
