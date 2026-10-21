@@ -5,12 +5,13 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use lamina_editor::motion::{CrossHit, cross_target};
 use lamina_editor::motion::{
     Roll, RollHit, RollMove, SPREAD_BAR_COMMANDS, TIMELINE, Transition, edge_speed, pill, reorder,
     roll_gap, roll_hit, roll_move, roll_shown, roll_width, spread_badge, timeline_rows,
     timeline_run,
 };
-use lamina_editor::{Command, DropPlace};
+use lamina_editor::{Command, CrossTarget, DropPlace, PxRect};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
 use crate::roll::{QUIET, RollState, physical};
@@ -199,9 +200,9 @@ pub fn navigate(
     }
 }
 
-/// Onde caem fotos do navegador soltas fora da lâmina atual (`fx`, `fy` em frações dela): no vão
-/// de uma lâmina nova ou no "+ Lâmina nova" (regra 20).
-pub fn drop_place(app: &App, fx: f64, fy: f64) -> Option<DropPlace> {
+/// O que está no rolo sob o ponto (`fx`, `fy` em frações da lâmina atual, como a lâmina grande
+/// mede), e onde fica a lâmina atual em pixels da área (para levar retângulos de uma à outra).
+fn roll_at(app: &App, fx: f64, fy: f64) -> Option<(RollHit, Roll, f64)> {
     let w = app.window.upgrade()?;
     if !(app.roll.on && roll_shown(&app.editor)) {
         return None;
@@ -209,14 +210,49 @@ pub fn drop_place(app: &App, fx: f64, fy: f64) -> Option<DropPlace> {
     let roll = RollState::geometry(&w);
     let current = app.session()?.current();
     let pos = f64::from(w.global::<RollUi>().get_pos());
-    let point = (
-        roll.left(current, pos) + fx * roll.width,
-        roll.top() + fy * roll.width,
-    );
-    match roll_hit(&roll, pos, point)? {
+    let left = roll.left(current, pos);
+    let point = (left + fx * roll.width, roll.top() + fy * roll.width);
+    Some((roll_hit(&roll, pos, point)?, roll, pos))
+}
+
+/// O alvo numa vizinha do rolo (spec ML, regras 7 e 11): a lâmina, o que a soltura faz nela e o
+/// retângulo do quadro em frações da lâmina atual (o destaque e o pouso da lâmina grande).
+pub fn neighbor_target(app: &App, fx: f64, fy: f64) -> Option<(CrossTarget, Option<PxRect>)> {
+    let (hit, roll, pos) = roll_at(app, fx, fy)?;
+    let RollHit::Spread { index, fx, fy } = hit else {
+        return None;
+    };
+    let session = app.session()?;
+    if index == session.current() {
+        return None;
+    }
+    let shift = (roll.left(index, pos) - roll.left(session.current(), pos)) / roll.width;
+    match cross_target(session.project(), index, fx, fy)? {
+        CrossHit::Frame { frame, rect } => Some((
+            CrossTarget::Frame {
+                spread: index,
+                frame,
+            },
+            Some(PxRect {
+                x: rect.x + shift,
+                ..rect
+            }),
+        )),
+        CrossHit::Spread => Some((CrossTarget::Spread(index), None)),
+    }
+}
+
+/// Onde caem fotos do navegador soltas fora da lâmina atual (`fx`, `fy` em frações dela): no vão
+/// de uma lâmina nova ou no "+ Lâmina nova" (regra 20), ou numa vizinha (spec ML, regra 10).
+pub fn drop_place(app: &App, fx: f64, fy: f64) -> Option<DropPlace> {
+    let (hit, roll, _) = roll_at(app, fx, fy)?;
+    match hit {
         RollHit::Gap(n) => Some(DropPlace::NewSpread(n)),
         RollHit::New => Some(DropPlace::NewSpread(roll.count)),
-        RollHit::Spread { .. } => None,
+        RollHit::Spread { .. } => match neighbor_target(app, fx, fy)?.0 {
+            CrossTarget::Frame { spread, frame } => Some(DropPlace::Frame { spread, frame }),
+            CrossTarget::Spread(spread) => Some(DropPlace::Spread(spread)),
+        },
     }
 }
 
@@ -376,6 +412,15 @@ fn hit(app: &App, x: f64, y: f64) -> RollHitData {
     let pos = f64::from(w.global::<RollUi>().get_pos());
     let (kind, index) = match roll_hit(&roll, pos, (x, y)) {
         Some(RollHit::Spread { index, .. }) if index == current => (1, index),
+        // Numa vizinha, fora dos quadros de foto, ela acende inteira (a foto entra como uma a
+        // mais); sobre um quadro, quem acende é o quadro, pela lâmina grande (spec ML, regra 7).
+        Some(RollHit::Spread { index, fx, fy }) => match app
+            .session()
+            .and_then(|s| cross_target(s.project(), index, fx, fy))
+        {
+            Some(CrossHit::Spread) => (2, index),
+            _ => (0, 0),
+        },
         Some(RollHit::Gap(n)) => (3, n),
         Some(RollHit::New) => (4, roll.count),
         _ => (0, 0),

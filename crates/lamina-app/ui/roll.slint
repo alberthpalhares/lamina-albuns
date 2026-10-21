@@ -71,6 +71,11 @@ export global RollUi {
     // na tela só os itens perto dele.
     in property <length> line-w;
     callback line-window(length, length);
+    // A miniatura da faixa de lâminas sob um quadro arrastado e o ponto nela, em frações da
+    // largura dela (spec ML, regra 11); -1 fora das miniaturas.
+    in-out property <int> strip-spread: -1;
+    in-out property <float> strip-fx;
+    in-out property <float> strip-fy;
     // A pílula da lâmina atual fora de vista (regra 14).
     in property <string> pill;
     in property <bool> pill-left;
