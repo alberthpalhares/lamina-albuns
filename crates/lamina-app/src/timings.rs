@@ -28,14 +28,16 @@ impl Default for Clock {
 
 impl Clock {
     /// Lê a variável; ligada, recebe cada quadro desenhado e encerra as rajadas pelo `Timer`
-    /// devolvido (que precisa ficar vivo).
-    pub fn install(window: &slint::Window) -> (Clock, Option<Timer>) {
+    /// devolvido (que precisa ficar vivo). Com o rolo (`roll`), cada quadro desenhado também move a
+    /// porta dos envios dele (spec RL, regra 9).
+    pub fn install(window: &slint::Window, roll: bool) -> (Clock, Option<Timer>) {
         let value = std::env::var(TIMINGS_VAR).ok();
         let clock = Clock {
             timings: Rc::new(RefCell::new(Timings::from_value(value.as_deref()))),
             origin: Instant::now(),
         };
-        if !clock.timings.borrow().is_on() {
+        let on = clock.timings.borrow().is_on();
+        if !on && !roll {
             return (clock, None);
         }
         let c = clock.clone();
@@ -45,12 +47,20 @@ impl Clock {
             RenderingState::AfterRendering => {
                 let end = c.now();
                 let start = drawing.take().unwrap_or(end);
-                c.write(|t| t.frame(start, end));
+                if on {
+                    c.write(|t| t.frame(start, end));
+                }
+                if roll {
+                    crate::mailbox::later(Duration::ZERO, crate::roll::frame_drawn);
+                }
             }
             _ => {}
         });
         if notified.is_err() {
             eprintln!("{TIMINGS_VAR}: este desenho da janela não avisa os quadros");
+        }
+        if !on {
+            return (clock, None);
         }
         let c = clock.clone();
         let timer = Timer::default();

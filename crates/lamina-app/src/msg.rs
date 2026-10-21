@@ -38,6 +38,9 @@ pub enum Msg {
     /// Os recentes cujo arquivo sumiu e a miniatura gravada (spec TI, regras 4 e 5).
     RecentsChecked(Vec<PathBuf>),
     ThumbReady,
+    /// Uma imagem de lâmina do rolo (spec RL, regra 10), já em colunas; ou a falha, só para o
+    /// registro de erros.
+    SpreadImage(Box<Result<crate::roll_worker::Painted, HumanMessage>>),
     /// Uma miniatura lida pelo trabalhador (spec TR, regra 6); `None` sem miniatura no cache.
     Thumb {
         epoch: u64,

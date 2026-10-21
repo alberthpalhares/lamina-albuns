@@ -13,7 +13,7 @@ pub use super::roll_plan::RollPlan;
 pub use super::roll_revisions::Revisions;
 
 /// Teto das imagens guardadas, em bytes (regra 9).
-pub const ROLL_BYTES: usize = 96 * 1024 * 1024;
+pub const ROLL_BYTES: usize = 64 * 1024 * 1024;
 /// Largura da imagem pequena, feita só com miniaturas (regra 5).
 pub const SMALL_WIDTH: u32 = 384;
 /// Teto da largura da imagem de tela (regra 5).

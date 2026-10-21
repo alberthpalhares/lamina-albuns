@@ -205,12 +205,18 @@ fn slide(
     (mut old, rows): (crate::SpreadData, Vec<crate::FrameData>),
 ) {
     let (at, reduce) = (app.clock.now(), app.editor.reduce_motion());
-    let dir = match app.navigator.arrive(place, index, at, reduce) {
+    let transition = app.navigator.arrive(place, index, at, reduce);
+    let from = app.roll.shown.replace(index);
+    old.frames = crate::convert::model(rows);
+    // Com o rolo, perto do centro ele desliza (spec RL, regra 12).
+    if crate::roll_connect::navigate(app, w, (index, transition), (&old, from)) {
+        return;
+    }
+    let dir = match transition {
         Transition::Forward => 1,
         Transition::Backward => -1,
         Transition::Stay | Transition::Cut => return,
     };
-    old.frames = crate::convert::model(rows);
     w.set_leaving(old);
     w.set_has_leaving(true);
     app.images.start_slide();

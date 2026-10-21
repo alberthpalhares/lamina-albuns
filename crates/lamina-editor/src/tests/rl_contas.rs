@@ -8,7 +8,7 @@ use lamina_core::{AlbumEdge, Edges, Project};
 
 use super::tl_common::{H, V, built, editor_at, spec};
 use crate::motion::{
-    SPREAD_BAR_COMMANDS, Durations, Navigator, Pill, Roll, RollHit, RollMove, RollScroll, TIMELINE,
+    Durations, Navigator, Pill, Roll, RollHit, RollMove, RollScroll, SPREAD_BAR_COMMANDS, TIMELINE,
     Transition, edge_speed, pill, reorder, roll_gap, roll_hit, roll_move, roll_shown, roll_width,
     spread_badge, spread_bar, timeline_rows, timeline_run, timeline_scroll, visible_range,
 };

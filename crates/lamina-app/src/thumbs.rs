@@ -42,6 +42,8 @@ pub fn show(app: &mut App, fresh: &[PhotoId]) {
             }
         },
     );
+    crate::roll_connect::refresh_line(app);
+    let images = &app.images;
     let all = images.thumbs_map();
     app.lists.strip.patch(
         |_, (_, row)| has_any(&row.spread, &fresh),

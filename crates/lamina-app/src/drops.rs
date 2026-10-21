@@ -53,7 +53,13 @@ pub fn connect(window: &AppWindow, app: &Shared) {
             (None, false) if app.session().is_some_and(|s| s.spread_count() == 0) => {
                 DropPlace::NewSpread(0)
             }
-            (None, false) => return,
+            // Fora da lâmina atual, no rolo: um vão ou o "+ Lâmina nova" (spec RL, regra 20).
+            (None, false) => {
+                match crate::roll_connect::drop_place(&app, f64::from(fx), f64::from(fy)) {
+                    Some(place) => place,
+                    None => return,
+                }
+            }
         };
         let photos = match place {
             DropPlace::Frame(_) => vec![photo],
@@ -107,16 +113,9 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     });
     let a = app.clone();
     window.on_move_spread(move |from, gap| {
-        let mut app = a.borrow_mut();
-        let (Ok(from), Ok(gap)) = (usize::try_from(from), usize::try_from(gap)) else {
-            return;
-        };
-        // O vão vira a posição final pela regra do editor (spec MV, MV-B23).
-        let count = app.session().map_or(0, |s| s.spread_count());
-        let to = reorder(from, gap, count).to;
-        let moved = app.editor.session_mut().is_some_and(|s| s.go_to(from))
-            && (from == to || app.editor.move_current_to(to));
-        after_edit(&mut app, moved);
+        if let (Ok(from), Ok(gap)) = (usize::try_from(from), usize::try_from(gap)) {
+            move_spread(&mut a.borrow_mut(), from, gap);
+        }
     });
     let a = app.clone();
     window.on_cut_moved(move |k, delta| {
@@ -124,6 +123,16 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         let changed = usize::try_from(k).is_ok_and(|k| app.editor.drag_cut(k, delta));
         after_edit(&mut app, changed);
     });
+}
+
+/// A lâmina `from` solta no vão `gap` (da faixa ou da alça do rolo): o vão vira a posição final
+/// pela regra do editor (spec MV, MV-B23) e ela vira a atual (spec FQ, regra 7).
+pub fn move_spread(app: &mut App, from: usize, gap: usize) {
+    let count = app.session().map_or(0, |s| s.spread_count());
+    let to = reorder(from, gap, count).to;
+    let moved = app.editor.session_mut().is_some_and(|s| s.go_to(from))
+        && (from == to || app.editor.move_current_to(to));
+    after_edit(app, moved);
 }
 
 /// A timeline: as fotos de cada lâmina e um corte entre uma lâmina e a outra (regra 8), só as
@@ -134,7 +143,7 @@ pub fn refresh_timeline(app: &mut App) {
     };
     let thumbs = app.thumbs(&project);
     let rows = timeline_rows(&project);
-    let items: Vec<TimelineItem> = rows
+    let mut items: Vec<TimelineItem> = rows
         .iter()
         .map(|(key, spread)| {
             let spread = i32::try_from(*spread).unwrap_or(0);
@@ -143,14 +152,18 @@ pub fn refresh_timeline(app: &mut App) {
                     img: thumbs.get(id).cloned().unwrap_or_default(),
                     cut: false,
                     spread,
+                    x: 0.0,
                 },
                 TimelineKey::Cut(_) => TimelineItem {
                     img: slint::Image::default(),
                     cut: true,
                     spread,
+                    x: 0.0,
                 },
             }
         })
         .collect();
+    crate::line_window::place(&mut items);
     app.lists.line.sync(rows, |i| items[i].clone());
+    crate::roll_connect::refresh_line(app);
 }

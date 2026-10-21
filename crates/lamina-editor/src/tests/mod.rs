@@ -62,6 +62,7 @@ mod rc;
 mod rl;
 mod rl_contas;
 mod rl_imagem;
+mod rl_janela;
 mod sr;
 mod ti;
 mod ti_files;

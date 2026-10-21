@@ -1,22 +1,29 @@
 // Linha do tempo (spec FQ, regra 8): as fotos na ordem do álbum e um corte entre as lâminas.
-// Arrastar um corte leva fotos de uma lâmina para a vizinha.
+// Arrastar um corte leva fotos de uma lâmina para a vizinha. Só os itens perto da parte visível
+// existem na tela (spec RL, regra 22; PF, seção 10): o Rust dá a posição de cada um e a largura
+// toda, e troca os itens quando a rolagem passa de um trecho para outro.
 
 import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Motion } from "motion.slint";
 import { StripTheme } from "strip_header.slint";
 import { DragUi } from "drag.slint";
+import { RollUi } from "roll.slint";
 
 // Uma posição da timeline: uma foto, ou o corte depois da lâmina `spread`.
 export struct TimelineItem {
     img: image,
     cut: bool,
     spread: int,
+    // A posição na linha inteira.
+    x: length,
 }
 
 export component TimelineStrip inherits Rectangle {
     in property <[TimelineItem]> timeline;
     callback cut-moved(int, int);
+    // Clique numa foto: vai para a lâmina dela (spec RL, regra 22).
+    callback go-to(int);
     callback focus-main();
     background: StripTheme.timeline;
     Rectangle { y: 0; height: 1px; background: StripTheme.line; }
@@ -37,7 +44,7 @@ export component TimelineStrip inherits Rectangle {
     }
     function wheel(dy: length) {
         let base = root.sc-running ? root.sc-to : line-scroll.content-x;
-        let target = max(line-scroll.visible-width - line.preferred-width, min(0px, base + dy));
+        let target = max(line-scroll.visible-width - RollUi.line-w, min(0px, base + dy));
         if (Motion.on && Motion.scroll-ms > 0) {
             root.sc-from = line-scroll.content-x;
             root.sc-to = target;
@@ -47,14 +54,33 @@ export component TimelineStrip inherits Rectangle {
             line-scroll.content-x = target;
         }
     }
+    // O trecho da lâmina atual fica no meio da linha, rolando pelo relógio (spec RL, regra 22).
+    property <length> run-center: RollUi.run-x + RollUi.run-w / 2;
+    changed run-center => {
+        let target = max(0px, min(root.run-center - line-scroll.visible-width / 2, RollUi.line-w - line-scroll.visible-width));
+        if (Motion.on && Motion.scroll-ms > 0) {
+            root.sc-from = line-scroll.content-x;
+            root.sc-to = -target;
+            root.sc-t0 = animation-tick();
+            root.sc-running = true;
+        } else {
+            line-scroll.content-x = -target;
+        }
+    }
+    // O trecho da linha à vista (de 400 em 400 px): o Rust troca os itens quando ele muda.
+    property <int> stretch: floor(-line-scroll.content-x / 400px);
+    property <length> seen-width: line-scroll.visible-width;
+    changed stretch => { RollUi.line-window(-line-scroll.content-x, line-scroll.visible-width); }
+    changed seen-width => { RollUi.line-window(-line-scroll.content-x, line-scroll.visible-width); }
+    init => { RollUi.line-window(-line-scroll.content-x, line-scroll.visible-width); }
     line-scroll := ScrollView {
         // Arrastar é para levar a foto (ou o corte), não para rolar.
         mouse-drag-pan-enabled: false;
-        content-width: line.preferred-width;
+        content-width: RollUi.line-w;
         content-height: self.height;
         scrolled => { root.sc-running = false; }
         TouchArea {
-            width: line.preferred-width;
+            width: RollUi.line-w;
             height: line-scroll.height;
             scroll-event(e) => {
                 if (e.delta-y != 0) {
@@ -64,37 +90,51 @@ export component TimelineStrip inherits Rectangle {
                 reject
             }
         }
-        line := HorizontalLayout {
-            padding: 6px;
-            spacing: 2px;
-            for t in root.timeline: Rectangle {
-                width: t.cut ? 14px : 46px;
-                if !t.cut: Image {
-                    width: 44px;
-                    height: 44px;
-                    source: t.img;
-                    image-fit: contain;
+        // O fundo destacado do trecho da lâmina atual.
+        if RollUi.run-w > 0: Rectangle {
+            x: RollUi.run-x - 3px;
+            y: 3px;
+            width: RollUi.run-w + 6px;
+            height: line-scroll.height - 6px;
+            border-radius: 4px;
+            background: #ffffff24;
+        }
+        for t in root.timeline: Rectangle {
+            x: t.x;
+            y: 6px;
+            height: line-scroll.height - 12px;
+            width: t.cut ? 14px : 46px;
+            if !t.cut: Image {
+                width: 44px;
+                height: 44px;
+                source: t.img;
+                image-fit: contain;
+            }
+            if !t.cut: TouchArea {
+                clicked => {
+                    root.go-to(t.spread);
+                    root.focus-main();
                 }
-                if t.cut: Rectangle {
-                    cut-touch := TouchArea {
-                        mouse-cursor: ew-resize;
-                        pointer-event(e) => {
-                            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
-                                DragUi.press-x = self.absolute-position.x + self.mouse-x;
-                            }
-                            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
-                                let dx = self.absolute-position.x + self.mouse-x - DragUi.press-x;
-                                root.cut-moved(t.spread, round(dx / 48px));
-                                root.focus-main();
-                            }
+            }
+            if t.cut: Rectangle {
+                cut-touch := TouchArea {
+                    mouse-cursor: ew-resize;
+                    pointer-event(e) => {
+                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                            DragUi.press-x = self.absolute-position.x + self.mouse-x;
+                        }
+                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                            let dx = self.absolute-position.x + self.mouse-x - DragUi.press-x;
+                            root.cut-moved(t.spread, round(dx / 48px));
+                            root.focus-main();
                         }
                     }
-                    Rectangle {
-                        x: 5px;
-                        width: 4px;
-                        border-radius: 2px;
-                        background: cut-touch.has-hover || cut-touch.pressed ? Theme.selected : Theme.muted;
-                    }
+                }
+                Rectangle {
+                    x: 5px;
+                    width: 4px;
+                    border-radius: 2px;
+                    background: cut-touch.has-hover || cut-touch.pressed ? Theme.selected : Theme.muted;
                 }
             }
         }
