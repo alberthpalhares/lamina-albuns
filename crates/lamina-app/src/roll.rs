@@ -1,7 +1,7 @@
 //! O rolo de lâminas na janela (spec RL; ADR 0012): só traduz. As revisões, o plano, as contas e a
 //! imagem de cada lâmina são do `lamina-editor` (`motion::roll*`, `roll_image`); aqui ficam a
-//! fila do trabalhador, as imagens guardadas, as linhas do modelo e o destino da rolagem. Até o
-//! portão G1, só com `LAMINA_ROLO=1` (regra 28).
+//! fila do trabalhador, as imagens guardadas, as linhas do modelo e o destino da rolagem. É o
+//! padrão desde o G1 (regra 28), que se repete antes da beta.
 
 use std::collections::BTreeMap;
 use std::ops::RangeInclusive;
@@ -22,17 +22,14 @@ use crate::roll_worker::{Job, Painted, RollWorker};
 use crate::state::App;
 use crate::{AppWindow, RollUi};
 
-/// A variável que liga o rolo até o portão G1.
-pub const ROLL_VAR: &str = "LAMINA_ROLO";
 /// Pausa depois da última edição (ou do último redimensionamento) que pede a imagem de tela.
 pub const QUIET: Duration = Duration::from_millis(300);
 
 /// O estado do rolo na janela.
 pub struct RollState {
-    pub on: bool,
     revisions: Revisions,
     plan: RollPlan,
-    worker: Option<RollWorker>,
+    worker: RollWorker,
     pub scroll: RollScroll,
     store: BTreeMap<SpreadId, Stored>,
     held: BTreeMap<SpreadId, Stored>,
@@ -56,14 +53,11 @@ pub struct RollState {
 }
 
 impl RollState {
-    /// Lê `LAMINA_ROLO`; desligado, nada do rolo existe (nem o trabalhador).
     pub fn new(cache: &Cache, mailbox: &Mailbox) -> Self {
-        let on = std::env::var(ROLL_VAR).is_ok_and(|v| v == "1");
         RollState {
-            on,
             revisions: Revisions::default(),
             plan: RollPlan::default(),
-            worker: on.then(|| RollWorker::new(cache, mailbox)),
+            worker: RollWorker::new(cache, mailbox),
             scroll: RollScroll::default(),
             store: BTreeMap::new(),
             held: BTreeMap::new(),
@@ -120,9 +114,6 @@ impl RollState {
 /// Depois de uma edição (a faixa já calculou as linhas): as revisões, o álbum que o trabalhador
 /// desenha e os pedidos.
 pub fn edited(app: &mut App, rows: &[(SpreadId, StripRow)]) {
-    if !app.roll.on {
-        return;
-    }
     let Some(session) = app.editor.session() else {
         return;
     };
@@ -205,14 +196,12 @@ pub fn ask(app: &mut App) {
     };
     let asks = app.roll.plan.go(&view, &app.roll.revisions);
     app.roll.stats.asked(asks.len());
-    if let Some(worker) = &app.roll.worker {
-        worker.replace(Job {
-            project,
-            missing: app.roll.missing.clone(),
-            shown: f64::from(ui.get_width()),
-            asks,
-        });
-    }
+    app.roll.worker.replace(Job {
+        project,
+        missing: app.roll.missing.clone(),
+        shown: f64::from(ui.get_width()),
+        asks,
+    });
 }
 
 /// A largura física do lugar: a largura lógica × a escala da tela, com o teto de 2.048 px.
@@ -322,9 +311,6 @@ fn request_frame(app: &App) {
 
 /// Depois de cada quadro desenhado: as linhas, a porta dos envios e a medição.
 pub fn frame_drawn(app: &mut App) {
-    if !app.roll.on {
-        return;
-    }
     let Some(w) = app.window.upgrade() else {
         return;
     };

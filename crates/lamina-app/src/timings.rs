@@ -28,18 +28,15 @@ impl Default for Clock {
 
 impl Clock {
     /// Lê a variável; ligada, recebe cada quadro desenhado e encerra as rajadas pelo `Timer`
-    /// devolvido (que precisa ficar vivo). Com o rolo (`roll`), cada quadro desenhado também move a
-    /// porta dos envios dele (spec RL, regra 9).
-    pub fn install(window: &slint::Window, roll: bool) -> (Clock, Option<Timer>) {
+    /// devolvido (que precisa ficar vivo). Cada quadro desenhado também move a porta dos envios do
+    /// rolo (spec RL, regra 9).
+    pub fn install(window: &slint::Window) -> (Clock, Option<Timer>) {
         let value = std::env::var(TIMINGS_VAR).ok();
         let clock = Clock {
             timings: Rc::new(RefCell::new(Timings::from_value(value.as_deref()))),
             origin: Instant::now(),
         };
         let on = clock.timings.borrow().is_on();
-        if !on && !roll {
-            return (clock, None);
-        }
         let c = clock.clone();
         let mut drawing: Option<Duration> = None;
         let notified = window.set_rendering_notifier(move |state, _| match state {
@@ -50,14 +47,12 @@ impl Clock {
                 if on {
                     c.write(|t| t.frame(start, end));
                 }
-                if roll {
-                    crate::mailbox::later(Duration::ZERO, crate::roll::frame_drawn);
-                }
+                crate::mailbox::later(Duration::ZERO, crate::roll::frame_drawn);
             }
             _ => {}
         });
         if notified.is_err() {
-            eprintln!("{TIMINGS_VAR}: este desenho da janela não avisa os quadros");
+            eprintln!("Lamina: este desenho da janela não avisa os quadros (rolo e {TIMINGS_VAR})");
         }
         if !on {
             return (clock, None);

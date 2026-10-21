@@ -79,7 +79,7 @@ pub struct App {
     pub(crate) slot_rows: crate::slots::SlotRows,
     /// Decide se ir para outra lâmina desliza (spec MV, seção 4).
     pub(crate) navigator: lamina_editor::motion::Navigator,
-    /// O rolo de lâminas (spec RL), ligado por `LAMINA_ROLO=1` até o portão G1.
+    /// O rolo de lâminas (spec RL).
     pub(crate) roll: crate::roll::RollState,
     /// Os recentes que a última conferência não achou e a busca da tela inicial (spec TI).
     pub recent_missing: Vec<PathBuf>,
@@ -96,7 +96,8 @@ impl App {
         let images = Images::new(&cache, &tx);
         let roll = crate::roll::RollState::new(&cache, &tx);
         let mut images = images;
-        images.gated = roll.on;
+        // As fotos nítidas da lâmina atual entram uma por quadro, como as colunas do rolo.
+        images.gated = true;
         App {
             window: window.as_weak(),
             editor,

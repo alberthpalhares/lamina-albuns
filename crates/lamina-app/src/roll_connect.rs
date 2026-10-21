@@ -50,7 +50,7 @@ pub fn refresh(app: &mut App) {
         return;
     };
     let ui = w.global::<RollUi>();
-    ui.set_on(app.roll.on && roll_shown(&app.editor));
+    ui.set_on(roll_shown(&app.editor));
     let Some(session) = app.session() else {
         return;
     };
@@ -155,9 +155,6 @@ pub fn navigate(
     (index, transition): (usize, Transition),
     (old, from): (&SpreadData, Option<usize>),
 ) -> bool {
-    if !app.roll.on {
-        return false;
-    }
     let ui = w.global::<RollUi>();
     let seen = f64::from(ui.get_target());
     let movement = roll_move(seen, index, transition);
@@ -204,7 +201,7 @@ pub fn navigate(
 /// mede), e onde fica a lâmina atual em pixels da área (para levar retângulos de uma à outra).
 fn roll_at(app: &App, fx: f64, fy: f64) -> Option<(RollHit, Roll, f64)> {
     let w = app.window.upgrade()?;
-    if !(app.roll.on && roll_shown(&app.editor)) {
+    if !roll_shown(&app.editor) {
         return None;
     }
     let roll = RollState::geometry(&w);
