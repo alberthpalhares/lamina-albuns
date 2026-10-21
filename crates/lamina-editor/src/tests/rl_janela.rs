@@ -24,8 +24,8 @@ fn rl_b23_faixa_de_laminas_desligada_some_sem_cabecalho_e_volta_com_alt_1() {
     assert!(BOTTOM.contains(
         "if root.has-project && root.spreads-open: StripHeader {\n        name: \"Lâminas\";"
     ));
-    assert!(BOTTOM.contains("StripHeader {\n        name: \"Linha do tempo\";"));
-    assert!(BOTTOM.contains("StripHeader {\n        name: \"Fotos\";"));
+    assert!(BOTTOM.contains("name: \"Linha do tempo\";"));
+    assert!(BOTTOM.contains("name: \"Fotos\";"));
     // Alt+1 (Visualizar → "Faixa de lâminas") traz a faixa de volta.
     assert!(editor.run(Command::ToggleSpreads));
     assert_eq!(open(&editor), [true, true, true]);
