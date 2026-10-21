@@ -58,6 +58,24 @@ impl<K: PartialEq, V: PartialEq, T: Clone + 'static> Synced<K, V, T> {
         ops.len()
     }
 
+    /// Quantas linhas a lista mostra.
+    pub fn count(&self) -> usize {
+        self.rows.len()
+    }
+
+    /// A chave da linha `i`.
+    pub fn key(&self, i: usize) -> Option<&K> {
+        self.rows.get(i).map(|(k, _)| k)
+    }
+
+    /// Mexe na linha `i` que está na tela (a miniatura de uma peça da grade; spec PF, regra 14).
+    pub fn update(&self, i: usize, change: impl FnOnce(&mut T)) {
+        if let Some(mut row) = self.model.row_data(i) {
+            change(&mut row);
+            self.model.set_row_data(i, row);
+        }
+    }
+
     /// Troca só as linhas em que `hit(posição, (chave, valor))` vale, com `change` mexendo na
     /// linha que está na tela (miniaturas que chegaram; spec TR, regra 6). Devolve quantas
     /// mudaram.

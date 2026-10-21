@@ -141,6 +141,21 @@ export component AppWindow inherits Window {
     in property <bool> spreads-open: true;
     in property <bool> timeline-open: true;
     in property <bool> photos-open: true;
+    // A grade do painel de fotos (spec PF): zoom, colunas, rolagem e a altura mostrada, que o Rust
+    // calcula com os limites da divisória (contas no editor).
+    in-out property <float> photo-zoom: 96;
+    in property <int> photo-columns: 1;
+    in-out property <length> photo-scroll;
+    in property <length> photo-shown: 252px;
+    callback photo-room <=> bottom.photo-room;
+    callback photo-height-drag <=> bottom.photo-height-drag;
+    pure callback photo-lasso-speed <=> bottom.lasso-speed;
+    callback photo-view <=> bottom.photo-view;
+    callback photo-zoom-to <=> bottom.photo-zoom-to;
+    callback photo-zoom-wheel <=> bottom.photo-zoom-wheel;
+    callback photo-lasso <=> bottom.photo-lasso;
+    callback photo-height-set <=> bottom.photo-height-set;
+    callback photo-height-reset <=> bottom.photo-height-reset;
     in property <string> busy-text;
 
     // Campos da janela "Novo álbum".
@@ -267,6 +282,7 @@ export component AppWindow inherits Window {
             MenuItem { title: "Colar  (Ctrl+V)"; enabled: root.has-project; activated => { root.command("editar.colar"); } }
             MenuItem { title: "Duplicar  (Ctrl+D)"; enabled: root.has-project; activated => { root.command("editar.duplicar"); } }
             MenuItem { title: "Selecionar todos os quadros  (Ctrl+A)"; enabled: root.has-project; activated => { root.command("editar.selecionar-quadros"); } }
+            MenuItem { title: "Selecionar todas as fotos mostradas  (Ctrl+A)"; enabled: root.has-project; activated => { root.command("editar.selecionar-fotos"); } }
         }
         Menu {
             title: "Lâmina";
@@ -374,7 +390,7 @@ export component AppWindow inherits Window {
         }
 
         VerticalLayout {
-            TopBar {
+            top := TopBar {
                 // Por cima do resto, para os balões de dica dos botões descerem sobre a lâmina.
                 z: 10;
                 has-project: root.has-project;
@@ -461,6 +477,12 @@ export component AppWindow inherits Window {
                 photos: root.photos;
                 selected-photo: root.selected-photo;
                 filter: root.filter;
+                photo-zoom <=> root.photo-zoom;
+                photo-columns: root.photo-columns;
+                photo-scroll <=> root.photo-scroll;
+                photo-shown: root.photo-shown;
+                room: root.height;
+                above: top.height + (root.update-bar != "" ? 30px : 0px) + (root.notice != "" ? 30px : 0px);
                 command(name) => { root.command(name); }
                 focus-main => { root.focus-main(); }
                 // Fora da faixa de lâminas, a foto cai na lâmina grande (num quadro ou nela).

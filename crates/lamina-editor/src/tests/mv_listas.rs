@@ -109,7 +109,11 @@ fn mv_b15_a_faixa_so_atualiza_o_que_mudou() {
 
 fn photos(editor: &Editor) -> Vec<(PhotoId, crate::motion::PhotoRow)> {
     let project = editor.session().unwrap().project();
-    photo_rows(&photo_list(project, Filter::All), editor.selection())
+    photo_rows(
+        &photo_list(project, Filter::All),
+        editor.selection(),
+        Filter::All,
+    )
 }
 
 #[test]

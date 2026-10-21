@@ -76,6 +76,13 @@ pub struct Strips {
     /// campo vale desligado.
     #[serde(rename = "reduzir_movimento")]
     pub reduce_motion: bool,
+    /// O zoom das miniaturas do painel de fotos, de 64 a 240 px (spec PF, regra 4). Sem o campo,
+    /// 96; fora da faixa, preso a ela ao ler.
+    #[serde(rename = "fotos_zoom")]
+    pub photos_zoom: u32,
+    /// A altura do painel de fotos em px lógicos (spec PF, regra 5); sem o campo, duas linhas.
+    #[serde(rename = "fotos_altura", skip_serializing_if = "Option::is_none")]
+    pub photos_height: Option<u32>,
 }
 
 /// Tudo aberto: o editor só na memória (testes e linha de comando) e os campos que faltam num
@@ -91,6 +98,8 @@ impl Default for Strips {
             unit: crate::new_project::Unit::default(),
             format: crate::new_project::Format::Square,
             reduce_motion: false,
+            photos_zoom: crate::photo_grid::ZOOM_DEFAULT,
+            photos_height: None,
         }
     }
 }
@@ -187,6 +196,9 @@ impl StripsStore {
                 store.warning = Some(STRIPS_UNREADABLE.to_owned());
             }
         }
+        // Zoom fora da faixa é preso a ela (spec PF, regra 4).
+        let zoom = i64::from(store.strips.photos_zoom);
+        store.strips.photos_zoom = crate::photo_grid::clamp_zoom(zoom);
         store
     }
 
@@ -247,10 +259,22 @@ pub fn strip_titles(session: &Session) -> [String; 3] {
             plural(pages, "página")
         ),
         "Linha do tempo · arraste um corte para passar fotos entre lâminas".to_owned(),
-        format!(
-            "Fotos · {} de {} usadas",
-            used_photos(project),
-            project.photos.len()
-        ),
+        photos_title(session, 0),
     ]
+}
+
+/// O título do painel de fotos com a seleção (spec PF, regra 12): "Fotos · 4 de 10 usadas ·
+/// 3 selecionadas"; sem seleção, sem a última parte.
+pub fn photos_title(session: &Session, selected: usize) -> String {
+    let project = session.project();
+    let title = format!(
+        "Fotos · {} de {} usadas",
+        used_photos(project),
+        project.photos.len()
+    );
+    match selected {
+        0 => title,
+        1 => format!("{title} · 1 selecionada"),
+        n => format!("{title} · {n} selecionadas"),
+    }
 }

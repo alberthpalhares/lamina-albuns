@@ -4,7 +4,8 @@
 use std::rc::Rc;
 
 use lamina_core::{PhotoId, Project, Rgb};
-use lamina_editor::{Area, FrameKind, PhotoItem, PxRect, photo_extent, spread_view};
+use lamina_editor::motion::PhotoRow;
+use lamina_editor::{Area, FrameKind, PxRect, photo_extent, spread_view};
 use slint::{Color, Image, ModelRc, VecModel};
 
 use crate::texts::{picture, pixels};
@@ -137,13 +138,25 @@ pub fn spread_data(
     }
 }
 
-/// Uma foto do navegador.
-pub fn photo_data(item: &PhotoItem, image: Option<Image>, selected: bool) -> PhotoData {
+/// A proporção (largura / altura) da foto `id`, para o retângulo neutro antes da miniatura;
+/// 0 sem tamanho (a peça fica quadrada).
+pub fn photo_aspect(project: &Project, id: PhotoId) -> f32 {
+    match project.photo(id) {
+        Ok(p) if p.width_px > 0 && p.height_px > 0 => p.width_px as f32 / p.height_px as f32,
+        _ => 0.0,
+    }
+}
+
+/// Uma peça da grade do painel de fotos (spec PF): a miniatura (só perto da tela), o nome, os
+/// usos, a seleção, o esmaecido e a proporção `aspect` da foto (0 = sem tamanho).
+pub fn photo_data(row: &PhotoRow, aspect: f32, image: Option<Image>) -> PhotoData {
     PhotoData {
         img: image.unwrap_or_default(),
-        name: item.name.clone().into(),
-        uses: i32::try_from(item.uses).unwrap_or(i32::MAX),
-        selected,
+        name: row.item.name.clone().into(),
+        uses: i32::try_from(row.item.uses).unwrap_or(i32::MAX),
+        selected: row.picked,
+        aspect,
+        dim: row.dim,
     }
 }
 

@@ -94,9 +94,9 @@ impl Editor {
             | Command::TurnRight
             | Command::TurnLeftMore
             | Command::TurnRightMore => self.crop_frame.is_some(),
-            // Rodada 0b: já no registro, mas inertes até a spec de cada um ligar (AT, NV, BR e PF).
+            // Rodada 0b: já no registro, mas inerte até a spec dele ligar (BR).
             Command::BuildAlbum => false,
-            Command::SelectAllPhotos => false,
+            Command::SelectAllPhotos => !self.shown_photos().is_empty(),
             // Os do modo organizar e os de vista já responderam acima.
             Command::Organize
             | Command::SelectAllFrames
@@ -221,6 +221,7 @@ impl Editor {
                 self.selection.clear();
                 true
             }
+            Command::SelectAllPhotos => self.select_all_photos(),
             Command::BuildFromSelection => self.build_from_selection(0),
             Command::NewSpreadFromSelection => self.new_spread_from_selection(),
             Command::NewSpread => self.new_spread(),

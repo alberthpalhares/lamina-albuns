@@ -13,7 +13,8 @@
 //! - [`prefs_store`]: favoritos e rejeitados no arquivo de preferências do fotógrafo.
 //! - [`text`]: nome das famílias e nota explicada, para o painel de layouts.
 //! - [`view`]: a lâmina em pixels da tela, igual à impressão.
-//! - [`photos`]: o navegador de fotos.
+//! - [`photos`]: o painel de fotos (as abas e os usos de cada foto).
+//! - [`photo_grid`]: a grade do painel de fotos, o zoom, a altura e o laço (spec PF).
 //! - [`presets`] e [`respec`]: presets e trocar a especificação de um álbum pronto (spec PR).
 //! - [`strips`]: as três faixas de baixo, com título e recolhíveis (spec PN).
 //! - [`recents`]: a lista de recentes e o que a tela inicial mostra (spec TI).
@@ -63,6 +64,7 @@ pub mod motion;
 pub mod naming;
 pub mod new_project;
 pub mod palette_tips;
+pub mod photo_grid;
 pub mod photos;
 pub mod prefs_store;
 pub mod presets;
@@ -121,7 +123,7 @@ pub use session::{HistoryList, HistoryStep, Session};
 pub use snap::{Grip, SnapLine};
 pub use strips::{
     Install, STRIPS_FILE, STRIPS_UNREADABLE, STRIPS_VERSION, Strip, Strips, StripsStore,
-    strip_titles,
+    photos_title, strip_titles,
 };
 pub use suggestions::{List, Part, Unavailable};
 pub use text::{

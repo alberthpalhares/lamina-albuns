@@ -1,16 +1,51 @@
 // As três faixas de baixo (spec PN): cabeçalho com nome e resumo, e o conteúdo, que recolhe. A
 // faixa de lâminas fica sempre na árvore (só some sem projeto ou recolhida) para rolar até a
-// lâmina atual. No modo organizar, só a faixa de lâminas fica (spec EG).
+// lâmina atual. No modo organizar, só a faixa de lâminas fica (spec EG). Em cima de tudo, com o
+// painel de fotos aberto, a divisória que muda a altura da grade (spec PF, regra 5).
 
+import { Slider } from "std-widgets.slint";
 import { SpreadData } from "canvas.slint";
 import { BarButton, FilterTab } from "widgets.slint";
 import { OrganizeUi } from "organize.slint";
-import { StripHeader } from "strip_header.slint";
+import { StripHeader, StripTheme } from "strip_header.slint";
 import { SpreadStrip } from "spread_strip.slint";
 import { TimelineStrip, TimelineItem } from "timeline.slint";
-import { PhotoStrip, PhotoData } from "photo_strip.slint";
+import { PhotoGrid, PhotoData, PhotoGridUi } from "photo_strip.slint";
 import { DragUi } from "drag.slint";
 import { Motion } from "motion.slint";
+
+// A divisória: arrastar muda a altura da grade, duplo clique volta à padrão.
+component GridDivider inherits Rectangle {
+    // A altura que a grade mostra agora.
+    in property <length> shown;
+    callback moved(length);
+    callback released();
+    callback reset();
+    height: 6px;
+    background: touch.has-hover || PhotoGridUi.resizing ? #4a4a4a : StripTheme.line;
+    property <length> start-h;
+    property <length> press-y;
+    touch := TouchArea {
+        mouse-cursor: row-resize;
+        double-clicked => { root.reset(); }
+        pointer-event(e) => {
+            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                root.start-h = root.shown;
+                root.press-y = self.absolute-position.y + self.mouse-y;
+            }
+            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up && PhotoGridUi.resizing) {
+                root.released();
+                PhotoGridUi.resizing = false;
+            }
+        }
+        moved => {
+            if (self.pressed) {
+                PhotoGridUi.resizing = true;
+                root.moved(root.start-h + root.press-y - (self.absolute-position.y + self.mouse-y));
+            }
+        }
+    }
+}
 
 export component BottomStrips inherits VerticalLayout {
     in property <bool> has-project;
@@ -44,6 +79,42 @@ export component BottomStrips inherits VerticalLayout {
     // O ponteiro sobre a área de lâmina nova, para os arquivos soltos do Explorador (spec IM).
     out property <bool> new-spread-hover: spread-strip.new-hover;
 
+    // A grade do painel de fotos (spec PF): zoom e colunas do editor, a rolagem da janela e a
+    // altura mostrada, que o Rust calcula com os limites da divisória a partir da altura da
+    // janela (`room`) e do que fica acima das faixas (`above`). Calcular aqui faria um laço: a
+    // altura da janela depende da altura das faixas.
+    in-out property <float> photo-zoom: 96;
+    in property <int> photo-columns: 1;
+    in-out property <length> photo-scroll;
+    in property <length> photo-shown: 252px;
+    in property <length> room;
+    in property <length> above;
+    pure callback lasso-speed(length, length) -> length;
+    callback photo-room(length, length);
+    callback photo-view(length, length, length);
+    callback photo-zoom-to(int);
+    callback photo-zoom-wheel(bool, length, length);
+    callback photo-lasso(length, length, length, length, bool);
+    callback photo-height-drag(length);
+    callback photo-height-set(length);
+    callback photo-height-reset();
+    property <bool> grid-on: root.has-project && root.photos-open && !OrganizeUi.on;
+    // O que não é nem a lâmina nem a grade: as barras de cima, os cabeçalhos, as outras faixas e
+    // a divisória.
+    property <length> chrome: root.above + (root.has-project && root.spreads-open ? 26px : 0px) + spread-strip.height
+        + (root.has-project && !OrganizeUi.on ? 52px : 0px)
+        + (root.has-project && root.timeline-open && !OrganizeUi.on ? 58px : 0px)
+        + (root.grid-on ? 6px : 0px);
+    init => { root.photo-room(root.room, root.chrome); }
+    changed room => { root.photo-room(root.room, root.chrome); }
+    changed chrome => { root.photo-room(root.room, root.chrome); }
+
+    if root.grid-on: GridDivider {
+        shown: root.photo-shown;
+        moved(h) => { root.photo-height-drag(h); }
+        released => { root.photo-height-set(root.photo-shown); }
+        reset => { root.photo-height-reset(); }
+    }
     // Desligada, a faixa de lâminas some inteira, com o cabeçalho (spec PN, regra 1; JE, regra 7; RL, regra 23):
     // volta por Visualizar → "Faixa de lâminas" (Alt+1).
     if root.has-project && root.spreads-open: StripHeader {
@@ -93,12 +164,28 @@ export component BottomStrips inherits VerticalLayout {
                 FilterTab { text: "Todas"; active: root.filter == 0; clicked => { root.filter-changed(0); } }
                 FilterTab { text: "Usadas"; active: root.filter == 1; clicked => { root.filter-changed(1); } }
                 FilterTab { text: "Não usadas"; active: root.filter == 2; clicked => { root.filter-changed(2); } }
+                // O zoom das miniaturas, de 64 a 240 px (spec PF, regra 4).
+                if root.photos-open: Slider {
+                    width: 120px;
+                    minimum: 64;
+                    maximum: 240;
+                    step: 8;
+                    value <=> root.photo-zoom;
+                    changed(v) => { root.photo-zoom-to(round(v / 8) * 8); }
+                }
                 BarButton { text: "+ Fotos"; clicked => { root.command("arquivo.importar"); } }
             }
-            if root.photos-open: PhotoStrip {
-                height: 144px;
+            if root.photos-open: PhotoGrid {
+                height: root.photo-shown;
                 photos: root.photos;
                 selected-photo: root.selected-photo;
+                columns: root.photo-columns;
+                zoom: round(root.photo-zoom);
+                scroll <=> root.photo-scroll;
+                lasso-speed(y, h) => { return root.lasso-speed(y, h); }
+                view-changed(w, h, s) => { root.photo-view(w, h, s); }
+                zoom-wheel(up, x, y) => { root.photo-zoom-wheel(up, x, y); }
+                lasso-done(x0, y0, x1, y1, add) => { root.photo-lasso(x0, y0, x1, y1, add); }
                 photo-double-clicked(i) => { root.photo-double-clicked(i); }
                 photo-pressed(i, ctrl, shift) => { root.photo-pressed(i, ctrl, shift); }
                 dropped => {
