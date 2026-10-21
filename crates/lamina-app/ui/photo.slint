@@ -1,8 +1,10 @@
-// A seção Foto (spec AF, seção 3): endireitar, escala, brilho, contraste, preto e branco e
-// restaurar. Só desenho: o editor decide e o Rust preenche o `PhotoUi`.
+// A seção Foto (spec AF, seção 3; spec OP): o tamanho do quadro, endireitar, escala, brilho,
+// contraste, preto e branco, opacidade, borda, cor da borda, cantos e restaurar. Só desenho: o
+// editor decide e o Rust preenche o `PhotoUi`.
 
 import { Button, CheckBox, LineEdit, Slider } from "std-widgets.slint";
 import { Theme } from "theme.slint";
+import { LookUi, Stepper, Swatches } from "look.slint";
 
 export global PhotoUi {
     in property <bool> has-photo;
@@ -29,6 +31,18 @@ export global PhotoUi {
     callback released();
     callback bw-toggled(bool);
     callback restore();
+    // Spec OP: "Quadro de 12,4 × 8,3 cm" (um quadro só), a opacidade em %, a borda e os cantos
+    // ("1,5 mm") e a cor da borda; "Vale para os N quadros selecionados" com vários.
+    in property <string> size;
+    in-out property <float> opacity: 100;
+    in property <string> border;
+    in property <color> border-color;
+    in property <string> radius;
+    in property <string> style-note;
+    callback opacity-moved(float);
+    callback border-step(int);
+    callback border-pick(int);
+    callback radius-step(int);
 }
 
 component Label inherits Text {
@@ -39,6 +53,7 @@ component Label inherits Text {
 export component PhotoSection inherits VerticalLayout {
     spacing: 6px;
     Text { text: "Foto"; color: Theme.text; font-weight: 700; }
+    if PhotoUi.size != "": Text { text: PhotoUi.size; color: Theme.muted; font-size: 12px; }
     if PhotoUi.note != "": Text { text: PhotoUi.note; color: Theme.muted; font-size: 11px; wrap: word-wrap; }
     Label { text: PhotoUi.can-turn ? "Endireitar" : "Endireitar (selecione um quadro só)"; }
     Slider {
@@ -92,6 +107,24 @@ export component PhotoSection inherits VerticalLayout {
         checked <=> PhotoUi.bw;
         toggled => { PhotoUi.bw-toggled(self.checked); }
     }
+    if PhotoUi.style-note != "": Text { text: PhotoUi.style-note; color: Theme.muted; font-size: 11px; wrap: word-wrap; }
+    Label { text: "Opacidade  " + round(PhotoUi.opacity) + "%"; }
+    Slider {
+        minimum: 0;
+        maximum: 100;
+        value <=> PhotoUi.opacity;
+        changed(v) => { PhotoUi.opacity-moved(v); }
+        released => { PhotoUi.released(); }
+    }
+    Label { text: "Borda"; }
+    Stepper { value: PhotoUi.border; step(d) => { PhotoUi.border-step(d); } }
+    Swatches {
+        palette: LookUi.palette;
+        chosen: PhotoUi.border-color;
+        pick(i) => { PhotoUi.border-pick(i); }
+    }
+    Label { text: "Cantos"; }
+    Stepper { value: PhotoUi.radius; step(d) => { PhotoUi.radius-step(d); } }
     Button { text: "Restaurar a foto"; clicked => { PhotoUi.restore(); } }
     if PhotoUi.error != "": Text { text: PhotoUi.error; color: #e57373; wrap: word-wrap; }
 }
