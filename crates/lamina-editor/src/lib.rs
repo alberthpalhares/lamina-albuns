@@ -42,6 +42,7 @@ pub mod calibration;
 pub mod commands;
 pub mod editor;
 pub mod edits;
+pub mod edits_cross;
 pub mod error_log;
 pub mod example;
 mod export_form;
@@ -94,7 +95,7 @@ pub use album::{
 pub use bar_tips::{BAR_COMMANDS, bar_tip};
 pub use cache::Cache;
 pub use commands::{Command, Menu};
-pub use editor::{DropPlace, Editor, Leave, Panel, TextChange};
+pub use editor::{CrossTarget, DropPlace, Editor, Leave, Panel, TextChange};
 pub use error::EditorError;
 pub use error_log::ErrorLog;
 pub use example::{EXAMPLE_COPY, EXAMPLE_DIR, EXAMPLE_FILE, example_target, prepare_example};

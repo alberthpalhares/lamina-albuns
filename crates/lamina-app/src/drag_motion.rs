@@ -25,17 +25,21 @@ pub fn connect_motion(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     window.on_drop_at(move |fx, fy| {
         let app = a.borrow();
+        // O mesmo alvo da soltura (spec ML, regra 7): só quadros de foto acendem.
         let target = app.session().and_then(|s| {
-            lamina_editor::motion::drop_target(
+            lamina_editor::motion::cross_target(
                 s.project(),
                 s.current(),
                 f64::from(fx),
                 f64::from(fy),
             )
         });
-        target
-            .map(|(_, r)| crate::convert::boxed(r))
-            .unwrap_or_default()
+        match target {
+            Some(lamina_editor::motion::CrossHit::Frame { rect, .. }) => {
+                crate::convert::boxed(rect)
+            }
+            _ => crate::BoxData::default(),
+        }
     });
     let a = app.clone();
     window.on_spread_shift(move |from, gap, i| {

@@ -1,9 +1,9 @@
 //! A lista das ferramentas, na ordem da spec IA (seção 3): as do IA-M1 e depois as do IA-M2.
 
 use super::super::calls::{
-    ApplyLayout, BuildSpread, ExportCall, FrameArg, ListPhotos, MoveSpread, NewAlbumCall, NoArgs,
-    OpenAlbum, PlacePhoto, Position, RunCommand, SaveAlbum, SpreadArg, Steps, SuggestLayouts,
-    SwapPhotos, ViewPhotos, ViewSpread,
+    ApplyLayout, BuildSpread, ExportCall, FrameArg, ListPhotos, MovePhoto, MoveSpread,
+    NewAlbumCall, NoArgs, OpenAlbum, PlacePhoto, Position, RunCommand, SaveAlbum, SpreadArg, Steps,
+    SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
 };
 use super::super::params::{
     AddText, CropCall, EditText, LookCall, RelinkCall, RespecCall, SaveModel, UseModel,
@@ -74,7 +74,11 @@ fn first_part() -> Vec<ToolInfo> {
         info::<PlacePhoto>("colocar_foto", "Põe uma foto num quadro de foto."),
         info::<SwapPhotos>(
             "trocar_fotos",
-            "Troca as fotos de dois quadros da mesma lâmina.",
+            "Troca as fotos de dois quadros, da mesma lâmina ou de duas (com lamina_b).",
+        ),
+        info::<MovePhoto>(
+            "mover_foto",
+            "Leva a foto de um quadro para outra lâmina: para um quadro (enche ou troca) ou, sem              para_quadro, como uma foto a mais (o layout do destino é refeito). O quadro de origem              fica vazio.",
         ),
         info::<FrameArg>("tirar_foto", "Esvazia um quadro de foto."),
         info::<BuildSpread>(

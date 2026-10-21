@@ -5,19 +5,24 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use lamina_editor::DropPlace;
 use lamina_editor::motion::reorder;
+use lamina_editor::motion::{CrossHit, cross_target};
 use lamina_editor::motion::{TimelineKey, timeline_rows};
-use lamina_editor::{DropPlace, frame_at};
 
 use crate::state::App;
 use crate::{AppWindow, TimelineItem};
 
 type Shared = Rc<RefCell<App>>;
 
-/// O quadro da lâmina atual sob o ponto solto (frações da largura da lâmina).
+/// O quadro de foto da lâmina atual sob o ponto solto (frações da largura da lâmina). Quadro de
+/// texto nunca recebe foto: sobre um título, a foto entra como uma a mais (spec ML, regra 13).
 fn target(app: &App, fx: f32, fy: f32) -> Option<usize> {
     let s = app.session()?;
-    frame_at(s.project(), s.current(), f64::from(fx), f64::from(fy))
+    match cross_target(s.project(), s.current(), f64::from(fx), f64::from(fy))? {
+        CrossHit::Frame { frame, .. } => Some(frame),
+        CrossHit::Spread => None,
+    }
 }
 
 /// O ponto solto cai dentro da lâmina grande (frações da largura; a altura é a proporção)?
@@ -47,9 +52,13 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         };
         // Sobre um quadro, como sempre (FQ); na lâmina, fora dos quadros, as fotos entram nela; no
         // álbum ainda sem lâminas, viram a primeira (spec IM, regras 7 e 8).
+        let current = app.session().map_or(0, lamina_editor::Session::current);
         let place = match (target(&app, fx, fy), inside(&app, fx, fy)) {
-            (Some(frame), _) => DropPlace::Frame(frame),
-            (None, true) => DropPlace::Spread,
+            (Some(frame), _) => DropPlace::Frame {
+                spread: current,
+                frame,
+            },
+            (None, true) => DropPlace::Spread(current),
             (None, false) if app.session().is_some_and(|s| s.spread_count() == 0) => {
                 DropPlace::NewSpread(0)
             }
@@ -62,7 +71,7 @@ pub fn connect(window: &AppWindow, app: &Shared) {
             }
         };
         let photos = match place {
-            DropPlace::Frame(_) => vec![photo],
+            DropPlace::Frame { .. } => vec![photo],
             _ => app.editor.drag_photos(photo),
         };
         app.timed(

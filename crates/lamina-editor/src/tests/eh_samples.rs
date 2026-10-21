@@ -224,6 +224,11 @@ fn editor() -> Vec<Sample> {
             path: "/config/Álbum de exemplo".into(),
             reason: "disco cheio".into(),
         },
+        EditorError::SpreadFull {
+            spread: 4,
+            capacity: 24,
+        },
+        EditorError::AlreadyInSpread { spread: 4 },
     ];
     let models = vec![
         ModelError::EmptyName,

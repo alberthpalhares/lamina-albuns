@@ -16,7 +16,10 @@ pub mod rows;
 pub mod slots;
 pub mod timings;
 
-pub use drag::{GHOST_PX, Ghost, Reorder, drop_target, frame_ghost, photo_ghost, reorder};
+pub use drag::{
+    CrossHit, GHOST_PX, Ghost, Reorder, cross_target, drop_target, frame_ghost, photo_ghost,
+    reorder,
+};
 pub use durations::Durations;
 pub use navigation::{Navigator, RAPID, Transition};
 pub use roll::{

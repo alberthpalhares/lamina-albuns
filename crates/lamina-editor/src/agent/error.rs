@@ -89,6 +89,9 @@ pub enum ToolError {
     RepeatedPhoto(u64),
     #[error("Escolha dois quadros diferentes.")]
     SameFrame,
+    /// Mover a foto de um quadro vazio (spec ML, regra 14).
+    #[error("O quadro {frame} da lâmina {spread} está vazio; não há foto para mover.")]
+    NothingToMove { spread: usize, frame: usize },
     #[error("A posição vai de 1 a {0}.")]
     BadPosition(usize),
     #[error("O álbum precisa de pelo menos uma lâmina.")]

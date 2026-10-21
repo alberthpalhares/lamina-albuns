@@ -20,6 +20,7 @@ mod calls;
 mod catalog;
 mod commands;
 mod crop;
+mod cross;
 mod error;
 mod export;
 mod frames;
@@ -42,9 +43,9 @@ mod texts;
 mod values;
 
 pub use calls::{
-    ApplyLayout, BuildSpread, ColorArg, ExportCall, FormatArg, FrameArg, ListPhotos, MoveSpread,
-    NewAlbumCall, NoArgs, OpenAlbum, PartArg, PhotoFilter, PlacePhoto, Position, RunCommand,
-    SaveAlbum, SpreadArg, Steps, SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
+    ApplyLayout, BuildSpread, ColorArg, ExportCall, FormatArg, FrameArg, ListPhotos, MovePhoto,
+    MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, PartArg, PhotoFilter, PlacePhoto, Position,
+    RunCommand, SaveAlbum, SpreadArg, Steps, SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
 };
 pub use catalog::{ToolCall, ToolInfo, tools};
 pub use error::ToolError;
@@ -150,6 +151,7 @@ impl Agent {
             ToolCall::Mirror(a) => self.mirror(editor, a.lamina),
             ToolCall::PlacePhoto(a) => self.place(editor, &a),
             ToolCall::SwapPhotos(a) => self.swap(editor, &a),
+            ToolCall::MovePhoto(a) => self.move_photo(editor, &a),
             ToolCall::ClearFrame(a) => self.clear(editor, &a),
             ToolCall::BuildSpread(a) => self.build_spread(editor, &a),
             ToolCall::NewSpread(a) => self.new_spread(editor, a.posicao),

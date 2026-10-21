@@ -1,6 +1,7 @@
 //! Fotos soltas numa lâmina (spec IM, regras 7 a 9 e 11): na área de lâmina nova ou entre
 //! lâminas viram uma lâmina montada como "Montar lâmina" faria (respeitando a montagem do álbum);
-//! fora dos quadros entram na lâmina atual, com o layout refeito; sobre um quadro, como antes.
+//! fora dos quadros entram na lâmina, com o layout refeito; sobre um quadro, como antes. A lâmina
+//! pode ser a atual ou outra (as vizinhas do rolo e as miniaturas da faixa; spec ML, regra 10).
 
 use lamina_core::{PhotoId, Project};
 
@@ -12,10 +13,10 @@ use crate::importing::{ImportReport, ImportSummary, add_imported};
 /// Onde as fotos arrastadas foram soltas.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DropPlace {
-    /// Sobre o quadro `n` da lâmina atual (spec FQ).
-    Frame(usize),
-    /// Na lâmina atual, fora dos quadros.
-    Spread,
+    /// Sobre o quadro `frame` da lâmina `spread` (spec FQ; ML, regra 10).
+    Frame { spread: usize, frame: usize },
+    /// Na lâmina `spread`, fora dos quadros de foto.
+    Spread(usize),
     /// No vão `n` da faixa (0 = antes da primeira; o número de lâminas = a área de lâmina nova).
     NewSpread(usize),
 }
@@ -23,9 +24,16 @@ pub enum DropPlace {
 impl Editor {
     /// Solta `photos` em `place` (uma ação, uma edição; regra 9). `false` se nada mudou.
     pub fn drop_photos(&mut self, place: DropPlace, photos: &[PhotoId]) -> bool {
+        let current = self.session.as_ref().map(crate::Session::current);
         match place {
-            DropPlace::Frame(frame) => photos.first().is_some_and(|p| self.drop_photo(frame, *p)),
-            DropPlace::Spread => self.add_to_spread(photos),
+            DropPlace::Frame { spread, frame } if Some(spread) == current => {
+                photos.first().is_some_and(|p| self.drop_photo(frame, *p))
+            }
+            DropPlace::Frame { spread, frame } => photos
+                .first()
+                .is_some_and(|p| self.place_in((spread, frame), *p)),
+            DropPlace::Spread(spread) if Some(spread) == current => self.add_to_spread(photos),
+            DropPlace::Spread(spread) => self.add_to(spread, photos),
             DropPlace::NewSpread(at) => self.new_spread_with(at, photos),
         }
     }
