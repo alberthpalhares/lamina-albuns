@@ -43,6 +43,10 @@ impl Human for CoreError {
                  contraste, de −100 a 100."
                     .to_owned(),
             ),
+            CoreError::InvalidOpacity { value, spread } => (
+                format!("Um quadro da lâmina {spread} tem uma opacidade inválida ({value}%)."),
+                "Abra uma cópia de segurança do álbum. A opacidade vai de 0 a 100%.".to_owned(),
+            ),
             CoreError::InvalidName(name) => (
                 format!("O nome \"{name}\" tem caracteres que não servem para nome de arquivo."),
                 "Use só letras, números, espaços, - e _.".to_owned(),

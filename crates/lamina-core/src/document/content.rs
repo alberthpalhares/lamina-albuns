@@ -3,7 +3,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use super::{Crop, FrameId, PhotoId, SpreadId, TextBox};
+use super::{Crop, FrameId, Opacity, PhotoId, SpreadId, TextBox};
 use crate::{Mm, PageSide, RelRect};
 
 /// Cor RGB de 8 bits (sRGB).
@@ -66,6 +66,13 @@ pub struct Frame {
     /// Raio dos cantos arredondados; 0 = cantos retos (spec AP, regra 5).
     #[serde(default)]
     pub radius: Mm,
+    /// Opacidade da foto (spec OP); só vai para o arquivo quando não é 100.
+    #[serde(
+        rename = "opacidade",
+        default,
+        skip_serializing_if = "Opacity::is_full"
+    )]
+    pub opacity: Opacity,
 }
 
 /// Uma lâmina: duas páginas abertas lado a lado.

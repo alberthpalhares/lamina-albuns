@@ -54,6 +54,7 @@ fn paste_into(
         if let Some(new) = project.spreads[index].frames.last_mut() {
             new.border = f.border;
             new.radius = f.radius;
+            new.opacity = f.opacity;
         }
         ids.push(id);
     }

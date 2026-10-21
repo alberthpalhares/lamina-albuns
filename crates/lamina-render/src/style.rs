@@ -57,9 +57,10 @@ pub fn paint_background(
     }
 }
 
-/// O quadro tem borda ou cantos (e precisa do desenho com contorno)?
+/// O quadro tem borda, cantos ou opacidade (e precisa do desenho com contorno)? Sem eles, a foto
+/// é colada como antes e os bytes não mudam (spec OP, regra 3).
 pub fn styled(frame: &Frame) -> bool {
-    frame.border.width.get() > 0.0 || frame.radius.get() > 0.0
+    frame.border.width.get() > 0.0 || frame.radius.get() > 0.0 || !frame.opacity.is_full()
 }
 
 /// Raio de cada canto em pixels (cima-esquerda, cima-direita, baixo-direita, baixo-esquerda).
@@ -128,8 +129,9 @@ pub(crate) fn box_path(at: PixelBox, r: [f32; 4]) -> Option<Path> {
     )
 }
 
-/// Desenha a foto já reduzida (`rgba`, do tamanho de `at`) dentro do contorno arredondado e,
-/// por cima, a borda para dentro do quadro no corte final.
+/// Desenha a foto já reduzida (`rgba`, do tamanho de `at`) dentro do contorno arredondado, com a
+/// opacidade do quadro (misturada ao que está embaixo; spec OP) e, por cima, a borda opaca para
+/// dentro do quadro no corte final.
 pub fn draw_styled(
     pixmap: &mut Pixmap,
     frame: &Frame,
@@ -146,7 +148,7 @@ pub fn draw_styled(
             tile.as_ref(),
             SpreadMode::Pad,
             FilterQuality::Nearest,
-            1.0,
+            frame.opacity.fraction(),
             Transform::from_translate(at.x0 as f32, at.y0 as f32),
         );
         let paint = Paint {

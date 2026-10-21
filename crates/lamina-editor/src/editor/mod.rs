@@ -35,6 +35,7 @@ mod organize;
 mod organize_cmd;
 mod organize_moves;
 mod panel_need;
+mod photo_style;
 mod recents;
 mod report;
 mod style;
@@ -49,6 +50,7 @@ pub use dropping::DropPlace;
 pub use group_fields::{Field, GROUP_NOT_A_NUMBER};
 pub use layouts::Panel;
 pub use organize::{DoubleClick, SidePanel};
+pub use photo_style::PhotoStyle;
 pub use style::Look;
 pub use text_edit::TextChange;
 
