@@ -48,6 +48,9 @@ export struct FrameData {
     by: float,
     bww: float,
     bh: float,
+    // A opacidade da foto, de 0 a 1 (spec OP): só a foto fica translúcida; a borda e o aviso de
+    // foto ausente continuam opacos.
+    op: float,
 }
 
 export struct SpreadData {
@@ -159,6 +162,7 @@ component Slot inherits Rectangle {
         height: root.ih * root.unit;
         img: f.img;
         photo: f.photo;
+        opacity: f.op;
     }
     if f.blank && !root.small: Rectangle {
         border-width: 1px;

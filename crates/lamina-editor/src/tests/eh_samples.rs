@@ -49,6 +49,10 @@ fn core() -> Vec<CoreError> {
         CoreError::InvalidAdjust {
             photo: "IMG_0001.jpg".into(),
         },
+        CoreError::InvalidOpacity {
+            value: 150,
+            spread: 2,
+        },
         CoreError::UnknownPhoto(id),
         CoreError::UnknownSpread(serde_json::from_str("7").unwrap()),
         CoreError::UnknownFrame(serde_json::from_str("8").unwrap()),

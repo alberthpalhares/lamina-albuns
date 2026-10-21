@@ -1,10 +1,12 @@
 //! Aparência pela IA (spec IA, `aparencia`; spec AP): espaço entre fotos, fundo, borda e cantos
 //! numa edição só, e com `todas` a aparência da lâmina vai para todas, como "Aplicar a todas".
 
-use lamina_core::{Border, FrameContent, Mm, PageSide, Project, Rgb};
+use lamina_core::{Border, FrameContent, Mm, Opacity, PageSide, Project, Rgb};
 
 use super::values::{color, within};
-use super::{Agent, LookCall, PartArg, ToolError, ToolReply, edit_on, session, spread_index};
+use super::{
+    Agent, LookCall, PartArg, ToolError, ToolReply, edit_on, photo_frame, session, spread_index,
+};
 use crate::appearance::{regap, set_background, set_frame_style, style_all};
 use crate::forms::LookField;
 use crate::frame_form::decimal;
@@ -12,7 +14,7 @@ use crate::look_form::BORDER_FIRST;
 use crate::{Editor, EditorError};
 
 const NOTHING: &str = "Diga o que mudar: espaco_mm, fundo (e pagina), borda_mm, cor_borda, \
-                       cantos_mm, ou todas: true para levar a aparência da lâmina a todas.";
+                       cantos_mm, opacidade (e quadro), ou todas: true para levar a aparência da lâmina a \n                       todas.";
 
 /// As mudanças pedidas, já conferidas.
 #[derive(Debug, Default)]
@@ -21,6 +23,9 @@ struct LookChange {
     background: Option<(Rgb, Option<PageSide>)>,
     border: Option<Border>,
     radius: Option<Mm>,
+    /// Spec OP: a opacidade e o quadro (sem ele, todas as fotos da lâmina).
+    opacity: Option<Opacity>,
+    frame: Option<usize>,
 }
 
 impl LookChange {
@@ -45,11 +50,22 @@ impl LookChange {
             PartArg::Direita => Some(PageSide::Right),
         };
         let background = a.fundo.as_deref().map(color).transpose()?;
+        let opacity = a
+            .opacidade
+            .map(|v| {
+                u8::try_from(v)
+                    .ok()
+                    .and_then(Opacity::new)
+                    .ok_or(ToolError::OutOfRange("A opacidade vai de 0 a 100."))
+            })
+            .transpose()?;
         Ok(LookChange {
             gap: gap.map(Mm),
             background: background.map(|c| (c, side)),
             border: border_for(p, index, width, border_color),
             radius: radius.map(Mm),
+            opacity,
+            frame: chosen_frame(p, index, a)?,
         })
     }
 
@@ -58,6 +74,7 @@ impl LookChange {
             && self.background.is_none()
             && self.border.is_none()
             && self.radius.is_none()
+            && self.opacity.is_none()
     }
 
     /// Aplica na ordem da aba Aparência; devolve o espaço que ficou, se foi pedido.
@@ -67,12 +84,45 @@ impl LookChange {
             set_background(p, index, c, side)?;
         }
         if self.border.is_some() || self.radius.is_some() {
-            set_frame_style(p, index, None, self.border, self.radius)?;
+            set_frame_style(p, index, self.frame, self.border, self.radius)?;
+        }
+        if let Some(opacity) = self.opacity {
+            set_opacity(p, index, self.frame, opacity);
         }
         if all {
             style_all(p, index)?;
         }
         Ok(kept)
+    }
+}
+
+/// O quadro pedido (a partir de 1) como posição; texto, vazio ou junto com `todas` recusam.
+fn chosen_frame(p: &Project, index: usize, a: &LookCall) -> Result<Option<usize>, ToolError> {
+    let Some(quadro) = a.quadro else {
+        return Ok(None);
+    };
+    if a.todas {
+        return Err(ToolError::FrameAndAll);
+    }
+    let frame = photo_frame(p, index, quadro)?;
+    if matches!(p.spreads[index].frames[frame].content, FrameContent::Empty) {
+        return Err(ToolError::NoPhotoHere {
+            spread: index + 1,
+            frame: quadro,
+        });
+    }
+    Ok(Some(frame))
+}
+
+/// A opacidade das fotos da lâmina, ou só do quadro `frame`.
+fn set_opacity(p: &mut Project, index: usize, frame: Option<usize>, opacity: Opacity) {
+    let Some(spread) = p.spreads.get_mut(index) else {
+        return;
+    };
+    for (i, f) in spread.frames.iter_mut().enumerate() {
+        if frame.is_none_or(|only| only == i) && matches!(f.content, FrameContent::Photo { .. }) {
+            f.opacity = opacity;
+        }
     }
 }
 

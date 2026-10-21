@@ -49,6 +49,7 @@ mod mv_vagas;
 mod np;
 mod np_create;
 mod np_more;
+mod op;
 mod pc;
 mod pn;
 mod pr;
