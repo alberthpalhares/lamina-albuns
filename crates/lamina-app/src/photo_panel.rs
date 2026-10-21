@@ -126,6 +126,8 @@ fn connect_style(ui: &PhotoUi, app: &Shared) {
         styled(&a, |e| e.set_photo_opacity(percent));
     });
     let a = app.clone();
+    ui.on_opacity_reset(move || styled(&a, lamina_editor::Editor::reset_opacity));
+    let a = app.clone();
     ui.on_border_step(move |d| styled(&a, |e| e.step_photo_style(LookField::Border, d)));
     let a = app.clone();
     ui.on_radius_step(move |d| styled(&a, |e| e.step_photo_style(LookField::Radius, d)));

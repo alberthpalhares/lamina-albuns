@@ -21,11 +21,12 @@ impl Command {
             ),
             C::ShowNews => ("ajuda.novidades", "O que há de novo…", Menu::Help, None),
             C::Loupe => ("organizar.lupa", "Lupa", Menu::View, k('z')),
+            // 1 e 0 sem Ctrl, só no modo organizar (spec ZR, escolha 17).
             C::ActualSize => (
                 "organizar.tamanho-real",
                 "Tamanho real (1:1)",
                 Menu::View,
-                None,
+                k('1'),
             ),
             C::CalibrateSize => (
                 "organizar.calibrar",

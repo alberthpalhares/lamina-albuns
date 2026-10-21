@@ -89,9 +89,6 @@ fn comandos_da_janela_nova_ficam_registrados_e_inertes() {
     // Rodada 0b: os comandos entram na tabela antes das specs, mas nenhum roda ainda.
     let new = [
         (Command::ToggleLayoutBand, "ver.faixa-layouts"),
-        (Command::Loupe, "organizar.lupa"),
-        (Command::ActualSize, "organizar.tamanho-real"),
-        (Command::CalibrateSize, "organizar.calibrar"),
         (Command::BuildAlbum, "lamina.montar-album"),
         (Command::SelectAllPhotos, "editar.selecionar-fotos"),
     ];

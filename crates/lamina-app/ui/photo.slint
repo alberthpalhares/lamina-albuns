@@ -3,7 +3,7 @@
 // seletor de endireitar, brilho ou contraste volta ao neutro (AF, regra 14). Só desenho: o editor
 // decide e o Rust preenche o `PhotoUi`.
 
-import { Button, CheckBox, LineEdit, Slider } from "std-widgets.slint";
+import { Button, CheckBox, LineEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { LookUi, Stepper, Swatches } from "look.slint";
 import { NeutralSlider } from "widgets.slint";
@@ -46,6 +46,8 @@ export global PhotoUi {
     in property <string> radius;
     in property <string> style-note;
     callback opacity-moved(float);
+    // Clique duplo no seletor da opacidade: volta a 100% (spec OP, OP-B15).
+    callback opacity-reset();
     callback border-step(int);
     callback border-pick(int);
     callback radius-step(int);
@@ -118,12 +120,14 @@ export component PhotoSection inherits VerticalLayout {
     }
     if PhotoUi.style-note != "": Text { text: PhotoUi.style-note; color: Theme.muted; font-size: 11px; wrap: word-wrap; }
     Label { text: "Opacidade  " + round(PhotoUi.opacity) + "%"; }
-    Slider {
+    NeutralSlider {
         minimum: 0;
         maximum: 100;
+        neutral: 100;
         value <=> PhotoUi.opacity;
         changed(v) => { PhotoUi.opacity-moved(v); }
         released => { PhotoUi.released(); }
+        reset => { PhotoUi.opacity-reset(); }
     }
     Label { text: "Borda"; }
     Stepper { value: PhotoUi.border; step(d) => { PhotoUi.border-step(d); } }

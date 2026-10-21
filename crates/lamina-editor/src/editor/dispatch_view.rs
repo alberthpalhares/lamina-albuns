@@ -16,11 +16,10 @@ impl Editor {
             Command::ToggleGuides | Command::ToggleReduceMotion | Command::TogglePanel => true,
             Command::ToggleSpreads | Command::ToggleTimeline | Command::TogglePhotos => true,
             Command::AdjustPhoto => self.photo_adjust().is_some(),
-            // Rodada 0b: já no registro, mas inertes até a spec de cada um ligar (FL e ZR).
-            Command::ToggleLayoutBand
-            | Command::Loupe
-            | Command::ActualSize
-            | Command::CalibrateSize => false,
+            // A calibração do tamanho real abre um diálogo da janela, em qualquer modo (ZR).
+            Command::CalibrateSize => true,
+            // Rodada 0b: já no registro, mas inerte até a spec dela ligar (FL).
+            Command::ToggleLayoutBand => false,
             _ => return None,
         };
         Some(ok)

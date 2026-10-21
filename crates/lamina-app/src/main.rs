@@ -8,6 +8,7 @@
 
 mod adjusted;
 mod browser;
+mod calibrate;
 mod context;
 mod convert;
 mod crop;
@@ -30,6 +31,7 @@ mod loader;
 mod look;
 mod mailbox;
 mod models;
+mod monitor;
 mod motion;
 mod msg;
 mod new_album;
@@ -117,6 +119,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     history::connect(window, app);
     recents::connect(window, app);
     importing::connect(window, app);
+    calibrate::connect(window, app);
 }
 
 /// O painel de layouts: clique aplica; a estrela e o "×" marcam a opção (spec TL, seção 3).

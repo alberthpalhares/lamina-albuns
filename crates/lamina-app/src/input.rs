@@ -45,6 +45,7 @@ pub fn run_command(app: &Shared, command: Command) {
         Command::ImportPhotos => crate::importing::pick(&mut a, false),
         Command::ImportFolder => crate::importing::pick(&mut a, true),
         Command::Presets => spec_dialog::open_list(&mut a),
+        Command::CalibrateSize => crate::calibrate::open(&mut a),
         Command::About => {
             if let Some(w) = a.window.upgrade() {
                 w.set_show_about(true);

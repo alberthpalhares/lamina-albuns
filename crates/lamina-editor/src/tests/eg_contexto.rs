@@ -79,7 +79,7 @@ fn eg_b20_menu_de_contexto() {
     editor.context_menu(Some(2));
     assert_eq!(editor.selected_frames(), vec![2]);
 
-    // No fundo: os itens da lâmina, e Organizar vira "Concluir" no modo.
+    // No fundo: os itens da lâmina, e Organizar vira "Voltar" no modo (spec ZR).
     let menu = editor.context_menu(None);
     assert_eq!(
         editor.selected_frames(),
@@ -106,7 +106,7 @@ fn eg_b20_menu_de_contexto() {
     }
     assert!(
         all.iter()
-            .any(|(c, l, _)| *c == Command::Organize && l == "Concluir")
+            .any(|(c, l, _)| *c == Command::Organize && l == "Voltar")
     );
     for (command, _, enabled) in &all {
         assert_eq!(*enabled, editor.available(*command), "{command:?}");
