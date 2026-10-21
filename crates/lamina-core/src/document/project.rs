@@ -13,7 +13,7 @@ use crate::{AlbumSpec, CoreError, Mm, Rect, RelRect};
 
 /// Versão atual do formato do arquivo de projeto. Suba ao mudar a estrutura e
 /// escreva a migração correspondente em [`Project::from_json`].
-pub const CURRENT_SCHEMA_VERSION: u32 = 5;
+pub const CURRENT_SCHEMA_VERSION: u32 = 6;
 
 /// Espaço entre fotos padrão: 8 pontos tipográficos (spec TP; spec AP, regra 2).
 pub const DEFAULT_GAP: Mm = Mm(8.0 * 25.4 / 72.0);
@@ -124,6 +124,7 @@ impl Project {
             content,
             border: Border::default(),
             radius: Mm(0.0),
+            opacity: super::Opacity::FULL,
         });
         Ok(id)
     }
@@ -199,8 +200,14 @@ impl Project {
                 photo: name.to_string_lossy().into_owned(),
             });
         }
-        for spread in &self.spreads {
+        for (index, spread) in self.spreads.iter().enumerate() {
             for frame in &spread.frames {
+                if !frame.opacity.is_valid() {
+                    return Err(CoreError::InvalidOpacity {
+                        value: frame.opacity.get(),
+                        spread: index + 1,
+                    });
+                }
                 frame.rect.validate()?;
                 self.check_content(&frame.content)?;
             }

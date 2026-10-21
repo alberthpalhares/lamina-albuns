@@ -4,6 +4,8 @@
 mod af;
 mod af_painel;
 mod ap;
+mod at;
+mod at_busca;
 mod auditoria;
 mod auditoria_m3;
 mod common;
@@ -51,6 +53,7 @@ mod np_create;
 mod np_more;
 mod nv;
 mod nv_janela;
+mod op;
 mod pc;
 mod pn;
 mod pr;

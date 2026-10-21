@@ -33,9 +33,10 @@ import { DragUi } from "drag.slint";
 import { TopBar, NoticeBar } from "topbar.slint";
 import { Stage } from "stage.slint";
 import { BottomStrips } from "bottom.slint";
+import { ShortcutsUi, ShortcutsDialog, ShortcutGroup, ShortcutRow } from "shortcuts.slint";
 import { NewsUi, NewsDialog, NewsEntryData } from "news.slint";
 
-export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, NewsUi, NewsEntryData }
+export { SpreadData, FrameData, BoxData, LayoutItem, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, ShortcutsUi, ShortcutGroup, ShortcutRow, NewsUi, NewsEntryData }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -345,6 +346,7 @@ export component AppWindow inherits Window {
         }
         Menu {
             title: "Ajuda";
+            MenuItem { title: "Atalhos do teclado…  (Ctrl+/)"; activated => { root.command("ajuda.atalhos"); } }
             MenuItem { title: "O que há de novo…"; activated => { root.command("ajuda.novidades"); } }
             MenuSeparator { }
             MenuItem { title: "Verificar atualizações agora"; activated => { root.command("ajuda.verificar-atualizacoes"); } }
@@ -360,7 +362,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(event) => {
-            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || NewsUi.show || root.busy-text != "") {
+            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || ShortcutsUi.show || NewsUi.show || root.busy-text != "") {
                 return reject;
             }
             // No modo organizar, Espaço segurado é a mão (spec EG, seção 3).
@@ -528,6 +530,9 @@ export component AppWindow inherits Window {
     if PresetUi.show-name: PresetNameDialog { }
     if ModelUi.show-name: ModelNameDialog { }
     if ModelUi.show-list: ModelsDialog { }
+    if ShortcutsUi.show: ShortcutsDialog {
+        closed => { root.focus-main(); }
+    }
     // Abaixo da mensagem de erro: um erro ao reabrir o álbum fica por cima (spec NV, regra 6).
     if NewsUi.show: NewsDialog {
         closed => { root.focus-main(); }

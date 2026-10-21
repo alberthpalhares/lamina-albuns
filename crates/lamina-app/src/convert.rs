@@ -83,6 +83,7 @@ pub fn spread_data(
                 by: to_f32(f.trim.y),
                 bww: to_f32(f.trim.width),
                 bh: to_f32(f.trim.height),
+                op: to_f32(f.opacity),
                 ..FrameData::default()
             };
             match &f.kind {

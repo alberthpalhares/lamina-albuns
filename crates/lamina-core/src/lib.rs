@@ -25,7 +25,7 @@ pub mod units;
 mod error;
 
 pub use color::ColorSpace;
-pub use document::{AlbumLook, CropLevel, LIGHT_MAX_CROP, Mounting};
+pub use document::{AlbumLook, CropLevel, LIGHT_MAX_CROP, Mounting, Opacity};
 pub use document::{
     Border, CURRENT_SCHEMA_VERSION, Crop, DEFAULT_GAP, ExportPrefs, Frame, FrameContent, FrameId,
     Orientation, OutputFormat, PageLimits, Photo, PhotoAdjust, PhotoId, PixelRegion, Project, Rgb,

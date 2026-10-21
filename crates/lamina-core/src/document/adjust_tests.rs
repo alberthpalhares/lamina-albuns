@@ -13,16 +13,15 @@ fn project() -> Project {
 
 #[test]
 fn af_b13_formato_5_abre_o_4_neutro_e_volta_igual() {
-    assert_eq!(
-        CURRENT_SCHEMA_VERSION, 5,
-        "a v4 saiu na beta.4: a AF sobe para a 5"
-    );
+    // A v4 saiu na beta.4: a AF subiu para a 5 (e a OP para a 6).
+    const { assert!(CURRENT_SCHEMA_VERSION >= 5) };
     let mut v4: serde_json::Value = serde_json::from_str(&project().to_json().unwrap()).unwrap();
     v4["schema_version"] = serde_json::json!(4);
     let opened = Project::from_json(&v4.to_string()).unwrap();
     assert!(opened.photos.iter().all(|p| p.adjust.is_neutral()));
     let saved = opened.to_json().unwrap();
-    assert!(saved.contains("\"schema_version\": 5"), "{saved}");
+    let current = format!("\"schema_version\": {CURRENT_SCHEMA_VERSION}");
+    assert!(saved.contains(&current), "{saved}");
 
     // Um projeto 5 com ajustes volta igual.
     let mut adjusted = opened.clone();
@@ -37,15 +36,13 @@ fn af_b13_formato_5_abre_o_4_neutro_e_volta_igual() {
     assert_eq!(Project::from_json(&json).unwrap(), adjusted);
 
     // Uma versão que só conhece a 4 recusa o arquivo novo com o erro de versão (não apaga os
-    // ajustes): o mesmo caminho que esta versão usa para a 6.
+    // ajustes): o mesmo caminho que esta versão usa para uma mais nova.
     let mut newer: serde_json::Value = serde_json::from_str(&json).unwrap();
     newer["schema_version"] = serde_json::json!(CURRENT_SCHEMA_VERSION + 1);
     assert!(matches!(
         Project::from_json(&newer.to_string()),
-        Err(CoreError::UnsupportedSchema {
-            found: 6,
-            supported: 5
-        })
+        Err(CoreError::UnsupportedSchema { found, supported })
+            if found == CURRENT_SCHEMA_VERSION + 1 && supported == CURRENT_SCHEMA_VERSION
     ));
 }
 
