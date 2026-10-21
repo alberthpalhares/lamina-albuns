@@ -1,0 +1,221 @@
+// Faixa de lâminas (spec PN): a atual com contorno claro e o número embaixo de cada uma. Arrastar
+// uma lâmina muda a ordem; fotos do navegador soltas num vão viram uma lâmina nova (spec IM).
+
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { SpreadCanvas, SpreadData } from "canvas.slint";
+import { Motion } from "motion.slint";
+import { StripTheme } from "strip_header.slint";
+import { DragUi } from "drag.slint";
+
+export component SpreadStrip inherits Rectangle {
+    in property <[SpreadData]> spreads;
+    in property <int> current-index;
+    in property <float> current-aspect;
+    callback go-to(int);
+    // A lâmina arrastada e o vão onde ela foi solta (0 = antes da primeira).
+    callback move-spread(int, int);
+    // Quantos lugares a lâmina anda durante o arrasto (lâmina arrastada, vão, lâmina).
+    pure callback spread-shift(int, int, int) -> int;
+    // O vão mais perto do ponteiro durante o arrasto de uma lâmina.
+    function gap() -> int {
+        let item = 84px / max(0.01, root.current-aspect) + 16px;
+        let at = (DragUi.x - strip-scroll.absolute-position.x - strip-scroll.content-x - 10px) / item;
+        max(0, min(root.spreads.length, round(at)))
+    }
+    callback focus-main();
+    // Fotos arrastadas do navegador sobre a faixa (spec IM, regra 7): o vão onde a lâmina nova
+    // entraria (o número de lâminas = a área de lâmina nova, no fim); -1 fora da faixa.
+    pure function over() -> bool {
+        DragUi.x >= root.absolute-position.x && DragUi.x <= root.absolute-position.x + root.width
+            && DragUi.y >= root.absolute-position.y && DragUi.y <= root.absolute-position.y + root.height
+    }
+    out property <int> photo-gap: DragUi.kind == 1 && root.over() ? root.gap() : -1;
+    // O ponteiro sobre a área de lâmina nova (fotos soltas do Explorador; regra 11).
+    out property <bool> new-hover: new-touch.has-hover;
+    background: StripTheme.spreads;
+
+    // A lâmina atual fica visível na faixa (spec JP, regra 7): se saiu da área vista, a faixa
+    // rola até deixá-la no meio.
+    changed current-index => {
+        if (root.current-aspect <= 0) {
+            return;
+        }
+        let item = 84px / root.current-aspect + 6px + 10px;
+        let left = 10px + root.current-index * item;
+        let shown = strip-scroll.visible-width;
+        if (left + strip-scroll.content-x < 0px || left + item + strip-scroll.content-x > shown) {
+            root.follow(max(min(0px, shown / 2 - left - item / 2), shown - strip.preferred-width));
+        }
+    }
+
+    // Rolagem suave pelo relógio (spec MV, regra 10; ADR 0011, decisão 6): a barra continua
+    // respondendo na hora e rolar à mão para o acompanhamento.
+    property <bool> sc-running;
+    property <duration> sc-t0;
+    property <length> sc-from;
+    property <length> sc-to;
+    property <float> sc-p: self.sc-running ? min(1, (animation-tick() - self.sc-t0) / max(1ms, Motion.scroll-ms * 1ms)) : 1;
+    changed sc-p => {
+        if (self.sc-running) {
+            strip-scroll.content-x = self.sc-from + (self.sc-to - self.sc-from) * (1 - pow(1 - self.sc-p, 3));
+            if (self.sc-p >= 1) {
+                self.sc-running = false;
+            }
+        }
+    }
+    function follow(target: length) {
+        if (Motion.on && Motion.scroll-ms > 0) {
+            root.sc-from = strip-scroll.content-x;
+            root.sc-to = target;
+            root.sc-t0 = animation-tick();
+            root.sc-running = true;
+        } else {
+            strip-scroll.content-x = target;
+        }
+    }
+    // A roda vertical rola a faixa; giros seguidos somam ao destino anterior.
+    function wheel(dy: length) {
+        let base = root.sc-running ? root.sc-to : strip-scroll.content-x;
+        root.follow(max(strip-scroll.visible-width - strip.preferred-width, min(0px, base + dy)));
+    }
+
+    strip-scroll := ScrollView {
+        // Arrastar com o botão apertado é para mover a lâmina, não para rolar a faixa.
+        mouse-drag-pan-enabled: false;
+        content-width: strip.preferred-width;
+        content-height: self.height;
+        scrolled => { root.sc-running = false; }
+        TouchArea {
+            width: strip.preferred-width;
+            height: strip-scroll.height;
+            scroll-event(e) => {
+                if (e.delta-y != 0) {
+                    root.wheel(e.delta-y);
+                    return accept;
+                }
+                reject
+            }
+        }
+        strip := HorizontalLayout {
+            padding: 8px;
+            padding-left: 10px;
+            padding-right: 10px;
+            spacing: 10px;
+            for s[i] in root.spreads: VerticalLayout {
+                spacing: 4px;
+                Rectangle {
+                    width: 84px / s.aspect + 6px;
+                    height: 90px;
+                    // Reordenar (spec MV, regra 12): as vizinhas abrem espaço durante o arrasto.
+                    property <float> off: DragUi.kind == 3 ? root.spread-shift(DragUi.from, root.gap(), i) : 0;
+                    animate off {
+                        duration: Motion.reorder-ms * 1ms;
+                        easing: cubic-bezier(0.2, 0, 0, 1);
+                        enabled: Motion.on;
+                    }
+                    Rectangle {
+                        x: parent.off * (84px / s.aspect + 16px);
+                        width: parent.width;
+                        height: parent.height;
+                        border-radius: 4px;
+                        border-width: 2px;
+                        border-color: i == root.current-index ? Theme.selected : transparent;
+                        opacity: DragUi.kind == 3 && DragUi.from == i ? 0.35 : 1;
+                        SpreadCanvas {
+                            x: 3px;
+                            y: 3px;
+                            width: parent.width - 6px;
+                            height: parent.height - 6px;
+                            data: s;
+                            small: true;
+                        }
+                        if s.warning: Rectangle {
+                            x: parent.width - 21px;
+                            y: 6px;
+                            width: 14px;
+                            height: 14px;
+                            border-radius: 7px;
+                            background: Theme.warning;
+                            Text { text: "!"; color: black; font-size: 10px; font-weight: 700; }
+                        }
+                    }
+                    TouchArea {
+                        moved => {
+                            let x = self.absolute-position.x + self.mouse-x;
+                            let y = self.absolute-position.y + self.mouse-y;
+                            if (DragUi.kind == 0 && DragUi.far(x, y)) {
+                                DragUi.kind = 3;
+                                DragUi.from = i;
+                            }
+                            DragUi.x = x;
+                            DragUi.y = y;
+                        }
+                        pointer-event(e) => {
+                            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                                DragUi.press-x = self.absolute-position.x + self.mouse-x;
+                                DragUi.press-y = self.absolute-position.y + self.mouse-y;
+                            }
+                            if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                                if (DragUi.kind == 3) {
+                                    // O editor decide a posição pelo vão (spec MV, MV-B23).
+                                    root.move-spread(i, root.gap());
+                                } else {
+                                    root.go-to(i);
+                                }
+                                DragUi.kind = 0;
+                                root.focus-main();
+                            }
+                        }
+                    }
+                }
+                Text {
+                    text: i + 1;
+                    horizontal-alignment: center;
+                    color: i == root.current-index ? Theme.selected : Theme.muted;
+                    font-size: 12px;
+                    font-weight: i == root.current-index ? 700 : 400;
+                }
+            }
+            // A área de lâmina nova: fotos soltas aqui viram uma lâmina montada.
+            VerticalLayout {
+                spacing: 4px;
+                Rectangle {
+                    width: 84px / max(0.01, root.current-aspect) + 6px;
+                    height: 90px;
+                    border-radius: 4px;
+                    border-width: 2px;
+                    border-color: root.photo-gap == root.spreads.length ? Theme.selected : #ffffff30;
+                    background: root.photo-gap == root.spreads.length ? #ffffff18 : transparent;
+                    Text {
+                        text: "+ Lâmina nova\nsolte fotos aqui";
+                        color: Theme.muted;
+                        font-size: 11px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    new-touch := TouchArea { }
+                }
+                Text { text: " "; font-size: 12px; }
+            }
+        }
+        // Fotos soltas entre duas lâminas: o marcador no vão da lâmina nova (regra 7).
+        if root.photo-gap >= 0 && root.photo-gap < root.spreads.length: Rectangle {
+            x: 10px + root.photo-gap * (84px / max(0.01, root.current-aspect) + 16px) - 7px;
+            y: 8px;
+            width: 4px;
+            height: 90px;
+            border-radius: 2px;
+            background: Theme.selected;
+        }
+        // Marcador no vão onde a lâmina vai ficar.
+        if DragUi.kind == 3: Rectangle {
+            x: 10px + root.gap() * (84px / max(0.01, root.current-aspect) + 16px) - 7px;
+            y: 8px;
+            width: 4px;
+            height: 90px;
+            border-radius: 2px;
+            background: Theme.selected;
+        }
+    }
+}

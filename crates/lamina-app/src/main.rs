@@ -7,11 +7,13 @@
 #![windows_subsystem = "windows"]
 
 mod adjusted;
+mod browser;
 mod context;
 mod convert;
 mod crop;
 mod details;
-mod drag;
+mod drag_motion;
+mod drops;
 mod export;
 mod files;
 mod frame_panel;
@@ -54,8 +56,8 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use lamina_editor::{
-    Cache, Command, Editor, Filter, MODELS_FILE, ModelsStore, PREFS_FILE, PRESETS_FILE, Part,
-    PrefsStore, PresetsStore, RECENTS_FILE, RecentsStore, STRIPS_FILE, StripsStore, config_dir,
+    Cache, Command, Editor, MODELS_FILE, ModelsStore, PREFS_FILE, PRESETS_FILE, Part, PrefsStore,
+    PresetsStore, RECENTS_FILE, RecentsStore, STRIPS_FILE, StripsStore, config_dir,
 };
 use slint::{CloseRequestResponse, ComponentHandle, Timer, TimerMode};
 
@@ -76,6 +78,9 @@ mod ui {
 
 pub use ui::*;
 
+// O nome antigo, até a sessão TR liberar o `state.rs` (ele chama `crate::drag::refresh_timeline`).
+use drops as drag;
+
 type Shared = Rc<RefCell<App>>;
 
 fn connect(window: &AppWindow, app: &Shared) {
@@ -91,11 +96,11 @@ fn connect(window: &AppWindow, app: &Shared) {
             App::refresh_current,
         );
     });
-    connect_photos(window, app);
+    browser::connect(window, app);
     connect_dialogs(window, app);
     connect_layouts(window, app);
-    drag::connect(window, app);
-    drag::connect_motion(window, app);
+    drops::connect(window, app);
+    drag_motion::connect_motion(window, app);
     organize::connect(window, app);
     context::connect(window, app);
     palette::connect(window, app);
@@ -145,33 +150,6 @@ fn mark(app: &Shared, i: i32, favorite: bool) {
         app.refresh_strip();
         app.refresh_current();
     }
-}
-
-fn connect_photos(window: &AppWindow, app: &Shared) {
-    let a = app.clone();
-    window.on_photo_clicked(move |index| {
-        let mut app = a.borrow_mut();
-        let id = app.photo_at(index);
-        app.select_photo(id);
-    });
-    let a = app.clone();
-    window.on_photo_double_clicked(move |index| {
-        let mut app = a.borrow_mut();
-        if let Some(id) = app.photo_at(index)
-            && app.editor.go_to_photo(id)
-        {
-            app.refresh_current();
-        }
-    });
-    let a = app.clone();
-    window.on_filter_changed(move |filter| {
-        let filter = match filter {
-            1 => Filter::Used,
-            2 => Filter::Unused,
-            _ => Filter::All,
-        };
-        a.borrow_mut().set_filter(filter);
-    });
 }
 
 fn connect_dialogs(window: &AppWindow, app: &Shared) {

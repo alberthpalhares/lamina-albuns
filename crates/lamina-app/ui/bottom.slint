@@ -1,0 +1,101 @@
+// As três faixas de baixo (spec PN): cabeçalho com nome e resumo, e o conteúdo, que recolhe. A
+// faixa de lâminas fica sempre na árvore (só some sem projeto ou recolhida) para rolar até a
+// lâmina atual. No modo organizar, só a faixa de lâminas fica (spec EG).
+
+import { SpreadData } from "canvas.slint";
+import { BarButton, FilterTab } from "widgets.slint";
+import { OrganizeUi } from "organize.slint";
+import { StripHeader } from "strip_header.slint";
+import { SpreadStrip } from "spread_strip.slint";
+import { TimelineStrip, TimelineItem } from "timeline.slint";
+import { PhotoStrip, PhotoData } from "photo_strip.slint";
+import { DragUi } from "drag.slint";
+
+export component BottomStrips inherits VerticalLayout {
+    in property <bool> has-project;
+    // O resumo de cada faixa e se está aberta.
+    in property <string> strip-spreads;
+    in property <string> strip-timeline;
+    in property <string> strip-photos;
+    in property <bool> spreads-open;
+    in property <bool> timeline-open;
+    in property <bool> photos-open;
+    in property <[SpreadData]> spreads;
+    in property <int> current-index;
+    in property <float> current-aspect;
+    in property <[TimelineItem]> timeline;
+    in property <[PhotoData]> photos;
+    in property <int> selected-photo;
+    in property <int> filter;
+    callback command(string);
+    callback focus-main();
+    callback go-to(int);
+    callback move-spread(int, int);
+    pure callback spread-shift(int, int, int) -> int;
+    callback cut-moved(int, int);
+    callback filter-changed(int);
+    callback photo-double-clicked(int);
+    callback photo-pressed(int, bool, bool);
+    // Fotos do navegador soltas num vão da faixa de lâminas: (foto arrastada, vão).
+    callback drop-photos-gap(int, int);
+    // Fotos do navegador soltas fora da faixa de lâminas: a janela vê onde caíram na lâmina.
+    callback photos-dropped();
+    // O ponteiro sobre a área de lâmina nova, para os arquivos soltos do Explorador (spec IM).
+    out property <bool> new-spread-hover: spread-strip.new-hover;
+
+    if root.has-project: StripHeader {
+        name: "Lâminas";
+        summary: root.strip-spreads;
+        open: root.spreads-open;
+        toggled => { root.command("ver.faixa-laminas"); }
+    }
+    spread-strip := SpreadStrip {
+        visible: root.has-project && root.spreads-open;
+        height: self.visible ? 128px : 0px;
+        spreads: root.spreads;
+        current-index: root.current-index;
+        current-aspect: root.current-aspect;
+        spread-shift(f, g, i) => { return root.spread-shift(f, g, i); }
+        go-to(i) => { root.go-to(i); }
+        move-spread(from, to) => { root.move-spread(from, to); }
+        focus-main => { root.focus-main(); }
+    }
+    if root.has-project && !OrganizeUi.on: StripHeader {
+        name: "Linha do tempo";
+        summary: root.strip-timeline;
+        open: root.timeline-open;
+        toggled => { root.command("ver.linha-do-tempo"); }
+    }
+    if root.has-project && root.timeline-open && !OrganizeUi.on: TimelineStrip {
+        height: 58px;
+        timeline: root.timeline;
+        cut-moved(spread, delta) => { root.cut-moved(spread, delta); }
+        focus-main => { root.focus-main(); }
+    }
+    if root.has-project && !OrganizeUi.on: StripHeader {
+        name: "Fotos";
+        summary: root.strip-photos;
+        open: root.photos-open;
+        toggled => { root.command("ver.fotos"); }
+        FilterTab { text: "Todas"; active: root.filter == 0; clicked => { root.filter-changed(0); } }
+        FilterTab { text: "Usadas"; active: root.filter == 1; clicked => { root.filter-changed(1); } }
+        FilterTab { text: "Não usadas"; active: root.filter == 2; clicked => { root.filter-changed(2); } }
+        BarButton { text: "+ Fotos"; clicked => { root.command("arquivo.importar"); } }
+    }
+    if root.has-project && root.photos-open && !OrganizeUi.on: PhotoStrip {
+        height: 144px;
+        photos: root.photos;
+        selected-photo: root.selected-photo;
+        photo-double-clicked(i) => { root.photo-double-clicked(i); }
+        photo-pressed(i, ctrl, shift) => { root.photo-pressed(i, ctrl, shift); }
+        dropped => {
+            // Sobre a faixa de lâminas, uma lâmina nova no vão (spec IM, regra 7).
+            if (spread-strip.visible && spread-strip.photo-gap >= 0) {
+                root.drop-photos-gap(DragUi.from, spread-strip.photo-gap);
+            } else {
+                root.photos-dropped();
+            }
+        }
+        focus-main => { root.focus-main(); }
+    }
+}

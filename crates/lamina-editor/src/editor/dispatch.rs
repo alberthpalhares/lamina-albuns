@@ -1,8 +1,9 @@
-//! O registro de comandos no editor: quando cada comando está disponível e o que ele faz.
+//! O registro de comandos no editor: quando cada comando está disponível e o que ele faz. Os de
+//! vista (navegar, faixas, painel, guias e zoom) ficam em `dispatch_view.rs`.
 
 use super::{Editor, adjust, crop, organize_cmd};
 use crate::suggestions::Part;
-use crate::{Command, Session, Strip};
+use crate::{Command, Session};
 
 impl Editor {
     /// O comando pode rodar agora? (menu e teclado obedecem; regra 10 do JP)
@@ -39,6 +40,7 @@ impl Editor {
         if let Some(ok) = self
             .organize_available(command)
             .or_else(|| self.arrange_available(command))
+            .or_else(|| self.view_available(command))
         {
             return ok;
         }
@@ -50,13 +52,7 @@ impl Editor {
             Command::Export | Command::Specification | Command::Presets => true,
             Command::MountAlbum | Command::ImportPhotos | Command::ImportFolder => true,
             Command::FindMissing => !s.missing().is_empty(),
-            Command::ToggleGuides | Command::About | Command::ToggleReordered => true,
-            Command::ToggleSpreads | Command::ToggleTimeline | Command::TogglePhotos => true,
-            Command::TogglePanel => true,
-            Command::AdjustPhoto => self.photo_adjust().is_some(),
-            Command::ToggleReduceMotion => true,
-            Command::NextSpread | Command::LastSpread => s.current() < last,
-            Command::PreviousSpread | Command::FirstSpread => s.current() > 0,
+            Command::About | Command::ToggleReordered => true,
             Command::Undo => s.can_undo(),
             Command::Redo => s.can_redo(),
             Command::NextLayout | Command::PreviousLayout => self.can_step(Part::Spread),
@@ -85,7 +81,16 @@ impl Editor {
             Command::MoveSpreadRight => s.current() < last,
             Command::CropMode => self.can_clear(),
             Command::ZoomIn | Command::ZoomOut | Command::ResetCrop => self.crop_frame.is_some(),
-            // Os do modo organizar já responderam acima.
+            Command::CopyFrames | Command::DuplicateFrames => !self.selected_frames().is_empty(),
+            Command::PasteFrames => self.can_paste(),
+            Command::TurnLeft
+            | Command::TurnRight
+            | Command::TurnLeftMore
+            | Command::TurnRightMore => self.crop_frame.is_some(),
+            // Rodada 0b: já no registro, mas inertes até a spec de cada um ligar (AT, NV, BR e PF).
+            Command::ShowShortcuts | Command::ShowNews | Command::BuildAlbum => false,
+            Command::SelectAllPhotos => false,
+            // Os do modo organizar e os de vista já responderam acima.
             Command::Organize
             | Command::SelectAllFrames
             | Command::NudgeLeft
@@ -109,13 +114,22 @@ impl Editor {
             | Command::EqualHeight
             | Command::EqualSize
             | Command::DistributeAcross
-            | Command::DistributeDown => false,
-            Command::CopyFrames | Command::DuplicateFrames => !self.selected_frames().is_empty(),
-            Command::PasteFrames => self.can_paste(),
-            Command::TurnLeft
-            | Command::TurnRight
-            | Command::TurnLeftMore
-            | Command::TurnRightMore => self.crop_frame.is_some(),
+            | Command::DistributeDown
+            | Command::NextSpread
+            | Command::PreviousSpread
+            | Command::FirstSpread
+            | Command::LastSpread
+            | Command::ToggleGuides
+            | Command::ToggleSpreads
+            | Command::ToggleTimeline
+            | Command::TogglePhotos
+            | Command::TogglePanel
+            | Command::ToggleReduceMotion
+            | Command::AdjustPhoto
+            | Command::ToggleLayoutBand
+            | Command::Loupe
+            | Command::ActualSize
+            | Command::CalibrateSize => false,
         }
     }
 
@@ -147,10 +161,11 @@ impl Editor {
         if !crop_command {
             self.exit_crop();
         }
-        if let Some(done) = self.organize_run(command, had_crop) {
-            return done;
-        }
-        if let Some(done) = self.arrange_run(command) {
+        if let Some(done) = self
+            .organize_run(command, had_crop)
+            .or_else(|| self.arrange_run(command))
+            .or_else(|| self.view_run(command))
+        {
             return done;
         }
         match command {
@@ -158,23 +173,10 @@ impl Editor {
             Command::ZoomIn => self.crop_zoom(crop::ZOOM_STEP) && self.commit_crop(),
             Command::ZoomOut => self.crop_zoom(1.0 / crop::ZOOM_STEP) && self.commit_crop(),
             Command::ResetCrop => self.crop_reset() && self.commit_crop(),
-            Command::ToggleGuides => {
-                self.guides = !self.guides;
-                true
-            }
             Command::ToggleReordered => {
                 self.reordered = !self.reordered;
                 true
             }
-            Command::ToggleSpreads => self.toggle_strip(Strip::Spreads),
-            Command::ToggleTimeline => self.toggle_strip(Strip::Timeline),
-            Command::TogglePhotos => self.toggle_strip(Strip::Photos),
-            Command::TogglePanel => self.toggle_strip(Strip::Panel),
-            Command::AdjustPhoto => {
-                self.wants_details = true;
-                true
-            }
-            Command::ToggleReduceMotion => self.toggle_reduce_motion(),
             Command::Undo => self.session.as_mut().and_then(Session::undo).is_some(),
             Command::Redo => self.session.as_mut().and_then(Session::redo).is_some(),
             Command::NextLayout => self.step(Part::Spread, true),
@@ -209,25 +211,12 @@ impl Editor {
             Command::DeleteSpread => self.delete_current(),
             Command::MoveSpreadLeft => self.move_by(-1),
             Command::MoveSpreadRight => self.move_by(1),
+            // Os de diálogo chegam aqui pela janela: desmarcam o quadro e não mudam nada.
             _ => {
                 self.selected_frame = None;
-                self.navigate(command)
+                false
             }
         }
-    }
-
-    fn navigate(&mut self, command: Command) -> bool {
-        let Some(s) = self.session.as_mut() else {
-            return false;
-        };
-        let target = match command {
-            Command::NextSpread => s.current() + 1,
-            Command::PreviousSpread => s.current().saturating_sub(1),
-            Command::FirstSpread => 0,
-            Command::LastSpread => s.spread_count().saturating_sub(1),
-            _ => return false,
-        };
-        s.go_to(target)
     }
 
     /// Clique num passo do painel de histórico (spec HI, regra 2). Um gesto de recorte em

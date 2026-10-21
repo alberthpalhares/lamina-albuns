@@ -1,0 +1,58 @@
+// O topo da janela (spec janela-principal): a barra do projeto (Início, título, contador e os
+// botões) e a barra de aviso logo abaixo. Cada botão roda um comando do registro pelo nome
+// estável.
+
+import { Theme } from "theme.slint";
+import { BarButton } from "widgets.slint";
+
+export component TopBar inherits Rectangle {
+    in property <bool> has-project;
+    in property <string> project-title;
+    in property <string> counter;
+    // Fora da faixa de páginas do laboratório (spec PR): ao lado do contador.
+    in property <string> counter-warning;
+    in property <bool> can-save;
+    in property <bool> panel-open;
+    callback command(string);
+    height: 44px;
+    background: Theme.bar;
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 8px;
+        spacing: 16px;
+        // Início: fecha o álbum e volta à tela inicial (spec TI, regra 6).
+        if root.has-project: BarButton { text: "Início"; clicked => { root.command("arquivo.fechar"); } }
+        Text {
+            text: root.project-title;
+            color: Theme.text;
+            font-size: 15px;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+        Text { text: root.counter; color: Theme.muted; vertical-alignment: center; }
+        if root.counter-warning != "": Text { text: root.counter-warning; color: Theme.warning; vertical-alignment: center; }
+        Rectangle { horizontal-stretch: 1; }
+        BarButton { text: "Novo"; clicked => { root.command("arquivo.novo"); } }
+        BarButton { text: "Abrir"; clicked => { root.command("arquivo.abrir"); } }
+        BarButton { text: "Salvar"; enabled: root.can-save; clicked => { root.command("arquivo.salvar"); } }
+        BarButton { text: "Texto"; enabled: root.has-project; clicked => { root.command("lamina.novo-texto"); } }
+        BarButton { text: root.panel-open ? "Esconder painel" : "Mostrar painel"; enabled: root.has-project; clicked => { root.command("ver.painel"); } }
+        BarButton { text: "Exportar"; primary: true; enabled: root.has-project; clicked => { root.command("arquivo.exportar"); } }
+    }
+}
+
+// O aviso amarelo embaixo da barra, com "Procurar fotos…" quando faltam fotos.
+export component NoticeBar inherits Rectangle {
+    in property <string> text;
+    in property <bool> has-missing;
+    callback command(string);
+    height: 30px;
+    background: #4a3f1f;
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 8px;
+        spacing: 12px;
+        Text { text: root.text; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+        if root.has-missing: BarButton { text: "Procurar fotos…"; clicked => { root.command("arquivo.procurar-fotos"); } }
+    }
+}

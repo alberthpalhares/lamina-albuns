@@ -3,11 +3,13 @@
 
 use crate::keys::Shortcut;
 
+mod all;
 mod modes;
 mod table;
 mod table_edit;
 mod table_organize;
 mod table_photo;
+mod table_window;
 
 pub use modes::Mode;
 
@@ -125,116 +127,33 @@ pub enum Command {
     /// O painel da direita (Alt+4) e "Ajustar a foto…" (spec AF, regras 10 e 11).
     TogglePanel,
     AdjustPhoto,
+    /// A janela nova (Rodada 0b): registrados, mas inertes até a spec de cada um ligar.
+    /// A faixa de layouts (FL), os atalhos e as novidades (AT e NV), a lupa e o tamanho real (ZR),
+    /// montar o álbum (BR) e selecionar as fotos mostradas (PF).
+    ToggleLayoutBand,
+    ShowShortcuts,
+    ShowNews,
+    Loupe,
+    ActualSize,
+    CalibrateSize,
+    BuildAlbum,
+    SelectAllPhotos,
 }
 
 /// Nome, rótulo, menu e atalho de um comando.
 type Info = (&'static str, &'static str, Menu, Option<Shortcut>);
 
 impl Command {
-    /// Nome, rótulo, menu e atalho: cada comando está numa das quatro partes da tabela (o teste
+    /// Nome, rótulo, menu e atalho: cada comando está numa das cinco partes da tabela (o teste
     /// `todo_comando_esta_numa_parte_da_tabela` confere).
     fn info(self) -> Info {
         self.app_info()
             .or_else(|| self.edit_info())
             .or_else(|| self.organize_info())
             .or_else(|| self.photo_info())
+            .or_else(|| self.window_info())
             .unwrap_or(("", "", Menu::Help, None))
     }
-
-    pub const ALL: [Command; 92] = [
-        Command::NewAlbum,
-        Command::Open,
-        Command::Save,
-        Command::SaveAs,
-        Command::Export,
-        Command::FindMissing,
-        Command::Specification,
-        Command::Presets,
-        Command::Undo,
-        Command::Redo,
-        Command::NextSpread,
-        Command::PreviousSpread,
-        Command::FirstSpread,
-        Command::LastSpread,
-        Command::NextLayout,
-        Command::PreviousLayout,
-        Command::NextLeft,
-        Command::PreviousLeft,
-        Command::NextRight,
-        Command::PreviousRight,
-        Command::Mirror,
-        Command::Favorite,
-        Command::Reject,
-        Command::ToggleReordered,
-        Command::ClearFrame,
-        Command::Deselect,
-        Command::BuildFromSelection,
-        Command::NewSpreadFromSelection,
-        Command::NewSpread,
-        Command::DeleteSpread,
-        Command::MoveSpreadLeft,
-        Command::MoveSpreadRight,
-        Command::CropMode,
-        Command::ZoomIn,
-        Command::ZoomOut,
-        Command::ResetCrop,
-        Command::ToggleGuides,
-        Command::ToggleSpreads,
-        Command::ToggleTimeline,
-        Command::TogglePhotos,
-        Command::About,
-        Command::NewText,
-        Command::NewPhotoFrame,
-        Command::BringForward,
-        Command::SendBackward,
-        Command::SaveModel,
-        Command::Models,
-        Command::CheckUpdates,
-        Command::ToggleAutoUpdates,
-        Command::ToggleBeta,
-        Command::SendFeedback,
-        Command::OpenLogs,
-        Command::OpenExample,
-        Command::CloseAlbum,
-        Command::ClearRecents,
-        Command::MountAlbum,
-        Command::ToggleReduceMotion,
-        Command::ImportPhotos,
-        Command::ImportFolder,
-        Command::Organize,
-        Command::SelectAllFrames,
-        Command::NudgeLeft,
-        Command::NudgeRight,
-        Command::NudgeUp,
-        Command::NudgeDown,
-        Command::NudgeLeftMore,
-        Command::NudgeRightMore,
-        Command::NudgeUpMore,
-        Command::NudgeDownMore,
-        Command::ViewZoomIn,
-        Command::ViewZoomOut,
-        Command::ViewFit,
-        Command::AlignLeft,
-        Command::AlignCenter,
-        Command::AlignRight,
-        Command::AlignTop,
-        Command::AlignMiddle,
-        Command::AlignBottom,
-        Command::EqualWidth,
-        Command::EqualHeight,
-        Command::EqualSize,
-        Command::DistributeAcross,
-        Command::DistributeDown,
-        Command::CopyFrames,
-        Command::PasteFrames,
-        Command::DuplicateFrames,
-        Command::TurnLeft,
-        Command::TurnRight,
-        Command::TurnLeftMore,
-        Command::TurnRightMore,
-        Command::TogglePanel,
-        Command::AdjustPhoto,
-    ];
 
     /// Nome estável, para testes e para a linha de comando.
     pub fn name(self) -> &'static str {

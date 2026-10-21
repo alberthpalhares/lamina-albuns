@@ -1,0 +1,30 @@
+// O estado do arrastar (spec FQ; spec MV, regra 12), num lugar só para a lâmina, as faixas e o
+// fantasma. As decisões continuam no editor, pelo Rust; aqui só o gesto e o pouso do fantasma.
+
+export global DragUi {
+    // 0 nada, 1 foto do navegador, 2 quadro, 3 lâmina na faixa.
+    in-out property <int> kind;
+    in-out property <int> from: -1;
+    in-out property <image> img;
+    // O ponteiro durante o arrasto e onde o botão desceu (posições na janela).
+    in-out property <length> x;
+    in-out property <length> y;
+    in-out property <length> press-x;
+    in-out property <length> press-y;
+    // Ao soltar num quadro, o fantasma pousa nele: de onde sai, onde chega e o relógio.
+    in-out property <bool> landing;
+    in-out property <duration> land-t0;
+    in-out property <length> land-x0;
+    in-out property <length> land-y0;
+    in-out property <length> land-w0;
+    in-out property <length> land-h0;
+    in-out property <length> land-x1;
+    in-out property <length> land-y1;
+    in-out property <length> land-w1;
+    in-out property <length> land-h1;
+
+    // Começa a arrastar só depois de 6 px, para um clique não virar arrasto.
+    public pure function far(x: length, y: length) -> bool {
+        abs(x - root.press-x) > 6px || abs(y - root.press-y) > 6px
+    }
+}

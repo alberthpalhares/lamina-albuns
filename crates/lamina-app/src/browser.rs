@@ -1,0 +1,56 @@
+//! O navegador de fotos (spec PN): o clique e a seleção com Ctrl e Shift, o duplo clique que acha
+//! a foto no álbum e as abas Todas, Usadas e Não usadas. As decisões são do editor; soltar as
+//! fotos fica em `drops.rs`.
+
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use lamina_editor::Filter;
+
+use crate::AppWindow;
+use crate::state::App;
+
+type Shared = Rc<RefCell<App>>;
+
+pub fn connect(window: &AppWindow, app: &Shared) {
+    let a = app.clone();
+    window.on_photo_pressed(move |i, ctrl, shift| {
+        let edit = |app: &mut App| {
+            let shown = app.shown_photos();
+            if let Ok(index) = usize::try_from(i) {
+                app.editor.click_photo(&shown, index, ctrl, shift);
+            }
+            true
+        };
+        let show = |app: &mut App| {
+            let id = app.photo_at(i);
+            app.select_photo(id);
+            app.refresh_current();
+        };
+        a.borrow_mut().timed("Clicar numa foto", edit, show);
+    });
+    let a = app.clone();
+    window.on_photo_clicked(move |index| {
+        let mut app = a.borrow_mut();
+        let id = app.photo_at(index);
+        app.select_photo(id);
+    });
+    let a = app.clone();
+    window.on_photo_double_clicked(move |index| {
+        let mut app = a.borrow_mut();
+        if let Some(id) = app.photo_at(index)
+            && app.editor.go_to_photo(id)
+        {
+            app.refresh_current();
+        }
+    });
+    let a = app.clone();
+    window.on_filter_changed(move |filter| {
+        let filter = match filter {
+            1 => Filter::Used,
+            2 => Filter::Unused,
+            _ => Filter::All,
+        };
+        a.borrow_mut().set_filter(filter);
+    });
+}

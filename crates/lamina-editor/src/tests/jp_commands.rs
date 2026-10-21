@@ -3,6 +3,7 @@
 use std::collections::HashSet;
 
 use super::common::Base;
+use crate::commands::Mode;
 use crate::{Command, Editor, Key, Shortcut};
 
 #[test]
@@ -71,6 +72,73 @@ fn atalho_leva_ao_comando() {
     assert!(editor.guides());
     assert!(editor.run(Command::ToggleGuides));
     assert!(!editor.guides());
+}
+
+#[test]
+fn comandos_da_janela_nova_ficam_registrados_e_inertes() {
+    // Rodada 0b: os comandos entram na tabela antes das specs, mas nenhum roda ainda.
+    let new = [
+        (Command::ToggleLayoutBand, "ver.faixa-layouts"),
+        (Command::ShowShortcuts, "ajuda.atalhos"),
+        (Command::ShowNews, "ajuda.novidades"),
+        (Command::Loupe, "organizar.lupa"),
+        (Command::ActualSize, "organizar.tamanho-real"),
+        (Command::CalibrateSize, "organizar.calibrar"),
+        (Command::BuildAlbum, "lamina.montar-album"),
+        (Command::SelectAllPhotos, "editar.selecionar-fotos"),
+    ];
+    let mut editor = Editor::new();
+    for (command, name) in new {
+        assert_eq!(Command::from_name(name), Some(command));
+        assert!(!editor.available(command), "{name} sem álbum");
+    }
+    editor.adopt(Base::with_photos(8, (600, 400)).project(2));
+    for (command, name) in new {
+        assert!(!editor.available(command), "{name} no modo normal");
+        assert!(!editor.run(command), "{name} não roda");
+    }
+    assert!(editor.run(Command::Organize));
+    for (command, name) in new {
+        assert!(!editor.available(command), "{name} no modo organizar");
+    }
+}
+
+#[test]
+fn l_z_ctrl_a_e_ctrl_barra_levam_aos_comandos_novos_e_f1_ainda_nao() {
+    let key = |c| Shortcut::key(Key::Char(c));
+    let in_mode = Command::from_shortcut_in;
+    // Ctrl+A: as fotos mostradas fora do modo; no modo organizar, os quadros (spec EG).
+    assert_eq!(
+        in_mode(Shortcut::ctrl('a'), Mode::Normal),
+        Some(Command::SelectAllPhotos)
+    );
+    assert_eq!(
+        in_mode(Shortcut::ctrl('a'), Mode::Organize),
+        Some(Command::SelectAllFrames)
+    );
+    assert_eq!(
+        in_mode(key('l'), Mode::Normal),
+        Some(Command::ToggleLayoutBand)
+    );
+    assert_eq!(in_mode(key('l'), Mode::Organize), None, "L só fora do modo");
+    assert_eq!(in_mode(key('z'), Mode::Organize), Some(Command::Loupe));
+    assert_eq!(in_mode(key('z'), Mode::Normal), None, "Z só no modo");
+    assert_eq!(
+        Command::from_shortcut(Shortcut::ctrl('/')),
+        Some(Command::ShowShortcuts)
+    );
+    assert_eq!(Shortcut::ctrl('/').text(), "Ctrl+/");
+    // O F1 já é uma tecla, ainda sem comando (a spec AT liga).
+    assert_eq!(Key::from_name("F1"), Some(Key::F1));
+    assert_eq!(Shortcut::key(Key::F1).text(), "F1");
+    assert_eq!(Command::from_shortcut(Shortcut::key(Key::F1)), None);
+    // Nunca Ctrl+número: o dono usa o ZoomIt.
+    for c in Command::ALL {
+        if let Some(s) = c.shortcut() {
+            let digit = matches!(s.key, Key::Char(d) if d.is_ascii_digit());
+            assert!(!(s.ctrl && digit), "{c:?} usa Ctrl+número");
+        }
+    }
 }
 
 #[test]
