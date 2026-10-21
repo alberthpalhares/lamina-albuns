@@ -43,7 +43,9 @@ export component BottomStrips inherits VerticalLayout {
     // O ponteiro sobre a área de lâmina nova, para os arquivos soltos do Explorador (spec IM).
     out property <bool> new-spread-hover: spread-strip.new-hover;
 
-    if root.has-project: StripHeader {
+    // Desligada, a faixa de lâminas some inteira, com o cabeçalho (spec PN, regra 1; JE, regra 7):
+    // volta por Visualizar → "Faixa de lâminas" (Alt+1).
+    if root.has-project && root.spreads-open: StripHeader {
         name: "Lâminas";
         summary: root.strip-spreads;
         open: root.spreads-open;

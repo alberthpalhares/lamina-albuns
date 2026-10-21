@@ -70,6 +70,8 @@ impl Editor {
             on,
             ..Organizing::default()
         };
+        // Com o painel escondido, ele aparece enquanto o modo estiver aberto (spec JE, regra 5).
+        self.ask_panel_for_mode(on);
         if on {
             // O modo abre a aba Detalhes (spec AF, regra 10).
             self.wants_details = true;
@@ -92,6 +94,8 @@ impl Editor {
         };
         self.select_frame(Some(frame));
         if self.selected_text().is_some() {
+            // É no painel que se digita o texto (spec JE, regra 5).
+            self.ask_panel_for_selected();
             DoubleClick::Text
         } else if self.enter_crop(frame) {
             DoubleClick::Crop

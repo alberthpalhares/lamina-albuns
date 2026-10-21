@@ -30,6 +30,7 @@ mod ia_read;
 mod ia_style;
 mod im;
 mod im_drop;
+mod je;
 mod jp_album;
 mod jp_commands;
 mod jp_session;

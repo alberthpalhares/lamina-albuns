@@ -36,9 +36,10 @@ impl Editor {
             Command::ToggleSpreads => self.toggle_strip(Strip::Spreads),
             Command::ToggleTimeline => self.toggle_strip(Strip::Timeline),
             Command::TogglePhotos => self.toggle_strip(Strip::Photos),
-            Command::TogglePanel => self.toggle_strip(Strip::Panel),
+            Command::TogglePanel => self.toggle_panel(),
             Command::AdjustPhoto => {
                 self.wants_details = true;
+                self.ask_panel_for_selected();
                 true
             }
             Command::ToggleReduceMotion => self.toggle_reduce_motion(),

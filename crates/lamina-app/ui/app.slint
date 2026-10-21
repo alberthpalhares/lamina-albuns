@@ -95,6 +95,8 @@ export component AppWindow inherits Window {
     in-out property <int> panel-tab;
     // O painel da direita aberto (Alt+4) e a aba Detalhes (spec AF).
     in property <bool> panel-open: true;
+    // As dicas da barra de cima (spec JE): Início, Fotos, Painel e Exportar.
+    in property <[string]> bar-tips: ["", "", "", ""];
     in property <[DetailRow]> details;
     in property <int> details-kind;
     in property <string> details-count;
@@ -376,12 +378,18 @@ export component AppWindow inherits Window {
 
         VerticalLayout {
             TopBar {
+                // Por cima do resto, para os balões de dica dos botões descerem sobre a lâmina.
+                z: 10;
                 has-project: root.has-project;
                 project-title: root.project-title;
                 counter: root.counter;
                 counter-warning: root.counter-warning;
-                can-save: root.can-save;
+                photos-open: root.photos-open;
                 panel-open: root.panel-open;
+                tip-home: root.bar-tips[0];
+                tip-photos: root.bar-tips[1];
+                tip-panel: root.bar-tips[2];
+                tip-export: root.bar-tips[3];
                 command(name) => { root.command(name); }
             }
 

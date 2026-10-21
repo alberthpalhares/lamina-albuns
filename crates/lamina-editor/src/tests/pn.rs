@@ -50,28 +50,31 @@ fn pn_b3_a_janela_lembra_na_proxima_vez() {
     let file = dir.path().join("config").join("janela.json");
     let mut editor = editor_at(three_spreads(), 0);
     editor.set_strips(StripsStore::load(&file));
+    // Desde a versão 2 do estado da janela, a faixa de lâminas antiga começa desligada (JE).
+    assert_eq!(open(&editor), [false, true, true]);
     assert!(editor.run(Command::TogglePhotos));
     // Fechar e abrir: o estado é lido de novo do arquivo.
     let mut next = editor_at(three_spreads(), 0);
     next.set_strips(StripsStore::load(&file));
-    assert_eq!(open(&next), [true, true, false]);
+    assert_eq!(open(&next), [false, true, false]);
     assert_eq!(next.take_notice(), None);
 }
 
 #[test]
-fn pn_b4_arquivo_ilegivel_abre_tudo_com_aviso() {
+fn pn_b4_arquivo_ilegivel_volta_ao_padrao_com_aviso() {
     let dir = tempfile::tempdir().unwrap();
     let file = dir.path().join("janela.json");
     std::fs::write(&file, "isto não é json").unwrap();
     let store = StripsStore::load(&file);
-    assert_eq!(store.strips, Strips::default());
+    // O padrão novo (spec JE): painel escondido e faixa de lâminas antiga desligada.
+    assert_eq!(store.strips, Strips::fresh());
     let mut editor = editor_at(three_spreads(), 0);
     editor.set_strips(store);
-    assert_eq!(open(&editor), [true, true, true]);
+    assert_eq!(open(&editor), [false, true, true]);
     assert_eq!(editor.take_notice().as_deref(), Some(STRIPS_UNREADABLE));
     // A próxima mudança regrava o arquivo, que volta a ler.
-    assert!(editor.run(Command::ToggleSpreads));
-    assert!(!StripsStore::load(&file).strips.spreads);
+    assert!(editor.run(Command::ToggleTimeline));
+    assert!(!StripsStore::load(&file).strips.timeline);
 }
 
 #[test]

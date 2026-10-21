@@ -33,6 +33,7 @@ pub mod album;
 pub mod appearance;
 mod applying;
 pub mod arrange;
+pub mod bar_tips;
 pub mod cache;
 pub mod commands;
 pub mod editor;
@@ -82,6 +83,7 @@ pub use album::{
     Imported, NewAlbum, SpecFields, Step, check_spreads, count_photos, create_album, folder_name,
     import_project, project_from, suggestion, suggestion_for, suggestion_text, suggestion_within,
 };
+pub use bar_tips::{BAR_COMMANDS, bar_tip};
 pub use cache::Cache;
 pub use commands::{Command, Menu};
 pub use editor::{DropPlace, Editor, Leave, Panel, TextChange};
@@ -107,7 +109,10 @@ pub use relink::{
 pub use screens::{Arrival, ScreenPlan, load_original, load_screen, load_thumb, prepare_images};
 pub use session::{HistoryList, HistoryStep, Session};
 pub use snap::{Grip, SnapLine};
-pub use strips::{STRIPS_FILE, STRIPS_UNREADABLE, Strip, Strips, StripsStore, strip_titles};
+pub use strips::{
+    Install, STRIPS_FILE, STRIPS_UNREADABLE, STRIPS_VERSION, Strip, Strips, StripsStore,
+    strip_titles,
+};
 pub use suggestions::{List, Part, Unavailable};
 pub use text::{
     BAD_COLOR, PALETTE, color_hex, family_name, frame_dpi_text, option_title, parse_color,
