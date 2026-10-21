@@ -3,6 +3,8 @@
 //! seção dela. Com `--notas`, grava a seção num arquivo, para as notas da versão. As novidades
 //! ficam junto do código porque a release roda no repositório público, que não tem o CHANGELOG.
 
+use lamina_editor::updates::news;
+
 /// As notas de cada versão, em linguagem simples.
 pub const NOTES_FILE: &str = "crates/lamina-app/dist/novidades.md";
 
@@ -56,19 +58,18 @@ pub fn workspace_version(cargo_toml: &str) -> Option<String> {
     None
 }
 
-/// O texto da seção `## [<versão>]` das novidades, até a próxima seção.
-pub fn notes(changelog: &str, version: &str) -> Option<String> {
-    let head = format!("## [{version}]");
-    let start = changelog
-        .lines()
-        .position(|l| l.trim_start().starts_with(&head))?;
-    let body: Vec<&str> = changelog
-        .lines()
-        .skip(start + 1)
-        .take_while(|l| !l.starts_with("## "))
-        .collect();
-    let text = body.join("\n").trim().to_owned();
-    (!text.is_empty()).then_some(text)
+/// O texto da seção `## [<versão>]` das novidades, pelo mesmo leitor do Lamina (spec NV, regra 8).
+pub fn notes(news: &str, version: &str) -> Option<String> {
+    news::section_text(news, version)
+}
+
+/// O aviso, sem reprovar, quando um item da seção que vai sair não tem "Experimente:" (spec NV,
+/// regra 9).
+pub fn try_warning(news: &str, version: &str) -> Option<String> {
+    let section = news::parse(news)
+        .into_iter()
+        .find(|s| s.version.to_string() == version)?;
+    news::missing_try(&section)
 }
 
 /// Confere a tag (`v0.2.0` ou `v0.2.0-beta.1`). `Ok` traz as notas da versão.
@@ -101,8 +102,12 @@ pub fn run(args: &[String]) -> bool {
         }
     };
     let read = |p: &str| std::fs::read_to_string(p).unwrap_or_default();
+    let news = read(NOTES_FILE);
+    if let Some(warning) = try_warning(&news, tag.trim_start_matches('v')) {
+        eprintln!("  ! versao: {warning}");
+    }
     let checked = form_ready(lamina_editor::FEEDBACK_FORM)
-        .and_then(|()| check(tag, &read("Cargo.toml"), &read(NOTES_FILE)));
+        .and_then(|()| check(tag, &read("Cargo.toml"), &news));
     match checked {
         Ok(text) => {
             if let Some(file) = out
@@ -185,6 +190,41 @@ mod tests {
         assert!(first.contains("Lamina-linux-beta.AppImage"), "{first}");
         let stable = with_guide("- Teste.", "v0.2.0");
         assert!(stable.contains("Lamina-win-Setup.exe"), "{stable}");
+    }
+
+    #[test]
+    fn nv_b7_o_xtask_usa_o_leitor_do_lamina() {
+        assert_eq!(
+            notes(LOG, "0.2.0").as_deref(),
+            Some("- Atualização automática.\n- Instalar pelo terminal.")
+        );
+        let real =
+            std::fs::read_to_string(format!("{}/../{NOTES_FILE}", env!("CARGO_MANIFEST_DIR")))
+                .unwrap();
+        for section in news::parse(&real) {
+            let version = section.version.to_string();
+            assert_eq!(notes(&real, &version), news::section_text(&real, &version));
+            assert!(notes(&real, &version).is_some(), "{version}");
+        }
+    }
+
+    #[test]
+    fn nv_b11_a_release_avisa_quando_falta_o_experimente() {
+        let text = concat!(
+            "## [0.1.0-beta.5] - 2026-10-24\n\n",
+            "- **Atalhos.** A lista. Experimente: aperte F1.\n",
+            "- **Programa menor.** O instalador ficou mais leve.\n",
+            "- **Novidades.** A janela. Experimente: abra a Ajuda.\n",
+        );
+        assert_eq!(
+            try_warning(text, "0.1.0-beta.5").as_deref(),
+            Some("1 item da 0.1.0-beta.5 sem “Experimente:”: «Programa menor.»")
+        );
+        let full = text.replace("mais leve.", "mais leve. Experimente: baixe.");
+        assert_eq!(try_warning(&full, "0.1.0-beta.5"), None);
+        // O aviso não reprova: a seção continua saindo nas notas.
+        let beta = CARGO.replace("\"0.2.0\"", "\"0.1.0-beta.5\"");
+        assert!(check("v0.1.0-beta.5", &beta, text).is_ok());
     }
 
     #[test]
