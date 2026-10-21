@@ -2,16 +2,19 @@
 //! (lâmina grande). Na memória ficam só as imagens de tela da lâmina atual e das vizinhas (spec
 //! JP, regra 6), lidas por um trabalhador; a lâmina aparece com as miniaturas e cada foto nítida
 //! entra quando chega (spec MV, regra 1). Quem decide o que pedir é o `ScreenPlan` do editor.
+//! As miniaturas também vêm de um trabalhador, pedidas por lista, e só um número limitado das
+//! que nenhuma lista pede fica na memória (spec TR, regras 6 a 8; `ThumbPlan` do editor).
 
 use std::collections::HashMap;
 
 use lamina_core::{FrameContent, PhotoId, Project};
-use lamina_editor::{Arrival, Cache, ScreenPlan};
+use lamina_editor::{Arrival, Cache, ScreenPlan, ThumbList, ThumbPlan};
 use slint::{Image, Rgba8Pixel, SharedPixelBuffer};
 
 use crate::loader::Loader;
 use crate::mailbox::Mailbox;
 use crate::state::App;
+use crate::thumb_loader::{ThumbLoader, ThumbPixels};
 
 pub type Pixels = SharedPixelBuffer<Rgba8Pixel>;
 
@@ -24,6 +27,10 @@ pub struct Images {
     /// Chegaram durante um deslize e entram quando ele termina (MV-B26).
     held: HashMap<PhotoId, Image>,
     thumbs: HashMap<PhotoId, Image>,
+    thumb_plan: ThumbPlan,
+    thumb_loader: ThumbLoader,
+    /// Miniaturas que chegaram desde a última atualização das listas.
+    fresh: Vec<PhotoId>,
     /// A foto original do quadro em modo recorte (spec RC, regra 9).
     original: Option<(PhotoId, Image)>,
     /// Chegou foto nítida nova desde o último desenho da lâmina.
@@ -41,6 +48,9 @@ impl Images {
             screens: HashMap::new(),
             held: HashMap::new(),
             thumbs: HashMap::new(),
+            thumb_plan: ThumbPlan::default(),
+            thumb_loader: ThumbLoader::new(cache, mailbox),
+            fresh: Vec::new(),
             original: None,
             arrived: false,
             sliding: false,
@@ -54,42 +64,89 @@ impl Images {
         self.screens.clear();
         self.held.clear();
         self.thumbs.clear();
+        self.thumb_plan.forget();
+        self.fresh.clear();
         self.original = None;
     }
 
-    /// O cache ganhou imagens: as fotos que não tinham imagem de tela podem ser pedidas de novo.
-    pub fn recheck(&mut self) {
+    /// O cache ganhou imagens: as fotos que não tinham imagem de tela ou miniatura podem ser
+    /// pedidas de novo.
+    pub fn recheck(&mut self, project: &Project) {
         self.plan.recheck();
+        let again = self.thumb_plan.recheck();
+        self.ask_thumbs(project, &again);
     }
 
-    /// A miniatura da foto, se estiver no cache.
-    pub fn thumb(&mut self, project: &Project, id: PhotoId, cache: &Cache) -> Option<Image> {
-        if let Some(img) = self.thumbs.get(&id) {
-            return Some(img.clone());
+    /// A miniatura da foto, se já chegou (a lista pede antes, por [`Images::thumbs_for`]).
+    pub fn thumb(&self, id: PhotoId) -> Option<Image> {
+        self.thumbs.get(&id).cloned()
+    }
+
+    /// A lista `list` mostra agora as fotos `ids`: as que faltam vão para o trabalhador e as que
+    /// passaram do limite saem (spec TR, regras 6 e 7). Devolve as que já chegaram.
+    pub fn thumbs_for(
+        &mut self,
+        list: ThumbList,
+        project: &Project,
+        ids: &[PhotoId],
+    ) -> HashMap<PhotoId, Image> {
+        let orders = self.thumb_plan.want(list, ids);
+        for id in &orders.drop {
+            self.thumbs.remove(id);
         }
-        let photo = project.photo(id).ok()?;
-        let img = Image::load_from_path(&cache.thumbnail(photo)?).ok()?;
-        self.thumbs.insert(id, img.clone());
-        Some(img)
+        self.ask_thumbs(project, &orders.load);
+        ids.iter()
+            .filter_map(|id| Some((*id, self.thumbs.get(id)?.clone())))
+            .collect()
     }
 
-    /// As miniaturas de todas as fotos do projeto.
-    pub fn all_thumbs(&mut self, project: &Project, cache: &Cache) -> HashMap<PhotoId, Image> {
-        project
-            .photos
+    /// As miniaturas de todas as fotos do projeto (faixa, linha do tempo, painel e lâmina).
+    pub fn all_thumbs(&mut self, project: &Project) -> HashMap<PhotoId, Image> {
+        let ids: Vec<PhotoId> = project.photos.iter().map(|p| p.id).collect();
+        self.thumbs_for(ThumbList::Album, project, &ids)
+    }
+
+    fn ask_thumbs(&self, project: &Project, ids: &[PhotoId]) {
+        let items = ids
             .iter()
-            .filter_map(|p| Some((p.id, self.thumb(project, p.id, cache)?)))
-            .collect()
+            .filter_map(|id| Some((*id, project.photo(*id).ok()?.clone())))
+            .collect();
+        self.thumb_loader.ask(self.epoch, items);
+    }
+
+    /// Uma miniatura chegou do trabalhador (`None`: não há no cache).
+    pub fn thumb_arrived(&mut self, epoch: u64, id: PhotoId, pixels: Option<ThumbPixels>) {
+        if epoch != self.epoch {
+            return;
+        }
+        let (keep, drop) = self.thumb_plan.arrived(id, pixels.is_some());
+        for gone in &drop {
+            self.thumbs.remove(gone);
+        }
+        if let (true, Some(pixels)) = (keep, pixels) {
+            self.thumbs.insert(id, Image::from_rgb8(pixels));
+            self.fresh.push(id);
+        }
+    }
+
+    /// Todas as miniaturas que já chegaram.
+    pub fn thumbs_map(&self) -> &HashMap<PhotoId, Image> {
+        &self.thumbs
+    }
+
+    /// As miniaturas que chegaram desde a última vez.
+    pub fn take_fresh(&mut self) -> Vec<PhotoId> {
+        std::mem::take(&mut self.fresh)
+    }
+
+    /// Quantas miniaturas foram pedidas e ainda não chegaram.
+    pub fn thumbs_pending(&self) -> usize {
+        self.thumb_plan.pending()
     }
 
     /// As imagens das fotos da lâmina `index`: a de tela, ou a miniatura enquanto ela não chega.
     /// Pede ao trabalhador as que faltam (a lâmina atual primeiro) e solta as que saíram.
-    pub fn spread(
-        &mut self,
-        project: &Project,
-        index: usize,
-        cache: &Cache,
-    ) -> HashMap<PhotoId, Image> {
+    pub fn spread(&mut self, project: &Project, index: usize) -> HashMap<PhotoId, Image> {
         let asked = self.plan.go(project, index);
         for id in &asked.release {
             self.screens.remove(id);
@@ -112,7 +169,7 @@ impl Images {
                 .map(|(_, img)| img.clone());
             let img = original
                 .or_else(|| self.screens.get(&id).cloned())
-                .or_else(|| self.thumb(project, id, cache));
+                .or_else(|| self.thumb(id));
             if let Some(img) = img {
                 images.insert(id, img);
             }
@@ -190,8 +247,13 @@ impl Images {
     }
 }
 
-/// Depois de tratar as mensagens: se chegou foto nítida, a lâmina é redesenhada uma vez só.
+/// Depois de tratar as mensagens: as linhas das miniaturas que chegaram são trocadas e, se chegou
+/// foto nítida, a lâmina é redesenhada uma vez só.
 pub fn after_arrivals(app: &mut App) {
+    let fresh = app.images.take_fresh();
+    if !fresh.is_empty() {
+        crate::thumbs::show(app, &fresh);
+    }
     if std::mem::take(&mut app.images.arrived) {
         crate::crop::refresh_spread(app);
     }

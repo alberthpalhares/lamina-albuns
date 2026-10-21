@@ -29,6 +29,9 @@ pub struct ImportSummary {
     pub not_photos: usize,
     /// Nome e motivo das fotos que não puderam ser lidas.
     pub unreadable: Vec<(String, String)>,
+    /// Soltas no "+ Lâmina nova", não cabiam numa lâmina só (o máximo dela): entraram todas, sem
+    /// lâmina nova (spec TR, regra 11).
+    pub over_capacity: Option<usize>,
 }
 
 /// Importa as fotos de `paths` (pastas com as subpastas), com miniatura e imagem de tela, pelo
@@ -161,6 +164,11 @@ impl ImportSummary {
         }
         if !self.unreadable.is_empty() {
             parts.push(self.unreadable_text());
+        }
+        if let Some(most) = self.over_capacity {
+            parts.push(format!(
+                "uma lâmina leva até {most} fotos: elas ficaram na faixa de fotos, sem lâmina nova"
+            ));
         }
         parts.join(" · ")
     }

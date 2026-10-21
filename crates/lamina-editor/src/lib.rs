@@ -70,6 +70,7 @@ pub mod spreads;
 pub mod strips;
 pub mod suggestions;
 pub mod text;
+pub mod thumbs;
 pub mod updates;
 pub mod view;
 
@@ -103,7 +104,7 @@ pub use recents::{RECENTS_FILE, Recent, RecentsStore};
 pub use relink::{
     Found, RELINK_LATER, not_found_message, relinked_message, search_folder, search_near,
 };
-pub use screens::{Arrival, ScreenPlan, load_original, load_screen, prepare_images};
+pub use screens::{Arrival, ScreenPlan, load_original, load_screen, load_thumb, prepare_images};
 pub use session::{HistoryList, HistoryStep, Session};
 pub use snap::{Grip, SnapLine};
 pub use strips::{STRIPS_FILE, STRIPS_UNREADABLE, Strip, Strips, StripsStore, strip_titles};
@@ -112,6 +113,7 @@ pub use text::{
     BAD_COLOR, PALETTE, color_hex, family_name, frame_dpi_text, option_title, parse_color,
     score_text,
 };
+pub use thumbs::{THUMBS_KEPT, ThumbList, ThumbOrders, ThumbPlan};
 pub use updates::{UPDATES_FILE, Updates, UpdatesStore};
 pub use view::{
     Area, FrameKind, FrameView, PxRect, SpreadView, frame_at, photo_extent, spread_view,

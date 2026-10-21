@@ -87,7 +87,7 @@ pub fn refresh_spread(app: &mut App) {
         return;
     };
     sync_original(app, &project, index);
-    let images = app.images.spread(&project, index, &app.cache);
+    let images = app.images.spread(&project, index);
     let image = |id: PhotoId| images.get(&id).cloned();
     let mut data = spread_data(
         &project,
@@ -99,11 +99,17 @@ pub fn refresh_spread(app: &mut App) {
     data.snaps = crate::hand::snap_boxes(app, &project);
     crate::adjusted::apply(app, &project, index, &images, &mut data);
     let frames = view_frames(&project, index, &missing);
-    let place = (app.images.epoch(), project.spreads[index].id);
-    let before = (w.get_current(), app.slot_rows.rows());
-    place_slots(app, place, &frames, &mut data);
-    w.set_current(data);
-    slide(app, &w, (place, index), before);
+    // Álbum ainda sem lâminas ("Começar sem fotos"): nada a pôr nas vagas nem a deslizar (spec
+    // TR, regra 10).
+    if let Some(spread) = project.spreads.get(index) {
+        let place = (app.images.epoch(), spread.id);
+        let before = (w.get_current(), app.slot_rows.rows());
+        place_slots(app, place, &frames, &mut data);
+        w.set_current(data);
+        slide(app, &w, (place, index), before);
+    } else {
+        w.set_current(data);
+    }
     crate::organize::refresh(app);
     w.set_current_index(i32::try_from(index).unwrap_or(0));
     let as_i32 = |f: Option<usize>| f.and_then(|f| i32::try_from(f).ok()).unwrap_or(-1);

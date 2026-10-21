@@ -75,9 +75,10 @@ impl Editor {
             Command::ClearFrame => {
                 let photo = self.selected_frames().iter().any(|f| {
                     self.session.as_ref().is_some_and(|s| {
-                        s.project().spreads[s.current()]
-                            .frames
-                            .get(*f)
+                        s.project()
+                            .spreads
+                            .get(s.current())
+                            .and_then(|spread| spread.frames.get(*f))
                             .is_some_and(|fr| matches!(fr.content, FrameContent::Photo { .. }))
                     })
                 });

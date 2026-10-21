@@ -42,6 +42,8 @@ skrifa = "0.44"
 # Perfil de cor sRGB embutido nos JPEGs de impressão (ADR 0007).
 moxcms = "0.8"
 tempfile = "3"
+# Pico de memória nos testes da importação (spec TR, TR-B1); só como dependência de testes.
+dhat = "0.3"
 # Instalador e atualização automática (ADR 0009). Versão presa: o spike provou esta.
 velopack = "=1.2.161"
 # Esquema JSON do formato do projeto, gerado dos tipos (spec EI, regra 9).
@@ -96,6 +98,10 @@ opt-level = 2
 # E sem informação de depuração: ninguém depura por dentro do slint ou do image, e era a maior
 # parte do `target\debug\deps`.
 debug = false
+
+[profile.dev.package.lamina-media]
+# Teste de velocidade da importação (spec TR, TR-B6) mede código otimizado.
+opt-level = 3
 
 [profile.dev.package.lamina-export]
 # Teste de velocidade da exportação (spec EX, EX-B12) mede código otimizado.

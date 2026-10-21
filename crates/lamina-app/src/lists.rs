@@ -57,6 +57,27 @@ impl<K: PartialEq, V: PartialEq, T: Clone + 'static> Synced<K, V, T> {
         self.rows = rows;
         ops.len()
     }
+
+    /// Troca só as linhas em que `hit(posição, (chave, valor))` vale, com `change` mexendo na
+    /// linha que está na tela (miniaturas que chegaram; spec TR, regra 6). Devolve quantas
+    /// mudaram.
+    pub fn patch(
+        &mut self,
+        hit: impl Fn(usize, &(K, V)) -> bool,
+        mut change: impl FnMut(usize, &(K, V), &mut T),
+    ) -> usize {
+        let mut changed = 0;
+        for (i, entry) in self.rows.iter().enumerate() {
+            if hit(i, entry)
+                && let Some(mut row) = self.model.row_data(i)
+            {
+                change(i, entry, &mut row);
+                self.model.set_row_data(i, row);
+                changed += 1;
+            }
+        }
+        changed
+    }
 }
 
 /// As listas da janela que mudam linha a linha e a chave das prévias do painel de layouts.
@@ -113,5 +134,20 @@ mod tests {
         list.reset();
         assert_eq!(list.sync(rows("ab"), |i| format!("{i}")), 2);
         assert_eq!(list.model.row_count(), 2);
+    }
+
+    #[test]
+    fn miniatura_que_chega_troca_so_a_linha_dela() {
+        let mut list: Synced<char, u8, String> = Synced::new();
+        let rows = |s: &str| s.chars().map(|c| (c, 0_u8)).collect::<Vec<_>>();
+        list.sync(rows("abc"), |i| format!("{i}"));
+        let changed = list.patch(
+            |_, (k, _)| *k == 'b',
+            |i, (k, _), row| *row = format!("{k}{i}"),
+        );
+        assert_eq!(changed, 1);
+        assert_eq!(list.model.row_data(0).as_deref(), Some("0"));
+        assert_eq!(list.model.row_data(1).as_deref(), Some("b1"));
+        assert_eq!(list.model.row_data(2).as_deref(), Some("2"));
     }
 }

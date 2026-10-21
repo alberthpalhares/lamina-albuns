@@ -161,9 +161,11 @@ impl Editor {
             return false;
         };
         let index = session.current();
-        let unchanged = session.project().spreads[index]
-            .frames
-            .get(frame)
+        let unchanged = session
+            .project()
+            .spreads
+            .get(index)
+            .and_then(|spread| spread.frames.get(frame))
             .is_some_and(
                 |f| matches!(&f.content, FrameContent::Photo { crop: c, .. } if *c == crop),
             );
@@ -172,9 +174,10 @@ impl Editor {
         }
         session
             .edit("Recortar foto", |p| {
-                if let Some(FrameContent::Photo { crop: c, .. }) = p.spreads[index]
-                    .frames
-                    .get_mut(frame)
+                if let Some(FrameContent::Photo { crop: c, .. }) = p
+                    .spreads
+                    .get_mut(index)
+                    .and_then(|spread| spread.frames.get_mut(frame))
                     .map(|f| &mut f.content)
                 {
                     *c = crop;
@@ -195,9 +198,10 @@ impl Editor {
         }
         let mut project = s.project().clone();
         if let Some((frame, crop)) = pending
-            && let Some(FrameContent::Photo { crop: c, .. }) = project.spreads[s.current()]
-                .frames
-                .get_mut(frame)
+            && let Some(FrameContent::Photo { crop: c, .. }) = project
+                .spreads
+                .get_mut(s.current())
+                .and_then(|spread| spread.frames.get_mut(frame))
                 .map(|f| &mut f.content)
         {
             *c = crop;
