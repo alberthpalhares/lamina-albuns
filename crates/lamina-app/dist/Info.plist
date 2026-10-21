@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  O Info.plist do Lamina.app (spec MA, seção 4), entregue ao `vpk pack` (opção plist) no lugar do
+  que ele gera. Tem tudo o que o vpk gerava e mais o tipo de documento .lamina, para o Finder abrir
+  os álbuns com o Lamina. O release.yml troca @VERSAO@ (0.1.0-beta.5) e @VERSAO_CURTA@ (0.1.0).
+-->
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>Lamina</string>
+	<key>CFBundleDisplayName</key>
+	<string>Lamina</string>
+	<key>CFBundleIdentifier</key>
+	<string>io.github.alberthpalhares.lamina</string>
+	<key>CFBundleVersion</key>
+	<string>@VERSAO@</string>
+	<key>CFBundleShortVersionString</key>
+	<string>@VERSAO_CURTA@</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleExecutable</key>
+	<string>lamina-app</string>
+	<key>CFBundleIconFile</key>
+	<string>lamina.icns</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.photography</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Álbum do Lamina</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>CFBundleTypeIconFile</key>
+			<string>lamina.icns</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>io.github.alberthpalhares.lamina.album</string>
+			</array>
+		</dict>
+	</array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>io.github.alberthpalhares.lamina.album</string>
+			<key>UTTypeDescription</key>
+			<string>Álbum do Lamina</string>
+			<key>UTTypeIconFile</key>
+			<string>lamina.icns</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>lamina</string>
+				</array>
+				<key>public.mime-type</key>
+				<string>application/x-lamina</string>
+			</dict>
+		</dict>
+	</array>
+</dict>
+</plist>

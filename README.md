@@ -34,8 +34,8 @@ Depois de instalado, o Lamina avisa sozinho quando há versão nova e se atualiz
 
 ## Instalar pelo terminal
 
-Para quem prefere: estes comandos instalam o Lamina na sua pasta de usuário, sem pedir senha de
-administrador e sem o aviso do sistema (o aviso só não aparece; o antivírus continua examinando
+Para quem prefere: estes comandos instalam o Lamina sem pedir senha de administrador e sem o
+aviso do sistema (o aviso só não aparece; o antivírus continua examinando
 os arquivos). Enquanto não houver versão estável, eles instalam a versão de teste mais nova.
 
 **Windows** (no PowerShell):
@@ -51,9 +51,11 @@ curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/
 ```
 
 Para sempre ficar com a versão de teste mais nova: rode `$env:LAMINA_BETA = 1` antes do comando
-no Windows, ou troque o fim por `| sh -s -- --beta` no Mac e no Linux. No Mac, o Lamina fica em
-`Aplicativos` da sua pasta pessoal; no Linux, em `~/.local/bin/Lamina.AppImage` (abra uma vez
-por ele para o atalho entrar no menu).
+no Windows, ou troque o fim por `| sh -s -- --beta` no Mac e no Linux. No Mac, o Lamina fica na
+pasta **Aplicativos** (a do Finder e do Launchpad) e abre os arquivos `.lamina` com dois cliques; se
+o seu usuário não puder gravar lá, fica na pasta Aplicativos da sua pasta pessoal, e o comando
+avisa. No Linux, em `~/.local/bin/Lamina.AppImage` (abra uma vez por ele para o atalho entrar no
+menu).
 
 ## Primeiros passos
 

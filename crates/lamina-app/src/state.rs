@@ -32,6 +32,8 @@ pub enum Pending {
     /// Fechar o álbum e voltar à tela inicial; abrir o recente da posição dada (spec TI).
     CloseAlbum,
     OpenRecent(usize),
+    /// O álbum que o sistema entregou (duplo clique; spec MA, regra 4).
+    OpenReceived,
 }
 
 pub use crate::msg::Msg;

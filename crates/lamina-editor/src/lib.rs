@@ -17,6 +17,7 @@
 //! - [`presets`] e [`respec`]: presets e trocar a especificação de um álbum pronto (spec PR).
 //! - [`strips`]: as três faixas de baixo, com título e recolhíveis (spec PN).
 //! - [`recents`]: a lista de recentes e o que a tela inicial mostra (spec TI).
+//! - [`received`]: os arquivos que o sistema entrega ao Lamina (duplo clique; spec MA).
 //! - [`forms`]: campos, passos e textos das janelas (novo álbum, exportar, aparência).
 //! - [`exporting`]: exportar pela janela, com a pré-impressão antes (spec EI).
 //! - [`relink`]: reencontrar fotos que mudaram de pasta (spec EI).
@@ -62,6 +63,7 @@ pub mod palette_tips;
 pub mod photos;
 pub mod prefs_store;
 pub mod presets;
+pub mod received;
 pub mod recents;
 pub mod relink;
 pub mod respec;

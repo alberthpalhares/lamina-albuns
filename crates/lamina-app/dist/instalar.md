@@ -40,7 +40,8 @@ pelo próprio Lamina, sem esse aviso.
 ## Mac
 
 1. Abra o arquivo `Setup.pkg` que você baixou (na pasta Transferências) e siga o instalador. O Mac
-   pede a sua senha para instalar: é a senha de entrar no Mac.
+   pede a sua senha para instalar: é a senha de entrar no Mac. O Lamina fica na pasta
+   **Aplicativos**, e as próximas atualizações não pedem a senha.
 2. Se o Mac disser que **não pode verificar o desenvolvedor** ou que o Lamina **não foi aberto**:
    1. clique em **OK** (ou **Concluído**);
    2. abra **Ajustes do Sistema** (o ícone de engrenagem) → **Privacidade e Segurança**;
@@ -48,6 +49,8 @@ pelo próprio Lamina, sem esse aviso.
    4. confirme com a sua senha do Mac, se ele pedir.
 3. Isso pode acontecer duas vezes: ao abrir o instalador e ao abrir o Lamina pela primeira vez.
    Depois, abra o Lamina pela pasta **Aplicativos** ou pelo Launchpad, sem aviso.
+4. Para abrir um álbum, dê dois cliques no arquivo `.lamina` no Finder. Se o Finder ainda mostrar
+   outro programa, clique com o botão direito no arquivo → **Abrir com** → **Lamina**.
 
 ## Linux
 
@@ -93,4 +96,6 @@ arquivos):
   (para a versão de teste, rode antes `$env:LAMINA_BETA = 1`);
 - **Mac e Linux:**
   `curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.sh | sh -s -- --beta`
-  (a versão de teste; sem o `-s -- --beta`, a estável, quando houver).
+  (a versão de teste; sem o `-s -- --beta`, a estável, quando houver). No Mac, o Lamina vai para
+  a pasta **Aplicativos** sem pedir senha; se o seu usuário não puder gravar lá, vai para a pasta
+  Aplicativos da sua pasta pessoal, e o comando avisa.

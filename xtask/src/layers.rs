@@ -24,6 +24,7 @@ pub const LAYERS: &[(&str, u8)] = &[
 pub const BINARY_EXTERNALS: &[&str] = &[
     "anyhow",
     "clap",
+    "fmv-macos-events",
     "rfd",
     "slint",
     "slint-build",

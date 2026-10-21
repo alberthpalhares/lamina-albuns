@@ -38,6 +38,7 @@ mod new_album;
 mod new_project;
 mod new_project_file;
 mod news;
+mod opened;
 mod organize;
 mod palette;
 mod panel;
@@ -237,6 +238,8 @@ fn main() -> anyhow::Result<()> {
         eprintln!("--verificar-importacao: {reason}");
         std::process::exit(1);
     }
+    // A verificação da abertura (spec MA): sem o relatório, sai com 1 antes da janela.
+    let opening = opened::requested();
     #[cfg(target_os = "linux")]
     if verifying.is_none() {
         install::linux_desktop();
@@ -282,14 +285,12 @@ fn main() -> anyhow::Result<()> {
     app.borrow_mut().refresh_all();
     recents::refresh(&app.borrow());
     recents::check(&app.borrow());
-    // `lamina-app projeto.lamina` abre o projeto direto: o duplo clique no arquivo e a volta
-    // depois de atualizar (spec DS, regra 5).
-    let file = match &verifying {
-        Some(album) => Some(album.clone().into_os_string()),
-        None => std::env::args_os().nth(1).filter(|_| importing.is_none()),
-    };
-    if let Some(file) = file {
-        files::open_file(&mut app.borrow_mut(), std::path::Path::new(&file));
+    // `lamina-app projeto.lamina` abre o projeto direto: o duplo clique no Windows e no Linux e a
+    // volta depois de atualizar (spec DS, regra 5; spec MA, regra 9). No Mac, chega por evento.
+    if let Some(album) = &verifying {
+        files::open_file(&mut app.borrow_mut(), album);
+    } else if importing.is_none() && opening.is_none() {
+        opened::from_args(&mut app.borrow_mut());
     }
     // O teste de fumaça da importação (spec TR): fecha sozinho quando as fotos entram.
     if let Some(folder) = importing.clone()
@@ -304,8 +305,8 @@ fn main() -> anyhow::Result<()> {
             // Fechando: um erro aqui só deixa a janela aberta até o tempo limite do CI.
             let _ = slint::quit_event_loop();
         });
-    } else if importing.is_none() {
-        // O teste de fumaça da importação não procura atualização: não depende da rede.
+    } else if importing.is_none() && opening.is_none() {
+        // Os testes de fumaça não procuram atualização: não dependem da rede.
         Timer::single_shot(updates::CHECK_DELAY, move || {
             updates::on_open(&mut a.borrow_mut());
         });
@@ -320,6 +321,8 @@ fn main() -> anyhow::Result<()> {
         Duration::from_millis(250),
         mailbox::drain,
     );
+    // Os arquivos que o sistema entrega, com o Lamina aberto ou abrindo (spec MA).
+    let _listener = opened::listen(&app, opening);
     window.invoke_focus_main();
     window.run()?;
     // Sair do Lamina guarda a lâmina em que o fotógrafo parou (spec TI, regra 3).

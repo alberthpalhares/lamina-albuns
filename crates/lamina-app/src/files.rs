@@ -119,6 +119,7 @@ fn proceed(app: &mut App, action: Pending) {
         Pending::Update => crate::updates::restart(app),
         Pending::Example => crate::welcome::open_example(app),
         Pending::OpenRecent(i) => crate::recents::open(app, i),
+        Pending::OpenReceived => crate::opened::proceed(app),
         Pending::CloseAlbum => {
             if app.editor.close_album() {
                 app.project_changed();
