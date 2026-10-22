@@ -13,6 +13,10 @@ botão "Experimente agora": `<!-- imagem: atalhos.png; comando: ajuda.atalhos --
 
 ## [Não lançado]
 
+## [0.1.0-beta.5] - 2026-10-22
+
+Esta versão põe as lâminas lado a lado, traz a faixa de layouts, o painel de fotos em grade e o álbum que começa em branco, e corrige o Lamina que fechava no Mac ao importar muitas fotos.
+
 - **Os álbuns recentes inteiros, com a primeira lâmina.** Na tela inicial, cada álbum aparece num
   cartão completo, com a primeira lâmina, o nome, quando foi aberto e quantas lâminas e fotos tem;
   um álbum ainda sem lâminas aparece como um álbum em branco com o nome. Experimente: abra um
