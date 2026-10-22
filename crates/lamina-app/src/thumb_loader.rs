@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Condvar, Mutex, PoisonError};
 
 use lamina_core::{Photo, PhotoId};
-use lamina_editor::{Cache, load_thumb};
+use lamina_editor::{Cache, load_thumb_sized};
 use slint::{Rgb8Pixel, SharedPixelBuffer};
 
 use crate::mailbox::Mailbox;
@@ -22,6 +22,8 @@ struct Queue {
     /// O álbum (`epoch`) dos pedidos na fila.
     epoch: u64,
     items: VecDeque<(PhotoId, Photo)>,
+    /// O lado das miniaturas lidas, em px (0 = o do disco; spec PF, seção 13).
+    side: u32,
 }
 
 type Shared = Arc<(Mutex<Queue>, Condvar)>;
@@ -57,6 +59,12 @@ impl ThumbLoader {
         wake.notify_all();
     }
 
+    /// O lado das próximas miniaturas lidas (o tamanho da peça da grade; spec PF).
+    pub fn set_side(&self, side: u32) {
+        let (lock, _) = &*self.queue;
+        lock.lock().unwrap_or_else(PoisonError::into_inner).side = side;
+    }
+
     /// Tira da fila os pedidos `ids` ainda não lidos (a grade rolou para longe; spec PF).
     pub fn cancel(&self, ids: &[PhotoId]) {
         if ids.is_empty() {
@@ -73,16 +81,17 @@ impl ThumbLoader {
 fn serve(queue: &Shared, cache: &Cache, mailbox: &Mailbox) {
     let (lock, wake) = &**queue;
     loop {
-        let (epoch, id, photo) = {
+        let (epoch, id, photo, side) = {
             let mut q = lock.lock().unwrap_or_else(PoisonError::into_inner);
             loop {
                 if let Some((id, photo)) = q.items.pop_front() {
-                    break (q.epoch, id, photo);
+                    break (q.epoch, id, photo, q.side);
                 }
                 q = wake.wait(q).unwrap_or_else(PoisonError::into_inner);
             }
         };
-        let pixels = load_thumb(&photo, cache)
+        let side = if side == 0 { u32::MAX } else { side };
+        let pixels = load_thumb_sized(&photo, cache, side)
             .map(|img| ThumbPixels::clone_from_slice(img.as_raw(), img.width(), img.height()));
         // Janela fechada: ninguém para receber, e a linha acaba.
         if mailbox.send(Msg::Thumb { epoch, id, pixels }).is_err() {

@@ -10,8 +10,11 @@ use std::rc::Rc;
 use lamina_core::PhotoId;
 use lamina_editor::ThumbList;
 use lamina_editor::photo_grid::{
-    Grid, lasso_scroll, shown_height, wheel_zoom, whole_px, zoom_at_pointer, zoom_keeping_top,
+    Grid, lasso_scroll, shown_height, thumb_side, wheel_zoom, whole_px, zoom_at_pointer,
+    zoom_keeping_top,
 };
+
+use slint::ComponentHandle;
 
 use crate::AppWindow;
 use crate::state::App;
@@ -133,6 +136,21 @@ impl App {
 
     /// A rolagem mudou pelo fotógrafo: a primeira foto visível passa a ser a da linha do topo,
     /// se a guardada não está nela.
+    /// As miniaturas no tamanho da peça (zoom e escala da tela; spec PF, seção 13): mudou o lado,
+    /// as listas são refeitas e pedem de novo.
+    fn fit_thumbs(&mut self) {
+        let Some(w) = self.window.upgrade() else {
+            return;
+        };
+        let side = thumb_side(self.editor.photos_zoom(), w.window().scale_factor());
+        if self.images.set_thumb_side(side) {
+            self.grid_view.shown = None;
+            self.grid_view.window = 0..0;
+            self.lists.reset();
+            self.refresh_all();
+        }
+    }
+
     fn follow_scroll(&mut self) {
         let grid = self.grid();
         let top = grid.row_range(grid.top_row(self.grid_view.scroll));
@@ -161,6 +179,7 @@ impl App {
         }
         self.editor.set_grid_anchor(None);
         self.follow_scroll();
+        self.fit_thumbs();
         self.show_grid(true);
         // Uma linha mínima depende do zoom.
         self.show_grid_height();
@@ -196,6 +215,7 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         } else {
             app.follow_scroll();
         }
+        app.fit_thumbs();
         app.show_grid(false);
     });
     let a = app.clone();

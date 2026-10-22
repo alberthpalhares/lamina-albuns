@@ -24,6 +24,11 @@ const PANEL_PHOTOS: usize = 24;
 pub struct Images {
     /// Sobe a cada álbum novo: fotos de um álbum anterior que chegarem são ignoradas.
     epoch: u64,
+    /// Sobe a cada álbum novo e a cada troca do lado das miniaturas: as que chegarem lidas no
+    /// lado antigo são ignoradas (spec PF, seção 13).
+    thumb_epoch: u64,
+    /// O lado das miniaturas lidas agora (0 = o do disco).
+    thumb_side: u32,
     plan: ScreenPlan,
     loader: Loader,
     screens: HashMap<PhotoId, Image>,
@@ -50,6 +55,8 @@ impl Images {
     pub fn new(cache: &Cache, mailbox: &Mailbox) -> Self {
         Images {
             epoch: 0,
+            thumb_epoch: 0,
+            thumb_side: 0,
             plan: ScreenPlan::default(),
             loader: Loader::new(cache, mailbox),
             screens: HashMap::new(),
@@ -69,6 +76,7 @@ impl Images {
     /// Esquece tudo (álbum novo).
     pub fn clear(&mut self) {
         self.epoch += 1;
+        self.thumb_epoch += 1;
         self.plan = ScreenPlan::default();
         self.screens.clear();
         self.held.clear();
@@ -76,6 +84,21 @@ impl Images {
         self.thumb_plan.forget();
         self.fresh.clear();
         self.original = None;
+    }
+
+    /// Lê as miniaturas com `side` px no lado maior (o tamanho da peça da grade; spec PF, seção
+    /// 13). Trocou: as da memória saem e as listas pedem de novo (`true`).
+    pub fn set_thumb_side(&mut self, side: u32) -> bool {
+        if side == self.thumb_side {
+            return false;
+        }
+        self.thumb_side = side;
+        self.thumb_epoch += 1;
+        self.thumb_loader.set_side(side);
+        self.thumbs.clear();
+        self.thumb_plan.forget();
+        self.fresh.clear();
+        true
     }
 
     /// O cache ganhou imagens: as fotos que não tinham imagem de tela ou miniatura podem ser
@@ -139,12 +162,12 @@ impl Images {
             .iter()
             .filter_map(|id| Some((*id, project.photo(*id).ok()?.clone())))
             .collect();
-        self.thumb_loader.ask(self.epoch, items);
+        self.thumb_loader.ask(self.thumb_epoch, items);
     }
 
     /// Uma miniatura chegou do trabalhador (`None`: não há no cache).
     pub fn thumb_arrived(&mut self, epoch: u64, id: PhotoId, pixels: Option<ThumbPixels>) {
-        if epoch != self.epoch {
+        if epoch != self.thumb_epoch {
             return;
         }
         let (keep, drop) = self.thumb_plan.arrived(id, pixels.is_some());

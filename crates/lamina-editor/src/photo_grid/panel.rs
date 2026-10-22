@@ -93,3 +93,18 @@ pub fn shown_height(stored: Option<f32>, window: f32, chrome: f32, zoom: u32) ->
 pub fn whole_px(height: f32) -> u32 {
     height.max(0.0).round() as u32
 }
+
+/// Os lados de miniatura que a janela lê (px físicos): cada zoom usa o primeiro que cobre a peça,
+/// para não reler a cada passo do controle. 320 é o tamanho da miniatura no disco.
+pub const THUMB_SIDES: [u32; 6] = [128, 160, 192, 224, 256, 320];
+
+/// O lado da miniatura para peças de `zoom` px lógicos numa tela com escala `scale` (spec PF,
+/// seção 13): a menor das [`THUMB_SIDES`] que cobre a peça, no máximo 320. Menos pixels por
+/// miniatura deixam a primeira passada pela grade mais leve.
+pub fn thumb_side(zoom: u32, scale: f32) -> u32 {
+    let need = zoom as f32 * scale.max(1.0);
+    THUMB_SIDES
+        .into_iter()
+        .find(|side| *side as f32 >= need)
+        .unwrap_or(320)
+}

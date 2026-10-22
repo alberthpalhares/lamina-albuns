@@ -11,9 +11,9 @@ use crate::motion::RowOp;
 mod panel;
 
 pub use panel::{
-    HEIGHT_SHARE, LASSO_EDGE, LASSO_SPEED, STAGE_MIN, ZOOM_DEFAULT, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP,
-    ZOOM_WHEEL_STEP, clamp_zoom, default_height, height_limits, lasso_scroll, rows_height,
-    shown_height, wheel_zoom, whole_px, zoom_at_pointer, zoom_keeping_top,
+    HEIGHT_SHARE, LASSO_EDGE, LASSO_SPEED, STAGE_MIN, THUMB_SIDES, ZOOM_DEFAULT, ZOOM_MAX,
+    ZOOM_MIN, ZOOM_STEP, ZOOM_WHEEL_STEP, clamp_zoom, default_height, height_limits, lasso_scroll,
+    rows_height, shown_height, thumb_side, wheel_zoom, whole_px, zoom_at_pointer, zoom_keeping_top,
 };
 
 /// Vão entre as peças e margem em volta (px lógicos).
