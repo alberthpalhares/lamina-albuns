@@ -78,6 +78,7 @@ mod rl_janela;
 mod sr;
 mod ti;
 mod ti_files;
+mod ti_thumbs;
 mod tl_change;
 mod tl_common;
 mod tl_prefs;

@@ -16,6 +16,7 @@ export struct RecentCard {
     missing: bool,
     thumb: image,
     has-thumb: bool,
+    blank: bool,
 }
 
 export struct RecentItem {
@@ -41,6 +42,31 @@ export global RecentsUi {
     callback clear-confirmed();
 }
 
+// O desenho do álbum sem miniatura: duas páginas abertas com o nome. É o álbum em branco da BR
+// (sem lâminas) e também o desenho neutro quando a miniatura falhou (spec TI, regra 5).
+component BlankAlbum inherits Rectangle {
+    in property <string> name;
+    in property <bool> blank;
+    Rectangle {
+        width: 152px;
+        height: 80px;
+        background: #2c2c2c;
+        border-width: 1px;
+        border-color: #4d4d4d;
+        border-radius: 2px;
+        // A dobra entre as duas páginas, interrompida no meio para não cortar o nome.
+        Rectangle { x: (parent.width - 1px) / 2; y: 0; width: 1px; height: 16px; background: #4d4d4d; }
+        Rectangle { x: (parent.width - 1px) / 2; y: parent.height - 16px; width: 1px; height: 16px; background: #4d4d4d; }
+        VerticalLayout {
+            padding: 8px;
+            alignment: center;
+            spacing: 2px;
+            Text { text: root.name; color: Theme.text; font-size: 12px; font-weight: 600; horizontal-alignment: center; overflow: elide; }
+            if root.blank: Text { text: "Álbum em branco"; color: Theme.muted; font-size: 11px; horizontal-alignment: center; }
+        }
+    }
+}
+
 component Card inherits Rectangle {
     in property <RecentCard> data;
     width: 200px;
@@ -61,7 +87,7 @@ component Card inherits Rectangle {
             border-radius: 3px;
             opacity: root.data.missing ? 0.35 : 1;
             if root.data.has-thumb: Image { accessible-role: none; source: root.data.thumb; image-fit: contain; width: parent.width; height: parent.height; }
-            if !root.data.has-thumb: Text { text: "▦"; font-size: 40px; color: #4a4a4a; horizontal-alignment: center; vertical-alignment: center; }
+            if !root.data.has-thumb: BlankAlbum { name: root.data.name; blank: root.data.blank; }
         }
         HorizontalLayout {
             spacing: 4px;
@@ -152,9 +178,14 @@ export component WelcomeScreen inherits VerticalLayout {
                 text <=> RecentsUi.query;
                 edited(text) => { RecentsUi.search(text); }
             }
+            // A área pede a altura dos cartões; sem isso, com o topo alinhado (`start`), ela ficava
+            // com a altura mínima da ScrollView e cortava o cartão logo abaixo do título. Quando
+            // não cabe, a janela dá o que sobra e a área rola (correção TI de 2026-10-22).
             ScrollView {
                 vertical-stretch: 1;
-                VerticalLayout {
+                min-height: 0px;
+                preferred-height: shelf.preferred-height;
+                shelf := VerticalLayout {
                     spacing: 10px;
                     if RecentsUi.pinned.length > 0: Section { text: "FIXADOS"; }
                     if RecentsUi.pinned.length > 0: CardGrid { cards: RecentsUi.pinned; columns-width: list.width - 16px; }

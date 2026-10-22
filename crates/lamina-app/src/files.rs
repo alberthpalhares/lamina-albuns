@@ -147,6 +147,8 @@ pub fn open_file(app: &mut App, file: &Path) {
         Ok(()) => {
             app.project_changed();
             crate::relink::near(app);
+            // Um álbum que nunca foi salvo por esta versão também ganha a miniatura (TI-B18).
+            crate::recents::thumbnail(app);
             crate::recents::refresh(app);
         }
         Err(e) => show_error(app, &e.human()),

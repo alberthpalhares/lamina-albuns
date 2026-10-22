@@ -50,6 +50,8 @@ pub struct Card {
     pub pinned: bool,
     /// O arquivo não existe mais (regra 4).
     pub missing: bool,
+    /// O álbum não tem lâminas (spec BR): o cartão mostra o desenho do álbum em branco.
+    pub blank: bool,
 }
 
 /// Uma linha do menu "Abrir recente ▸"; o arquivo que sumiu fica desabilitado.
@@ -75,6 +77,7 @@ pub fn cards(list: &[Recent], missing: &[PathBuf], clock: Clock) -> Vec<Card> {
             counts: counts_text(r.spreads, r.photos),
             pinned: r.pinned,
             missing: gone.contains(&key(&r.path)),
+            blank: r.spreads == 0,
         })
         .collect()
 }
