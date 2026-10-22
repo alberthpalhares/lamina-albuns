@@ -23,6 +23,23 @@ pub fn is_implemented(spec: &str) -> bool {
         .is_some_and(|l| l.to_lowercase().contains("implementada"))
 }
 
+/// Cenários marcados "(só no Mac)", "(só no Windows)" ou "(só no Linux)" na linha do título: só
+/// esses aceitam um teste que roda num sistema só (`#[cfg(target_os = …)]`, `#[cfg(windows)]`).
+pub fn platform_only(spec: &str) -> Vec<String> {
+    spec.lines()
+        .filter(|line| line.contains("(só no "))
+        .filter_map(|line| scenario_ids(line).into_iter().next())
+        .collect()
+}
+
+/// Atributo que faz o teste rodar num sistema só: no Windows, a porta local não o roda, e o CI
+/// dos PRs (só Linux) também não (auditoria da Rodada 0b, achado do MA-B6).
+fn is_platform_gate(line: &str) -> bool {
+    line.contains("#[cfg(target_os")
+        || line.contains("#[cfg(windows")
+        || line.contains("#[cfg(unix")
+}
+
 /// `#[test]`, ou o teste assíncrono do `tokio` (`#[tokio::test]`, nos testes do servidor MCP).
 fn is_test_attribute(line: &str) -> bool {
     line.contains("#[test]") || line.contains("#[tokio::test")
@@ -30,12 +47,15 @@ fn is_test_attribute(line: &str) -> bool {
 
 /// Cenários sem teste: procura `fn <id_minúsculo>_` com `#[test]` entre os atributos de cima
 /// (pulando comentários de documentação). Um `#[ignore]` ali não conta: teste que não roda não
-/// cobre o cenário (auditoria do Marco 2, M3).
+/// cobre o cenário (auditoria do Marco 2, M3). Um teste de um sistema só cobre só o cenário marcado
+/// para aquele sistema ([`platform_only`]).
 pub fn missing_tests(spec: &str, sources: &str) -> Vec<String> {
     let lines: Vec<&str> = sources.lines().map(str::trim).collect();
+    let marked = platform_only(spec);
     scenario_ids(spec)
         .into_iter()
         .filter(|id| {
+            let gate_ok = marked.contains(id);
             let prefix = format!("fn {}_", id.to_lowercase().replace('-', "_"));
             !lines.iter().enumerate().any(|(i, line)| {
                 let attributes: Vec<&&str> = lines[..i]
@@ -47,6 +67,7 @@ pub fn missing_tests(spec: &str, sources: &str) -> Vec<String> {
                 line.trim_start_matches("async ").starts_with(&prefix)
                     && attributes.iter().any(|l| is_test_attribute(l))
                     && !attributes.iter().any(|l| l.contains("#[ignore"))
+                    && (gate_ok || !attributes.iter().any(|l| is_platform_gate(l)))
             })
         })
         .collect()
@@ -160,6 +181,29 @@ mod tests {
         let spec = "CENÁRIO AB-B1: um\nCENÁRIO AB-B10: dez\n";
         let sources = "#[test]\nfn ab_b10_x() {}";
         assert_eq!(missing_tests(spec, sources), ["AB-B1"]);
+    }
+
+    /// Achado da auditoria da Rodada 0b: um teste só do Mac não roda na porta local nem no CI
+    /// dos PRs; só cobre o cenário marcado "(só no Mac)".
+    #[test]
+    fn teste_de_um_sistema_so_cobre_so_o_cenario_marcado() {
+        let spec = "CENÁRIO MA-B9: todo sistema
+CENÁRIO MA-B10: instalar (só no Mac)
+";
+        let sources = "#[cfg(target_os = \"macos\")]
+#[test]
+fn ma_b9_x() {}
+                       #[cfg(target_os = \"macos\")]
+#[test]
+fn ma_b10_y() {}";
+        assert_eq!(platform_only(spec), ["MA-B10"]);
+        assert_eq!(missing_tests(spec, sources), ["MA-B9"]);
+        let windows = "#[cfg(windows)]
+#[test]
+fn ma_b9_x() {}
+#[test]
+fn ma_b10_y() {}";
+        assert_eq!(missing_tests(spec, windows), ["MA-B9"]);
     }
 
     #[test]

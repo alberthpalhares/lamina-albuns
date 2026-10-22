@@ -203,6 +203,20 @@ jobs:
           for _ in $(seq 120); do [ -s "$relatorio" ] && break; sleep 1; done
           cat "$relatorio"
           grep -q '^aberto: .*fotos\.lamina' "$relatorio"
+      - name: 7. Duplo clique com o Lamina aberto e um álbum alterado (MA-B6)
+        timeout-minutes: 5
+        run: |
+          for _ in $(seq 60); do pgrep -x lamina-app >/dev/null || break; sleep 1; done
+          relatorio="$RUNNER_TEMP/alterado.txt"
+          open -a /Applications/Lamina.app --args --verificar-abertura "$relatorio" --com-alteracoes
+          for _ in $(seq 60); do pgrep -x lamina-app >/dev/null && break; sleep 1; done
+          sleep 8
+          open "$PWD/fumaca/album/fotos.lamina"
+          for _ in $(seq 120); do grep -q '^aberto:\|^erro:' "$relatorio" 2>/dev/null && break; sleep 1; done
+          cat "$relatorio"
+          # A pergunta apareceu e a resposta "Não salvar" seguiu pelo caminho do botão.
+          [ "$(sed -n 1p "$relatorio")" = "pergunta: Salvar as alterações? → Não salvar" ]
+          sed -n 2p "$relatorio" | grep -q '^aberto: .*fotos\.lamina'
 
   licencas:
     name: Licenças e avisos de segurança

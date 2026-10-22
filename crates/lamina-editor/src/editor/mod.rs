@@ -125,6 +125,8 @@ pub struct Editor {
     band: band::BandState,
     /// A largura de Ajustar e o monitor, para o tamanho real (spec ZR, regras 7 e 10).
     view: ViewArea,
+    /// O álbum recebido (duplo clique) que espera "Salvar as alterações?" (spec MA, regra 4).
+    pub(crate) received: Option<std::path::PathBuf>,
 }
 
 /// O que a janela informa para o tamanho real: a largura de Ajustar (pixels lógicos, sem a
@@ -183,6 +185,7 @@ impl Editor {
                 fit_px: 1000.0,
                 monitor: crate::calibration::Monitor::default(),
             },
+            received: None,
         }
     }
 
@@ -332,7 +335,11 @@ impl Editor {
     /// projeto sem arquivo usa `save_to`, escolhido no diálogo "Salvar como".
     pub fn leave(&mut self, choice: Leave, save_to: Option<&Path>) -> Result<bool, EditorError> {
         match choice {
-            Leave::Cancel => Ok(false),
+            Leave::Cancel => {
+                // Cancelar também esquece o álbum recebido que esperava (spec MA, regra 4).
+                self.received = None;
+                Ok(false)
+            }
             Leave::DontSave => Ok(true),
             Leave::Save => {
                 let session = self.session.as_ref().ok_or(EditorError::NoProject)?;

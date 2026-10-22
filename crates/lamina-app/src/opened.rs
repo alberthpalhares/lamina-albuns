@@ -17,8 +17,6 @@ use crate::files;
 use crate::state::{App, Pending};
 
 thread_local! {
-    /// O álbum recebido que espera a resposta de "Salvar as alterações?".
-    static WAITING: RefCell<Option<PathBuf>> = const { RefCell::new(None) };
     /// O relatório de `--verificar-abertura`, se é essa a chamada.
     static REPORT: RefCell<Option<PathBuf>> = const { RefCell::new(None) };
     /// O relatório já foi escrito (o tempo limite não escreve por cima).
@@ -28,13 +26,18 @@ thread_local! {
 /// Quanto a verificação escondida espera por um arquivo (regra 10).
 const WAIT_FOR: Duration = Duration::from_secs(30);
 
-/// `lamina-app --verificar-abertura <relatório> [álbum]` (regra 10): o relatório e, fora do Mac,
-/// o álbum que faz as vezes do duplo clique.
+/// `lamina-app --verificar-abertura <relatório> [--com-alteracoes] [álbum]` (regra 10): o
+/// relatório, se começa com um álbum alterado e, fora do Mac, o álbum que faz as vezes do duplo
+/// clique.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Check {
     pub report: PathBuf,
+    pub changed: bool,
     pub file: Option<PathBuf>,
 }
+
+/// A opção da verificação que começa com um álbum novo, não salvo (spec MA, MA-B6).
+const CHANGED: &str = "--com-alteracoes";
 
 /// A verificação escondida, se é essa a chamada. Sem o relatório, sai com 1 sem janela.
 pub fn requested() -> Option<Check> {
@@ -46,9 +49,15 @@ pub fn requested() -> Option<Check> {
         eprintln!("--verificar-abertura: falta o arquivo do relatório");
         std::process::exit(1);
     };
+    let mut next = args.next();
+    let changed = next.as_ref().is_some_and(|a| a == CHANGED);
+    if changed {
+        next = args.next();
+    }
     Some(Check {
         report: PathBuf::from(report),
-        file: args.next().map(PathBuf::from),
+        changed,
+        file: next.map(PathBuf::from),
     })
 }
 
@@ -68,8 +77,9 @@ pub fn receive(app: &mut App, paths: &[PathBuf]) {
     match app.editor.receive(paths) {
         Received::Open { path, ask, notice } => {
             if ask {
-                WAITING.set(Some(path));
+                // O editor guarda o recebido até a resposta (`take_received` em `proceed`).
                 files::request(app, Pending::OpenReceived);
+                answer_for_check(app);
             } else {
                 open(app, &path);
             }
@@ -93,9 +103,19 @@ pub fn receive(app: &mut App, paths: &[PathBuf]) {
 
 /// "Salvar as alterações?" respondida com Salvar ou Não salvar: abre o álbum que esperava.
 pub fn proceed(app: &mut App) {
-    if let Some(path) = WAITING.take() {
+    if let Some(path) = app.editor.take_received() {
         open(app, &path);
     }
+}
+
+/// Na verificação escondida com alterações: anota a pergunta e responde "Não salvar", pelo
+/// mesmo caminho do botão (`files::answer`).
+fn answer_for_check(app: &mut App) {
+    if REPORT.with_borrow(Option::is_none) || app.pending != Some(Pending::OpenReceived) {
+        return;
+    }
+    note("pergunta: Salvar as alterações? → Não salvar");
+    files::answer(app, 1);
 }
 
 fn open(app: &mut App, path: &Path) {
@@ -128,12 +148,24 @@ fn fail(line: &str) {
     }
 }
 
+/// A última linha do relatório: depois dela, o tempo limite não escreve mais nada.
 fn write(line: &str) {
     REPORTED.set(true);
+    note(line);
+}
+
+/// Uma linha a mais no relatório.
+fn note(line: &str) {
     REPORT.with_borrow(|report| {
-        if let Some(report) = report
-            && let Err(e) = std::fs::write(report, format!("{line}\n"))
-        {
+        let Some(report) = report else {
+            return;
+        };
+        let result = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(report)
+            .and_then(|mut f| std::io::Write::write_all(&mut f, format!("{line}\n").as_bytes()));
+        if let Err(e) = result {
             eprintln!("--verificar-abertura: {}: {e}", report.display());
         }
     });
@@ -152,6 +184,9 @@ pub fn listen(app: &Shared, check: Option<Check>) -> Listener {
     if let Some(check) = check {
         REPORT.set(Some(check.report));
         Timer::single_shot(WAIT_FOR, || fail("erro: nenhum arquivo chegou"));
+        if check.changed {
+            changed_album(&mut app.borrow_mut());
+        }
         if let Some(file) = check.file {
             receive(&mut app.borrow_mut(), &[file]);
         }
@@ -160,6 +195,20 @@ pub fn listen(app: &Shared, check: Option<Check>) -> Listener {
         #[cfg(target_os = "macos")]
         _mac: mac::Mac::listen(app),
     }
+}
+
+/// Um álbum novo, nunca salvo, como "Começar sem fotos": tem alterações a perguntar.
+fn changed_album(app: &mut App) {
+    let cm30 = lamina_core::Mm::from_cm(30.0);
+    let Ok(dpi) = lamina_core::Dpi::new(300) else {
+        return;
+    };
+    let Ok(spec) = lamina_core::AlbumSpec::new(cm30, cm30, dpi) else {
+        return;
+    };
+    app.editor
+        .adopt(lamina_core::Project::new("Álbum com alterações", spec));
+    app.project_changed();
 }
 
 #[cfg(target_os = "macos")]
