@@ -515,6 +515,8 @@ export component AppWindow inherits Window {
                 root.focus-main();
             }
         }
+        // A roda fora da faixa não passa para o rolo de baixo: a lâmina andaria sob a prévia.
+        scroll-event(e) => { accept }
     }
     if root.has-project: LayoutBand {
         x: stage.absolute-position.x;

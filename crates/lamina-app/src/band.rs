@@ -179,6 +179,20 @@ mod tests {
     }
 
     #[test]
+    fn com_a_faixa_aberta_a_roda_fora_dela_nao_mexe_no_rolo() {
+        // A camada que fecha a faixa num clique fora também fica com a roda (medida da FL,
+        // 2026-10-22): antes, a roda passava para o rolo da RL e a lâmina andava sob a prévia.
+        let app = include_str!("../ui/app.slint");
+        let start = app.find("BandUi.open: TouchArea {").unwrap_or(0);
+        let layer: String = app[start..].lines().take_while(|l| *l != "    }").collect();
+        assert!(layer.contains("BandUi.close()"), "a camada fecha a faixa");
+        assert!(
+            layer.contains("scroll-event(e) => { accept }"),
+            "e engole a roda"
+        );
+    }
+
+    #[test]
     fn fl_b9_o_painel_da_direita_sem_a_aba_layouts() {
         let tabs = tabs();
         let labels: Vec<&str> = tabs.iter().map(|(label, _)| label.as_str()).collect();
