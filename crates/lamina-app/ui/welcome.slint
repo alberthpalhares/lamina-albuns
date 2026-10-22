@@ -60,7 +60,7 @@ component Card inherits Rectangle {
             background: #1f1f1f;
             border-radius: 3px;
             opacity: root.data.missing ? 0.35 : 1;
-            if root.data.has-thumb: Image { source: root.data.thumb; image-fit: contain; width: parent.width; height: parent.height; }
+            if root.data.has-thumb: Image { accessible-role: none; source: root.data.thumb; image-fit: contain; width: parent.width; height: parent.height; }
             if !root.data.has-thumb: Text { text: "▦"; font-size: 40px; color: #4a4a4a; horizontal-alignment: center; vertical-alignment: center; }
         }
         HorizontalLayout {
@@ -121,7 +121,7 @@ export component WelcomeScreen inherits VerticalLayout {
     alignment: RecentsUi.has-recents ? start : center;
     spacing: 16px;
     padding-top: RecentsUi.has-recents ? 24px : 0px;
-    Image { source: @image-url("../icons/lamina-logo-escuro.svg"); height: 64px; image-fit: contain; }
+    Image { accessible-role: none; source: @image-url("../icons/lamina-logo-escuro.svg"); height: 64px; image-fit: contain; }
     Text { text: "Diagramação de álbuns de fotos"; color: Theme.muted; horizontal-alignment: center; }
     if !RecentsUi.has-recents: HorizontalLayout {
         alignment: center;

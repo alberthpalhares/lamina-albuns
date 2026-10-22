@@ -72,6 +72,7 @@ component Picture inherits Rectangle {
     clip: true;
     background: #1b1b1b;
     if root.entry.has-image: Image {
+        accessible-role: none;
         width: parent.width;
         height: parent.height;
         source: NewsUi.playing ? NewsUi.frame : root.entry.image;

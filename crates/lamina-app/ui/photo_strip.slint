@@ -46,6 +46,10 @@ component PhotoTile inherits Rectangle {
     callback focus-main();
     height: root.tile + (root.named ? 18px : 0px);
     border-radius: 4px;
+    // Para o leitor de tela, a peça é um item só, com o nome da foto: a miniatura, o nome e o
+    // selo por dentro ficam fora da árvore (spec RL, regra 30).
+    accessible-role: list-item;
+    accessible-label: root.data.uses > 0 ? root.data.name + ", usada " + root.data.uses + "×" : root.data.name;
     background: root.lit ? #4fc3f740 : root.current ? #ffffff1f : transparent;
 
     property <bool> arrived: root.data.img.width > 0;
@@ -61,6 +65,7 @@ component PhotoTile inherits Rectangle {
         opacity: root.arrived ? 0 : root.faded;
     }
     Image {
+        accessible-role: none;
         x: (root.tile - root.pw) / 2;
         y: (root.tile - root.ph) / 2;
         width: root.pw;
@@ -71,6 +76,7 @@ component PhotoTile inherits Rectangle {
         animate opacity { duration: Motion.on ? Motion.fade-ms * 1ms : 0ms; }
     }
     if root.named: Text {
+        accessible-role: none;
         x: 4px;
         y: root.tile;
         width: root.tile - 36px;
@@ -90,6 +96,7 @@ component PhotoTile inherits Rectangle {
         border-radius: 3px;
         background: root.named ? transparent : #000000a0;
         badge := Text {
+            accessible-role: none;
             text: "×" + root.data.uses;
             color: Theme.text;
             font-size: 11px;
