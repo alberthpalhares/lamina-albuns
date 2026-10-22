@@ -189,63 +189,66 @@ component SpreadBar inherits Rectangle {
     height: 24px;
     border-radius: 4px;
     background: #1b1b1bE6;
-    touch := TouchArea { }
-    HorizontalLayout {
-        padding-left: 8px;
-        padding-right: 4px;
-        spacing: 2px;
-        Text {
-            text: root.index >= 0 && root.index < RollUi.badges.length ? RollUi.badges[root.index] : "";
-            color: Theme.text;
-            font-size: 12px;
-            vertical-alignment: center;
-            horizontal-stretch: 1;
-            overflow: elide;
-        }
-        // O botão Layouts depende da faixa de layouts (spec FL): sem ela, não aparece.
-        for b in RollUi.buttons: RollIcon {
-            visible: b.name != "ver.faixa-layouts" || b.enabled;
-            width: self.visible ? 24px : 0px;
-            icon: b.name == "lamina.organizar" ? @image-url("../icons/rolo/lapis.svg")
-                : b.name == "ver.faixa-layouts" ? @image-url("../icons/rolo/layouts.svg")
-                : b.name == "layout.espelhar" ? @image-url("../icons/rolo/espelhar.svg")
-                : @image-url("../icons/eg/texto.svg");
-            tip: b.tip;
-            enabled: b.enabled;
-            clicked => { RollUi.bar(root.index, b.name); }
-        }
-        Rectangle {
-            width: 24px;
-            Image {
-                accessible-role: none;
-                width: 16px;
-                height: 16px;
-                source: @image-url("../icons/eg/alca.svg");
-                colorize: grip.has-hover || grip.pressed ? Theme.selected : Theme.muted;
+    // A barra inteira percebe o mouse, também por cima dos botões e da alça: com a área ao lado
+    // deles, o ponteiro num botão "saía" da barra e ela sumia antes do clique (beta.5).
+    touch := TouchArea {
+        HorizontalLayout {
+            padding-left: 8px;
+            padding-right: 4px;
+            spacing: 2px;
+            Text {
+                text: root.index >= 0 && root.index < RollUi.badges.length ? RollUi.badges[root.index] : "";
+                color: Theme.text;
+                font-size: 12px;
+                vertical-alignment: center;
+                horizontal-stretch: 1;
+                overflow: elide;
             }
-            grip := TouchArea {
-                mouse-cursor: grab;
-                pointer-event(e) => {
-                    if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
-                        DragUi.press-x = self.absolute-position.x + self.mouse-x;
-                        DragUi.press-y = self.absolute-position.y + self.mouse-y;
-                        DragUi.from = root.index;
-                    }
-                    if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
-                        if (DragUi.kind == 4 && root.inside) {
-                            RollUi.grip-dropped(DragUi.from, RollUi.grip-gap(DragUi.x - root.origin));
-                        }
-                        DragUi.kind = 0;
-                    }
+            // O botão Layouts depende da faixa de layouts (spec FL): sem ela, não aparece.
+            for b in RollUi.buttons: RollIcon {
+                visible: b.name != "ver.faixa-layouts" || b.enabled;
+                width: self.visible ? 24px : 0px;
+                icon: b.name == "lamina.organizar" ? @image-url("../icons/rolo/lapis.svg")
+                    : b.name == "ver.faixa-layouts" ? @image-url("../icons/rolo/layouts.svg")
+                    : b.name == "layout.espelhar" ? @image-url("../icons/rolo/espelhar.svg")
+                    : @image-url("../icons/eg/texto.svg");
+                tip: b.tip;
+                enabled: b.enabled;
+                clicked => { RollUi.bar(root.index, b.name); }
+            }
+            Rectangle {
+                width: 24px;
+                Image {
+                    accessible-role: none;
+                    width: 16px;
+                    height: 16px;
+                    source: @image-url("../icons/eg/alca.svg");
+                    colorize: grip.has-hover || grip.pressed ? Theme.selected : Theme.muted;
                 }
-                moved => {
-                    let x = self.absolute-position.x + self.mouse-x;
-                    let y = self.absolute-position.y + self.mouse-y;
-                    if (DragUi.kind == 0 && DragUi.far(x, y)) {
-                        DragUi.kind = 4;
+                grip := TouchArea {
+                    mouse-cursor: grab;
+                    pointer-event(e) => {
+                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                            DragUi.press-x = self.absolute-position.x + self.mouse-x;
+                            DragUi.press-y = self.absolute-position.y + self.mouse-y;
+                            DragUi.from = root.index;
+                        }
+                        if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                            if (DragUi.kind == 4 && root.inside) {
+                                RollUi.grip-dropped(DragUi.from, RollUi.grip-gap(DragUi.x - root.origin));
+                            }
+                            DragUi.kind = 0;
+                        }
                     }
-                    DragUi.x = x;
-                    DragUi.y = y;
+                    moved => {
+                        let x = self.absolute-position.x + self.mouse-x;
+                        let y = self.absolute-position.y + self.mouse-y;
+                        if (DragUi.kind == 0 && DragUi.far(x, y)) {
+                            DragUi.kind = 4;
+                        }
+                        DragUi.x = x;
+                        DragUi.y = y;
+                    }
                 }
             }
         }

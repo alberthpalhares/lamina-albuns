@@ -16,6 +16,7 @@ use crate::{EditorError, Session};
 
 mod adjust;
 mod arrange_cmd;
+mod backup;
 mod band;
 mod build_album;
 mod clipboard;
@@ -127,6 +128,8 @@ pub struct Editor {
     view: ViewArea,
     /// O álbum recebido (duplo clique) que espera "Salvar as alterações?" (spec MA, regra 4).
     pub(crate) received: Option<std::path::PathBuf>,
+    /// As cópias de segurança (spec CS); nenhuma nos testes e na linha de comando.
+    backups: Option<crate::backup::Backups>,
 }
 
 /// O que a janela informa para o tamanho real: a largura de Ajustar (pixels lógicos, sem a
@@ -186,6 +189,7 @@ impl Editor {
                 monitor: crate::calibration::Monitor::default(),
             },
             received: None,
+            backups: None,
         }
     }
 

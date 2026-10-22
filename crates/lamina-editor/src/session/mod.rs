@@ -85,8 +85,24 @@ impl Session {
         self.saved.as_ref() != Some(&self.for_disk())
     }
 
+    /// O álbum recuperado de uma cópia de segurança (spec CS, regra 5): o projeto da cópia, o
+    /// arquivo do álbum (Ctrl+S grava nele) e o projeto que está nesse arquivo, para as
+    /// alterações contarem como não salvas; na lâmina em que estava.
+    pub fn recovered(
+        project: Project,
+        file: Option<PathBuf>,
+        on_disk: Option<Project>,
+        spread: usize,
+    ) -> Self {
+        let mut session = Session::with(project, file, false);
+        session.saved = on_disk;
+        session.opened = true;
+        session.go_to(spread);
+        session
+    }
+
     /// O projeto como vai para o arquivo: o atual com as preferências de exportação.
-    fn for_disk(&self) -> Project {
+    pub(crate) fn for_disk(&self) -> Project {
         let mut project = self.project().clone();
         project.export = self.export;
         project

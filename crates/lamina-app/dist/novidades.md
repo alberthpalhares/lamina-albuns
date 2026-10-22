@@ -13,6 +13,18 @@ botão "Experimente agora": `<!-- imagem: atalhos.png; comando: ajuda.atalhos --
 
 ## [Não lançado]
 
+- **O Lamina não fecha mais sozinho ao diagramar.** Criar lâminas arrastando fotos podia fechar o
+  Lamina depois de alguns minutos, principalmente no Mac; a conta que causava isso foi corrigida, e
+  as janelas de abrir, salvar e importar agora ficam presas à janela do Lamina. Experimente:
+  arraste várias fotos para o "+ Lâmina nova", uma de cada vez, e siga diagramando.
+- **Uma cópia de segurança do trabalho não salvo.** Enquanto você diagrama, o Lamina guarda uma
+  cópia do álbum a cada minuto. Se ele fechar sem salvar, na próxima abertura ele pergunta se você
+  quer recuperar, e o álbum volta na lâmina em que você estava. O seu arquivo só muda quando você
+  salva. Experimente: faça uma alteração e salve com Ctrl+S; a cópia some sozinha.
+- **A barra de cima de cada lâmina fica parada sob o mouse.** Os botões Organizar, Layouts,
+  Espelhar e Texto e a alça agora dão para clicar. Experimente: passe o mouse sobre a lâmina, suba
+  até a barra e clique no lápis.
+
 ## [0.1.0-beta.5] - 2026-10-22
 
 Esta versão põe as lâminas lado a lado, traz a faixa de layouts, o painel de fotos em grade e o álbum que começa em branco, e corrige o Lamina que fechava no Mac ao importar muitas fotos.

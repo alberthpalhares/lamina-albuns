@@ -45,10 +45,10 @@ pub fn run_command(app: &Shared, command: Command) {
         Command::CloseAlbum => files::request(&mut a, Pending::CloseAlbum),
         Command::ClearRecents => crate::recents::ask_clear(&a),
         Command::Save => {
-            files::save(&mut a, false);
+            files::save(&mut a, false, |_, _| {});
         }
         Command::SaveAs => {
-            files::save(&mut a, true);
+            files::save(&mut a, true, |_, _| {});
         }
         Command::Export => export::start(&mut a),
         Command::FindMissing => relink::find(&mut a),

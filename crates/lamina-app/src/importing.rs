@@ -22,23 +22,26 @@ const GATHER: Duration = Duration::from_millis(150);
 
 /// "Importar fotos…" (vários arquivos) ou "Importar uma pasta de fotos…".
 pub fn pick(app: &mut App, folder: bool) {
-    let dialog = rfd::FileDialog::new().set_title(if folder {
-        "Pasta com as fotos para importar"
-    } else {
-        "Fotos para importar"
-    });
-    let paths = if folder {
-        dialog.pick_folder().map(|p| vec![p])
-    } else {
-        dialog
-            .add_filter(
-                "Fotos",
-                &["jpg", "jpeg", "png", "tif", "tiff", "heic", "heif"],
-            )
-            .pick_files()
+    let dialog = crate::dialogs::dialog(
+        app,
+        if folder {
+            "Pasta com as fotos para importar"
+        } else {
+            "Fotos para importar"
+        },
+    );
+    let chosen = |app: &mut App, paths: Option<Vec<rfd::FileHandle>>| {
+        if let Some(paths) = paths {
+            let paths = paths.iter().map(|p| p.path().to_path_buf()).collect();
+            start(app, paths, None);
+        }
     };
-    if let Some(paths) = paths {
-        start(app, paths, None);
+    if folder {
+        let answer = dialog.pick_folder();
+        crate::dialogs::then(async { answer.await.map(|p| vec![p]) }, chosen);
+    } else {
+        let photos = &["jpg", "jpeg", "png", "tif", "tiff", "heic", "heif"];
+        crate::dialogs::then(dialog.add_filter("Fotos", photos).pick_files(), chosen);
     }
 }
 

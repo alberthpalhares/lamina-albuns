@@ -94,3 +94,18 @@ pub fn until(delay: std::time::Duration, f: fn(&mut App) -> bool) {
         }
     });
 }
+
+/// Roda `f` com o estado da janela assim que ele estiver livre (a resposta de um diálogo); janela
+/// fechada: não roda.
+pub fn with_app(f: impl FnOnce(&mut App) + 'static) {
+    let app = INBOX.with_borrow(|inbox| inbox.as_ref().and_then(|(_, app)| app.upgrade()));
+    let Some(app) = app else {
+        return;
+    };
+    match app.try_borrow_mut() {
+        Ok(mut app) => f(&mut app),
+        Err(_) => {
+            slint::Timer::single_shot(std::time::Duration::from_millis(10), move || with_app(f));
+        }
+    }
+}
