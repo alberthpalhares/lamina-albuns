@@ -4,17 +4,23 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+use image::RgbaImage;
 use lamina_core::{PhotoId, Project};
 use lamina_render::RenderTarget;
 
 use crate::Cache;
+use crate::updates::news::{Illustration, illustration};
 
 /// 320 px no lado maior.
 pub const THUMB_SIDE: u32 = 320;
 
 /// Desenha a primeira lâmina com o renderizador da prévia (as miniaturas das fotos, do cache,
-/// bastam nesse tamanho) e grava em `target`. `Err` com o motivo, em texto.
-pub fn write_thumbnail(project: &Project, cache: &Cache, target: &Path) -> Result<(), String> {
+/// bastam nesse tamanho), seja qual for a lâmina em que o fotógrafo parou. `None` para o álbum
+/// sem lâminas (spec BR): o cartão mostra o desenho do álbum em branco. `Err` com o motivo.
+pub fn thumbnail_image(project: &Project, cache: &Cache) -> Result<Option<RgbaImage>, String> {
+    if project.spreads.is_empty() {
+        return Ok(None);
+    }
     let thumbs: HashMap<PhotoId, PathBuf> = project
         .photos
         .iter()
@@ -25,8 +31,20 @@ pub fn write_thumbnail(project: &Project, cache: &Cache, target: &Path) -> Resul
     let target_size = RenderTarget::Preview {
         max_side: THUMB_SIDE,
     };
-    let image = lamina_render::render_spread(project, 0, target_size, &source)
-        .map_err(|e| e.to_string())?;
+    lamina_render::render_spread(project, 0, target_size, &source)
+        .map(Some)
+        .map_err(|e| e.to_string())
+}
+
+/// Grava em `target` a miniatura da primeira lâmina. Álbum sem lâminas não tem miniatura: a que
+/// sobrou de antes é apagada, para o cartão não mostrar lâminas que não existem mais.
+pub fn write_thumbnail(project: &Project, cache: &Cache, target: &Path) -> Result<(), String> {
+    let Some(image) = thumbnail_image(project, cache)? else {
+        return match std::fs::remove_file(target) {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e.to_string()),
+            _ => Ok(()),
+        };
+    };
     let folder = target.parent().unwrap_or(Path::new("."));
     std::fs::create_dir_all(folder).map_err(|e| e.to_string())?;
     let tmp = tempfile::Builder::new()
@@ -38,6 +56,12 @@ pub fn write_thumbnail(project: &Project, cache: &Cache, target: &Path) -> Resul
         .map_err(|e| e.to_string())?;
     tmp.persist(target).map_err(|e| e.error.to_string())?;
     Ok(())
+}
+
+/// Lê a miniatura do disco, sempre de novo: a janela não pode guardar a imagem pelo caminho,
+/// senão o cartão continua com a miniatura de antes depois de salvar. `None` sem miniatura.
+pub fn read_thumbnail(path: &Path) -> Option<Illustration> {
+    illustration(&std::fs::read(path).ok()?)
 }
 
 /// Os caminhos que não existem mais. Só confere se o arquivo existe, sem ler (regra 4); pode

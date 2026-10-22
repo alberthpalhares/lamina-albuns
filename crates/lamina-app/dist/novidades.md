@@ -13,6 +13,10 @@ botão "Experimente agora": `<!-- imagem: atalhos.png; comando: ajuda.atalhos --
 
 ## [Não lançado]
 
+- **Os álbuns recentes inteiros, com a primeira lâmina.** Na tela inicial, cada álbum aparece num
+  cartão completo, com a primeira lâmina, o nome, quando foi aberto e quantas lâminas e fotos tem;
+  um álbum ainda sem lâminas aparece como um álbum em branco com o nome. Experimente: abra um
+  álbum, feche com Ctrl+W e veja o cartão dele na tela inicial.
 - **As lâminas lado a lado.** As lâminas vizinhas aparecem dos lados da que você está editando, e a
   roda do mouse ou dois dedos no touchpad passeiam pelo álbum de lado. Um clique numa vizinha a
   traz para o meio; passando o mouse, aparecem os atalhos dela e a alça para mudar a lâmina de

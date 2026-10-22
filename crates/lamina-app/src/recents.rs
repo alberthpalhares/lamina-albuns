@@ -6,9 +6,10 @@ use std::path::PathBuf;
 
 use lamina_editor::guarded;
 use lamina_editor::recents::{
-    Card, Clock, cards, missing_files, recent_menu, search, show_search, write_thumbnail,
+    Card, Clock, cards, missing_files, read_thumbnail, recent_menu, search, show_search,
+    write_thumbnail,
 };
-use slint::{ComponentHandle, Image};
+use slint::ComponentHandle;
 
 use crate::convert::model;
 use crate::files;
@@ -45,11 +46,14 @@ pub fn refresh(app: &App) {
 }
 
 fn card_data(app: &App, c: &Card) -> RecentCard {
+    // Lida do disco a cada vez: `Image::load_from_path` guarda a imagem pelo caminho e o cartão
+    // ficava com a miniatura de antes depois de salvar (TI-B17).
     let thumb = app
         .editor
         .recents()
         .thumb_path(&c.path)
-        .and_then(|p| Image::load_from_path(&p).ok());
+        .and_then(|p| read_thumbnail(&p))
+        .map(|picture| crate::news_player::image(&picture));
     RecentCard {
         index: index(c.index),
         name: c.name.as_str().into(),
@@ -58,7 +62,8 @@ fn card_data(app: &App, c: &Card) -> RecentCard {
         counts: c.counts.as_str().into(),
         pinned: c.pinned,
         missing: c.missing,
-        has_thumb: thumb.is_some(),
+        has_thumb: thumb.is_some() && !c.blank,
+        blank: c.blank,
         thumb: thumb.unwrap_or_default(),
     }
 }
@@ -85,7 +90,7 @@ pub fn check(app: &App) {
     });
 }
 
-/// Depois de salvar: a miniatura da primeira lâmina, fora da linha da janela (regra 5).
+/// Depois de salvar ou abrir: a miniatura da primeira lâmina, fora da linha da janela (regra 5).
 pub fn thumbnail(app: &App) {
     let Some((project, target)) = app.editor.thumbnail_job() else {
         return;
