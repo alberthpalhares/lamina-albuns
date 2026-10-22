@@ -24,41 +24,47 @@ pub fn show_error(app: &App, message: &HumanMessage) {
     }
 }
 
-/// "Salvar como": o arquivo escolhido, sempre com a extensão `.lamina`.
-fn ask_save_path(app: &App) -> Option<PathBuf> {
-    let name = app.session()?.title().to_owned();
-    let path = rfd::FileDialog::new()
-        .set_title("Salvar como")
-        .add_filter(FILTER_NAME, &[EXT])
-        .set_file_name(format!("{name}.{EXT}"))
-        .save_file()?;
-    Some(if path.extension().is_some_and(|e| e == EXT) {
-        path
+/// O arquivo escolhido no "Salvar como", sempre com a extensão `.lamina`.
+fn with_ext(path: &Path) -> PathBuf {
+    if path.extension().is_some_and(|e| e == EXT) {
+        path.to_path_buf()
     } else {
         path.with_extension(EXT)
-    })
+    }
 }
 
-/// Salva (ou "Salvar como", se `as_new` ou se ainda não tem arquivo). `true` = salvou.
-pub fn save(app: &mut App, as_new: bool) -> bool {
+/// Salva (ou "Salvar como", se `as_new` ou se ainda não tem arquivo) e roda `after` com `true` se
+/// salvou. O "Salvar como" espera a resposta do diálogo.
+pub fn save(app: &mut App, as_new: bool, after: impl FnOnce(&mut App, bool) + 'static) {
     let Some(session) = app.editor.session() else {
-        return false;
+        return after(app, false);
     };
-    let target = if as_new || session.file().is_none() {
-        match ask_save_path(app) {
-            Some(path) => Some(path),
-            None => return false,
-        }
-    } else {
-        None
-    };
+    if !as_new && session.file().is_some() {
+        let saved = save_to(app, None);
+        return after(app, saved);
+    }
+    let name = session.title().to_owned();
+    let answer = crate::dialogs::dialog(app, "Salvar como")
+        .add_filter(FILTER_NAME, &[EXT])
+        .set_file_name(format!("{name}.{EXT}"))
+        .save_file();
+    crate::dialogs::then(answer, move |app, path| {
+        let saved = path.is_some_and(|p| save_to(app, Some(&with_ext(p.path()))));
+        after(app, saved);
+    });
+}
+
+/// Grava no arquivo do álbum ou em `target`. `true` = salvou.
+fn save_to(app: &mut App, target: Option<&Path>) -> bool {
     // Salvar põe o álbum no topo dos recentes e gera a miniatura (spec TI, regras 1 e 5).
-    let result = app.editor.save_to(target.as_deref());
+    let result = app.editor.save_to(target);
     app.refresh_current();
     match result {
         Ok(_) => {
             crate::recents::thumbnail(app);
             crate::recents::refresh(app);
+            // Salvo: a cópia de segurança vai embora (spec CS, regra 2).
+            crate::backup::tick(app);
             true
         }
         Err(e) => {
@@ -94,11 +100,18 @@ pub fn answer(app: &mut App, choice: i32) {
         1 => Leave::DontSave,
         _ => Leave::Cancel,
     };
-    let go = if choice == Leave::Save {
-        save(app, false)
+    if choice == Leave::Save {
+        save(app, false, move |app, saved| {
+            after_answer(app, action, saved)
+        });
     } else {
-        app.editor.leave(choice, None).unwrap_or(false)
-    };
+        let go = app.editor.leave(choice, None).unwrap_or(false);
+        after_answer(app, action, go);
+    }
+}
+
+/// Segue com a ação depois da pergunta, ou volta atrás se não deu para sair.
+fn after_answer(app: &mut App, action: Pending, go: bool) {
     if go {
         proceed(app, action);
     } else if action == Pending::Update {
@@ -116,7 +129,11 @@ fn proceed(app: &mut App, action: Pending) {
         }
         Pending::Open => open(app),
         Pending::NewAlbum => crate::new_project::start(app),
-        Pending::Update => crate::updates::restart(app),
+        Pending::Update => {
+            // O fotógrafo já respondeu "Salvar as alterações?" (spec CS, regra 3).
+            app.editor.finish_backups();
+            crate::updates::restart(app);
+        }
         Pending::Example => crate::welcome::open_example(app),
         Pending::OpenRecent(i) => crate::recents::open(app, i),
         Pending::OpenReceived => crate::opened::proceed(app),
@@ -131,14 +148,14 @@ fn proceed(app: &mut App, action: Pending) {
 }
 
 fn open(app: &mut App) {
-    let Some(file) = rfd::FileDialog::new()
-        .set_title("Abrir álbum")
+    let answer = crate::dialogs::dialog(app, "Abrir álbum")
         .add_filter(FILTER_NAME, &[EXT])
-        .pick_file()
-    else {
-        return;
-    };
-    open_file(app, &file);
+        .pick_file();
+    crate::dialogs::then(answer, |app, file| {
+        if let Some(file) = file {
+            open_file(app, file.path());
+        }
+    });
 }
 
 /// Abre `file`; se não der, mostra o erro e o projeto anterior continua aberto.

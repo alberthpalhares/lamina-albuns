@@ -38,6 +38,7 @@ pub mod album;
 pub mod appearance;
 mod applying;
 pub mod arrange;
+pub mod backup;
 pub mod bar_tips;
 pub mod building;
 pub mod cache;

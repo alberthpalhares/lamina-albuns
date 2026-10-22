@@ -23,8 +23,9 @@ pub fn group_box(rects: &[Rect]) -> Option<Rect> {
     ))
 }
 
-/// `v` preso entre `lo` e `hi` (com `lo > hi`, fica `lo`).
-fn fit(v: f64, lo: f64, hi: f64) -> f64 {
+/// `v` preso entre `lo` e `hi` (com `lo > hi`, fica `lo`): o `clamp` do Rust fecharia o Lamina
+/// quando um arredondamento deixa `hi` um fio abaixo de `lo` (beta.5).
+pub(crate) fn fit(v: f64, lo: f64, hi: f64) -> f64 {
     if lo > hi { lo } else { v.clamp(lo, hi) }
 }
 

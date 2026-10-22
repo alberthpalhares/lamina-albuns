@@ -6,7 +6,7 @@
 import { Button, ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { SpreadData, FrameData, BoxData } from "canvas.slint";
-import { ConfirmDialog, MessageDialog, BusyOverlay } from "dialogs.slint";
+import { ConfirmDialog, MessageDialog, BusyOverlay, RecoverDialog, RecoverUi } from "dialogs.slint";
 import { NewProjectDialog, NewProjectUi, FormatCard, DrawData } from "new_project.slint";
 import { ImportUi, DropOverlay } from "importing.slint";
 import { BuildUi, BuildAlbumDialog } from "build_album.slint";
@@ -40,7 +40,7 @@ import { NewsUi, NewsDialog, NewsEntryData } from "news.slint";
 import { RollUi, RollCell, RollButton, RollHitData } from "roll.slint";
 
 export { BuildUi }
-export { CalibrateUi, SpreadData, FrameData, BoxData, LayoutItem, BandUi, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, ShortcutsUi, ShortcutGroup, ShortcutRow, NewsUi, NewsEntryData, RollUi, RollCell, RollButton, RollHitData }
+export { CalibrateUi, SpreadData, FrameData, BoxData, LayoutItem, BandUi, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, ShortcutsUi, RecoverUi, ShortcutGroup, ShortcutRow, NewsUi, NewsEntryData, RollUi, RollCell, RollButton, RollHitData }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -378,7 +378,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(event) => {
-            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || CalibrateUi.show || ShortcutsUi.show || NewsUi.show || BuildUi.show || root.busy-text != "") {
+            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || CalibrateUi.show || ShortcutsUi.show || NewsUi.show || BuildUi.show || RecoverUi.show || root.busy-text != "") {
                 return reject;
             }
             // No modo organizar, Espaço segurado é a mão (spec EG, seção 3).
@@ -600,6 +600,8 @@ export component AppWindow inherits Window {
     if RecentsUi.show-clear: ClearRecentsDialog {
         closed => { root.focus-main(); }
     }
+    // Por cima de tudo na abertura, até das novidades (spec CS, regra 4).
+    if RecoverUi.show: RecoverDialog { }
     if DragUi.kind == 1 || DragUi.kind == 2 || DragUi.landing: DragGhost {
         ghost: root.ghost;
         landing: DragUi.landing;

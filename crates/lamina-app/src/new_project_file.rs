@@ -122,12 +122,16 @@ pub fn refresh(app: &App) {
 
 /// "Escolher pasta…": conta as fotos e sugere o nome e as lâminas.
 fn pick_folder(app: &mut App) {
-    let Some(folder) = rfd::FileDialog::new()
-        .set_title("Pasta das fotos do álbum")
-        .pick_folder()
-    else {
-        return;
-    };
+    let answer = crate::dialogs::dialog(app, "Pasta das fotos do álbum").pick_folder();
+    crate::dialogs::then(answer, |app, folder| {
+        if let Some(folder) = folder {
+            use_folder(app, folder.path().to_path_buf());
+        }
+    });
+}
+
+/// A pasta escolhida: conta as fotos e sugere o nome e as lâminas.
+fn use_folder(app: &mut App, folder: std::path::PathBuf) {
     let Some(w) = app.window.upgrade() else {
         return;
     };
@@ -161,15 +165,16 @@ fn change_file(app: &mut App) {
         return;
     };
     let name = w.global::<NewProjectUi>().get_name().trim().to_owned();
-    if let Some(path) = rfd::FileDialog::new()
-        .set_title("Onde salvar o álbum")
+    let answer = crate::dialogs::dialog(app, "Onde salvar o álbum")
         .add_filter("Projeto do Lamina", &["lamina"])
         .set_file_name(format!("{name}.lamina"))
-        .save_file()
-    {
-        app.new_target = Some(path.with_extension("lamina"));
-    }
-    refresh(app);
+        .save_file();
+    crate::dialogs::then(answer, |app, path| {
+        if let Some(path) = path {
+            app.new_target = Some(path.path().with_extension("lamina"));
+        }
+        refresh(app);
+    });
 }
 
 /// "Criar": grava o arquivo e abre o álbum. Com fotos, monta em segundo plano.

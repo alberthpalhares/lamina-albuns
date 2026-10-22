@@ -50,9 +50,11 @@ impl Crop {
             (photo_w, photo_w / frame_aspect)
         };
         let zoom = self.zoom.max(1.0);
-        let (width, height) = (full_w / zoom, full_h / zoom);
-        let x = (self.center_x * photo_w - width / 2.0).clamp(0.0, photo_w - width);
-        let y = (self.center_y * photo_h - height / 2.0).clamp(0.0, photo_h - height);
+        // Com o quadro na proporção da foto, a conta pode passar da foto por um arredondamento
+        // (4,5e-13 px); a região fica dentro dela e o limite do centro nunca é negativo.
+        let (width, height) = ((full_w / zoom).min(photo_w), (full_h / zoom).min(photo_h));
+        let x = (self.center_x * photo_w - width / 2.0).clamp(0.0, (photo_w - width).max(0.0));
+        let y = (self.center_y * photo_h - height / 2.0).clamp(0.0, (photo_h - height).max(0.0));
         PixelRegion {
             x,
             y,
@@ -218,6 +220,23 @@ mod tests {
         let fixed = edge.checked(W, H, 1.0).unwrap();
         assert!((fixed.center_x - width / 2.0 / W).abs() < 1e-12);
         assert_eq!(fixed.visible_region(W, H, 1.0).x, 0.0);
+    }
+
+    #[test]
+    fn fb_b1_quadro_na_proporcao_da_foto_nao_derruba_o_lamina() {
+        // A falha do Mac (beta.5): com o quadro na proporção da foto, a conta da altura passava
+        // da foto por um arredondamento (photo_h - height = -4,5e-13) e o `clamp` entrava em
+        // pânico. Proporções vindas de milímetros, como nos quadros de verdade.
+        for h in (2000..4100).step_by(7) {
+            for w in [2000.0, 3000.0, 4000.0, 4032.0, 5464.0, 6000.0, 8256.0] {
+                let h = f64::from(h);
+                for aspect in [w / h, (w * 0.1) / (h * 0.1), (w / 3.7) / (h / 3.7)] {
+                    let r = Crop::default().visible_region(w, h, aspect);
+                    assert!(r.x >= 0.0 && r.y >= 0.0, "{w}x{h} {aspect}: {r:?}");
+                    assert!(r.width <= w && r.height <= h, "{w}x{h} {aspect}: {r:?}");
+                }
+            }
+        }
     }
 
     #[test]

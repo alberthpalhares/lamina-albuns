@@ -123,15 +123,15 @@ pub fn open(app: &mut App, i: usize) {
 
 /// "Procurar…": escolhe o arquivo de novo; o cartão troca o caminho e mantém o resto.
 fn browse(app: &mut App, i: usize) {
-    let Some(file) = rfd::FileDialog::new()
-        .set_title("Procurar o álbum")
+    let answer = crate::dialogs::dialog(app, "Procurar o álbum")
         .add_filter("Projeto do Lamina", &["lamina"])
-        .pick_file()
-    else {
-        return;
-    };
-    app.editor.change_recents(|s| s.relocate(i, &file));
-    after_change(app);
+        .pick_file();
+    crate::dialogs::then(answer, move |app, file| {
+        if let Some(file) = file {
+            app.editor.change_recents(|s| s.relocate(i, file.path()));
+            after_change(app);
+        }
+    });
 }
 
 fn pin(app: &mut App, i: usize) {
