@@ -258,3 +258,28 @@ fn pf_b12_esconder_e_mostrar_volta_a_mesma_foto() {
         assert!(grid.row_range(grid.top_row(scroll)).contains(&index));
     }
 }
+
+#[test]
+fn pf_miniatura_no_tamanho_da_peca() {
+    use crate::photo_grid::thumb_side;
+    // Zoom 96 numa tela a 175%: 168 px de peça → miniatura de 192; a 100%, 128; zoom 240, 320.
+    assert_eq!(thumb_side(96, 1.75), 192);
+    assert_eq!(thumb_side(96, 1.0), 128);
+    assert_eq!(thumb_side(240, 1.75), 320);
+    assert_eq!(thumb_side(64, 0.5), 128, "escala menor que 1 vale 1");
+    // A miniatura do disco (320) sai reduzida, na mesma proporção.
+    let base = super::common::Base::with_photos(2, (600, 400));
+    let project = base.project(1);
+    let photo = &project.photos[0];
+    let full = crate::load_thumb(photo, &base.cache()).unwrap();
+    let small = crate::load_thumb_sized(photo, &base.cache(), 160).unwrap();
+    assert_eq!(small.width().max(small.height()), 160);
+    let ratio = |w: u32, h: u32| f64::from(w) / f64::from(h);
+    let (a, b) = (
+        ratio(full.width(), full.height()),
+        ratio(small.width(), small.height()),
+    );
+    assert!((a - b).abs() < 0.02, "{a} e {b}");
+    let same = crate::load_thumb_sized(photo, &base.cache(), 1000).unwrap();
+    assert_eq!(same.dimensions(), full.dimensions());
+}

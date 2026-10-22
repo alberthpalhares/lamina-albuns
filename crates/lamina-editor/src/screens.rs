@@ -174,6 +174,29 @@ pub fn load_thumb(photo: &Photo, cache: &Cache) -> Option<image::RgbImage> {
     image::open(path).ok().map(image::DynamicImage::into_rgb8)
 }
 
+/// A miniatura reduzida para caber em `side` px no lado maior (a grade do painel de fotos lê só o
+/// tamanho da peça; spec PF, seção 13). Menor que isso, vem como está.
+pub fn load_thumb_sized(photo: &Photo, cache: &Cache, side: u32) -> Option<image::RgbImage> {
+    let img = load_thumb(photo, cache)?;
+    if img.width().max(img.height()) <= side {
+        return Some(img);
+    }
+    let (w, h) = (img.width(), img.height());
+    let (nw, nh) = if w >= h {
+        (
+            u64::from(side),
+            (u64::from(h) * u64::from(side) / u64::from(w)).max(1),
+        )
+    } else {
+        (
+            (u64::from(w) * u64::from(side) / u64::from(h)).max(1),
+            u64::from(side),
+        )
+    };
+    let (nw, nh) = (u32::try_from(nw).ok()?, u32::try_from(nh).ok()?);
+    Some(image::imageops::thumbnail(&img, nw, nh))
+}
+
 /// Gera, em paralelo, a miniatura e a imagem de tela das fotos que ainda não têm, começando
 /// pelas da lâmina `first`, com no máximo 4 fotos ao mesmo tempo (spec TR, regra 1). Devolve
 /// quantas falharam (foto ausente ou ilegível). Roda fora da linha da janela.

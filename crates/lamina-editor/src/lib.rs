@@ -120,7 +120,9 @@ pub use relink::{
     Found, RELINK_LATER, not_found_message, relinked_message, search_folder, search_near,
 };
 pub use roll_image::{ImageSize, RollPainter, RollSource, SpreadImage, render_spread_image};
-pub use screens::{Arrival, ScreenPlan, load_original, load_screen, load_thumb, prepare_images};
+pub use screens::{
+    Arrival, ScreenPlan, load_original, load_screen, load_thumb, load_thumb_sized, prepare_images,
+};
 pub use session::{HistoryList, HistoryStep, Session};
 pub use snap::{Grip, SnapLine};
 pub use strips::{
