@@ -95,34 +95,58 @@ fn ma_b5_o_album_que_ja_esta_aberto() {
     );
 }
 
-#[test]
-fn ma_b6_com_alteracoes_pergunta_antes() {
-    let base = Base::with_photos(8, (600, 400));
-    let other = base.save(base.project(2), "album/batizado.lamina");
+/// Editor com um álbum novo, nunca salvo (alterações), e o álbum `other` recebido: a decisão
+/// pede a pergunta e o recebido fica à espera.
+fn waiting(base: &Base, other: &Path) -> Editor {
     let mut editor = Editor::new();
     editor.adopt(base.project(2));
     assert!(editor.needs_confirmation(), "álbum novo, não salvo");
-    let decision = editor.receive(std::slice::from_ref(&other));
     assert_eq!(
-        decision,
+        editor.receive(&[other.to_path_buf()]),
         Received::Open {
-            path: other.clone(),
+            path: other.to_path_buf(),
             ask: true,
             notice: None,
         }
     );
-    // Cancelar mantém o atual; Não salvar deixa abrir o recebido (o caminho de Arquivo → Abrir).
+    editor
+}
+
+/// O caminho inteiro da janela, sem janela: receber com alterações → "Salvar as alterações?" →
+/// Cancelar, Não salvar ou Salvar (`files::answer` chama o `leave` e, se seguiu, o
+/// `opened::proceed`, que pede o `take_received` e abre).
+#[test]
+fn ma_b6_com_alteracoes_pergunta_antes() {
+    let base = Base::with_photos(8, (600, 400));
+    let other = base.save(base.project(2), "album/batizado.lamina");
+    // Cancelar: o atual fica, com as alterações, e o recebido é esquecido.
+    let mut editor = waiting(&base, &other);
     assert!(!editor.leave(Leave::Cancel, None).unwrap());
+    assert_eq!(editor.take_received(), None);
     assert!(editor.session().is_some_and(|s| s.file().is_none()));
+    assert!(editor.needs_confirmation());
+    // Não salvar: o recebido sai da espera uma vez só e abre.
+    let mut editor = waiting(&base, &other);
     assert!(editor.leave(Leave::DontSave, None).unwrap());
-    editor.open(&other).unwrap();
+    let path = editor.take_received().unwrap();
+    assert_eq!(editor.take_received(), None, "uma vez só");
+    editor.open(&path).unwrap();
     assert_eq!(
         editor.session().and_then(|s| s.file()),
         Some(other.as_path())
     );
-    // Sem alterações, abre direto.
+    // Salvar: grava o atual onde o fotógrafo escolher e abre o recebido.
+    let mut editor = waiting(&base, &other);
+    let saved = base.path("album/atual.lamina");
+    assert!(editor.leave(Leave::Save, Some(&saved)).unwrap());
+    assert!(saved.exists());
+    let path = editor.take_received().unwrap();
+    editor.open(&path).unwrap();
+    assert!(!editor.needs_confirmation());
+    // Sem alterações, abre direto e nada fica à espera.
     assert!(matches!(
         editor.receive(&[base.path("album/outro.lamina")]),
         Received::Open { ask: false, .. }
     ));
+    assert_eq!(editor.take_received(), None);
 }

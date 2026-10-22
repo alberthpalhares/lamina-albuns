@@ -64,14 +64,28 @@ fn same_file(a: &Path, b: &Path) -> bool {
 }
 
 impl Editor {
-    /// A decisão para os arquivos recebidos, com o álbum aberto agora.
-    pub fn receive(&self, paths: &[PathBuf]) -> Received {
+    /// A decisão para os arquivos recebidos, com o álbum aberto agora. Quando é preciso perguntar
+    /// antes, o álbum fica à espera da resposta: [`Editor::take_received`] o entrega depois de
+    /// Salvar ou Não salvar, e Cancelar ([`Editor::leave`]) o esquece.
+    pub fn receive(&mut self, paths: &[PathBuf]) -> Received {
         let open = self.session().and_then(|s| s.file());
-        match choose(paths, open, self.needs_confirmation()) {
+        let decision = match choose(paths, open, self.needs_confirmation()) {
             Received::Open { path, .. } if open.is_some_and(|o| same_file(o, &path)) => {
                 Received::AlreadyOpen
             }
             other => other,
+        };
+        if let Received::Open {
+            path, ask: true, ..
+        } = &decision
+        {
+            self.received = Some(path.clone());
         }
+        decision
+    }
+
+    /// O álbum recebido que esperava a resposta de "Salvar as alterações?", uma vez só.
+    pub fn take_received(&mut self) -> Option<PathBuf> {
+        self.received.take()
     }
 }

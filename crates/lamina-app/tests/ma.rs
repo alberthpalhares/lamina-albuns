@@ -196,6 +196,39 @@ fn ma_b8_verificacao_escondida_da_abertura() {
     }
 }
 
+/// MA-B6 pela janela de verdade: um álbum com alterações, o recebido chega, a pergunta "Salvar
+/// as alterações?" aparece (`files::request`), a resposta "Não salvar" segue pelo mesmo caminho do
+/// botão (`files::answer` → `opened::proceed`) e o recebido abre. O job "Abrir no Mac" repete pelo
+/// `open` do Mac.
+#[test]
+fn ma_b6_a_janela_pergunta_antes_de_abrir() {
+    if !has_display() {
+        return;
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let report = dir.path().join("relatorio.txt");
+    let good = album(dir.path());
+    let (code, err) = run(
+        &[
+            "--verificar-abertura",
+            report.to_str().unwrap(),
+            "--com-alteracoes",
+            good.to_str().unwrap(),
+        ],
+        dir.path(),
+        Duration::from_secs(60),
+    );
+    let text = std::fs::read_to_string(&report).unwrap_or_default();
+    assert_eq!(code, Some(0), "{err}{text}");
+    let lines: Vec<&str> = text.lines().collect();
+    assert_eq!(lines.len(), 2, "{text}");
+    assert_eq!(lines[0], "pergunta: Salvar as alterações? → Não salvar");
+    assert!(
+        lines[1].starts_with("aberto: ") && lines[1].ends_with("duplo-clique.lamina (2 lâminas)"),
+        "{text}"
+    );
+}
+
 #[test]
 fn ma_b9_arquivo_que_nao_e_album() {
     if !has_display() {
