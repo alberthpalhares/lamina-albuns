@@ -416,7 +416,7 @@ component StepTwo inherits VerticalLayout {
     HorizontalLayout {
         spacing: 10px;
         height: 150px;
-        for img in NewProjectUi.previews: Image { source: img; image-fit: contain; horizontal-stretch: 1; }
+        for img in NewProjectUi.previews: Image { accessible-role: none; source: img; image-fit: contain; horizontal-stretch: 1; }
     }
 }
 

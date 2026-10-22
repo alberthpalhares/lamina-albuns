@@ -104,19 +104,25 @@ export component TimelineStrip inherits Rectangle {
             y: 6px;
             height: line-scroll.height - 12px;
             width: t.cut ? 14px : 46px;
-            if !t.cut: Image {
+            // `visible` em vez de `if`: a vaga troca de foto para corte sem refazer a peça
+            // (spec RL, regra 31).
+            Image {
+                visible: !t.cut;
+                accessible-role: none;
                 width: 44px;
                 height: 44px;
                 source: t.img;
                 image-fit: contain;
             }
-            if !t.cut: TouchArea {
+            TouchArea {
+                visible: !t.cut;
                 clicked => {
                     root.go-to(t.spread);
                     root.focus-main();
                 }
             }
-            if t.cut: Rectangle {
+            Rectangle {
+                visible: t.cut;
                 cut-touch := TouchArea {
                     mouse-cursor: ew-resize;
                     pointer-event(e) => {

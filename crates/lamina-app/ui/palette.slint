@@ -42,6 +42,7 @@ component Icon inherits Rectangle {
     border-radius: 5px;
     background: root.on ? #4fc3f7 : touch.has-hover && root.enabled ? #ffffff1f : transparent;
     Image {
+        accessible-role: none;
         x: 5px;
         y: 5px;
         width: 20px;
@@ -171,6 +172,7 @@ export component FloatingPalette inherits Rectangle {
         height: 22px;
         width: parent.width;
         Image {
+            accessible-role: none;
             x: 4px;
             y: 2px;
             width: 18px;

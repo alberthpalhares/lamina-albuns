@@ -105,6 +105,7 @@ export component IconButton inherits Rectangle {
     border-radius: 4px;
     background: root.checked ? #ffffff26 : (touch.has-hover && root.enabled ? #ffffff1a : transparent);
     Image {
+        accessible-role: none;
         width: 20px;
         height: 20px;
         source: root.icon;

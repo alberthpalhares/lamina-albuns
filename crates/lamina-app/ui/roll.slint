@@ -110,6 +110,7 @@ export global RollUi {
 
 // Uma coluna da imagem pronta: o `source` só troca quando a versão muda (ADR 0011, decisão 4).
 component Tile inherits Image {
+    accessible-role: none;
     in property <image> img;
     in property <int> v;
     property <int> shown-v: -1;
@@ -138,12 +139,12 @@ component Columns inherits Rectangle {
         font-size: max(12px, root.height * 0.3);
         font-weight: 700;
     }
-    Tile { x: 0; width: min(1, root.k) * root.width; height: root.height; img: c.c0; v: c.v0; }
-    Tile { x: root.k * root.width; width: max(0, min(root.k, 1 - root.k)) * root.width; height: root.height; img: c.c1; v: c.v1; }
-    Tile { x: 2 * root.k * root.width; width: max(0, min(root.k, 1 - 2 * root.k)) * root.width; height: root.height; img: c.c2; v: c.v2; }
-    Tile { x: 3 * root.k * root.width; width: max(0, min(root.k, 1 - 3 * root.k)) * root.width; height: root.height; img: c.c3; v: c.v3; }
-    Tile { x: 4 * root.k * root.width; width: max(0, min(root.k, 1 - 4 * root.k)) * root.width; height: root.height; img: c.c4; v: c.v4; }
-    Tile { x: 5 * root.k * root.width; width: max(0, min(root.k, 1 - 5 * root.k)) * root.width; height: root.height; img: c.c5; v: c.v5; }
+    Tile { accessible-role: none; x: 0; width: min(1, root.k) * root.width; height: root.height; img: c.c0; v: c.v0; }
+    Tile { accessible-role: none; x: root.k * root.width; width: max(0, min(root.k, 1 - root.k)) * root.width; height: root.height; img: c.c1; v: c.v1; }
+    Tile { accessible-role: none; x: 2 * root.k * root.width; width: max(0, min(root.k, 1 - 2 * root.k)) * root.width; height: root.height; img: c.c2; v: c.v2; }
+    Tile { accessible-role: none; x: 3 * root.k * root.width; width: max(0, min(root.k, 1 - 3 * root.k)) * root.width; height: root.height; img: c.c3; v: c.v3; }
+    Tile { accessible-role: none; x: 4 * root.k * root.width; width: max(0, min(root.k, 1 - 4 * root.k)) * root.width; height: root.height; img: c.c4; v: c.v4; }
+    Tile { accessible-role: none; x: 5 * root.k * root.width; width: max(0, min(root.k, 1 - 5 * root.k)) * root.width; height: root.height; img: c.c5; v: c.v5; }
 }
 
 // Um botão de ícone da barra, com a dica embaixo.
@@ -157,6 +158,7 @@ component RollIcon inherits Rectangle {
     border-radius: 4px;
     background: touch.has-hover && root.enabled ? #ffffff26 : transparent;
     Image {
+        accessible-role: none;
         width: 16px;
         height: 16px;
         source: root.icon;
@@ -215,6 +217,7 @@ component SpreadBar inherits Rectangle {
         Rectangle {
             width: 24px;
             Image {
+                accessible-role: none;
                 width: 16px;
                 height: 16px;
                 source: @image-url("../icons/eg/alca.svg");
