@@ -138,6 +138,10 @@ pub enum Command {
     CalibrateSize,
     BuildAlbum,
     SelectAllPhotos,
+    /// Trocar o nome do álbum (spec NA): a janela abre o campo no topo.
+    RenameAlbum,
+    /// Esconder ou mostrar as três faixas de baixo de uma vez (spec FX, regra 8).
+    ToggleStrips,
 }
 
 /// Nome, rótulo, menu e atalho de um comando.

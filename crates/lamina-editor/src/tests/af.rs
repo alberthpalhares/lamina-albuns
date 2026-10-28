@@ -53,8 +53,9 @@ pub(super) fn labels(editor: &Editor) -> Vec<String> {
 #[test]
 fn af_b2_faixa_e_passo_do_angulo() {
     let (mut editor, _, photo) = selected();
-    assert_eq!(editor.set_angle_text("45,3"), Ok(true));
-    assert_eq!(adjust_of(&editor, photo).angle_tenths, 450);
+    // Desde a spec CD, o limite é 180° (era 45°).
+    assert_eq!(editor.set_angle_text("180,3"), Ok(true));
+    assert_eq!(adjust_of(&editor, photo).angle_tenths, 1800);
     assert_eq!(editor.set_angle_text("0,25"), Ok(true));
     assert_eq!(adjust_of(&editor, photo).angle_tenths, 3);
     assert_eq!(editor.set_angle_text("−12,04°"), Ok(true));

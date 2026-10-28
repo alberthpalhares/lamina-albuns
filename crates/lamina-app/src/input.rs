@@ -45,10 +45,10 @@ pub fn run_command(app: &Shared, command: Command) {
         Command::CloseAlbum => files::request(&mut a, Pending::CloseAlbum),
         Command::ClearRecents => crate::recents::ask_clear(&a),
         Command::Save => {
-            files::save(&mut a, false);
+            files::save(&mut a, false, |_, _| {});
         }
         Command::SaveAs => {
-            files::save(&mut a, true);
+            files::save(&mut a, true, |_, _| {});
         }
         Command::Export => export::start(&mut a),
         Command::FindMissing => relink::find(&mut a),
@@ -67,6 +67,12 @@ pub fn run_command(app: &Shared, command: Command) {
         Command::ShowShortcuts => crate::shortcuts::open(&a),
         // As novidades abrem por cima, sem passar pelo editor (spec NV, regra 5).
         Command::ShowNews => crate::news::open_help(&a),
+        // Renomear abre o campo no nome do álbum, no topo (spec NA).
+        Command::RenameAlbum => {
+            if let Some(w) = a.window.upgrade() {
+                w.set_renaming(true);
+            }
+        }
         Command::NewText => new_text(&mut a),
         Command::SaveModel => models::open_save(&mut a),
         Command::Models => models::open_list(&a),
@@ -86,6 +92,7 @@ pub fn run_command(app: &Shared, command: Command) {
                     | Command::LastSpread
                     | Command::ToggleGuides
                     | Command::ToggleSpreads
+                    | Command::ToggleStrips
                     | Command::ToggleTimeline
                     | Command::TogglePhotos
                     | Command::ToggleReduceMotion
@@ -161,6 +168,28 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     window.on_command(move |name| {
         if let Some(command) = Command::from_name(&name) {
             run_command(&a, command);
+        }
+    });
+    // O cabeçalho de uma faixa de baixo: clique simples e duplo recolhem e abrem, uma vez só
+    // (spec FX, regra 9).
+    let a = app.clone();
+    window.on_strip_header_clicked(move |strip| {
+        let command = match strip {
+            0 => Command::ToggleSpreads,
+            1 => Command::ToggleTimeline,
+            _ => Command::TogglePhotos,
+        };
+        let counts = u8::try_from(strip).is_ok_and(|s| a.borrow_mut().waits.header_click(s));
+        if counts {
+            run_command(&a, command);
+        }
+    });
+    // O nome do álbum digitado no topo (spec NA).
+    let a = app.clone();
+    window.on_rename_album(move |name| {
+        let mut app = a.borrow_mut();
+        if app.editor.rename_album(&name) {
+            app.refresh_current();
         }
     });
     let a = app.clone();

@@ -3,16 +3,34 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::time::SystemTime;
 
-use image::RgbaImage;
-use lamina_core::{PhotoId, Project};
-use lamina_render::RenderTarget;
+use image::{Rgba, RgbaImage};
+use lamina_core::{Photo, PhotoId, Project};
+use lamina_render::{PhotoSource, RenderTarget};
 
 use crate::Cache;
 use crate::updates::news::{Illustration, illustration};
 
 /// 320 px no lado maior.
 pub const THUMB_SIDE: u32 = 320;
+
+/// O cinza de uma foto que não abre, na miniatura do cartão (correção de 2026-10-27).
+pub const MISSING_GRAY: [u8; 4] = [90, 90, 90, 255];
+
+/// A fonte das fotos da miniatura: a foto que não abre vira um retângulo cinza do tamanho pedido,
+/// e o resto da lâmina sai normal (regra 5).
+struct OrGray<S>(S);
+
+impl<S: PhotoSource> PhotoSource for OrGray<S> {
+    fn load(&self, photo: &Photo, needed: (u32, u32)) -> Result<Arc<RgbaImage>, String> {
+        self.0.load(photo, needed).or_else(|_| {
+            let (w, h) = (needed.0.max(1), needed.1.max(1));
+            Ok(Arc::new(RgbaImage::from_pixel(w, h, Rgba(MISSING_GRAY))))
+        })
+    }
+}
 
 /// Desenha a primeira lâmina com o renderizador da prévia (as miniaturas das fotos, do cache,
 /// bastam nesse tamanho), seja qual for a lâmina em que o fotógrafo parou. `None` para o álbum
@@ -26,7 +44,7 @@ pub fn thumbnail_image(project: &Project, cache: &Cache) -> Result<Option<RgbaIm
         .iter()
         .filter_map(|p| cache.thumbnail(p).map(|path| (p.id, path)))
         .collect();
-    let source = lamina_media::thumbnail_source(thumbs);
+    let source = OrGray(lamina_media::thumbnail_source(thumbs));
     // O renderizador acha o tamanho pela `preview_size`: 320 px no lado maior.
     let target_size = RenderTarget::Preview {
         max_side: THUMB_SIDE,
@@ -58,10 +76,36 @@ pub fn write_thumbnail(project: &Project, cache: &Cache, target: &Path) -> Resul
     Ok(())
 }
 
-/// Lê a miniatura do disco, sempre de novo: a janela não pode guardar a imagem pelo caminho,
-/// senão o cartão continua com a miniatura de antes depois de salvar. `None` sem miniatura.
+/// Lê a miniatura do disco: a janela não pode guardar a imagem só pelo caminho, senão o cartão
+/// continua com a miniatura de antes depois de salvar. `None` sem miniatura.
 pub fn read_thumbnail(path: &Path) -> Option<Illustration> {
     illustration(&std::fs::read(path).ok()?)
+}
+
+/// As miniaturas já lidas, pelo caminho e pela data do arquivo (regra 5, correção de 2026-10-27):
+/// montar a tela de novo (cada tecla da busca) só relê o PNG que mudou no disco.
+#[derive(Debug, Default)]
+pub struct ThumbCache {
+    seen: HashMap<PathBuf, (SystemTime, Option<Illustration>)>,
+    /// Quantas vezes um PNG foi lido do disco (para os testes).
+    pub reads: usize,
+}
+
+impl ThumbCache {
+    /// A miniatura em `path`: a guardada, se a data do arquivo não mudou; senão, lida de novo.
+    pub fn get(&mut self, path: &Path) -> Option<Illustration> {
+        let modified = std::fs::metadata(path).and_then(|m| m.modified()).ok()?;
+        if let Some((when, picture)) = self.seen.get(path)
+            && *when == modified
+        {
+            return picture.clone();
+        }
+        self.reads += 1;
+        let picture = read_thumbnail(path);
+        self.seen
+            .insert(path.to_path_buf(), (modified, picture.clone()));
+        picture
+    }
 }
 
 /// Os caminhos que não existem mais. Só confere se o arquivo existe, sem ler (regra 4); pode

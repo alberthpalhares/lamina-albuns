@@ -19,6 +19,7 @@ pub(super) fn migrate(mut value: Value, from: u32) -> Result<Value, CoreError> {
             3 => v3_para_v4(value)?,
             4 => v4_para_v5(value),
             5 => v5_para_v6(value),
+            6 => v6_para_v7(value),
             _ => {
                 return Err(CoreError::Migration {
                     from: version,
@@ -129,6 +130,14 @@ fn v4_para_v5(mut value: Value) -> Value {
 /// no arquivo além da versão.
 fn v5_para_v6(mut value: Value) -> Value {
     value["schema_version"] = json!(6);
+    value
+}
+
+/// v6 → v7 (specs TM e CD): as fotos ganham temperatura e matiz, que começam em zero e não são
+/// gravados, e o giro passa a ir até ±180°; nada muda no arquivo além da versão. Um Lamina antigo
+/// recusa o arquivo 7 em vez de perder a cor e o giro ao salvar.
+fn v6_para_v7(mut value: Value) -> Value {
+    value["schema_version"] = json!(7);
     value
 }
 

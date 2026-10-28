@@ -7,6 +7,7 @@
 #![windows_subsystem = "windows"]
 
 mod adjusted;
+mod backup;
 mod band;
 mod browser;
 mod build_album;
@@ -15,6 +16,7 @@ mod context;
 mod convert;
 mod crop;
 mod details;
+mod dialogs;
 mod drag_motion;
 mod drops;
 mod export;
@@ -46,6 +48,7 @@ mod news_player;
 mod opened;
 mod organize;
 mod palette;
+mod panel_width;
 mod photo_panel;
 mod presets;
 mod recents;
@@ -66,12 +69,14 @@ mod thumbs;
 mod timings;
 mod updates;
 mod verify;
+mod waits;
 mod welcome;
 
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Duration;
 
+use lamina_editor::backup::{BACKUP_FOLDER, Backups};
 use lamina_editor::{
     Cache, Editor, Install, MODELS_FILE, ModelsStore, PREFS_FILE, PRESETS_FILE, PrefsStore,
     PresetsStore, RECENTS_FILE, RecentsStore, STRIPS_FILE, StripsStore, config_dir,
@@ -121,7 +126,9 @@ fn connect(window: &AppWindow, app: &Shared) {
     drag_motion::connect_motion(window, app);
     organize::connect(window, app);
     context::connect(window, app);
+    backup::connect(window, app);
     palette::connect(window, app);
+    panel_width::connect(window, app);
     photo_panel::connect(window, app);
     crop::connect(window, app);
     look::connect(window, app);
@@ -221,14 +228,15 @@ fn main() -> anyhow::Result<()> {
     }
     // Medir na máquina compartilhada (`LAMINA_SEM_FOCO=1`, portão G1 da spec RL): a janela abre
     // sem tomar o foco, e o teclado de quem está trabalhando em outra janela continua lá.
-    if std::env::var("LAMINA_SEM_FOCO").is_ok_and(|v| v == "1") {
-        slint::BackendSelector::new()
-            .with_winit_window_attributes_hook(|a| a.with_active(false))
-            .select()?;
-    }
-    let window = AppWindow::new()?;
     // Abre maximizada: numa tela pequena, as faixas de baixo ficariam fora (auditoria da Fase 4, 7).
-    window.window().set_maximized(true);
+    // Pedida ao criar a janela, não depois: maximizar a janela antes de ela existir no sistema
+    // deixava o Windows sem o tamanho de "restaurar" e o primeiro maximizar falhava (spec FB,
+    // regra 5).
+    let unfocused = std::env::var("LAMINA_SEM_FOCO").is_ok_and(|v| v == "1");
+    slint::BackendSelector::new()
+        .with_winit_window_attributes_hook(move |a| a.with_maximized(true).with_active(!unfocused))
+        .select()?;
+    let window = AppWindow::new()?;
     let (tx, rx) = mailbox::Mailbox::new();
     let prefs = PrefsStore::load(&config_dir().join(PREFS_FILE));
     let mut editor = Editor::with_prefs(prefs);
@@ -242,6 +250,7 @@ fn main() -> anyhow::Result<()> {
     ));
     editor.set_recents(RecentsStore::load(&config_dir().join(RECENTS_FILE)));
     editor.set_log(help::error_log());
+    editor.set_backups(Backups::new(config_dir().join(BACKUP_FOLDER)));
     let app: Shared = Rc::new(RefCell::new(App::new(&window, Cache::system(), editor, tx)));
     // Ligada por `LAMINA_TEMPOS=1`; o temporizador precisa viver até a janela fechar.
     let (clock, _tick) = timings::Clock::install(window.window());
@@ -274,6 +283,11 @@ fn main() -> anyhow::Result<()> {
     } else if importing.is_none() && opening.is_none() {
         opened::from_args(&mut app.borrow_mut());
     }
+    // O trabalho que ficou sem salvar numa queda (spec CS, regra 4); os testes de fumaça seguem.
+    if verifying.is_none() && importing.is_none() {
+        backup::ask(&mut app.borrow_mut());
+    }
+    let _backups = backup::start(&app);
     // O teste de fumaça da importação (spec TR): fecha sozinho quando as fotos entram.
     if let Some(folder) = importing.clone()
         && let Err(reason) = verify::start_import(&mut app.borrow_mut(), folder)
@@ -307,8 +321,10 @@ fn main() -> anyhow::Result<()> {
     let _listener = opened::listen(&app, opening);
     window.invoke_focus_main();
     window.run()?;
-    // Sair do Lamina guarda a lâmina em que o fotógrafo parou (spec TI, regra 3).
+    // Sair do Lamina guarda a lâmina em que o fotógrafo parou (spec TI, regra 3) e não deixa
+    // cópia de segurança: a pergunta de salvar já foi respondida (spec CS, regra 3).
     app.borrow_mut().editor.remember_current();
+    app.borrow_mut().editor.finish_backups();
     updates::on_exit(&app.borrow());
     Ok(())
 }

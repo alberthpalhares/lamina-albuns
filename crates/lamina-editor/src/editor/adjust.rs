@@ -3,26 +3,28 @@
 //! foto, então seguem a foto em qualquer quadro. Arrastar um controle ou digitar emenda numa
 //! edição só.
 
-use lamina_core::{Crop, FrameContent, PhotoAdjust, PhotoId};
+use lamina_core::{FrameContent, PhotoAdjust, PhotoId};
 
 use super::Editor;
-use super::crop::set_crop;
 use crate::frame_form::parse_number;
 
 /// O ângulo digitado que não é número (seção 6).
-pub const BAD_ANGLE: &str = "Use um número de −45 a 45, como 0,3.";
+pub const BAD_ANGLE: &str = "Use um número de −180 a 180, como 0,3.";
 /// A escala digitada que não é número.
 pub const BAD_SCALE: &str = "Use um número de 100 a 800, como 150.";
 
 /// Uma mudança nos ajustes da foto.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AdjustChange {
-    /// O ângulo em décimos de grau (preso a −45° e 45°).
+    /// O ângulo em décimos de grau (preso a −180° e 180°).
     Angle(i32),
     /// Gira mais `n` décimos de grau (as teclas `[` e `]`).
     Turn(i32),
     Brightness(i32),
     Contrast(i32),
+    /// Temperatura e matiz, de −100 a 100 (spec TM).
+    Temperature(i32),
+    Tint(i32),
     Bw(bool),
     /// Volta a 0°, 0, 0 e cor.
     Restore,
@@ -35,6 +37,8 @@ impl AdjustChange {
             AdjustChange::Angle(_) | AdjustChange::Turn(_) => "Endireitar foto",
             AdjustChange::Brightness(_) => "Brilho",
             AdjustChange::Contrast(_) => "Contraste",
+            AdjustChange::Temperature(_) => "Temperatura",
+            AdjustChange::Tint(_) => "Matiz",
             AdjustChange::Bw(_) => "Preto e branco",
             AdjustChange::Restore => "Restaurar ajustes",
         }
@@ -57,6 +61,8 @@ impl AdjustChange {
             AdjustChange::Turn(t) => a.angle_tenths = (a.angle_tenths + t).clamp(-max, max),
             AdjustChange::Brightness(v) => a.brightness = tone(v),
             AdjustChange::Contrast(v) => a.contrast = tone(v),
+            AdjustChange::Temperature(v) => a.temperature = tone(v),
+            AdjustChange::Tint(v) => a.tint = tone(v),
             AdjustChange::Bw(on) => a.bw = on,
             AdjustChange::Restore => *a = PhotoAdjust::default(),
         }
@@ -82,13 +88,13 @@ pub struct CropGrid {
     pub fine: bool,
 }
 
-/// "45,3" → 453 décimos; "0,25" → 3 (0,1° de passo, arredondado); texto: erro.
+/// "45,3" → 453 décimos (preso a ±1800, spec CD); "0,25" → 3 (0,1° de passo, arredondado); texto: erro.
 pub fn parse_angle(text: &str) -> Result<i32, &'static str> {
     let text = text.trim().trim_end_matches('°').replace('−', "-");
     let degrees = parse_number(&text).ok_or(BAD_ANGLE)?;
     let max = f64::from(PhotoAdjust::MAX_ANGLE_TENTHS);
     let tenths = (degrees * 10.0).round().clamp(-max, max);
-    // Preso entre −450 e 450, então cabe em i32.
+    // Preso entre −1800 e 1800, então cabe em i32.
     #[allow(clippy::cast_possible_truncation)]
     let tenths = tenths as i32;
     Ok(tenths)
@@ -185,7 +191,7 @@ impl Editor {
         done.is_ok()
     }
 
-    /// O campo do ângulo: "0,3" gira 0,3°; fora de −45 a 45, preso; texto, a mensagem.
+    /// O campo do ângulo: "0,3" gira 0,3°; fora de −180 a 180, preso; texto, a mensagem.
     pub fn set_angle_text(&mut self, text: &str) -> Result<bool, &'static str> {
         let tenths = parse_angle(text)?;
         Ok(self.adjust(AdjustChange::Angle(tenths)))
@@ -206,37 +212,11 @@ impl Editor {
         }
     }
 
-    /// O campo da escala (100 a 800%): o zoom do recorte por cima da cobertura do giro (AF-B18).
+    /// O campo da escala (100 a 800%): o zoom do recorte por cima da cobertura do giro (AF-B18);
+    /// o mesmo passo do controle deslizante (spec CD, regra 1).
     pub fn set_scale_text(&mut self, text: &str) -> Result<bool, &'static str> {
         let percent = parse_number(text.trim().trim_end_matches('%')).ok_or(BAD_SCALE)?;
-        let zoom = (percent / 100.0).clamp(1.0, Crop::MAX_ZOOM);
-        let (frames, _) = self.photo_targets();
-        let [frame] = frames.as_slice() else {
-            return Ok(false);
-        };
-        let frame = *frame;
-        let Some(s) = self.session.as_mut() else {
-            return Ok(false);
-        };
-        let index = s.current();
-        let Some(FrameContent::Photo { crop, .. }) = s
-            .project()
-            .spreads
-            .get(index)
-            .and_then(|spread| spread.frames.get(frame))
-            .map(|f| f.content.clone())
-        else {
-            return Ok(false);
-        };
-        if (crop.zoom - zoom).abs() < 1e-9 {
-            return Ok(false);
-        }
-        let wanted = Crop { zoom, ..crop };
-        let key = format!("escala:{index}:{frame}");
-        Ok(s.edit_merging("Recortar foto", &key, |p| {
-            set_crop(p, index, frame, wanted).map(|_| ())
-        })
-        .is_ok())
+        Ok(self.set_photo_scale(percent))
     }
 
     /// Fim de um arrasto no controle: a próxima mudança é outra edição.

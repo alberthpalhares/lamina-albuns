@@ -10,6 +10,8 @@ const ROLL: &str = include_str!("../../../lamina-app/ui/roll.slint");
 
 #[test]
 fn rl_b23_faixa_de_laminas_desligada_some_sem_cabecalho_e_volta_com_alt_1() {
+    // Desde a spec FX (regras 10 e 11), a faixa recolhida deixa o cabeçalho, como as outras, e um
+    // arquivo antigo a abre uma vez; Alt+1 continua recolhendo e abrindo.
     let dir = tempfile::tempdir().unwrap();
     let file = dir.path().join("janela.json");
     std::fs::write(&file, r#"{ "laminas": false }"#).unwrap();
@@ -19,14 +21,16 @@ fn rl_b23_faixa_de_laminas_desligada_some_sem_cabecalho_e_volta_com_alt_1() {
         let s = e.strips();
         [Strip::Spreads, Strip::Timeline, Strip::Photos].map(|k| s.is_open(k))
     };
-    assert_eq!(open(&editor), [false, true, true]);
-    // O cabeçalho da faixa de lâminas só existe com ela ligada; os outros dois ficam.
+    assert_eq!(open(&editor), [true, true, true]);
+    // O cabeçalho da faixa Lâminas existe sempre; os nomes novos das outras duas.
     assert!(BOTTOM.contains(
-        "if root.has-project && root.spreads-open: StripHeader {\n        name: \"Lâminas\";"
+        "if root.has-project: StripHeader {
+        name: \"Lâminas\";"
     ));
-    assert!(BOTTOM.contains("name: \"Linha do tempo\";"));
-    assert!(BOTTOM.contains("name: \"Fotos\";"));
-    // Alt+1 (Visualizar → "Faixa de lâminas") traz a faixa de volta.
+    assert!(BOTTOM.contains("name: \"Sequência\";"));
+    assert!(BOTTOM.contains("name: \"Fotografias\";"));
+    assert!(editor.run(Command::ToggleSpreads));
+    assert_eq!(open(&editor), [false, true, true]);
     assert!(editor.run(Command::ToggleSpreads));
     assert_eq!(open(&editor), [true, true, true]);
 }

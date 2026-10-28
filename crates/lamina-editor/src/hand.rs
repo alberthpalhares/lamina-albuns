@@ -26,8 +26,9 @@ pub fn fit_rect(project: &Project, r: Rect) -> Result<RelRect, EditorError> {
     let (tw, th) = (trim.width.get(), trim.height.get());
     let w = r.width.get().clamp(MIN_FRAME_MM.min(tw), tw);
     let h = r.height.get().clamp(MIN_FRAME_MM.min(th), th);
-    let x = r.x.get().clamp(trim.x.get(), trim.right().get() - w);
-    let y = r.y.get().clamp(trim.y.get(), trim.bottom().get() - h);
+    let fit = crate::group::fit;
+    let x = fit(r.x.get(), trim.x.get(), trim.right().get() - w);
+    let y = fit(r.y.get(), trim.y.get(), trim.bottom().get() - h);
     let rel = |v: f64, total: f64| (v / total).clamp(0.0, 1.0);
     Ok(RelRect::new(
         rel(x - trim.x.get(), tw),

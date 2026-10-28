@@ -16,15 +16,85 @@ export component SpreadStrip inherits Rectangle {
     callback go-to(int);
     // A lâmina arrastada e o vão onde ela foi solta (0 = antes da primeira).
     callback move-spread(int, int);
-    // Quantos lugares a lâmina anda durante o arrasto (lâmina arrastada, vão, lâmina).
-    pure callback spread-shift(int, int, int) -> int;
-    // O vão mais perto do ponteiro durante o arrasto de uma lâmina.
+    // As contas do arrasto, pelas larguras reais (spec FX, regras 1 a 4; `motion::strip_drag`):
+    // o vão para o meio da miniatura levantada, quanto cada vizinha corre, onde a levantada pousa
+    // e a velocidade da rolagem perto das bordas.
+    pure callback strip-gap(int, length) -> int;
+    pure callback strip-shift(int, int, int) -> length;
+    pure callback strip-landing(int, int) -> length;
+    pure callback strip-edge(length, length) -> length;
+    // O vão mais perto do ponteiro para as fotos arrastadas do navegador (spec IM).
     function gap() -> int {
         let item = 84px / max(0.01, root.current-aspect) + 16px;
         let at = (DragUi.x - strip-scroll.absolute-position.x - strip-scroll.content-x - 10px) / item;
         max(0, min(root.spreads.length, round(at)))
     }
     callback focus-main();
+    // A miniatura levantada (spec FX, regras 1 a 6): onde o ponteiro a pegou, o pouso e o vão de
+    // agora, na fileira (sem o recuo de 10 px da borda).
+    property <length> grab-dx;
+    property <length> grab-dy;
+    property <bool> landing;
+    property <bool> snap;
+    property <int> drop-gap: -1;
+    property <length> lift-w: DragUi.kind == 3 && DragUi.from >= 0 && DragUi.from < root.spreads.length
+        ? 84px / max(0.01, root.spreads[DragUi.from].aspect) + 6px : 0px;
+    property <length> lift-x: DragUi.x - strip-scroll.absolute-position.x - strip-scroll.content-x - 10px - root.grab-dx;
+    property <int> live-gap: DragUi.kind != 3 ? -1
+        : root.landing ? root.drop-gap : root.strip-gap(DragUi.from, root.lift-x + root.lift-w / 2);
+    // Soltar: a levantada pousa no vão e só então a ordem muda; fora da faixa (ou Esc), volta.
+    function release(inside: bool) {
+        root.drop-gap = inside ? root.live-gap : DragUi.from;
+        root.landing = true;
+        land-timer.running = true;
+    }
+    land-timer := Timer {
+        interval: max(1ms, Motion.reorder-ms * 1ms);
+        running: false;
+        triggered => {
+            self.running = false;
+            let from = DragUi.from;
+            let gap = root.drop-gap;
+            // O desenho final é o do último quadro: as vizinhas param de correr sem animar.
+            root.snap = true;
+            DragUi.kind = 0;
+            root.landing = false;
+            if (gap != from && gap != from + 1) {
+                root.move-spread(from, gap);
+            }
+            unsnap.running = true;
+            root.focus-main();
+        }
+    }
+    unsnap := Timer {
+        interval: 16ms;
+        running: false;
+        triggered => {
+            self.running = false;
+            root.snap = false;
+        }
+    }
+    property <bool> cancel-asked: DragUi.cancel;
+    changed cancel-asked => {
+        if (DragUi.cancel) {
+            DragUi.cancel = false;
+            if (DragUi.kind == 3 && !root.landing) {
+                root.release(false);
+            }
+        }
+    }
+    // Perto das bordas, a faixa rola sozinha (regra 4).
+    Timer {
+        interval: 16ms;
+        running: DragUi.kind == 3 && !root.landing;
+        triggered => {
+            let speed = root.strip-edge(DragUi.x - strip-scroll.absolute-position.x, strip-scroll.visible-width);
+            if (speed != 0px) {
+                root.sc-running = false;
+                strip-scroll.content-x = max(strip-scroll.visible-width - strip.preferred-width, min(0px, strip-scroll.content-x - speed * 0.016));
+            }
+        }
+    }
     // Fotos arrastadas do navegador sobre a faixa (spec IM, regra 7): o vão onde a lâmina nova
     // entraria (o número de lâminas = a área de lâmina nova, no fim); -1 fora da faixa.
     pure function over() -> bool {
@@ -120,21 +190,22 @@ export component SpreadStrip inherits Rectangle {
                 Rectangle {
                     width: 84px / s.aspect + 6px;
                     height: 90px;
-                    // Reordenar (spec MV, regra 12): as vizinhas abrem espaço durante o arrasto.
-                    property <float> off: DragUi.kind == 3 ? root.spread-shift(DragUi.from, root.gap(), i) : 0;
+                    // Reordenar (spec FX, regra 2): as vizinhas correm o tamanho da levantada; no
+                    // fim, param sem animar (`snap`), porque a ordem nova já as põe no lugar.
+                    property <length> off: DragUi.kind == 3 ? root.strip-shift(DragUi.from, root.live-gap, i) : 0px;
                     animate off {
-                        duration: Motion.reorder-ms * 1ms;
+                        duration: root.snap || !Motion.on ? 0ms : Motion.reorder-ms * 1ms;
                         easing: cubic-bezier(0.2, 0, 0, 1);
-                        enabled: Motion.on;
                     }
                     Rectangle {
-                        x: parent.off * (84px / s.aspect + 16px);
+                        x: parent.off;
                         width: parent.width;
                         height: parent.height;
                         border-radius: 4px;
                         border-width: 2px;
                         border-color: i == root.current-index || i == root.over-spread ? Theme.selected : transparent;
-                        opacity: DragUi.kind == 3 && DragUi.from == i ? 0.35 : 1;
+                        // A levantada sai do lugar: quem aparece é a miniatura que segue o mouse.
+                        opacity: DragUi.kind == 3 && DragUi.from == i ? 0 : 1;
                         SpreadCanvas {
                             x: 3px;
                             y: 3px;
@@ -154,15 +225,21 @@ export component SpreadStrip inherits Rectangle {
                         }
                     }
                     TouchArea {
+                        mouse-cursor: DragUi.kind == 3 ? MouseCursor.grabbing : MouseCursor.default;
                         moved => {
                             let x = self.absolute-position.x + self.mouse-x;
                             let y = self.absolute-position.y + self.mouse-y;
-                            if (DragUi.kind == 0 && DragUi.far(x, y)) {
+                            // Uma lâmina só não tem para onde ir (spec FX, seção 6).
+                            if (DragUi.kind == 0 && !root.landing && root.spreads.length > 1 && DragUi.far(x, y)) {
+                                root.grab-dx = DragUi.press-x - self.absolute-position.x;
+                                root.grab-dy = DragUi.press-y - self.absolute-position.y;
                                 DragUi.kind = 3;
                                 DragUi.from = i;
                             }
-                            DragUi.x = x;
-                            DragUi.y = y;
+                            if (!root.landing) {
+                                DragUi.x = x;
+                                DragUi.y = y;
+                            }
                         }
                         pointer-event(e) => {
                             if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
@@ -171,13 +248,15 @@ export component SpreadStrip inherits Rectangle {
                             }
                             if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
                                 if (DragUi.kind == 3) {
-                                    // O editor decide a posição pelo vão (spec MV, MV-B23).
-                                    root.move-spread(i, root.gap());
-                                } else {
+                                    // O vão vira a posição pela regra do editor (spec MV, MV-B23),
+                                    // depois do pouso (spec FX, regra 3).
+                                    if (!root.landing) {
+                                        root.release(root.over());
+                                    }
+                                } else if (!root.landing) {
                                     root.go-to(i);
+                                    root.focus-main();
                                 }
-                                DragUi.kind = 0;
-                                root.focus-main();
                             }
                         }
                     }
@@ -221,14 +300,35 @@ export component SpreadStrip inherits Rectangle {
             border-radius: 2px;
             background: Theme.selected;
         }
-        // Marcador no vão onde a lâmina vai ficar.
-        if DragUi.kind == 3: Rectangle {
-            x: 10px + root.gap() * (84px / max(0.01, root.current-aspect) + 16px) - 7px;
-            y: 8px;
-            width: 4px;
-            height: 90px;
-            border-radius: 2px;
-            background: Theme.selected;
+        // A miniatura levantada (spec FX, regras 1 e 3): segue o ponteiro, 8% maior e com sombra;
+        // ao soltar, desliza até o vão (ou de volta ao lugar).
+        if DragUi.kind == 3 && DragUi.from >= 0 && DragUi.from < root.spreads.length: Rectangle {
+            property <length> follow-x: 10px + root.lift-x;
+            property <length> follow-y: DragUi.y - strip-scroll.absolute-position.y - root.grab-dy;
+            property <length> land-x: 10px + root.strip-landing(DragUi.from, root.drop-gap);
+            x: (root.landing ? self.land-x : self.follow-x) - root.lift-w * 0.04;
+            y: (root.landing ? 8px : self.follow-y) - 90px * 0.04;
+            animate x, y {
+                duration: root.landing && Motion.on ? Motion.reorder-ms * 1ms : 0ms;
+                easing: cubic-bezier(0.2, 0, 0, 1);
+            }
+            width: root.lift-w * 1.08;
+            height: 90px * 1.08;
+            border-radius: 4px;
+            border-width: 2px;
+            border-color: Theme.selected;
+            background: StripTheme.spreads;
+            drop-shadow-blur: 12px;
+            drop-shadow-offset-y: 4px;
+            drop-shadow-color: #00000099;
+            SpreadCanvas {
+                x: 3px;
+                y: 3px;
+                width: parent.width - 6px;
+                height: parent.height - 6px;
+                data: root.spreads[DragUi.from];
+                small: true;
+            }
         }
     }
 }

@@ -39,13 +39,20 @@ pub fn near(app: &App) {
 
 /// "Procurar fotos ausentes…": a pasta escolhida e as subpastas, com andamento.
 pub fn find(app: &mut App) {
-    let Some(session) = app.session() else {
+    if app.session().is_none() {
         return;
-    };
-    let Some(folder) = rfd::FileDialog::new()
-        .set_title("Procurar fotos ausentes em")
-        .pick_folder()
-    else {
+    }
+    let answer = crate::dialogs::dialog(app, "Procurar fotos ausentes em").pick_folder();
+    crate::dialogs::then(answer, |app, folder| {
+        if let Some(folder) = folder {
+            search(app, folder.path().to_path_buf());
+        }
+    });
+}
+
+/// Procura na pasta escolhida, em segundo plano.
+fn search(app: &mut App, folder: std::path::PathBuf) {
+    let Some(session) = app.session() else {
         return;
     };
     let project = session.project().clone();

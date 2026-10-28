@@ -108,7 +108,7 @@ impl Editor {
     }
 
     /// Põe a sessão no topo da lista, com nome, contagens e a lâmina atual, e grava.
-    fn note_session(&mut self) {
+    pub(super) fn note_session(&mut self) {
         let Some(recent) = self.session.as_ref().and_then(recent_of) else {
             return;
         };

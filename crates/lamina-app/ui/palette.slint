@@ -1,7 +1,7 @@
-// A paleta do modo organizar (spec EG, seção 3; pedido do dono de 2026-10-20): ferramentas, zoom,
-// Alinhar, Igualar e Distribuir em ícones. Ela flutua por cima da lâmina, vai para qualquer ponto
-// da janela pela alça e se destaca numa janela própria, que vai para qualquer lugar da tela. Só
-// desenho: o Rust preenche o `PaletteUi` de cada janela e roda os comandos do registro.
+// Os botões do modo organizar (spec EG, seção 3; spec BO): ferramentas, zoom, Alinhar, Igualar e
+// Distribuir. Desde a spec BO eles moram na barra única de cima (`OrganizeBar`); a paleta
+// flutuante e a destacada saíram. Só desenho: o Rust preenche o `PaletteUi` e roda os comandos do
+// registro.
 
 import { Theme } from "theme.slint";
 import { Tip } from "widgets.slint";
@@ -11,29 +11,22 @@ export global PaletteUi {
     in property <int> tool;
     // "Ajustar", "1,5×", "1:1" ou "≈ 1:1".
     in property <string> zoom;
-    // As dicas de cada botão, na ordem da paleta, vindas do editor (spec ZR, regra 1).
+    // As dicas de cada botão, na ordem do editor (`PALETTE_BUTTONS`; spec ZR, regra 1).
     in property <[string]> tips;
     in property <bool> can-align;
     in property <bool> can-distribute;
-    in property <bool> detached;
-    // A dica do botão sob o mouse, na linha de baixo da paleta destacada (a janela pequena
-    // cortaria o balão); dentro da janela, a dica vem no balão.
-    in-out property <string> help;
     callback pick-tool(int);
     // Um comando do registro pelo nome estável.
     callback command(string);
-    callback detach();
-    callback dock();
 }
 
 // Um botão de ícone: marcado (ferramenta atual) ou apagado (indisponível). `tip` é a posição da
-// dica em `PaletteUi.tips`, que já diz " (indisponível)".
-component Icon inherits Rectangle {
+// dica em `PaletteUi.tips`, que já diz " (indisponível)"; sem posição, vale `label`.
+export component Icon inherits Rectangle {
     in property <image> icon;
     in property <int> tip: -1;
-    // Os botões de destacar e voltar, que não estão na tabela das dicas.
     in property <string> label;
-    property <string> said: root.tip >= 0 ? PaletteUi.tips[root.tip] : root.label;
+    property <string> said: root.tip >= 0 && root.tip < PaletteUi.tips.length ? PaletteUi.tips[root.tip] : root.label;
     in property <bool> on;
     in property <bool> enabled: true;
     callback clicked();
@@ -51,187 +44,17 @@ component Icon inherits Rectangle {
         colorize: root.on ? #102030 : root.enabled ? Theme.text : #6a6a6a;
     }
     touch := TouchArea {
-        changed has-hover => {
-            if (self.has-hover) {
-                PaletteUi.help = root.said;
-            }
-        }
         clicked => {
             if (root.enabled) {
                 root.clicked();
             }
         }
     }
-    // O balão some ao clicar e ao sair com o mouse; na paleta destacada, só a linha de ajuda.
-    if !PaletteUi.detached: Tip {
+    // O balão some ao clicar e ao sair com o mouse.
+    Tip {
         x: 0px;
         y: parent.height + 4px;
         text: root.said;
         shown: touch.has-hover && !touch.pressed;
-    }
-}
-
-component Line inherits Rectangle {
-    height: 1px;
-    background: #ffffff20;
-}
-
-// O conteúdo da paleta, igual na janela e destacado.
-export component PaletteBody inherits VerticalLayout {
-    padding: 6px;
-    spacing: 4px;
-    HorizontalLayout {
-        spacing: 2px;
-        Icon { icon: @image-url("../icons/eg/selecionar.svg"); tip: 0; on: PaletteUi.tool == 0; clicked => { PaletteUi.pick-tool(0); } }
-        Icon { icon: @image-url("../icons/eg/quadro.svg"); tip: 1; on: PaletteUi.tool == 1; clicked => { PaletteUi.pick-tool(1); } }
-        Icon { icon: @image-url("../icons/eg/texto.svg"); tip: 2; on: PaletteUi.tool == 2; clicked => { PaletteUi.pick-tool(2); } }
-        Icon { icon: @image-url("../icons/eg/mao.svg"); tip: 3; on: PaletteUi.tool == 3; clicked => { PaletteUi.pick-tool(3); } }
-        Icon { icon: @image-url("../icons/zr/lupa.svg"); tip: 4; on: PaletteUi.tool == 4; clicked => { PaletteUi.pick-tool(4); } }
-    }
-    HorizontalLayout {
-        spacing: 2px;
-        Icon { icon: @image-url("../icons/eg/menos.svg"); tip: 5; clicked => { PaletteUi.command("organizar.menos-zoom"); } }
-        Rectangle {
-            width: 62px;
-            border-radius: 5px;
-            background: zoom-touch.has-hover ? #ffffff1f : transparent;
-            Text {
-                text: PaletteUi.zoom;
-                color: Theme.text;
-                horizontal-alignment: center;
-                vertical-alignment: center;
-            }
-            zoom-touch := TouchArea {
-                changed has-hover => { if (self.has-hover) { PaletteUi.help = PaletteUi.tips[8]; } }
-                clicked => { PaletteUi.command("organizar.ajustar"); }
-            }
-        }
-        Icon { icon: @image-url("../icons/eg/mais.svg"); tip: 6; clicked => { PaletteUi.command("organizar.mais-zoom"); } }
-    }
-    HorizontalLayout {
-        spacing: 2px;
-        Icon { icon: @image-url("../icons/zr/um-para-um.svg"); tip: 7; clicked => { PaletteUi.command("organizar.tamanho-real"); } }
-        Icon { icon: @image-url("../icons/zr/ajustar.svg"); tip: 8; clicked => { PaletteUi.command("organizar.ajustar"); } }
-        Rectangle { }
-    }
-    Line { }
-    HorizontalLayout {
-        spacing: 2px;
-        Icon { icon: @image-url("../icons/eg/alinhar-esquerda.svg"); tip: 9; enabled: PaletteUi.can-align; clicked => { PaletteUi.command("organizar.alinhar-esquerda"); } }
-        Icon { icon: @image-url("../icons/eg/alinhar-centro.svg"); tip: 10; enabled: PaletteUi.can-align; clicked => { PaletteUi.command("organizar.alinhar-centro"); } }
-        Icon { icon: @image-url("../icons/eg/alinhar-direita.svg"); tip: 11; enabled: PaletteUi.can-align; clicked => { PaletteUi.command("organizar.alinhar-direita"); } }
-    }
-    HorizontalLayout {
-        spacing: 2px;
-        Icon { icon: @image-url("../icons/eg/alinhar-topo.svg"); tip: 12; enabled: PaletteUi.can-align; clicked => { PaletteUi.command("organizar.alinhar-topo"); } }
-        Icon { icon: @image-url("../icons/eg/alinhar-meio.svg"); tip: 13; enabled: PaletteUi.can-align; clicked => { PaletteUi.command("organizar.alinhar-meio"); } }
-        Icon { icon: @image-url("../icons/eg/alinhar-base.svg"); tip: 14; enabled: PaletteUi.can-align; clicked => { PaletteUi.command("organizar.alinhar-base"); } }
-    }
-    Line { }
-    HorizontalLayout {
-        spacing: 2px;
-        Icon { icon: @image-url("../icons/eg/igualar-largura.svg"); tip: 15; enabled: PaletteUi.can-align; clicked => { PaletteUi.command("organizar.igualar-largura"); } }
-        Icon { icon: @image-url("../icons/eg/igualar-altura.svg"); tip: 16; enabled: PaletteUi.can-align; clicked => { PaletteUi.command("organizar.igualar-altura"); } }
-        Icon { icon: @image-url("../icons/eg/igualar-tamanho.svg"); tip: 17; enabled: PaletteUi.can-align; clicked => { PaletteUi.command("organizar.igualar-tamanho"); } }
-    }
-    HorizontalLayout {
-        spacing: 2px;
-        Icon { icon: @image-url("../icons/eg/distribuir-horizontal.svg"); tip: 18; enabled: PaletteUi.can-distribute; clicked => { PaletteUi.command("organizar.distribuir-horizontal"); } }
-        Icon { icon: @image-url("../icons/eg/distribuir-vertical.svg"); tip: 19; enabled: PaletteUi.can-distribute; clicked => { PaletteUi.command("organizar.distribuir-vertical"); } }
-        Rectangle { }
-    }
-    if PaletteUi.detached: Text {
-        text: PaletteUi.help;
-        color: Theme.muted;
-        font-size: 11px;
-        wrap: word-wrap;
-        width: 126px;
-        min-height: 28px;
-    }
-}
-
-// A paleta flutuando na janela: a alça de cima a leva para qualquer ponto; o botão a destaca.
-export component FloatingPalette inherits Rectangle {
-    // A área onde ela pode ficar (a janela), para não sumir para fora.
-    in property <length> room-w;
-    in property <length> room-h;
-    in-out property <length> px: 24px;
-    in-out property <length> py: 150px;
-    x: max(0px, min(root.px, root.room-w - self.width));
-    y: max(0px, min(root.py, root.room-h - self.height));
-    width: body.preferred-width;
-    height: grip.height + body.preferred-height;
-    background: #262a2e;
-    border-radius: 7px;
-    border-width: 1px;
-    border-color: #ffffff30;
-    drop-shadow-blur: 14px;
-    drop-shadow-color: #00000090;
-    grip := Rectangle {
-        y: 0;
-        height: 22px;
-        width: parent.width;
-        Image {
-            accessible-role: none;
-            x: 4px;
-            y: 2px;
-            width: 18px;
-            height: 18px;
-            source: @image-url("../icons/eg/alca.svg");
-            colorize: #8a8a8a;
-        }
-        Text {
-            x: 22px;
-            text: "Ferramentas";
-            color: Theme.muted;
-            font-size: 11px;
-            vertical-alignment: center;
-            height: parent.height;
-        }
-        drag := TouchArea {
-            mouse-cursor: move;
-            property <length> ox;
-            property <length> oy;
-            pointer-event(e) => {
-                if (e.kind == PointerEventKind.down) {
-                    self.ox = self.mouse-x;
-                    self.oy = self.mouse-y;
-                }
-            }
-            moved => {
-                root.px = root.x + self.mouse-x - self.ox;
-                root.py = root.y + self.mouse-y - self.oy;
-            }
-        }
-        Icon {
-            x: parent.width - self.width - 2px;
-            y: -4px;
-            icon: @image-url("../icons/eg/destacar.svg");
-            label: "Destacar numa janela própria";
-            clicked => { PaletteUi.detach(); }
-        }
-    }
-    body := PaletteBody {
-        y: grip.height;
-    }
-}
-
-// A paleta destacada: uma janela pequena, sempre por cima, que vai para qualquer lugar da tela.
-export component PaletteWindow inherits Window {
-    title: "Ferramentas — Lamina";
-    always-on-top: true;
-    background: #262a2e;
-    VerticalLayout {
-        PaletteBody { }
-        HorizontalLayout {
-            padding: 6px;
-            padding-top: 0;
-            Icon {
-                icon: @image-url("../icons/eg/encaixar.svg");
-                label: "Voltar a paleta para a janela do álbum";
-                clicked => { PaletteUi.dock(); }
-            }
-            Rectangle { }
-        }
     }
 }

@@ -37,6 +37,19 @@ export global PhotoUi {
     callback contrast-reset();
     callback bw-toggled(bool);
     callback restore();
+    // Spec CD: a escala pelo controle (posição de 0 a 1, proporcional ao logaritmo), o clique
+    // duplo que volta a 100% e os botões de girar 90° (-1 ↺, 1 ↻).
+    in-out property <float> scale-position;
+    callback scale-moved(float);
+    callback scale-reset();
+    callback quarter(int);
+    // Spec TM: temperatura e matiz, de −100 a 100.
+    in-out property <float> temperature;
+    in-out property <float> tint;
+    callback temperature-moved(float);
+    callback tint-moved(float);
+    callback temperature-reset();
+    callback tint-reset();
     // Spec OP: "Quadro de 12,4 × 8,3 cm" (um quadro só), a opacidade em %, a borda e os cantos
     // ("1,5 mm") e a cor da borda; "Vale para os N quadros selecionados" com vários.
     in property <string> size;
@@ -63,11 +76,12 @@ export component PhotoSection inherits VerticalLayout {
     Text { text: "Foto"; color: Theme.text; font-weight: 700; }
     if PhotoUi.size != "": Text { text: PhotoUi.size; color: Theme.muted; font-size: 12px; }
     if PhotoUi.note != "": Text { text: PhotoUi.note; color: Theme.muted; font-size: 11px; wrap: word-wrap; }
-    Label { text: PhotoUi.can-turn ? "Endireitar" : "Endireitar (selecione um quadro só)"; }
+    // O giro de −180° a 180° (spec CD, regra 2), com os botões de 90°.
+    Label { text: PhotoUi.can-turn ? "Girar" : "Girar (selecione um quadro só)"; }
     NeutralSlider {
         enabled: PhotoUi.can-turn;
-        minimum: -45;
-        maximum: 45;
+        minimum: -180;
+        maximum: 180;
         value <=> PhotoUi.angle-value;
         changed(v) => { PhotoUi.angle-moved(v); }
         released => { PhotoUi.released(); }
@@ -77,14 +91,20 @@ export component PhotoSection inherits VerticalLayout {
         spacing: 4px;
         LineEdit {
             enabled: PhotoUi.can-turn;
-            width: 70px;
+            width: 64px;
             text <=> PhotoUi.angle;
             accepted => { PhotoUi.angle-accepted(); }
         }
+        Button { text: "−90°"; enabled: PhotoUi.can-turn; clicked => { PhotoUi.quarter(-1); } }
+        Button { text: "+90°"; enabled: PhotoUi.can-turn; clicked => { PhotoUi.quarter(1); } }
+    }
+    HorizontalLayout {
+        spacing: 4px;
         Button { text: "−0,1"; enabled: PhotoUi.can-turn; clicked => { PhotoUi.angle-step(-1); } }
         Button { text: "+0,1"; enabled: PhotoUi.can-turn; clicked => { PhotoUi.angle-step(1); } }
         Button { text: "0°"; enabled: PhotoUi.can-turn; clicked => { PhotoUi.angle-zero(); } }
     }
+    // A escala pelo controle (spec CD, regra 1): proporcional ao logaritmo, de 100% a 800%.
     HorizontalLayout {
         spacing: 6px;
         Label { text: "Escala (%)"; vertical-alignment: center; }
@@ -94,6 +114,16 @@ export component PhotoSection inherits VerticalLayout {
             text <=> PhotoUi.scale;
             accepted => { PhotoUi.scale-accepted(); }
         }
+    }
+    NeutralSlider {
+        enabled: PhotoUi.can-turn;
+        minimum: 0;
+        maximum: 1;
+        neutral: 0;
+        value <=> PhotoUi.scale-position;
+        changed(v) => { PhotoUi.scale-moved(v); }
+        released => { PhotoUi.released(); }
+        reset => { PhotoUi.scale-reset(); }
     }
     Label { text: "Brilho  " + round(PhotoUi.brightness); }
     NeutralSlider {
@@ -112,6 +142,31 @@ export component PhotoSection inherits VerticalLayout {
         changed(v) => { PhotoUi.contrast-moved(v); }
         released => { PhotoUi.released(); }
         reset => { PhotoUi.contrast-reset(); }
+    }
+    // Temperatura e matiz (spec TM): o trilho mostra a cor para cada lado.
+    Label { text: "Temperatura  " + round(PhotoUi.temperature); }
+    NeutralSlider {
+        minimum: -100;
+        maximum: 100;
+        gradient: true;
+        track-from: #4a90e2;
+        track-to: #f5c542;
+        value <=> PhotoUi.temperature;
+        changed(v) => { PhotoUi.temperature-moved(v); }
+        released => { PhotoUi.released(); }
+        reset => { PhotoUi.temperature-reset(); }
+    }
+    Label { text: "Matiz  " + round(PhotoUi.tint); }
+    NeutralSlider {
+        minimum: -100;
+        maximum: 100;
+        gradient: true;
+        track-from: #4caf50;
+        track-to: #d84fc4;
+        value <=> PhotoUi.tint;
+        changed(v) => { PhotoUi.tint-moved(v); }
+        released => { PhotoUi.released(); }
+        reset => { PhotoUi.tint-reset(); }
     }
     CheckBox {
         text: "Preto e branco";

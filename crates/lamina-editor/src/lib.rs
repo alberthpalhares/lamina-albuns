@@ -38,6 +38,7 @@ pub mod album;
 pub mod appearance;
 mod applying;
 pub mod arrange;
+pub mod backup;
 pub mod bar_tips;
 pub mod building;
 pub mod cache;
@@ -65,7 +66,9 @@ pub mod models;
 pub mod motion;
 pub mod naming;
 pub mod new_project;
+pub mod organize_bar;
 pub mod palette_tips;
+pub mod panel_width;
 pub mod photo_grid;
 pub mod photos;
 pub mod prefs_store;
@@ -79,6 +82,7 @@ pub mod rulers;
 pub mod screens;
 pub mod session;
 pub mod shortcuts;
+pub mod sliders;
 pub mod snap;
 pub mod spreads;
 pub mod strips;
@@ -99,7 +103,9 @@ pub use album::{
 pub use bar_tips::{BAR_COMMANDS, bar_tip};
 pub use cache::Cache;
 pub use commands::{Command, Menu};
-pub use editor::{CrossTarget, DropPlace, Editor, Leave, Panel, TextChange};
+pub use editor::{
+    CrossTarget, DropPlace, Editor, Leave, MAX_ALBUM_NAME, Panel, TextChange, clean_album_name,
+};
 pub use error::EditorError;
 pub use error_log::ErrorLog;
 pub use example::{EXAMPLE_COPY, EXAMPLE_DIR, EXAMPLE_FILE, example_target, prepare_example};

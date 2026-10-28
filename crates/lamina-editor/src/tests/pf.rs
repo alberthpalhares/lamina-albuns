@@ -79,7 +79,8 @@ fn pf_b2_o_zoom_fica_em_janela_json() {
     let saved: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(&file).unwrap()).unwrap();
     assert_eq!(saved["fotos_zoom"], 160);
-    assert_eq!(saved["laminas"], false);
+    // O arquivo antigo abre a faixa Lâminas uma vez (spec FX, regra 11); o campo continua lá.
+    assert_eq!(saved["laminas"], true);
     // A Ctrl+roda para cima, seis vezes, para em 240.
     let mut zoom = editor.photos_zoom();
     let mut seen = Vec::new();

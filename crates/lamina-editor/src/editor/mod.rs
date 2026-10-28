@@ -16,7 +16,9 @@ use crate::{EditorError, Session};
 
 mod adjust;
 mod arrange_cmd;
+mod backup;
 mod band;
+mod bottom_strips;
 mod build_album;
 mod clipboard;
 mod context;
@@ -41,8 +43,10 @@ mod organize_moves;
 mod organize_zoom;
 mod panel_need;
 mod photo_panel;
+mod photo_sliders;
 mod photo_style;
 mod recents;
+mod rename;
 mod report;
 mod style;
 mod text_edit;
@@ -63,6 +67,7 @@ pub use organize_zoom::{
     MAX_VIEW_ZOOM, VIEW_STEP, Zoom, ZoomMove, real_factor, step_factor, times_label, zoom_about,
 };
 pub use photo_style::PhotoStyle;
+pub use rename::{MAX_ALBUM_NAME, clean_album_name};
 pub use style::Look;
 pub use text_edit::TextChange;
 
@@ -127,6 +132,8 @@ pub struct Editor {
     view: ViewArea,
     /// O álbum recebido (duplo clique) que espera "Salvar as alterações?" (spec MA, regra 4).
     pub(crate) received: Option<std::path::PathBuf>,
+    /// As cópias de segurança (spec CS); nenhuma nos testes e na linha de comando.
+    backups: Option<crate::backup::Backups>,
 }
 
 /// O que a janela informa para o tamanho real: a largura de Ajustar (pixels lógicos, sem a
@@ -186,6 +193,7 @@ impl Editor {
                 monitor: crate::calibration::Monitor::default(),
             },
             received: None,
+            backups: None,
         }
     }
 

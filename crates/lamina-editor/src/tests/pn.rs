@@ -29,8 +29,8 @@ fn pn_b1_recolher_e_abrir_de_novo() {
 fn pn_b2_mesmo_comando_pelo_menu_e_pelo_atalho() {
     let expected = [
         ('1', Command::ToggleSpreads, "Faixa de lâminas"),
-        ('2', Command::ToggleTimeline, "Linha do tempo"),
-        ('3', Command::TogglePhotos, "Fotos"),
+        ('2', Command::ToggleTimeline, "Sequência"),
+        ('3', Command::TogglePhotos, "Fotografias"),
     ];
     for (key, command, label) in expected {
         assert_eq!(Command::from_shortcut(Shortcut::alt(key)), Some(command));
@@ -50,13 +50,13 @@ fn pn_b3_a_janela_lembra_na_proxima_vez() {
     let file = dir.path().join("config").join("janela.json");
     let mut editor = editor_at(three_spreads(), 0);
     editor.set_strips(StripsStore::load(&file));
-    // Desde a versão 2 do estado da janela, a faixa de lâminas antiga começa desligada (JE).
-    assert_eq!(open(&editor), [false, true, true]);
+    // Desde a versão 3 do estado da janela, as três faixas começam abertas (spec FX, regra 10).
+    assert_eq!(open(&editor), [true, true, true]);
     assert!(editor.run(Command::TogglePhotos));
     // Fechar e abrir: o estado é lido de novo do arquivo.
     let mut next = editor_at(three_spreads(), 0);
     next.set_strips(StripsStore::load(&file));
-    assert_eq!(open(&next), [false, true, false]);
+    assert_eq!(open(&next), [true, true, false]);
     assert_eq!(next.take_notice(), None);
 }
 
@@ -66,11 +66,11 @@ fn pn_b4_arquivo_ilegivel_volta_ao_padrao_com_aviso() {
     let file = dir.path().join("janela.json");
     std::fs::write(&file, "isto não é json").unwrap();
     let store = StripsStore::load(&file);
-    // O padrão novo (spec JE): painel escondido e faixa de lâminas antiga desligada.
+    // O padrão novo (spec JE, com a FX): painel escondido e as três faixas de baixo abertas.
     assert_eq!(store.strips, Strips::fresh());
     let mut editor = editor_at(three_spreads(), 0);
     editor.set_strips(store);
-    assert_eq!(open(&editor), [false, true, true]);
+    assert_eq!(open(&editor), [true, true, true]);
     assert_eq!(editor.take_notice().as_deref(), Some(STRIPS_UNREADABLE));
     // A próxima mudança regrava o arquivo, que volta a ler.
     assert!(editor.run(Command::ToggleTimeline));
@@ -99,13 +99,13 @@ fn pn_b6_cabecalhos_com_o_resumo_atual() {
     let mut editor = editor_at(built(spec(30.0, 30.0), &photos, 4), 0);
     let titles = strip_titles(editor.session().unwrap());
     assert_eq!(titles[0], "Lâminas · 4 lâminas (8 páginas)");
-    assert_eq!(titles[2], "Fotos · 12 de 12 usadas");
+    assert_eq!(titles[2], "Fotografias · 12 de 12 usadas");
     assert!(editor.run(Command::DeleteSpread));
     let session = editor.session().unwrap();
     let titles = strip_titles(session);
     assert_eq!(titles[0], "Lâminas · 3 lâminas (6 páginas)");
     let used = used_photos(session.project());
     assert!(used < 12);
-    assert_eq!(titles[2], format!("Fotos · {used} de 12 usadas"));
-    assert!(titles[1].starts_with("Linha do tempo · "));
+    assert_eq!(titles[2], format!("Fotografias · {used} de 12 usadas"));
+    assert!(titles[1].starts_with("Sequência · "));
 }

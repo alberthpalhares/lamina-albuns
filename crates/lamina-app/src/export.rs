@@ -89,14 +89,15 @@ pub fn pick_folder(app: &mut App) {
     } else {
         current.parent().map(Path::to_path_buf).unwrap_or_default()
     };
-    if let Some(chosen) = rfd::FileDialog::new()
-        .set_title("Pasta da exportação")
+    let answer = crate::dialogs::dialog(app, "Pasta da exportação")
         .set_directory(start)
-        .pick_folder()
-    {
-        w.set_ex_folder(chosen.display().to_string().into());
-        changed(app);
-    }
+        .pick_folder();
+    crate::dialogs::then(answer, |app, chosen| {
+        if let (Some(chosen), Some(w)) = (chosen, app.window.upgrade()) {
+            w.set_ex_folder(chosen.path().display().to_string().into());
+            changed(app);
+        }
+    });
 }
 
 /// "Exportar": confere as lâminas escolhidas; com avisos, mostra a pré-impressão (regra 2).

@@ -36,6 +36,7 @@ impl Command {
                 Menu::File,
                 None,
             ),
+            C::RenameAlbum => ("arquivo.renomear", "Renomear álbum…", Menu::File, None),
             C::CloseAlbum => (
                 "arquivo.fechar",
                 "Fechar álbum",
@@ -83,11 +84,17 @@ impl Command {
             ),
             C::ToggleTimeline => (
                 "ver.linha-do-tempo",
-                "Linha do tempo",
+                "Sequência",
                 Menu::View,
                 Some(S::alt('2')),
             ),
-            C::TogglePhotos => ("ver.fotos", "Fotos", Menu::View, Some(S::alt('3'))),
+            C::TogglePhotos => ("ver.fotos", "Fotografias", Menu::View, Some(S::alt('3'))),
+            C::ToggleStrips => (
+                "ver.faixas",
+                "Faixas de baixo",
+                Menu::View,
+                Some(S::alt('0')),
+            ),
             C::ToggleReduceMotion => (
                 "ver.reduzir-movimento",
                 "Reduzir movimento",

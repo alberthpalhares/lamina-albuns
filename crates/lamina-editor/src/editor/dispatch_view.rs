@@ -15,6 +15,7 @@ impl Editor {
             Command::PreviousSpread | Command::FirstSpread => s.current() > 0,
             Command::ToggleGuides | Command::ToggleReduceMotion | Command::TogglePanel => true,
             Command::ToggleSpreads | Command::ToggleTimeline | Command::TogglePhotos => true,
+            Command::ToggleStrips => true,
             Command::AdjustPhoto => self.photo_adjust().is_some(),
             // A calibração do tamanho real abre um diálogo da janela, em qualquer modo (ZR).
             Command::CalibrateSize => true,
@@ -35,6 +36,7 @@ impl Editor {
             Command::ToggleSpreads => self.toggle_strip(Strip::Spreads),
             Command::ToggleTimeline => self.toggle_strip(Strip::Timeline),
             Command::TogglePhotos => self.toggle_strip(Strip::Photos),
+            Command::ToggleStrips => self.toggle_bottom(),
             Command::TogglePanel => self.toggle_panel(),
             Command::AdjustPhoto => {
                 self.wants_details = true;

@@ -1,26 +1,22 @@
-//! A paleta do modo organizar pela janela (spec EG, seção 3; pedido do dono de 2026-10-20): os
-//! ícones rodam os comandos do registro, a ferramenta vale para a lâmina e a paleta se destaca
-//! numa janela própria. Cada janela tem o seu `PaletteUi`; o Rust mantém os dois iguais.
+//! Os botões do modo organizar pela janela (spec EG, seção 3; spec BO): as ferramentas e o zoom
+//! rodam os comandos do registro, e a barra única de cima mostra o que cabe na largura e o que vale
+//! com a seleção. A paleta flutuante e a destacada saíram com a spec BO.
 
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use lamina_editor::Command;
 use lamina_editor::editor::PaletteTool;
+use lamina_editor::organize_bar::{BAR_MENUS_ORDER, BarMenu, bar_fit, bar_groups};
 use slint::{ComponentHandle, SharedString};
 
 use crate::state::App;
-use crate::{AppWindow, OrganizeUi, PaletteUi, PaletteWindow};
+use crate::{AppWindow, BarRow, OrganizeUi, PaletteUi};
 
 type Shared = Rc<RefCell<App>>;
 
-thread_local! {
-    /// A paleta destacada, enquanto existir (fechá-la a devolve para a janela do álbum).
-    static FLOATING: RefCell<Option<PaletteWindow>> = const { RefCell::new(None) };
-}
-
-/// Liga os botões de um `PaletteUi` (o da janela do álbum ou o da paleta destacada).
-fn wire(ui: &PaletteUi, app: &Shared) {
+pub fn connect(window: &AppWindow, app: &Shared) {
+    let ui = window.global::<PaletteUi>();
     let a = app.clone();
     ui.on_command(move |name| {
         if let Some(command) = Command::from_name(&name) {
@@ -37,71 +33,88 @@ fn wire(ui: &PaletteUi, app: &Shared) {
         }
         refresh(&app);
     });
-    let a = app.clone();
-    ui.on_detach(move || detach(&a));
-    let a = app.clone();
-    ui.on_dock(move || dock(&a));
-}
-
-pub fn connect(window: &AppWindow, app: &Shared) {
-    wire(&window.global::<PaletteUi>(), app);
-}
-
-fn detach(app: &Shared) {
-    let Ok(palette) = PaletteWindow::new() else {
-        return;
-    };
-    wire(&palette.global::<PaletteUi>(), app);
-    let a = app.clone();
-    palette.window().on_close_requested(move || {
-        dock(&a);
-        slint::CloseRequestResponse::HideWindow
+    let organize = window.global::<OrganizeUi>();
+    let weak = window.as_weak();
+    organize.on_bar_width(move |width| {
+        // O que cabe na barra (spec BO, regra 3).
+        let Some(w) = weak.upgrade() else {
+            return;
+        };
+        let fit = bar_fit(f64::from(width));
+        let ui = w.global::<OrganizeUi>();
+        ui.set_bar_fit(fit.fit);
+        ui.set_bar_menus(fit.menus);
+        ui.set_bar_fields(fit.fields);
     });
-    FLOATING.with(|f| *f.borrow_mut() = Some(palette));
-    refresh(&app.borrow());
+    let a = app.clone();
+    organize.on_zoom_slider(move |pos| {
+        // O controle de zoom da lâmina (spec CD, regra 3): sem histórico.
+        let mut app = a.borrow_mut();
+        if app.editor.set_view_zoom_position(f64::from(pos)).is_some() {
+            app.refresh_current();
+        }
+    });
 }
 
-fn dock(app: &Shared) {
-    if let Some(p) = FLOATING.with(|f| f.borrow_mut().take()) {
-        // Fechar uma janela que já sumiu não tem o que avisar.
-        let _ = p.hide();
+/// O desenho de cada comando dos menus, embutido no programa.
+fn icon_svg(command: Command) -> &'static [u8] {
+    match command {
+        Command::AlignLeft => include_bytes!("../icons/eg/alinhar-esquerda.svg"),
+        Command::AlignCenter => include_bytes!("../icons/eg/alinhar-centro.svg"),
+        Command::AlignRight => include_bytes!("../icons/eg/alinhar-direita.svg"),
+        Command::AlignTop => include_bytes!("../icons/eg/alinhar-topo.svg"),
+        Command::AlignMiddle => include_bytes!("../icons/eg/alinhar-meio.svg"),
+        Command::AlignBottom => include_bytes!("../icons/eg/alinhar-base.svg"),
+        Command::EqualWidth => include_bytes!("../icons/eg/igualar-largura.svg"),
+        Command::EqualHeight => include_bytes!("../icons/eg/igualar-altura.svg"),
+        Command::EqualSize => include_bytes!("../icons/eg/igualar-tamanho.svg"),
+        Command::DistributeAcross => include_bytes!("../icons/eg/distribuir-horizontal.svg"),
+        _ => include_bytes!("../icons/eg/distribuir-vertical.svg"),
     }
-    refresh(&app.borrow());
 }
 
-/// Põe a ferramenta, o zoom e o que vale agora nas duas paletas; a destacada aparece só no modo.
+/// As linhas de um menu da barra: o ícone, o nome do comando e se ele vale agora.
+fn rows(app: &App, menu: BarMenu) -> Vec<BarRow> {
+    menu.commands()
+        .iter()
+        .map(|c| BarRow {
+            // Um SVG nosso, embutido: se não ler, a linha fica só com o nome.
+            icon: slint::Image::load_from_svg_data(icon_svg(*c)).unwrap_or_default(),
+            label: c.label().into(),
+            command: c.name().into(),
+            enabled: app.editor.available(*c),
+        })
+        .collect()
+}
+
+/// Põe a ferramenta, o zoom, as dicas e o que vale agora na barra do modo organizar.
 pub fn refresh(app: &App) {
     let Some(w) = app.window.upgrade() else {
         return;
     };
-    let tool = app.editor.tool().index();
-    let zoom = app.editor.zoom_label();
+    let ui = w.global::<PaletteUi>();
+    ui.set_tool(app.editor.tool().index());
+    ui.set_zoom(app.editor.zoom_label().into());
     let tips: Vec<SharedString> = app
         .editor
         .palette_tips()
         .into_iter()
         .map(Into::into)
         .collect();
-    let fill = |ui: PaletteUi, detached: bool| {
-        ui.set_tool(tool);
-        ui.set_zoom(zoom.as_str().into());
-        ui.set_tips(crate::convert::model(tips.clone()));
-        ui.set_can_align(app.editor.available(Command::AlignLeft));
-        ui.set_can_distribute(app.editor.available(Command::DistributeAcross));
-        ui.set_detached(detached);
-    };
-    let detached = FLOATING.with(|f| {
-        let floating = f.borrow();
-        if let Some(p) = floating.as_ref() {
-            fill(p.global::<PaletteUi>(), true);
-            // Mostrar ou esconder uma janela pequena não falha de um jeito que dê para tratar.
-            let _ = if app.editor.organizing() {
-                p.show()
-            } else {
-                p.hide()
-            };
-        }
-        floating.is_some()
-    });
-    fill(w.global::<PaletteUi>(), detached);
+    ui.set_tips(crate::convert::model(tips));
+    ui.set_can_align(app.editor.available(Command::AlignLeft));
+    ui.set_can_distribute(app.editor.available(Command::DistributeAcross));
+    let organize = w.global::<OrganizeUi>();
+    let selected = app.editor.selected_frames().len();
+    organize.set_can_fields(bar_groups(selected).fields);
+    let menu_tips: Vec<SharedString> = BAR_MENUS_ORDER
+        .iter()
+        .map(|m| m.tip(selected).into())
+        .collect();
+    organize.set_menu_tips(crate::convert::model(menu_tips));
+    organize.set_align_rows(crate::convert::model(rows(app, BarMenu::Align)));
+    organize.set_equal_rows(crate::convert::model(rows(app, BarMenu::Equal)));
+    organize.set_distribute_rows(crate::convert::model(rows(app, BarMenu::Distribute)));
+    #[allow(clippy::cast_possible_truncation)]
+    organize.set_zoom_position(app.editor.view_zoom_position() as f32);
 }

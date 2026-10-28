@@ -15,4 +15,7 @@ export global Motion {
     in property <int> reorder-ms: 150;
     // A faixa de layouts desce e sobe (spec FL).
     in property <int> band-ms: 200;
+    // A janela (ou a borda do painel da direita) está mudando de tamanho: a lâmina acompanha sem
+    // animar, até 150 ms depois da última mudança (spec FB, regra 6).
+    in property <bool> resizing;
 }

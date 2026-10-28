@@ -24,7 +24,7 @@ pub use style::Fill;
 pub use text::{
     FAMILIES, Family, TextCheck, check_text, family, known_families, text_image, text_lines,
 };
-pub use tone::{apply_tone, gray, tone_table};
+pub use tone::{apply_tone, color_tables, gray, tone_table};
 pub use types::{MIN_PREVIEW, PhotoSource, RenderError, RenderTarget};
 
 use lamina_core::AlbumSpec;

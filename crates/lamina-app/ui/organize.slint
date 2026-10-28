@@ -6,7 +6,8 @@ import { Theme } from "theme.slint";
 import { BoxData } from "canvas.slint";
 import { LookPanel } from "look.slint";
 import { PhotoUi, PhotoSection } from "photo.slint";
-import { IconButton } from "widgets.slint";
+import { IconButton, NeutralSlider, Tip } from "widgets.slint";
+import { PaletteUi, Icon } from "palette.slint";
 
 // Uma marca do ímã de mesmo tamanho ou de espaçamento igual: a linha e o texto, em frações da
 // largura da lâmina.
@@ -22,6 +23,15 @@ export struct TickData {
     at: float,
     label: string,
     major: bool,
+}
+
+// Uma linha de menu da barra (spec BO): o ícone, o nome do comando, o nome estável e se vale agora.
+// O ícone vem do Rust: uma escolha entre onze imagens aqui derrubava o compilador do Rust.
+export struct BarRow {
+    icon: image,
+    label: string,
+    command: string,
+    enabled: bool,
 }
 
 export global OrganizeUi {
@@ -85,22 +95,271 @@ export global OrganizeUi {
     callback field-accepted(int);
     // Um comando do registro pelo nome estável (Alinhar, Igualar, Distribuir).
     callback command(string);
+    // A barra única (spec BO): o que cabe na largura (o Rust decide pela `bar-width`), se há
+    // seleção para os campos, as dicas e as linhas dos três menus e a posição do controle de zoom
+    // (spec CD, regra 3).
+    in property <bool> bar-fit: true;
+    in property <bool> bar-menus: true;
+    in property <bool> bar-fields: true;
+    in property <bool> can-fields;
+    in property <[string]> menu-tips: ["Alinhar", "Igualar", "Distribuir"];
+    in property <[BarRow]> align-rows;
+    in property <[BarRow]> equal-rows;
+    in property <[BarRow]> distribute-rows;
+    in-out property <float> zoom-position;
+    callback bar-width(length);
+    callback zoom-slider(float);
 }
 
-// A barra da lâmina em destaque, em cima da área da lâmina.
+// As linhas de um menu (ícone e nome); clicar roda o comando e fecha.
+component MenuRows inherits VerticalLayout {
+    in property <[BarRow]> rows;
+    callback picked();
+    padding: 4px;
+    spacing: 2px;
+    for r in root.rows: Rectangle {
+        height: 28px;
+        min-width: 210px;
+        border-radius: 4px;
+        background: row-touch.has-hover && r.enabled ? #ffffff1f : transparent;
+        HorizontalLayout {
+            padding-left: 8px;
+            padding-right: 10px;
+            spacing: 8px;
+            alignment: start;
+            VerticalLayout {
+                alignment: center;
+                Image {
+                    accessible-role: none;
+                    width: 18px;
+                    height: 18px;
+                    source: r.icon;
+                    colorize: r.enabled ? Theme.text : #6a6a6a;
+                }
+            }
+            Text { text: r.label; color: r.enabled ? Theme.text : #6a6a6a; vertical-alignment: center; }
+        }
+        row-touch := TouchArea {
+            enabled: r.enabled;
+            clicked => {
+                PaletteUi.command(r.command);
+                root.picked();
+            }
+        }
+    }
+}
+
+// Alinhar ▾, Igualar ▾, Distribuir ▾ (spec BO, regras 1 e 2): apagado diz o porquê na dica.
+component MenuButton inherits Rectangle {
+    in property <string> text;
+    in property <string> tip;
+    in property <bool> enabled;
+    in property <[BarRow]> rows;
+    width: label.preferred-width + 34px;
+    height: 28px;
+    border-radius: 5px;
+    background: touch.has-hover && root.enabled ? #ffffff1f : transparent;
+    // A seta é um desenho nosso: a fonte da janela não tem o "▾" (aparecia um quadradinho).
+    label := Text {
+        x: 9px;
+        height: parent.height;
+        text: root.text;
+        color: root.enabled ? white : #8a9aaa;
+        vertical-alignment: center;
+    }
+    Image {
+        accessible-role: none;
+        x: label.x + label.preferred-width + 3px;
+        y: (parent.height - self.height) / 2;
+        width: 12px;
+        height: 12px;
+        source: @image-url("../icons/eg/seta-baixo.svg");
+        colorize: root.enabled ? white : #8a9aaa;
+    }
+    touch := TouchArea {
+        clicked => {
+            if (root.enabled) {
+                popup.show();
+            }
+        }
+    }
+    popup := PopupWindow {
+        y: parent.height + 2px;
+        Rectangle {
+            background: #262a2e;
+            border-radius: 6px;
+            border-width: 1px;
+            border-color: #ffffff30;
+            drop-shadow-blur: 12px;
+            drop-shadow-color: #00000090;
+            MenuRows { rows: root.rows; picked => { popup.close(); } }
+        }
+    }
+    Tip {
+        x: 0px;
+        y: parent.height + 4px;
+        text: root.tip;
+        shown: touch.has-hover && !touch.pressed;
+    }
+}
+
+// X, Y, L, A e o cadeado de "Manter proporção" (spec BO, regra 1, item 5).
+component BarFields inherits HorizontalLayout {
+    in property <color> ink: white;
+    spacing: 4px;
+    alignment: start;
+    Text { text: "X"; color: root.ink; vertical-alignment: center; }
+    LineEdit { width: 58px; text <=> OrganizeUi.gx; accepted => { OrganizeUi.field-accepted(0); } }
+    Text { text: "Y"; color: root.ink; vertical-alignment: center; }
+    LineEdit { width: 58px; text <=> OrganizeUi.gy; accepted => { OrganizeUi.field-accepted(1); } }
+    Text { text: "L"; color: root.ink; vertical-alignment: center; }
+    LineEdit { width: 58px; text <=> OrganizeUi.gw; accepted => { OrganizeUi.field-accepted(2); } }
+    Text { text: "A"; color: root.ink; vertical-alignment: center; }
+    LineEdit { width: 58px; text <=> OrganizeUi.gh; accepted => { OrganizeUi.field-accepted(3); } }
+    Icon {
+        icon: OrganizeUi.keep ? @image-url("../icons/eg/cadeado.svg") : @image-url("../icons/eg/cadeado-aberto.svg");
+        label: OrganizeUi.keep ? "Manter proporção (ligado)" : "Manter proporção (desligado)";
+        on: OrganizeUi.keep;
+        clicked => { OrganizeUi.keep = !OrganizeUi.keep; }
+    }
+}
+
+component Separator inherits Rectangle {
+    width: 1px;
+    height: 20px;
+    background: #ffffff30;
+}
+
+// A barra única do modo organizar (spec BO), em cima da área da lâmina: Voltar, as ferramentas, o
+// zoom, os menus, os campos e os botões de painel. O que não cabe vai para o ⋯ (regra 3).
 export component OrganizeBar inherits Rectangle {
     height: 34px;
     background: #1f3b57;
+    init => { OrganizeUi.bar-width(self.width); }
+    changed width => { OrganizeUi.bar-width(self.width); }
+    property <bool> shows-fields: OrganizeUi.bar-fields && OrganizeUi.can-fields;
+    property <bool> all-in: OrganizeUi.bar-fit && OrganizeUi.bar-menus && (OrganizeUi.bar-fields || !OrganizeUi.can-fields);
     HorizontalLayout {
-        padding-left: 12px;
+        padding-left: 8px;
         padding-right: 8px;
-        spacing: 12px;
-        Text {
-            text: OrganizeUi.title;
-            color: white;
-            font-weight: 700;
-            vertical-alignment: center;
-            horizontal-stretch: 1;
+        spacing: 6px;
+        // Voltar no lugar de Concluir (spec ZR, regra 12): a tela anima a saída.
+        VerticalLayout {
+            alignment: center;
+            Button {
+                text: "Voltar";
+                clicked => { OrganizeUi.done(); }
+            }
+        }
+        VerticalLayout { alignment: center; Separator { } }
+        HorizontalLayout {
+            spacing: 2px;
+            alignment: start;
+            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/eg/selecionar.svg"); tip: 0; on: PaletteUi.tool == 0; clicked => { PaletteUi.pick-tool(0); } } }
+            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/eg/quadro.svg"); tip: 1; on: PaletteUi.tool == 1; clicked => { PaletteUi.pick-tool(1); } } }
+            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/eg/texto.svg"); tip: 2; on: PaletteUi.tool == 2; clicked => { PaletteUi.pick-tool(2); } } }
+            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/eg/mao.svg"); tip: 3; on: PaletteUi.tool == 3; clicked => { PaletteUi.pick-tool(3); } } }
+            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/zr/lupa.svg"); tip: 4; on: PaletteUi.tool == 4; clicked => { PaletteUi.pick-tool(4); } } }
+        }
+        VerticalLayout { alignment: center; Separator { } }
+        // O zoom da lâmina (spec CD, regra 3): −, o controle, + e o valor.
+        HorizontalLayout {
+            spacing: 2px;
+            alignment: start;
+            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/eg/menos.svg"); tip: 5; clicked => { PaletteUi.command("organizar.menos-zoom"); } } }
+            VerticalLayout {
+                alignment: center;
+                NeutralSlider {
+                    width: 200px;
+                    minimum: 0;
+                    maximum: 1;
+                    neutral: 0;
+                    value <=> OrganizeUi.zoom-position;
+                    changed(v) => { OrganizeUi.zoom-slider(v); }
+                    reset => { PaletteUi.command("organizar.ajustar"); }
+                }
+            }
+            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/eg/mais.svg"); tip: 6; clicked => { PaletteUi.command("organizar.mais-zoom"); } } }
+            Text {
+                width: 56px;
+                text: PaletteUi.zoom;
+                color: white;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+        if OrganizeUi.bar-fit: HorizontalLayout {
+            spacing: 2px;
+            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/zr/ajustar.svg"); tip: 8; clicked => { PaletteUi.command("organizar.ajustar"); } } }
+            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/zr/um-para-um.svg"); tip: 7; clicked => { PaletteUi.command("organizar.tamanho-real"); } } }
+        }
+        if OrganizeUi.bar-menus: HorizontalLayout {
+            spacing: 2px;
+            VerticalLayout { alignment: center; Separator { } }
+            VerticalLayout { alignment: center; MenuButton { text: "Alinhar"; tip: OrganizeUi.menu-tips[0]; enabled: PaletteUi.can-align; rows: OrganizeUi.align-rows; } }
+            VerticalLayout { alignment: center; MenuButton { text: "Igualar"; tip: OrganizeUi.menu-tips[1]; enabled: PaletteUi.can-align; rows: OrganizeUi.equal-rows; } }
+            VerticalLayout { alignment: center; MenuButton { text: "Distribuir"; tip: OrganizeUi.menu-tips[2]; enabled: PaletteUi.can-distribute; rows: OrganizeUi.distribute-rows; } }
+        }
+        if root.shows-fields: HorizontalLayout {
+            spacing: 6px;
+            VerticalLayout { alignment: center; Separator { } }
+            VerticalLayout { alignment: center; BarFields { } }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        // O que não coube (regra 3): Ajustar e 1:1, os menus e os campos, nessa ordem de volta.
+        if !root.all-in: VerticalLayout {
+            alignment: center;
+            more := Rectangle {
+                width: 30px;
+                height: 28px;
+                border-radius: 5px;
+                background: more-touch.has-hover ? #ffffff1f : transparent;
+                Text { text: "⋯"; color: white; font-size: 16px; horizontal-alignment: center; vertical-alignment: center; }
+                more-touch := TouchArea { clicked => { more-popup.show(); } }
+                more-popup := PopupWindow {
+                    x: parent.width - 260px;
+                    y: parent.height + 2px;
+                    close-policy: close-on-click-outside;
+                    Rectangle {
+                        width: 260px;
+                        background: #262a2e;
+                        border-radius: 6px;
+                        border-width: 1px;
+                        border-color: #ffffff30;
+                        drop-shadow-blur: 12px;
+                        drop-shadow-color: #00000090;
+                        VerticalLayout {
+                            padding: 6px;
+                            spacing: 4px;
+                            if !OrganizeUi.bar-fit: HorizontalLayout {
+                                spacing: 2px;
+                                alignment: start;
+                                Icon { icon: @image-url("../icons/zr/ajustar.svg"); tip: 8; clicked => { PaletteUi.command("organizar.ajustar"); } }
+                                Icon { icon: @image-url("../icons/zr/um-para-um.svg"); tip: 7; clicked => { PaletteUi.command("organizar.tamanho-real"); } }
+                            }
+                            if !OrganizeUi.bar-menus: MenuRows { rows: OrganizeUi.align-rows; picked => { more-popup.close(); } }
+                            if !OrganizeUi.bar-menus: MenuRows { rows: OrganizeUi.equal-rows; picked => { more-popup.close(); } }
+                            if !OrganizeUi.bar-menus: MenuRows { rows: OrganizeUi.distribute-rows; picked => { more-popup.close(); } }
+                            if !OrganizeUi.bar-fields && OrganizeUi.can-fields: GridLayout {
+                                spacing: 4px;
+                                Row {
+                                    Text { text: "X"; color: Theme.text; vertical-alignment: center; }
+                                    LineEdit { text <=> OrganizeUi.gx; accepted => { OrganizeUi.field-accepted(0); } }
+                                    Text { text: "Y"; color: Theme.text; vertical-alignment: center; }
+                                    LineEdit { text <=> OrganizeUi.gy; accepted => { OrganizeUi.field-accepted(1); } }
+                                }
+                                Row {
+                                    Text { text: "L"; color: Theme.text; vertical-alignment: center; }
+                                    LineEdit { text <=> OrganizeUi.gw; accepted => { OrganizeUi.field-accepted(2); } }
+                                    Text { text: "A"; color: Theme.text; vertical-alignment: center; }
+                                    LineEdit { text <=> OrganizeUi.gh; accepted => { OrganizeUi.field-accepted(3); } }
+                                }
+                            }
+                            if !OrganizeUi.bar-fields && OrganizeUi.can-fields: CheckBox { text: "Manter proporção"; checked <=> OrganizeUi.keep; }
+                        }
+                    }
+                }
+            }
         }
         VerticalLayout {
             alignment: center;
@@ -121,11 +380,6 @@ export component OrganizeBar inherits Rectangle {
                 checked: OrganizeUi.panel-open;
                 clicked => { OrganizeUi.command("ver.painel"); }
             }
-        }
-        // Voltar no lugar de Concluir (spec ZR, regra 12): a tela anima a saída.
-        Button {
-            text: "Voltar";
-            clicked => { OrganizeUi.done(); }
         }
     }
 }
@@ -313,7 +567,8 @@ export component LassoBox inherits Rectangle {
     border-color: #4fc3f7;
 }
 
-// O painel da direita no modo (EG-B23): a seleção, fundo e espaço da lâmina.
+// O painel da direita no modo (EG-B23): a seleção, a foto, fundo e espaço da lâmina. Os campos de
+// posição e tamanho foram para a barra de cima (spec BO, regra 1).
 export component OrganizePanel inherits ScrollView {
     callback done();
     VerticalLayout {
@@ -325,26 +580,6 @@ export component OrganizePanel inherits ScrollView {
         color: Theme.muted;
         wrap: word-wrap;
     }
-    if OrganizeUi.count != "": Text {
-        text: "Posição e tamanho (" + OrganizeUi.unit + ", a partir do corte)";
-        color: Theme.text;
-    }
-    if OrganizeUi.count != "": GridLayout {
-        spacing: 6px;
-        Row {
-            Text { text: "X"; color: Theme.text; vertical-alignment: center; }
-            LineEdit { width: 84px; text <=> OrganizeUi.gx; accepted => { OrganizeUi.field-accepted(0); } }
-            Text { text: "Y"; color: Theme.text; vertical-alignment: center; }
-            LineEdit { width: 84px; text <=> OrganizeUi.gy; accepted => { OrganizeUi.field-accepted(1); } }
-        }
-        Row {
-            Text { text: "Larg."; color: Theme.text; vertical-alignment: center; }
-            LineEdit { width: 84px; text <=> OrganizeUi.gw; accepted => { OrganizeUi.field-accepted(2); } }
-            Text { text: "Alt."; color: Theme.text; vertical-alignment: center; }
-            LineEdit { width: 84px; text <=> OrganizeUi.gh; accepted => { OrganizeUi.field-accepted(3); } }
-        }
-    }
-    if OrganizeUi.count != "": CheckBox { text: "Manter proporção"; checked <=> OrganizeUi.keep; }
     if OrganizeUi.field-error != "": Text { text: OrganizeUi.field-error; color: #e57373; wrap: word-wrap; }
     if PhotoUi.has-photo: PhotoSection { }
     LookPanel {

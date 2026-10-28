@@ -30,6 +30,7 @@ fn af_b13_formato_5_abre_o_4_neutro_e_volta_igual() {
         brightness: 20,
         contrast: -10,
         bw: true,
+        ..PhotoAdjust::default()
     };
     let json = adjusted.to_json().unwrap();
     assert!(json.contains("\"angulo_decimos\": 3") && json.contains("\"pb\": true"));
@@ -58,9 +59,10 @@ fn af_b6_fotos_sem_ajuste_nao_ganham_campos() {
 }
 
 #[test]
-fn af_b2_projeto_com_60_graus_nao_abre() {
+fn af_b2_projeto_com_181_graus_nao_abre() {
+    // Até a spec CD, o limite era 45° (e o projeto com 60° não abria).
     let mut p = project();
-    p.photos[1].adjust.angle_tenths = 600;
+    p.photos[1].adjust.angle_tenths = 1810;
     let json = p.to_json().unwrap();
     assert!(matches!(
         Project::from_json(&json),
@@ -76,18 +78,19 @@ fn af_b2_projeto_com_60_graus_nao_abre() {
             ..PhotoAdjust::default()
         },
         PhotoAdjust {
-            angle_tenths: -451,
+            angle_tenths: -1801,
             ..PhotoAdjust::default()
         },
     ] {
         assert!(!bad.is_valid(), "{bad:?}");
     }
     let edge = PhotoAdjust {
-        angle_tenths: -450,
+        angle_tenths: -1800,
         brightness: 100,
         contrast: -100,
         bw: true,
+        ..PhotoAdjust::default()
     };
     assert!(edge.is_valid() && edge.has_tone());
-    assert!((edge.degrees() + 45.0).abs() < 1e-12);
+    assert!((edge.degrees() + 180.0).abs() < 1e-12);
 }

@@ -16,7 +16,9 @@ pub use screen::{
     Card, Clock, MenuEntry, cards, counts_text, recent_menu, search, show_search, welcome_buttons,
     when_text,
 };
-pub use thumbs::{missing_files, read_thumbnail, thumbnail_image, write_thumbnail};
+pub use thumbs::{
+    MISSING_GRAY, ThumbCache, missing_files, read_thumbnail, thumbnail_image, write_thumbnail,
+};
 
 /// Versão do formato do arquivo.
 const VERSION: u32 = 1;

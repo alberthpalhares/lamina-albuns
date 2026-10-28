@@ -80,3 +80,53 @@ fn ti_b18_abrir_um_album_ja_prepara_a_miniatura() {
     assert!(editor.close_album());
     assert!(read_thumbnail(&target).is_some());
 }
+
+#[test]
+fn ti_b19_foto_ausente_na_primeira_lamina() {
+    use crate::recents::MISSING_GRAY;
+    let base = Base::with_photos(8, (600, 400));
+    let project = base.project(2);
+    // Uma foto da primeira lâmina sem o original e sem a cópia reduzida.
+    let first = crate::edits::spread_photos(&project, 0);
+    assert!(first.len() >= 2, "a lâmina 1 tem várias fotos");
+    let gone = project.photo(first[0]).unwrap().clone();
+    std::fs::remove_file(&gone.path).unwrap();
+    let mut cache_less = project.clone();
+    for p in &mut cache_less.photos {
+        if p.id == gone.id {
+            p.fingerprint = Some("sem-copia".to_owned());
+        }
+    }
+    let thumb = thumbnail_image(&cache_less, &base.cache())
+        .unwrap()
+        .expect("a miniatura existe mesmo com a foto ausente");
+    let gray = thumb.pixels().filter(|p| p.0 == MISSING_GRAY).count();
+    assert!(
+        gray > 100,
+        "o quadro da foto que falta é cinza ({gray} pixels)"
+    );
+}
+
+#[test]
+fn ti_b20_a_miniatura_lida_fica_guardada() {
+    use crate::recents::ThumbCache;
+    let base = Base::with_photos(4, (600, 400));
+    let target = base.path("config/recentes/a.png");
+    write_thumbnail(&base.project(1), &base.cache(), &target).unwrap();
+    let mut seen = ThumbCache::default();
+    assert!(seen.get(&target).is_some());
+    assert!(seen.get(&target).is_some());
+    assert_eq!(seen.reads, 1, "sem mudar no disco, não lê de novo");
+    // Regravado (com outra data), é lido de novo.
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    write_thumbnail(&base.project(2), &base.cache(), &target).unwrap();
+    let later = std::time::SystemTime::now() + std::time::Duration::from_secs(5);
+    std::fs::File::options()
+        .write(true)
+        .open(&target)
+        .unwrap()
+        .set_modified(later)
+        .unwrap();
+    assert!(seen.get(&target).is_some());
+    assert_eq!(seen.reads, 2);
+}

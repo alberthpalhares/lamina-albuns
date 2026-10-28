@@ -80,3 +80,31 @@ export component BusyOverlay inherits Shade {
         }
     }
 }
+
+// A cópia de segurança (spec CS, regra 4): o álbum que ficou sem salvar numa queda. A pergunta vem
+// do Rust (`src/backup.rs`).
+export global RecoverUi {
+    in-out property <bool> show;
+    in property <string> question;
+    callback recover();
+    callback discard();
+}
+
+export component RecoverDialog inherits Shade {
+    Panel {
+        width: 480px;
+        height: 190px;
+        VerticalLayout {
+            padding: 24px;
+            spacing: 12px;
+            Text { text: RecoverUi.question; font-size: 16px; font-weight: 600; color: Theme.text; wrap: word-wrap; }
+            Text { text: "Recuperar abre o álbum como estava, ainda sem salvar. Descartar apaga a cópia; o arquivo do álbum fica como foi salvo pela última vez."; color: Theme.muted; wrap: word-wrap; }
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Button { text: "Descartar"; clicked => { RecoverUi.discard(); } }
+                Button { text: "Recuperar"; primary: true; clicked => { RecoverUi.recover(); } }
+            }
+        }
+    }
+}

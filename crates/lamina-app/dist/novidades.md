@@ -13,6 +13,57 @@ botão "Experimente agora": `<!-- imagem: atalhos.png; comando: ajuda.atalhos --
 
 ## [Não lançado]
 
+## [0.1.0-beta.6] - 2026-10-28
+
+Esta versão corrige o Lamina que fechava sozinho, guarda uma cópia de segurança do trabalho e traz temperatura e matiz, controles deslizantes, lâminas que mudam de lugar arrastando e uma barra única no modo organizar.
+
+- **Temperatura e matiz da foto.** Dois controles novos na seção Foto: a temperatura deixa a foto
+  mais quente (amarelada) ou mais fria (azulada), e o matiz puxa para o magenta ou para o verde. A
+  cor vale em todos os quadros onde a foto aparece e sai igual na exportação; clique duplo no
+  controle volta ao normal. Experimente: selecione uma foto e arraste a Temperatura para a direita.
+  <!-- imagem: temperatura-e-matiz.png -->
+- **Girar e escala com controles deslizantes.** A foto gira de −180° a 180°, com os botões −90° e
+  +90°, e a escala tem um controle de 100% a 800%, fino perto de 100%. No modo organizar, o zoom da
+  lâmina também ganhou um controle. Experimente: selecione uma foto e clique em +90°.
+  <!-- imagem: girar-e-escala.png -->
+- **As lâminas mudam de lugar arrastando na faixa.** Na faixa Lâminas, aperte uma lâmina e arraste:
+  ela sai do lugar e segue o mouse, as outras abrem espaço, e ao soltar ela entra no vão. A faixa
+  rola sozinha perto das bordas, e Esc desiste. Experimente: arraste a lâmina 2 para depois da 4.
+  <!-- imagem: reordenar-laminas.png -->
+- **As faixas de baixo com um botão só.** O botão com o desenho da janela, no canto de cima,
+  esconde e mostra as faixas Lâminas, Sequência e Fotografias de uma vez (Alt+0), e lembra quais
+  estavam abertas; um clique no nome de cada faixa recolhe só ela. A faixa Lâminas agora aparece
+  sempre, e a "linha do tempo" passou a se chamar Sequência. O painel da direita fica mais largo ou
+  mais estreito arrastando a borda esquerda dele. Experimente: clique no botão das faixas de baixo.
+  <!-- imagem: faixas-de-baixo.png; comando: ver.faixas -->
+- **Uma barra só no modo organizar.** As ferramentas, o zoom, Alinhar, Igualar, Distribuir e a
+  posição e o tamanho do quadro ficam numa barra em cima da lâmina, e nada flutua mais por cima
+  dela. Alinhar e Igualar acendem com dois quadros selecionados, e Distribuir com três.
+  Experimente: entre no modo organizar e selecione dois quadros com Ctrl+clique.
+  <!-- imagem: barra-organizar.png; comando: lamina.organizar -->
+- **Trocar o nome do álbum.** Clique duas vezes no nome do álbum, no canto de cima à esquerda,
+  digite o nome novo e aperte Enter; Esc desiste e Ctrl+Z volta o nome de antes. O arquivo continua
+  com o mesmo nome. Experimente: clique duas vezes no nome do álbum de exemplo.
+  <!-- imagem: renomear-album.png; comando: arquivo.renomear -->
+- **A janela maximiza de primeira no Windows.** O Lamina abre ocupando a tela toda, e maximizar
+  pelo botão, pelo clique duplo no título ou por Win+↑ funciona na primeira vez, sem a lâmina
+  demorar para crescer. Experimente: restaure a janela e maximize de novo.
+- **As miniaturas dos álbuns recentes não somem.** Uma foto apagada do disco não deixa mais o cartão
+  da tela inicial sem miniatura: o quadro dela aparece cinza e o resto da lâmina sai normal.
+  Experimente: volte ao Início com Ctrl+W e veja os cartões.
+- **O Lamina não fecha mais sozinho ao diagramar.** Criar lâminas arrastando fotos podia fechar o
+  Lamina depois de alguns minutos, principalmente no Mac; a conta que causava isso foi corrigida, e
+  as janelas de abrir, salvar e importar agora ficam presas à janela do Lamina. Experimente:
+  arraste várias fotos para o "+ Lâmina nova", uma de cada vez, e siga diagramando.
+- **Uma cópia de segurança do trabalho não salvo.** Enquanto você diagrama, o Lamina guarda uma
+  cópia do álbum a cada minuto. Se ele fechar sem salvar, na próxima abertura ele pergunta se você
+  quer recuperar, e o álbum volta na lâmina em que você estava. O seu arquivo só muda quando você
+  salva. Experimente: faça uma alteração e salve com Ctrl+S; a cópia some sozinha.
+- **A barra de cima de cada lâmina fica parada sob o mouse.** Os botões Organizar, Layouts,
+  Espelhar e Texto e a alça agora dão para clicar, e a barra espera meio segundo antes de sumir
+  quando o mouse sai. Experimente: passe o mouse sobre a lâmina, suba até a barra e clique no
+  lápis.
+
 ## [0.1.0-beta.5] - 2026-10-22
 
 Esta versão põe as lâminas lado a lado, traz a faixa de layouts, o painel de fotos em grade e o álbum que começa em branco, e corrige o Lamina que fechava no Mac ao importar muitas fotos.

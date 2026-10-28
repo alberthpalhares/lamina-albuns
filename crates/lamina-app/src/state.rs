@@ -88,6 +88,12 @@ pub struct App {
     pub verify_import: Option<std::time::Instant>,
     /// A grade do painel de fotos: largura, altura, rolagem e as peças com miniatura (spec PF).
     pub(crate) grid_view: crate::grid::GridView,
+    /// As cópias de segurança achadas na abertura, ainda sem resposta (spec CS).
+    pub recover: Vec<lamina_editor::backup::FoundBackup>,
+    /// O silêncio depois de mudar o tamanho da janela e a espera da barra da lâmina (spec FB).
+    pub(crate) waits: crate::waits::Waits,
+    /// As miniaturas dos recentes já lidas, pela data do arquivo (spec TI, regra 5).
+    pub(crate) seen_thumbs: std::cell::RefCell<lamina_editor::recents::ThumbCache>,
     list: Vec<PhotoItem>,
     selected: Option<PhotoId>,
 }
@@ -135,6 +141,9 @@ impl App {
             recent_query: String::new(),
             verify_import: None,
             grid_view: crate::grid::GridView::default(),
+            recover: Vec::new(),
+            waits: crate::waits::Waits::default(),
+            seen_thumbs: std::cell::RefCell::default(),
             list: Vec::new(),
             selected: None,
         }
@@ -165,6 +174,8 @@ impl App {
         self.roll.new_album();
         self.lists.reset();
         self.refresh_all();
+        // Outro álbum: a cópia de segurança do anterior vai embora (spec CS, regra 3).
+        crate::backup::tick(self);
     }
 
     /// Fotos novas no mesmo álbum (importar): as imagens que a janela já tem ficam, as listas

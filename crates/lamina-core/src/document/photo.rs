@@ -30,9 +30,10 @@ impl Orientation {
     }
 }
 
-/// Os ajustes da foto (spec AF): endireitar em décimos de grau (−45° a 45°), brilho e contraste
-/// de −100 a 100 e preto e branco. São da foto, não do quadro: valem em todos os quadros dela
-/// (regra 1). Neutro (tudo zero) não vai para o arquivo.
+/// Os ajustes da foto (spec AF): o giro em décimos de grau (−180° a 180°, spec CD), brilho e
+/// contraste de −100 a 100, temperatura e matiz de −100 a 100 (spec TM) e preto e branco. São da
+/// foto, não do quadro: valem em todos os quadros dela (regra 1). Neutro (tudo zero) não vai para
+/// o arquivo.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, JsonSchema)]
 pub struct PhotoAdjust {
     /// Giro no sentido horário, em décimos de grau (o passo de 0,1° fica exato).
@@ -44,11 +45,21 @@ pub struct PhotoAdjust {
     pub contrast: i32,
     #[serde(rename = "pb", default)]
     pub bw: bool,
+    /// Mais quente (+) ou mais fria (−) (spec TM).
+    #[serde(rename = "temperatura", default, skip_serializing_if = "is_zero")]
+    pub temperature: i32,
+    /// Para o magenta (+) ou para o verde (−) (spec TM).
+    #[serde(rename = "matiz", default, skip_serializing_if = "is_zero")]
+    pub tint: i32,
+}
+
+fn is_zero(v: &i32) -> bool {
+    *v == 0
 }
 
 impl PhotoAdjust {
-    /// 45°, em décimos.
-    pub const MAX_ANGLE_TENTHS: i32 = 450;
+    /// 180°, em décimos (spec CD, regra 2; até a v6 do formato eram 45°).
+    pub const MAX_ANGLE_TENTHS: i32 = 1800;
     /// O limite do brilho e do contraste, nos dois sentidos.
     pub const MAX_TONE: i32 = 100;
 
@@ -67,11 +78,18 @@ impl PhotoAdjust {
         self.brightness != 0 || self.contrast != 0 || self.bw
     }
 
-    /// Dentro das faixas da spec (regra 9 e seção 6).
+    /// Mexe na cor (temperatura ou matiz; spec TM)?
+    pub fn has_color(&self) -> bool {
+        self.temperature != 0 || self.tint != 0
+    }
+
+    /// Dentro das faixas da spec (regra 9 e seção 6; TM, seção 6).
     pub fn is_valid(&self) -> bool {
         self.angle_tenths.abs() <= Self::MAX_ANGLE_TENTHS
             && self.brightness.abs() <= Self::MAX_TONE
             && self.contrast.abs() <= Self::MAX_TONE
+            && self.temperature.abs() <= Self::MAX_TONE
+            && self.tint.abs() <= Self::MAX_TONE
     }
 }
 

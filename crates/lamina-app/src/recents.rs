@@ -4,10 +4,10 @@
 
 use std::path::PathBuf;
 
+use lamina_editor::error_log::{ErrorLog, LOG_FOLDER};
 use lamina_editor::guarded;
 use lamina_editor::recents::{
-    Card, Clock, cards, missing_files, read_thumbnail, recent_menu, search, show_search,
-    write_thumbnail,
+    Card, Clock, cards, missing_files, recent_menu, search, show_search, write_thumbnail,
 };
 use slint::ComponentHandle;
 
@@ -46,13 +46,13 @@ pub fn refresh(app: &App) {
 }
 
 fn card_data(app: &App, c: &Card) -> RecentCard {
-    // Lida do disco a cada vez: `Image::load_from_path` guarda a imagem pelo caminho e o cartão
-    // ficava com a miniatura de antes depois de salvar (TI-B17).
+    // Pela data do arquivo: `Image::load_from_path` guardava a imagem pelo caminho e o cartão
+    // ficava com a miniatura de antes depois de salvar (TI-B17); relida só quando o PNG muda.
     let thumb = app
         .editor
         .recents()
         .thumb_path(&c.path)
-        .and_then(|p| read_thumbnail(&p))
+        .and_then(|p| app.seen_thumbs.borrow_mut().get(&p))
         .map(|picture| crate::news_player::image(&picture));
     RecentCard {
         index: index(c.index),
@@ -97,8 +97,17 @@ pub fn thumbnail(app: &App) {
     };
     let (cache, tx) = (app.cache.clone(), app.tx.clone());
     std::thread::spawn(move || {
-        // Se falhar, o cartão mostra o desenho neutro, sem aviso.
-        let _ = guarded(|| write_thumbnail(&project, &cache, &target));
+        // Se falhar, o cartão mostra o desenho neutro, sem aviso na tela, e o motivo vai para o
+        // registro (spec TI, regra 5).
+        let failed = match guarded(|| write_thumbnail(&project, &cache, &target)) {
+            Ok(Ok(())) => None,
+            Ok(Err(reason)) => Some(reason),
+            Err(panic) => Some(panic.details),
+        };
+        if let Some(reason) = failed {
+            let log = ErrorLog::new(lamina_editor::config_dir().join(LOG_FOLDER));
+            log.note(&format!("miniatura do álbum recente não saiu: {reason}"));
+        }
         let _ = tx.send(Msg::ThumbReady);
     });
 }
@@ -123,15 +132,15 @@ pub fn open(app: &mut App, i: usize) {
 
 /// "Procurar…": escolhe o arquivo de novo; o cartão troca o caminho e mantém o resto.
 fn browse(app: &mut App, i: usize) {
-    let Some(file) = rfd::FileDialog::new()
-        .set_title("Procurar o álbum")
+    let answer = crate::dialogs::dialog(app, "Procurar o álbum")
         .add_filter("Projeto do Lamina", &["lamina"])
-        .pick_file()
-    else {
-        return;
-    };
-    app.editor.change_recents(|s| s.relocate(i, &file));
-    after_change(app);
+        .pick_file();
+    crate::dialogs::then(answer, move |app, file| {
+        if let Some(file) = file {
+            app.editor.change_recents(|s| s.relocate(i, file.path()));
+            after_change(app);
+        }
+    });
 }
 
 fn pin(app: &mut App, i: usize) {

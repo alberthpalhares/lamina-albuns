@@ -131,6 +131,10 @@ export component NeutralSlider inherits Rectangle {
     in property <float> maximum: 100;
     in property <float> neutral: 0;
     in property <bool> enabled: true;
+    // O trilho em degradê, de uma cor à outra (spec TM).
+    in property <bool> gradient;
+    in property <color> track-from;
+    in property <color> track-to;
     in-out property <float> value;
     callback changed(float);
     callback released();
@@ -160,9 +164,11 @@ export component NeutralSlider inherits Rectangle {
         x: root.knob / 2;
         y: (root.height - self.height) / 2;
         width: root.span;
-        height: 4px;
+        height: root.gradient ? 6px : 4px;
         border-radius: 2px;
-        background: root.enabled ? #5a5a5a : #3c3c3c;
+        // Temperatura e matiz (spec TM): o trilho em degradê mostra para onde a cor vai.
+        background: !root.enabled ? #3c3c3c
+            : root.gradient ? @linear-gradient(90deg, root.track-from 0%, root.track-to 100%) : #5a5a5a;
     }
     // A marca do neutro no trilho.
     Rectangle {

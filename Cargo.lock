@@ -905,9 +905,9 @@ checksum = "1c133bc6a41be0d194c306b5506d15e6feeea7b1d6604bd3f8310dfb2ca96486"
 
 [[package]]
 name = "clipboard-win"
-version = "5.4.1"
+version = "5.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bde03770d3df201d4fb868f2c9c59e66a3e4e2bd06692a0fe701e7103c7e84d4"
+checksum = "052af7878466feccda12ba7a6a67d019d712f296809559b47c12c8cc196d3a9a"
 dependencies = [
  "error-code",
 ]
@@ -2856,7 +2856,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-app"
-version = "0.1.0-beta.5"
+version = "0.1.0-beta.6"
 dependencies = [
  "anyhow",
  "fmv-macos-events",
@@ -2874,7 +2874,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-cli"
-version = "0.1.0-beta.5"
+version = "0.1.0-beta.6"
 dependencies = [
  "anyhow",
  "clap",
@@ -2894,7 +2894,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-core"
-version = "0.1.0-beta.5"
+version = "0.1.0-beta.6"
 dependencies = [
  "schemars",
  "serde",
@@ -2904,7 +2904,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-editor"
-version = "0.1.0-beta.5"
+version = "0.1.0-beta.6"
 dependencies = [
  "chrono",
  "image",
@@ -2923,7 +2923,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-export"
-version = "0.1.0-beta.5"
+version = "0.1.0-beta.6"
 dependencies = [
  "image",
  "lamina-core",
@@ -2940,7 +2940,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-layout"
-version = "0.1.0-beta.5"
+version = "0.1.0-beta.6"
 dependencies = [
  "lamina-core",
  "rayon",
@@ -2950,7 +2950,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-mcp"
-version = "0.1.0-beta.5"
+version = "0.1.0-beta.6"
 dependencies = [
  "base64",
  "image",
@@ -2965,7 +2965,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-media"
-version = "0.1.0-beta.5"
+version = "0.1.0-beta.6"
 dependencies = [
  "blake3",
  "dhat",
@@ -2982,7 +2982,7 @@ dependencies = [
 
 [[package]]
 name = "lamina-render"
-version = "0.1.0-beta.5"
+version = "0.1.0-beta.6"
 dependencies = [
  "fast_image_resize",
  "image",
@@ -6763,7 +6763,7 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 
 [[package]]
 name = "xtask"
-version = "0.1.0-beta.5"
+version = "0.1.0-beta.6"
 dependencies = [
  "image",
  "lamina-core",

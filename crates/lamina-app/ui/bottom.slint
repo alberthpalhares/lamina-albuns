@@ -66,10 +66,16 @@ export component BottomStrips inherits VerticalLayout {
     // "Montar o álbum…" no cabeçalho do painel de fotos (spec BR): apagado sem foto não usada.
     in property <bool> can-build;
     callback command(string);
+    // Clique no cabeçalho de uma faixa: 0 Lâminas, 1 Sequência, 2 Fotografias (spec FX, regra 9).
+    callback header-clicked(int);
     callback focus-main();
     callback go-to(int);
     callback move-spread(int, int);
-    pure callback spread-shift(int, int, int) -> int;
+    // As contas do arrasto na faixa de lâminas (spec FX), feitas pelo Rust.
+    pure callback strip-gap(int, length) -> int;
+    pure callback strip-shift(int, int, int) -> length;
+    pure callback strip-landing(int, int) -> length;
+    pure callback strip-edge(length, length) -> length;
     callback cut-moved(int, int);
     callback filter-changed(int);
     callback photo-double-clicked(int);
@@ -103,7 +109,7 @@ export component BottomStrips inherits VerticalLayout {
     property <bool> grid-on: root.has-project && root.photos-open && !OrganizeUi.on;
     // O que não é nem a lâmina nem a grade: as barras de cima, os cabeçalhos, as outras faixas e
     // a divisória.
-    property <length> chrome: root.above + (root.has-project && root.spreads-open ? 26px : 0px) + spread-strip.height
+    property <length> chrome: root.above + (root.has-project ? 26px : 0px) + spread-strip.height
         + (root.has-project && !OrganizeUi.on ? 52px : 0px)
         + (root.has-project && root.timeline-open && !OrganizeUi.on ? 58px : 0px)
         + (root.grid-on ? 6px : 0px);
@@ -117,13 +123,14 @@ export component BottomStrips inherits VerticalLayout {
         released => { root.photo-height-set(root.photo-shown); }
         reset => { root.photo-height-reset(); }
     }
-    // Desligada, a faixa de lâminas some inteira, com o cabeçalho (spec PN, regra 1; JE, regra 7; RL, regra 23):
-    // volta por Visualizar → "Faixa de lâminas" (Alt+1).
-    if root.has-project && root.spreads-open: StripHeader {
+    // A faixa Lâminas tem cabeçalho sempre, como as outras (spec FX, regra 10): recolhida, fica só
+    // ele. O clique no cabeçalho passa pelo Rust, que ignora o segundo toque do clique duplo
+    // (regra 9).
+    if root.has-project: StripHeader {
         name: "Lâminas";
         summary: root.strip-spreads;
         open: root.spreads-open;
-        toggled => { root.command("ver.faixa-laminas"); }
+        toggled => { root.header-clicked(0); }
     }
     spread-strip := SpreadStrip {
         visible: root.has-project && root.spreads-open;
@@ -131,7 +138,10 @@ export component BottomStrips inherits VerticalLayout {
         spreads: root.spreads;
         current-index: root.current-index;
         current-aspect: root.current-aspect;
-        spread-shift(f, g, i) => { return root.spread-shift(f, g, i); }
+        strip-gap(f, x) => { return root.strip-gap(f, x); }
+        strip-shift(f, g, i) => { return root.strip-shift(f, g, i); }
+        strip-landing(f, g) => { return root.strip-landing(f, g); }
+        strip-edge(x, w) => { return root.strip-edge(x, w); }
         go-to(i) => { root.go-to(i); }
         move-spread(from, to) => { root.move-spread(from, to); }
         focus-main => { root.focus-main(); }
@@ -146,10 +156,10 @@ export component BottomStrips inherits VerticalLayout {
             y: parent.height - self.preferred-height;
             height: self.preferred-height;
             StripHeader {
-                name: "Linha do tempo";
+                name: "Sequência";
                 summary: root.strip-timeline;
                 open: root.timeline-open;
-                toggled => { root.command("ver.linha-do-tempo"); }
+                toggled => { root.header-clicked(1); }
             }
             if root.timeline-open: TimelineStrip {
                 height: 58px;
@@ -159,10 +169,10 @@ export component BottomStrips inherits VerticalLayout {
                 focus-main => { root.focus-main(); }
             }
             StripHeader {
-                name: "Fotos";
+                name: "Fotografias";
                 summary: root.strip-photos;
                 open: root.photos-open;
-                toggled => { root.command("ver.fotos"); }
+                toggled => { root.header-clicked(2); }
                 FilterTab { text: "Todas"; active: root.filter == 0; clicked => { root.filter-changed(0); } }
                 FilterTab { text: "Usadas"; active: root.filter == 1; clicked => { root.filter-changed(1); } }
                 FilterTab { text: "Não usadas"; active: root.filter == 2; clicked => { root.filter-changed(2); } }

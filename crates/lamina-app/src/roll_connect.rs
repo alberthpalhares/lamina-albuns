@@ -275,6 +275,8 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     ui.on_area_changed(move || area_changed(&mut a.borrow_mut()));
     let a = app.clone();
+    ui.on_bar_near(move |near| crate::waits::bar_near(&mut a.borrow_mut(), near));
+    let a = app.clone();
     ui.on_wheel(move |dx, dy| {
         let mut app = a.borrow_mut();
         let Some(w) = app.window.upgrade() else {

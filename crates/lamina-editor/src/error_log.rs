@@ -69,6 +69,11 @@ impl ErrorLog {
         self.write(&entry);
     }
 
+    /// Um aviso que não chega à janela (spec TI, regra 5: a miniatura que não saiu).
+    pub fn note(&self, text: &str) {
+        self.write(&format!("aviso · {text}"));
+    }
+
     /// Uma falha inesperada (regra 8): a mensagem do pânico e o lugar no código.
     pub fn unexpected(&self, message: &str, place: &str) {
         self.write(&format!("falha inesperada · {message} · {place}"));

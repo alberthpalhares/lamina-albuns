@@ -13,7 +13,7 @@ use crate::{AlbumSpec, CoreError, Mm, Rect, RelRect};
 
 /// Versão atual do formato do arquivo de projeto. Suba ao mudar a estrutura e
 /// escreva a migração correspondente em [`Project::from_json`].
-pub const CURRENT_SCHEMA_VERSION: u32 = 6;
+pub const CURRENT_SCHEMA_VERSION: u32 = 7;
 
 /// Espaço entre fotos padrão: 8 pontos tipográficos (spec TP; spec AP, regra 2).
 pub const DEFAULT_GAP: Mm = Mm(8.0 * 25.4 / 72.0);

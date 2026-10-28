@@ -10,6 +10,9 @@ pub enum AdjustControl {
     Angle,
     Brightness,
     Contrast,
+    /// Temperatura e matiz (spec TM).
+    Temperature,
+    Tint,
 }
 
 impl AdjustControl {
@@ -19,6 +22,8 @@ impl AdjustControl {
             AdjustControl::Angle => AdjustChange::Angle(0),
             AdjustControl::Brightness => AdjustChange::Brightness(0),
             AdjustControl::Contrast => AdjustChange::Contrast(0),
+            AdjustControl::Temperature => AdjustChange::Temperature(0),
+            AdjustControl::Tint => AdjustChange::Tint(0),
         }
     }
 }
@@ -46,5 +51,10 @@ mod tests {
             AdjustChange::Brightness(0)
         );
         assert_eq!(AdjustControl::Contrast.neutral(), AdjustChange::Contrast(0));
+        assert_eq!(
+            AdjustControl::Temperature.neutral(),
+            AdjustChange::Temperature(0)
+        );
+        assert_eq!(AdjustControl::Tint.neutral(), AdjustChange::Tint(0));
     }
 }
