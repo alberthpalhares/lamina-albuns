@@ -5,7 +5,7 @@ use super::Command;
 
 impl Command {
     /// Todos os comandos, na ordem em que a IA e os testes os veem.
-    pub const ALL: [Command; 102] = [
+    pub const ALL: [Command; 103] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
@@ -98,6 +98,7 @@ impl Command {
         Command::TurnRightMore,
         Command::TogglePanel,
         Command::AdjustPhoto,
+        Command::EditText,
         Command::ToggleLayoutBand,
         Command::ShowShortcuts,
         Command::ShowNews,

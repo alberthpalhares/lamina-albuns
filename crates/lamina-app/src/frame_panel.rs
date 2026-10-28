@@ -5,6 +5,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use lamina_core::{TextAlign, TextVAlign};
+use lamina_editor::editor::TextFocus;
 use lamina_editor::frame_form::{font_names, parse_frame, parse_size, parse_spacing};
 use lamina_editor::{PALETTE, TextChange};
 use slint::{Color, ComponentHandle, SharedString};
@@ -15,11 +16,28 @@ use crate::{AppWindow, FrameUi};
 
 type Shared = Rc<RefCell<App>>;
 
-/// A aba Quadro do quadro selecionado (ou vazia).
-pub fn refresh(app: &App) {
+/// A aba Quadro do quadro selecionado (ou vazia). Quando o editor pede (clique, T, duplo clique,
+/// "Editar texto"), a aba abre e, se for o caso, o cursor vai para o texto.
+pub fn refresh(app: &mut App) {
     let Some(w) = app.window.upgrade() else {
         return;
     };
+    fill(app, &w);
+    match app.editor.take_text_focus() {
+        Some(TextFocus::Tab) => w.set_panel_tab(FRAME_TAB),
+        Some(TextFocus::Cursor) => {
+            w.set_panel_tab(FRAME_TAB);
+            let ui = w.global::<FrameUi>();
+            ui.set_focus_count(ui.get_focus_count() + 1);
+        }
+        None => {}
+    }
+}
+
+/// A aba Quadro no painel da direita.
+const FRAME_TAB: i32 = 4;
+
+fn fill(app: &App, w: &AppWindow) {
     let ui = w.global::<FrameUi>();
     let Some(form) = app.editor.frame_form() else {
         ui.set_has_frame(false);
@@ -56,16 +74,6 @@ pub fn refresh(app: &App) {
     ui.set_valign(i32::try_from(t.valign).unwrap_or(1));
     ui.set_spacing(t.spacing.into());
     ui.set_spacing_error("".into());
-}
-
-/// T ou duplo clique num texto: abre a aba Quadro com o cursor no texto.
-pub fn focus_text(app: &App) {
-    let Some(w) = app.window.upgrade() else {
-        return;
-    };
-    w.set_panel_tab(4);
-    let ui = w.global::<FrameUi>();
-    ui.set_focus_count(ui.get_focus_count() + 1);
 }
 
 fn change(app: &Shared, change: TextChange) {

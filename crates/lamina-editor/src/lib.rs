@@ -56,6 +56,7 @@ pub mod forms;
 pub mod frame_form;
 pub mod group;
 pub mod hand;
+mod hand_click;
 pub mod human;
 pub mod importing;
 pub mod keys;
@@ -143,5 +144,5 @@ pub use text::{
 pub use thumbs::{THUMBS_KEPT, ThumbList, ThumbOrders, ThumbPlan};
 pub use updates::{UPDATES_FILE, Updates, UpdatesStore};
 pub use view::{
-    Area, FrameKind, FrameView, PxRect, SpreadView, frame_at, photo_extent, spread_view,
+    Area, FrameKind, FrameView, PxRect, SpreadView, frame_at, layers, photo_extent, spread_view,
 };

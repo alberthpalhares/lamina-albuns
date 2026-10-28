@@ -92,4 +92,5 @@ mod tl_prefs;
 mod tm;
 mod tr;
 mod tx;
+mod tx_editar;
 mod zr;

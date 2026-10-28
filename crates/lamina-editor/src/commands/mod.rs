@@ -127,6 +127,8 @@ pub enum Command {
     /// O painel da direita (Alt+4) e "Ajustar a foto…" (spec AF, regras 10 e 11).
     TogglePanel,
     AdjustPhoto,
+    /// "Editar texto": o cursor no campo do texto selecionado (correção TX de 2026-10-28).
+    EditText,
     /// A janela nova (Rodada 0b): registrados, mas inertes até a spec de cada um ligar.
     /// A faixa de layouts (FL), os atalhos e as novidades (AT e NV), a lupa e o tamanho real (ZR),
     /// montar o álbum (BR) e selecionar as fotos mostradas (PF).

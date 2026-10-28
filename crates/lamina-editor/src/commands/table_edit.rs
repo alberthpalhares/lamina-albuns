@@ -170,6 +170,7 @@ impl Command {
                 Menu::Spread,
                 k(Key::Char('t')),
             ),
+            C::EditText => ("lamina.editar-texto", "Editar texto", Menu::Spread, None),
             C::NewPhotoFrame => (
                 "lamina.novo-quadro",
                 "Novo quadro de foto",

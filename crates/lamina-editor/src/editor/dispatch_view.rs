@@ -17,6 +17,7 @@ impl Editor {
             Command::ToggleSpreads | Command::ToggleTimeline | Command::TogglePhotos => true,
             Command::ToggleStrips => true,
             Command::AdjustPhoto => self.photo_adjust().is_some(),
+            Command::EditText => self.selected_text().is_some(),
             // A calibração do tamanho real abre um diálogo da janela, em qualquer modo (ZR).
             Command::CalibrateSize => true,
             // A faixa de layouts precisa de uma lâmina (spec FL, regra 10).
@@ -43,6 +44,7 @@ impl Editor {
                 self.ask_panel_for_selected();
                 true
             }
+            Command::EditText => self.show_text(super::TextFocus::Cursor),
             Command::ToggleReduceMotion => self.toggle_reduce_motion(),
             Command::ToggleLayoutBand => {
                 // Os quadros da prévia são outros: abrir desmarca o quadro (spec FL, regra 2).

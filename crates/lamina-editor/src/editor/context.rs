@@ -90,7 +90,7 @@ impl Editor {
 
     fn frame_menu(&self) -> Vec<ContextEntry> {
         use Command as C;
-        let mut menu: Vec<ContextEntry> = [C::CropMode, C::AdjustPhoto, C::ClearFrame]
+        let mut menu: Vec<ContextEntry> = [C::EditText, C::CropMode, C::AdjustPhoto, C::ClearFrame]
             .iter()
             .map(|c| self.entry(*c))
             .collect();

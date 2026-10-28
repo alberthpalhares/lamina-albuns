@@ -136,6 +136,7 @@ impl Editor {
             | Command::TogglePanel
             | Command::ToggleReduceMotion
             | Command::AdjustPhoto
+            | Command::EditText
             | Command::ToggleLayoutBand
             | Command::Loupe
             | Command::ActualSize

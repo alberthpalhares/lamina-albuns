@@ -7,7 +7,7 @@ use lamina_editor::frame_form::page_at;
 use lamina_editor::{Command, Key, Shortcut};
 
 use crate::state::{App, Pending};
-use crate::{AppWindow, export, files, frame_panel, help, models, relink, spec_dialog, updates};
+use crate::{AppWindow, export, files, help, models, relink, spec_dialog, updates};
 
 type Shared = Rc<RefCell<App>>;
 
@@ -98,6 +98,7 @@ pub fn run_command(app: &Shared, command: Command) {
                     | Command::ToggleReduceMotion
                     | Command::TogglePanel
                     | Command::AdjustPhoto
+                    | Command::EditText
                     | Command::ToggleLayoutBand
             );
             let done = a.timed(
@@ -132,7 +133,6 @@ fn new_text(app: &mut App) {
         .and_then(|s| page_at(s.project(), f64::from(fx)));
     if app.editor.new_text(side) {
         app.refresh_all();
-        frame_panel::focus_text(app);
     }
 }
 
