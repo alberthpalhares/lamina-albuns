@@ -49,7 +49,7 @@ impl Editor {
         let last = s.spread_count().saturating_sub(1);
         match command {
             Command::NewAlbum | Command::Open | Command::Save | Command::SaveAs => true,
-            Command::OpenExample | Command::CloseAlbum => true,
+            Command::OpenExample | Command::CloseAlbum | Command::RenameAlbum => true,
             Command::ClearRecents => self.recents.has_unpinned(),
             Command::Export | Command::Specification | Command::Presets => true,
             Command::MountAlbum | Command::ImportPhotos | Command::ImportFolder => true,
@@ -130,6 +130,7 @@ impl Editor {
             | Command::LastSpread
             | Command::ToggleGuides
             | Command::ToggleSpreads
+            | Command::ToggleStrips
             | Command::ToggleTimeline
             | Command::TogglePhotos
             | Command::TogglePanel
@@ -147,7 +148,12 @@ impl Editor {
     pub fn run(&mut self, command: Command) -> bool {
         // A lista de atalhos e as novidades são abertas pela janela e não mexem em nada: nem o
         // recorte, nem o modo organizar, nem a seleção (specs AT, regra 7, e NV, regra 5).
-        if !self.available(command) || matches!(command, Command::ShowShortcuts | Command::ShowNews)
+        // Renomear abre o campo da janela, que chama `rename_album` (spec NA).
+        if !self.available(command)
+            || matches!(
+                command,
+                Command::ShowShortcuts | Command::ShowNews | Command::RenameAlbum
+            )
         {
             return false;
         }

@@ -22,13 +22,13 @@ import { PresetNameDialog, PresetsDialog, PresetUi } from "spec.slint";
 import { TimelineItem } from "timeline.slint";
 import { PhotoData } from "photo_strip.slint";
 import { UpdateBar } from "update_bar.slint";
-import { RightPanel } from "panel.slint";
+import { RightPanel, PanelDivider } from "panel.slint";
 import { DragGhost, GhostData } from "ghost.slint";
 import { ContextUi, ContextMenu, ContextRow } from "context.slint";
-import { PaletteUi, FloatingPalette, PaletteWindow } from "palette.slint";
+import { PaletteUi } from "palette.slint";
 import { PhotoUi } from "photo.slint";
 import { DetailRow } from "side.slint";
-import { OrganizeUi, LassoBox, MarkData, TickData } from "organize.slint";
+import { OrganizeUi, LassoBox, MarkData, TickData, BarRow } from "organize.slint";
 import { Motion } from "motion.slint";
 import { ClearRecentsDialog, RecentsUi, RecentCard, RecentItem } from "welcome.slint";
 import { DragUi } from "drag.slint";
@@ -40,7 +40,7 @@ import { NewsUi, NewsDialog, NewsEntryData } from "news.slint";
 import { RollUi, RollCell, RollButton, RollHitData } from "roll.slint";
 
 export { BuildUi }
-export { CalibrateUi, SpreadData, FrameData, BoxData, LayoutItem, BandUi, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, ContextUi, ContextRow, PaletteUi, PaletteWindow, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, ShortcutsUi, RecoverUi, ShortcutGroup, ShortcutRow, NewsUi, NewsEntryData, RollUi, RollCell, RollButton, RollHitData }
+export { CalibrateUi, SpreadData, FrameData, BoxData, LayoutItem, BandUi, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, BarRow, ContextUi, ContextRow, PaletteUi, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, ShortcutsUi, RecoverUi, ShortcutGroup, ShortcutRow, NewsUi, NewsEntryData, RollUi, RollCell, RollButton, RollHitData }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -54,6 +54,17 @@ export component AppWindow inherits Window {
 
     in property <string> window-title: "Lamina";
     in property <string> project-title;
+    // Spec NA: o nome do álbum sem o "• " e o campo de renomear do topo.
+    in property <string> album-name;
+    in-out property <bool> renaming;
+    callback rename-album(string);
+    // Clique no cabeçalho de uma faixa de baixo (spec FX, regra 9): o Rust ignora o segundo toque.
+    callback strip-header-clicked(int);
+    // A largura do painel da direita (spec FX, regra 13): o arrasto, o soltar e o clique duplo.
+    in property <length> panel-width: 300px;
+    callback panel-width-drag(length);
+    callback panel-width-set(length);
+    callback panel-width-reset();
     in property <string> counter;
     in property <bool> has-project;
     in property <bool> can-save;
@@ -179,7 +190,10 @@ export component AppWindow inherits Window {
     in property <GhostData> ghost;
     callback drag-started(int, int);
     pure callback drop-at <=> stage.drop-at;
-    pure callback spread-shift <=> bottom.spread-shift;
+    pure callback strip-gap <=> bottom.strip-gap;
+    pure callback strip-shift <=> bottom.strip-shift;
+    pure callback strip-landing <=> bottom.strip-landing;
+    pure callback strip-edge <=> bottom.strip-edge;
     property <int> drag-kind: DragUi.kind;
     changed drag-kind => {
         if (root.drag-kind == 1 || root.drag-kind == 2) {
@@ -271,6 +285,8 @@ export component AppWindow inherits Window {
             MenuSeparator { }
             MenuItem { title: "Salvar  (Ctrl+S)"; enabled: root.has-project; activated => { root.command("arquivo.salvar"); } }
             MenuItem { title: "Salvar como…  (Ctrl+Shift+S)"; enabled: root.has-project; activated => { root.command("arquivo.salvar-como"); } }
+            // O mesmo que o clique duplo no nome do álbum, no topo (spec NA).
+            MenuItem { title: "Renomear álbum…"; enabled: root.has-project; activated => { root.command("arquivo.renomear"); } }
             MenuSeparator { }
             MenuItem { title: "Exportar…  (Ctrl+E)"; enabled: root.has-project; activated => { root.command("arquivo.exportar"); } }
             MenuItem { title: "Procurar fotos ausentes…"; enabled: root.has-missing; activated => { root.command("arquivo.procurar-fotos"); } }
@@ -348,8 +364,10 @@ export component AppWindow inherits Window {
             MenuItem { title: root.guides ? "Esconder guias  (G)" : "Mostrar guias  (G)"; enabled: root.has-project; activated => { root.command("ver.guias"); } }
             MenuSeparator { }
             MenuItem { title: (root.spreads-open ? "✓ " : "    ") + "Faixa de lâminas  (Alt+1)"; enabled: root.has-project; activated => { root.command("ver.faixa-laminas"); } }
-            MenuItem { title: (root.timeline-open ? "✓ " : "    ") + "Linha do tempo  (Alt+2)"; enabled: root.has-project; activated => { root.command("ver.linha-do-tempo"); } }
-            MenuItem { title: (root.photos-open ? "✓ " : "    ") + "Fotos  (Alt+3)"; enabled: root.has-project; activated => { root.command("ver.fotos"); } }
+            MenuItem { title: (root.timeline-open ? "✓ " : "    ") + "Sequência  (Alt+2)"; enabled: root.has-project; activated => { root.command("ver.linha-do-tempo"); } }
+            MenuItem { title: (root.photos-open ? "✓ " : "    ") + "Fotografias  (Alt+3)"; enabled: root.has-project; activated => { root.command("ver.fotos"); } }
+            // As três faixas de baixo de uma vez (spec FX, regra 8).
+            MenuItem { title: "    Faixas de baixo  (Alt+0)"; enabled: root.has-project; activated => { root.command("ver.faixas"); } }
             MenuItem { title: (root.panel-open ? "✓ " : "    ") + "Mostrar painel  (Alt+4)"; enabled: root.has-project; activated => { root.command("ver.painel"); } }
             // Sem a marca: o título fixo não refaz a barra a cada abrir e fechar (spec MV, regra 16).
             MenuItem { title: "    Faixa de layouts  (L)"; enabled: root.has-project; activated => { root.command("ver.faixa-layouts"); } }
@@ -386,6 +404,11 @@ export component AppWindow inherits Window {
                 OrganizeUi.hand = true;
                 return accept;
             }
+            // Esc com uma lâmina levantada na faixa: ela volta ao lugar (spec FX, regra 5).
+            if (DragUi.kind == 3 && event.text == Key.Escape) {
+                DragUi.cancel = true;
+                return accept;
+            }
             // Teclas especiais chegam como o caractere do Slint; o Rust traduz o nome.
             root.key(event.text, event.modifiers.control, event.modifiers.shift, event.modifiers.alt) ? accept : reject
         }
@@ -403,9 +426,12 @@ export component AppWindow inherits Window {
                 z: 10;
                 has-project: root.has-project;
                 project-title: root.project-title;
+                album-name: root.album-name;
+                renaming <=> root.renaming;
+                rename(text) => { root.rename-album(text); }
                 counter: root.counter;
                 counter-warning: root.counter-warning;
-                photos-open: root.photos-open;
+                strips-open: root.spreads-open || root.timeline-open || root.photos-open;
                 panel-open: root.panel-open;
                 tip-home: root.bar-tips[0];
                 tip-photos: root.bar-tips[1];
@@ -455,8 +481,16 @@ export component AppWindow inherits Window {
                     focus-main => { root.focus-main(); }
                 }
 
+                // A borda do painel, que muda a largura dele (spec FX, regra 13).
+                if root.has-project && root.panel-open: PanelDivider {
+                    shown: root.panel-width;
+                    moved(w) => { root.panel-width-drag(w); }
+                    released => { root.panel-width-set(root.panel-width); }
+                    reset => { root.panel-width-reset(); }
+                }
                 // Painel da direita: Detalhes (padrão), Aparência, Quadro e Histórico.
                 if root.has-project && root.panel-open: RightPanel {
+                    panel-width: root.panel-width;
                     tab <=> root.panel-tab;
                     details: root.details;
                     details-kind: root.details-kind;
@@ -496,6 +530,7 @@ export component AppWindow inherits Window {
                 room: root.height;
                 above: top.height + (root.update-bar != "" ? 30px : 0px) + (root.notice != "" ? 30px : 0px);
                 command(name) => { root.command(name); }
+                header-clicked(i) => { root.strip-header-clicked(i); }
                 focus-main => { root.focus-main(); }
                 // Fora da faixa de lâminas, a foto cai na lâmina grande (num quadro ou nela).
                 photos-dropped => {
@@ -613,11 +648,6 @@ export component AppWindow inherits Window {
     }
     if OrganizeUi.lassoing && stage.lasso-moved: LassoBox { }
     if ImportUi.dropping: DropOverlay { }
-    // A paleta do modo organizar, flutuando em qualquer ponto da janela (ou destacada).
-    if OrganizeUi.on && !PaletteUi.detached: FloatingPalette {
-        room-w: root.width;
-        room-h: root.height;
-    }
     if ContextUi.open: ContextMenu {
         width: root.width;
         height: root.height;

@@ -23,6 +23,7 @@ fn af_b14_mesmos_arquivos_por_dois_processos() {
             brightness: 10 * k - 20,
             contrast: 15 - 5 * k,
             bw: k % 3 == 0,
+            ..PhotoAdjust::default()
         };
     }
     std::fs::write(&path, project.to_json().unwrap()).unwrap();

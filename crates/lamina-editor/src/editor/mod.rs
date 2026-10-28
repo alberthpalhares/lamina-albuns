@@ -18,6 +18,7 @@ mod adjust;
 mod arrange_cmd;
 mod backup;
 mod band;
+mod bottom_strips;
 mod build_album;
 mod clipboard;
 mod context;
@@ -42,8 +43,10 @@ mod organize_moves;
 mod organize_zoom;
 mod panel_need;
 mod photo_panel;
+mod photo_sliders;
 mod photo_style;
 mod recents;
+mod rename;
 mod report;
 mod style;
 mod text_edit;
@@ -64,6 +67,7 @@ pub use organize_zoom::{
     MAX_VIEW_ZOOM, VIEW_STEP, Zoom, ZoomMove, real_factor, step_factor, times_label, zoom_about,
 };
 pub use photo_style::PhotoStyle;
+pub use rename::{MAX_ALBUM_NAME, clean_album_name};
 pub use style::Look;
 pub use text_edit::TextChange;
 

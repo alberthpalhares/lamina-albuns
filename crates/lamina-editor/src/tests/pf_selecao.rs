@@ -60,14 +60,14 @@ fn pf_b9_usadas_esmaecidas_e_o_contador() {
     let session = editor.session().unwrap();
     assert_eq!(
         photos_title(session, editor.selection().len()),
-        "Fotos · 4 de 10 usadas · 3 selecionadas"
+        "Fotografias · 4 de 10 usadas · 3 selecionadas"
     );
     assert!(editor.run(Command::Deselect));
     let session = editor.session().unwrap();
-    assert_eq!(photos_title(session, 0), "Fotos · 4 de 10 usadas");
+    assert_eq!(photos_title(session, 0), "Fotografias · 4 de 10 usadas");
     assert_eq!(
         photos_title(session, 1),
-        "Fotos · 4 de 10 usadas · 1 selecionada"
+        "Fotografias · 4 de 10 usadas · 1 selecionada"
     );
 }
 

@@ -68,6 +68,7 @@ fn af_b15_pdf_com_ajustes_mantem_a_estrutura_e_o_texto_por_cima() {
         brightness: 20,
         contrast: 30,
         bw: true,
+        ..PhotoAdjust::default()
     });
     let (plain_dir, adjusted_dir) = (tempfile::tempdir().unwrap(), tempfile::tempdir().unwrap());
     album(PhotoAdjust::default())

@@ -48,6 +48,7 @@ mod news_player;
 mod opened;
 mod organize;
 mod palette;
+mod panel_width;
 mod photo_panel;
 mod presets;
 mod recents;
@@ -68,6 +69,7 @@ mod thumbs;
 mod timings;
 mod updates;
 mod verify;
+mod waits;
 mod welcome;
 
 use std::cell::RefCell;
@@ -126,6 +128,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     context::connect(window, app);
     backup::connect(window, app);
     palette::connect(window, app);
+    panel_width::connect(window, app);
     photo_panel::connect(window, app);
     crop::connect(window, app);
     look::connect(window, app);
@@ -225,14 +228,15 @@ fn main() -> anyhow::Result<()> {
     }
     // Medir na máquina compartilhada (`LAMINA_SEM_FOCO=1`, portão G1 da spec RL): a janela abre
     // sem tomar o foco, e o teclado de quem está trabalhando em outra janela continua lá.
-    if std::env::var("LAMINA_SEM_FOCO").is_ok_and(|v| v == "1") {
-        slint::BackendSelector::new()
-            .with_winit_window_attributes_hook(|a| a.with_active(false))
-            .select()?;
-    }
-    let window = AppWindow::new()?;
     // Abre maximizada: numa tela pequena, as faixas de baixo ficariam fora (auditoria da Fase 4, 7).
-    window.window().set_maximized(true);
+    // Pedida ao criar a janela, não depois: maximizar a janela antes de ela existir no sistema
+    // deixava o Windows sem o tamanho de "restaurar" e o primeiro maximizar falhava (spec FB,
+    // regra 5).
+    let unfocused = std::env::var("LAMINA_SEM_FOCO").is_ok_and(|v| v == "1");
+    slint::BackendSelector::new()
+        .with_winit_window_attributes_hook(move |a| a.with_maximized(true).with_active(!unfocused))
+        .select()?;
+    let window = AppWindow::new()?;
     let (tx, rx) = mailbox::Mailbox::new();
     let prefs = PrefsStore::load(&config_dir().join(PREFS_FILE));
     let mut editor = Editor::with_prefs(prefs);

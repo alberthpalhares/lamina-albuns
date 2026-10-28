@@ -64,9 +64,9 @@ pub fn settle_later(app: &Shared) {
     });
 }
 
-/// Um número da tela em inteiro (os controles vão de −100 a 100, ou de −450 a 450 décimos).
+/// Um número da tela em inteiro (os controles vão de −100 a 100, ou de −1800 a 1800 décimos).
 fn whole(v: f32) -> i32 {
-    // Os controles ficam entre −450 e 450, então cabe em i32.
+    // Os controles ficam entre −1800 e 1800, então cabe em i32.
     #[allow(clippy::cast_possible_truncation)]
     let n = v.round() as i32;
     n
@@ -85,6 +85,10 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     ui.on_contrast_moved(move |v| change(&a, AdjustChange::Contrast(whole(v))));
     let a = app.clone();
+    ui.on_temperature_moved(move |v| change(&a, AdjustChange::Temperature(whole(v))));
+    let a = app.clone();
+    ui.on_tint_moved(move |v| change(&a, AdjustChange::Tint(whole(v))));
+    let a = app.clone();
     ui.on_bw_toggled(move |on| change(&a, AdjustChange::Bw(on)));
     let a = app.clone();
     ui.on_restore(move || change(&a, AdjustChange::Restore));
@@ -96,6 +100,11 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     ui.on_brightness_reset(move || reset(&a, AdjustControl::Brightness));
     let a = app.clone();
     ui.on_contrast_reset(move || reset(&a, AdjustControl::Contrast));
+    let a = app.clone();
+    ui.on_temperature_reset(move || reset(&a, AdjustControl::Temperature));
+    let a = app.clone();
+    ui.on_tint_reset(move || reset(&a, AdjustControl::Tint));
+    connect_sliders(&ui, app);
     connect_style(&ui, app);
     let (a, w) = (app.clone(), window.as_weak());
     ui.on_angle_accepted(move || {
@@ -115,6 +124,19 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         let text = w.global::<PhotoUi>().get_scale();
         let result = a.borrow_mut().editor.set_scale_text(&text);
         typed(&a, &w, result);
+    });
+}
+
+/// A escala pelo controle e os botões de 90° (spec CD): a lâmina muda na hora.
+fn connect_sliders(ui: &PhotoUi, app: &Shared) {
+    let a = app.clone();
+    ui.on_scale_moved(move |pos| styled(&a, |e| e.set_scale_position(f64::from(pos))));
+    let a = app.clone();
+    ui.on_scale_reset(move || styled(&a, lamina_editor::Editor::reset_scale));
+    let a = app.clone();
+    ui.on_quarter(move |way| {
+        styled(&a, |e| e.turn_quarter(way));
+        settle_later(&a);
     });
 }
 
@@ -182,6 +204,9 @@ pub fn refresh(app: &App) {
     ui.set_angle_value(to_f32(degrees));
     ui.set_brightness(to_f32(f64::from(adjust.brightness)));
     ui.set_contrast(to_f32(f64::from(adjust.contrast)));
+    ui.set_temperature(to_f32(f64::from(adjust.temperature)));
+    ui.set_tint(to_f32(f64::from(adjust.tint)));
+    ui.set_scale_position(to_f32(app.editor.scale_position().unwrap_or(0.0)));
     ui.set_bw(adjust.bw);
     ui.set_scale(
         app.editor

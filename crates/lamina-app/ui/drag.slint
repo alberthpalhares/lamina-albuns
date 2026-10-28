@@ -4,6 +4,8 @@
 export global DragUi {
     // 0 nada, 1 foto do navegador, 2 quadro, 3 lâmina na faixa.
     in-out property <int> kind;
+    // Esc durante o arrasto de uma lâmina na faixa: ela volta ao lugar (spec FX, regra 5).
+    in-out property <bool> cancel;
     in-out property <int> from: -1;
     in-out property <image> img;
     // O ponteiro durante o arrasto e onde o botão desceu (posições na janela).

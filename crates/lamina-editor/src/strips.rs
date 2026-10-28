@@ -17,9 +17,9 @@ pub const STRIPS_FILE: &str = "janela.json";
 pub const STRIPS_UNREADABLE: &str =
     "Não foi possível ler as preferências da janela; voltaram ao padrão.";
 
-/// A versão do estado da janela (spec JE, regra 7): um arquivo de antes da 2 é lido com a faixa
-/// de lâminas antiga desligada, uma vez só.
-pub const STRIPS_VERSION: u8 = 2;
+/// A versão do estado da janela (spec FX, regra 11): um arquivo de antes da 3 é lido com a faixa
+/// Lâminas aberta, uma vez só (a JE, na versão 2, a desligava).
+pub const STRIPS_VERSION: u8 = 3;
 
 /// Quem abre o Lamina (spec JE, regra 2): sem `janela.json`, a instalação nova começa com o
 /// painel da direita escondido e quem já usava (tem `ultima_versao` em `atualizacoes.json`), com
@@ -83,6 +83,13 @@ pub struct Strips {
     /// A altura do painel de fotos em px lógicos (spec PF, regra 5); sem o campo, duas linhas.
     #[serde(rename = "fotos_altura", skip_serializing_if = "Option::is_none")]
     pub photos_height: Option<u32>,
+    /// As faixas de baixo que o botão das faixas escondeu e vai mostrar de novo (spec FX, regra 8):
+    /// lâminas, sequência e fotografias.
+    #[serde(rename = "faixas_lembradas", skip_serializing_if = "Option::is_none")]
+    pub remembered: Option<[bool; 3]>,
+    /// A largura do painel da direita em px lógicos (spec FX, regra 13); sem o campo, 300.
+    #[serde(rename = "painel_largura", skip_serializing_if = "Option::is_none")]
+    pub panel_width: Option<u32>,
 }
 
 /// Tudo aberto: o editor só na memória (testes e linha de comando) e os campos que faltam num
@@ -100,16 +107,17 @@ impl Default for Strips {
             reduce_motion: false,
             photos_zoom: crate::photo_grid::ZOOM_DEFAULT,
             photos_height: None,
+            remembered: None,
+            panel_width: None,
         }
     }
 }
 
 impl Strips {
-    /// O padrão de uma instalação nova e de um arquivo ilegível (spec JE, regras 2 e 7): o painel
-    /// escondido e a faixa de lâminas antiga desligada; a linha do tempo e as fotos abertas.
+    /// O padrão de uma instalação nova e de um arquivo ilegível (spec JE, regra 2): o painel
+    /// escondido e as três faixas de baixo abertas (spec FX, regra 10).
     pub fn fresh() -> Self {
         Strips {
-            spreads: false,
             panel: false,
             ..Strips::default()
         }
@@ -119,18 +127,15 @@ impl Strips {
     fn without_file(install: Install) -> Self {
         match install {
             Install::New => Strips::fresh(),
-            Install::Existing => Strips {
-                spreads: false,
-                ..Strips::default()
-            },
+            Install::Existing => Strips::default(),
         }
     }
 
-    /// Um arquivo de antes da versão 2 desliga a faixa de lâminas antiga uma vez (regra 7); um de
+    /// Um arquivo de antes da versão 3 abre a faixa Lâminas uma vez (spec FX, regra 11); um de
     /// versão maior (um Lamina mais novo) vale como está.
     fn upgraded(mut self) -> Self {
         if self.version < STRIPS_VERSION {
-            self.spreads = false;
+            self.spreads = true;
             self.version = STRIPS_VERSION;
         }
         self
@@ -145,8 +150,12 @@ impl Strips {
         }
     }
 
-    /// Recolhe a faixa aberta ou abre a recolhida.
+    /// Recolhe a faixa aberta ou abre a recolhida. Mexer numa faixa de baixo sozinha esquece o que
+    /// o botão das faixas lembrava (spec FX, regra 8).
     pub fn toggle(&mut self, strip: Strip) {
+        if strip != Strip::Panel {
+            self.remembered = None;
+        }
         let open = match strip {
             Strip::Spreads => &mut self.spreads,
             Strip::Timeline => &mut self.timeline,
@@ -154,6 +163,22 @@ impl Strips {
             Strip::Panel => &mut self.panel,
         };
         *open = !*open;
+    }
+
+    /// O botão das faixas de baixo (spec FX, regra 8): com alguma aberta, esconde as três e lembra
+    /// quais estavam; com as três escondidas, abre as lembradas (sem nada lembrado, as três).
+    pub fn toggle_bottom(&mut self) {
+        let open = [self.spreads, self.timeline, self.photos];
+        let next = if open.contains(&true) {
+            self.remembered = Some(open);
+            [false; 3]
+        } else {
+            self.remembered
+                .take()
+                .filter(|r| r.contains(&true))
+                .unwrap_or([true; 3])
+        };
+        [self.spreads, self.timeline, self.photos] = next;
     }
 }
 
@@ -240,7 +265,7 @@ fn write(
 }
 
 /// Os títulos das três faixas, com o resumo atual (regra 1): "Lâminas · 4 lâminas (8 páginas)",
-/// "Linha do tempo · …" e "Fotos · 12 de 12 usadas".
+/// "Sequência · …" e "Fotografias · 12 de 12 usadas" (nomes da spec FX, regra 12).
 pub fn strip_titles(session: &Session) -> [String; 3] {
     let project = session.project();
     let spreads = project.spreads.len();
@@ -258,17 +283,17 @@ pub fn strip_titles(session: &Session) -> [String; 3] {
             plural(spreads, "lâmina"),
             plural(pages, "página")
         ),
-        "Linha do tempo · arraste um corte para passar fotos entre lâminas".to_owned(),
+        "Sequência · arraste um corte para passar fotos entre lâminas".to_owned(),
         photos_title(session, 0),
     ]
 }
 
-/// O título do painel de fotos com a seleção (spec PF, regra 12): "Fotos · 4 de 10 usadas ·
+/// O título do painel de fotos com a seleção (spec PF, regra 12): "Fotografias · 4 de 10 usadas ·
 /// 3 selecionadas"; sem seleção, sem a última parte.
 pub fn photos_title(session: &Session, selected: usize) -> String {
     let project = session.project();
     let title = format!(
-        "Fotos · {} de {} usadas",
+        "Fotografias · {} de {} usadas",
         used_photos(project),
         project.photos.len()
     );

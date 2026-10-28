@@ -82,7 +82,8 @@ fn je_b3_instalacao_nova_comeca_com_o_painel_oculto() {
     editor.set_strips(StripsStore::load_for(&file, install));
     let s = editor.strips();
     assert!(!editor.panel_shown(), "o painel começa escondido");
-    assert!(!s.spreads, "a faixa de lâminas antiga começa desligada");
+    // A faixa Lâminas começa aberta (spec FX, regra 10; antes, a JE a desligava).
+    assert!(s.spreads, "a faixa Lâminas começa aberta");
     assert!(s.timeline && s.photos);
     assert_eq!(s.version, STRIPS_VERSION);
     assert_eq!(s, Strips::fresh());
@@ -133,21 +134,22 @@ fn je_b5_a_faixa_de_laminas_antiga_e_desligada_uma_vez() {
     let mut editor = editor_at(three_spreads(), 0);
     editor.set_strips(StripsStore::load_for(&file, Install::Existing));
     let s = editor.strips();
-    assert!(!s.spreads, "a faixa vem desligada");
+    // Desde a spec FX (regra 11), um arquivo antigo abre a faixa Lâminas uma vez.
+    assert!(s.spreads, "a faixa vem aberta");
     assert!(!s.timeline && s.photos && s.panel && s.reduce_motion);
     let alt1 = Command::from_shortcut(Shortcut::alt('1')).unwrap();
     assert!(editor.run(alt1));
     let saved = json(&file);
-    assert_eq!(saved["versao"], 2);
-    assert_eq!(saved["laminas"], true);
+    assert_eq!(saved["versao"], STRIPS_VERSION);
+    assert_eq!(saved["laminas"], false);
     let mut next = editor_at(three_spreads(), 0);
     next.set_strips(StripsStore::load_for(&file, Install::Existing));
-    assert!(next.strips().spreads, "a escolha fica");
+    assert!(!next.strips().spreads, "a escolha fica");
     // Um arquivo de um Lamina mais novo vale como está.
-    std::fs::write(&file, r#"{"versao": 3, "laminas": true}"#).unwrap();
+    std::fs::write(&file, r#"{"versao": 4, "laminas": false}"#).unwrap();
     let store = StripsStore::load_for(&file, Install::Existing);
-    assert!(store.strips.spreads);
-    assert_eq!(store.strips.version, 3);
+    assert!(!store.strips.spreads);
+    assert_eq!(store.strips.version, 4);
 }
 
 #[test]
@@ -160,7 +162,7 @@ fn je_b6_abrir_o_painel_guarda_a_escolha() {
     assert!(editor.run(Command::from_name("ver.painel").unwrap()));
     let saved = json(&file);
     assert_eq!(saved["painel"], true);
-    assert_eq!(saved["versao"], 2);
+    assert_eq!(saved["versao"], STRIPS_VERSION);
     let mut next = editor_at(three_spreads(), 0);
     next.set_strips(StripsStore::load_for(&file, Install::Existing));
     assert!(
@@ -248,10 +250,11 @@ fn je_b9_o_que_sai_da_barra_continua_no_registro() {
         names,
         [
             "arquivo.fechar",
-            "ver.fotos",
+            "ver.faixas",
             "ver.painel",
             "arquivo.exportar"
-        ]
+        ],
+        "desde a spec FX, o botão das faixas de baixo no lugar do de fotos"
     );
     let kept = [
         ("arquivo.novo", Shortcut::ctrl('n'), Menu::File),
@@ -287,7 +290,7 @@ fn je_b10_botoes_com_estado_e_dica() {
         tips(&editor),
         (
             true,
-            "Esconder fotos (Alt+3)".to_owned(),
+            "Esconder fotografias (Alt+3)".to_owned(),
             false,
             "Mostrar painel (Alt+4)".to_owned()
         )
@@ -298,10 +301,15 @@ fn je_b10_botoes_com_estado_e_dica() {
         tips(&editor),
         (
             false,
-            "Mostrar fotos (Alt+3)".to_owned(),
+            "Mostrar fotografias (Alt+3)".to_owned(),
             true,
             "Esconder painel (Alt+4)".to_owned()
         )
+    );
+    // O botão das faixas de baixo (spec FX, regra 8) no lugar do de fotos.
+    assert_eq!(
+        bar_tip(Command::ToggleStrips, true),
+        "Esconder as faixas de baixo (Alt+0)"
     );
     assert_eq!(
         bar_tip(Command::CloseAlbum, false),
@@ -340,7 +348,7 @@ fn je_b11_arquivo_ilegivel_volta_ao_padrao_novo() {
     );
     assert!(editor.run(Command::ToggleTimeline));
     let saved = json(&file);
-    assert_eq!(saved["versao"], 2);
+    assert_eq!(saved["versao"], STRIPS_VERSION);
     assert_eq!(saved["linha_do_tempo"], false);
     assert_eq!(saved["painel"], false);
 }

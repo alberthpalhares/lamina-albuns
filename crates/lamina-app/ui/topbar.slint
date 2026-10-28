@@ -3,17 +3,85 @@
 // o Texto na barra da lâmina. Cada botão roda um comando do registro pelo nome estável; as dicas
 // vêm do editor (`bar_tip`).
 
+import { LineEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { BarButton, IconButton, Tip } from "widgets.slint";
+
+// O nome do álbum que vira campo com clique duplo (spec NA): Enter ou clicar fora confirma, Esc
+// desiste. Só desenho: o editor limpa o nome e decide se muda.
+component AlbumName inherits Rectangle {
+    in property <string> title;
+    in property <string> name;
+    in-out property <bool> renaming;
+    callback rename(string);
+    property <bool> cancelled;
+    min-width: 40px;
+    horizontal-stretch: 0;
+    preferred-width: root.renaming ? max(220px, label.preferred-width + 40px) : label.preferred-width;
+    label := Text {
+        visible: !root.renaming;
+        width: parent.width;
+        height: parent.height;
+        text: root.title;
+        color: Theme.text;
+        font-size: 15px;
+        font-weight: 600;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+    if !root.renaming: TouchArea {
+        mouse-cursor: text;
+        double-clicked => {
+            root.cancelled = false;
+            root.renaming = true;
+        }
+    }
+    if root.renaming: FocusScope {
+        key-pressed(e) => {
+            if (e.text == Key.Escape) {
+                root.cancelled = true;
+                root.renaming = false;
+                return accept;
+            }
+            reject
+        }
+        field := LineEdit {
+            y: (parent.height - self.height) / 2;
+            width: parent.width;
+            text: root.name;
+            font-size: 14px;
+            init => {
+                self.focus();
+                self.select-all();
+            }
+            accepted(text) => {
+                root.cancelled = true;
+                root.renaming = false;
+                root.rename(text);
+            }
+            changed has-focus => {
+                if (!self.has-focus && !root.cancelled && root.renaming) {
+                    root.cancelled = true;
+                    root.renaming = false;
+                    root.rename(self.text);
+                }
+            }
+        }
+    }
+}
 
 export component TopBar inherits Rectangle {
     in property <bool> has-project;
     in property <string> project-title;
+    // O nome sem o "• " e o campo de renomear aberto (spec NA).
+    in property <string> album-name;
+    in-out property <bool> renaming;
+    callback rename(string);
     in property <string> counter;
     // Fora da faixa de páginas do laboratório (spec PR): ao lado do contador.
     in property <string> counter-warning;
-    // Fotos e Painel acesos quando abertos (JE, regra 9).
-    in property <bool> photos-open;
+    // Faixas de baixo e Painel acesos quando abertos (JE, regra 9; FX, regra 7).
+    in property <bool> strips-open;
     in property <bool> panel-open;
     // As dicas de Início, Fotos, Painel e Exportar, com o atalho do registro.
     in property <string> tip-home;
@@ -38,33 +106,31 @@ export component TopBar inherits Rectangle {
                 clicked => { root.command("arquivo.fechar"); }
             }
         }
-        Text {
-            text: root.project-title;
-            color: Theme.text;
-            font-size: 15px;
-            font-weight: 600;
-            vertical-alignment: center;
-            overflow: elide;
-            min-width: 40px;
-            horizontal-stretch: 0;
+        AlbumName {
+            title: root.project-title;
+            name: root.album-name;
+            renaming <=> root.renaming;
+            rename(text) => { root.rename(text); }
         }
         Text { text: root.counter; color: Theme.muted; vertical-alignment: center; overflow: elide; min-width: 0px; }
         if root.counter-warning != "": Text { text: root.counter-warning; color: Theme.warning; vertical-alignment: center; overflow: elide; min-width: 0px; }
         Rectangle { horizontal-stretch: 1; }
         if root.has-project: VerticalLayout {
             alignment: center;
+            // As faixas de baixo (spec FX, regras 7 e 8): o desenho da janela com a área de baixo
+            // preenchida quando alguma aparece.
             IconButton {
-                icon: @image-url("../icons/je/fotos.svg");
+                icon: root.strips-open ? @image-url("../icons/je/faixas.svg") : @image-url("../icons/je/faixas-fechadas.svg");
                 tip: root.tip-photos;
                 tip-side: 1;
-                checked: root.photos-open;
-                clicked => { root.command("ver.fotos"); }
+                checked: root.strips-open;
+                clicked => { root.command("ver.faixas"); }
             }
         }
         if root.has-project: VerticalLayout {
             alignment: center;
             IconButton {
-                icon: @image-url("../icons/je/painel.svg");
+                icon: root.panel-open ? @image-url("../icons/je/painel.svg") : @image-url("../icons/je/painel-fechado.svg");
                 tip: root.tip-panel;
                 tip-side: 1;
                 checked: root.panel-open;

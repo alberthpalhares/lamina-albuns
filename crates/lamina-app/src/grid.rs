@@ -138,7 +138,7 @@ impl App {
     /// se a guardada não está nela.
     /// As miniaturas no tamanho da peça (zoom e escala da tela; spec PF, seção 13): mudou o lado,
     /// as listas são refeitas e pedem de novo.
-    fn fit_thumbs(&mut self) {
+    pub(crate) fn fit_thumbs(&mut self) {
         let Some(w) = self.window.upgrade() else {
             return;
         };
@@ -215,8 +215,11 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         } else {
             app.follow_scroll();
         }
-        app.fit_thumbs();
-        app.show_grid(false);
+        // Mudando o tamanho da janela, a grade redesenha uma vez só, no fim (spec FB, regra 6).
+        if !app.waits.resizing() {
+            app.fit_thumbs();
+            app.show_grid(false);
+        }
     });
     let a = app.clone();
     window.on_photo_zoom_to(move |zoom| {

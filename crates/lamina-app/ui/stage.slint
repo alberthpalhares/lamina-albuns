@@ -155,7 +155,8 @@ export component Stage inherits Rectangle {
         ? min(self.width - 48px - (OrganizeUi.on ? 18px : 0px), (self.height - 48px - self.top-room) / root.current.aspect) : 0px;
     // A lâmina em destaque cresce com movimento (spec EG, herdado da MV).
     // Arrastar a divisória do painel de fotos é gesto à mão: a lâmina acompanha sem animar (PF).
-    animate canvas-width { duration: Motion.on && !PhotoGridUi.resizing ? Motion.navigate-ms * 1ms : 0ms; easing: ease-out; }
+    // Mudar o tamanho da janela também é gesto à mão (spec FB, regra 6).
+    animate canvas-width { duration: Motion.on && !PhotoGridUi.resizing && !Motion.resizing ? Motion.navigate-ms * 1ms : 0ms; easing: ease-out; }
     // A largura de Ajustar sem a animação, para o tamanho real (spec ZR, regra 7).
     property <length> fit-target: root.current.aspect > 0
         ? min(self.width - 48px - (OrganizeUi.on ? 18px : 0px), (self.height - 48px - self.top-room) / root.current.aspect) : 0px;

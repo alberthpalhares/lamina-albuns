@@ -26,11 +26,12 @@ impl App {
         // O painel aparece pela escolha guardada ou por um pedido em curso (spec JE, regra 5).
         let panel = self.editor.panel_shown();
         w.set_panel_open(panel);
+        crate::panel_width::refresh(self);
         let tips: Vec<SharedString> = BAR_COMMANDS
             .iter()
             .map(|&c| {
                 let open = match c {
-                    Command::TogglePhotos => strips.photos,
+                    Command::ToggleStrips => strips.spreads || strips.timeline || strips.photos,
                     _ => panel,
                 };
                 bar_tip(c, open).into()
@@ -53,6 +54,7 @@ impl App {
         let Some(session) = self.editor.session() else {
             w.set_window_title("Lamina".into());
             w.set_project_title("".into());
+            w.set_renaming(false);
             w.set_counter("".into());
             return;
         };
@@ -60,6 +62,7 @@ impl App {
         let title = format!("{dirty}{}", session.title());
         w.set_window_title(format!("{title} — Lamina").into());
         w.set_project_title(title.into());
+        w.set_album_name(session.title().into());
         w.set_counter(session.counter().into());
         // O álbum em branco: a lâmina vazia no formato e no fundo do álbum (spec BR).
         let project = session.project();

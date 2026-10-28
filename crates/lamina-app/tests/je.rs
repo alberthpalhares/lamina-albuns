@@ -41,7 +41,7 @@ fn je_b9_a_barra_de_cima_chama_so_quatro_comandos() {
         names,
         [
             "arquivo.fechar",
-            "ver.fotos",
+            "ver.faixas",
             "ver.painel",
             "arquivo.exportar"
         ],

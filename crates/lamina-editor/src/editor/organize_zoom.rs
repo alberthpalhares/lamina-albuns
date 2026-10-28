@@ -67,7 +67,7 @@ pub fn times_label(factor: f64) -> String {
 }
 
 /// Ajustar ou vezes, pelo fator.
-fn of_factor(factor: f64) -> Zoom {
+pub(super) fn of_factor(factor: f64) -> Zoom {
     if factor <= 1.0 + 1e-9 {
         Zoom::Fit
     } else {
@@ -179,7 +179,12 @@ impl Editor {
         self.zoom_to(Zoom::Fit, (0.0, 0.0), true)
     }
 
-    fn zoom_to(&mut self, zoom: Zoom, p: (f64, f64), animated: bool) -> Option<ZoomMove> {
+    pub(super) fn zoom_to(
+        &mut self,
+        zoom: Zoom,
+        p: (f64, f64),
+        animated: bool,
+    ) -> Option<ZoomMove> {
         let z0 = self.view_zoom();
         let before = (self.organize.zoom, self.organize.pan);
         self.organize.zoom = zoom;

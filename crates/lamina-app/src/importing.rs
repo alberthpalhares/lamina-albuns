@@ -142,6 +142,12 @@ pub fn connect(window: &AppWindow, app: &Shared) {
                 w.global::<ImportUi>().set_dropping(on);
             }
         };
+        // A janela mudando de tamanho: a lâmina não anima até o silêncio (spec FB, regra 6).
+        if let winit::event::WindowEvent::Resized(_) = event
+            && let Ok(mut app) = a.try_borrow_mut()
+        {
+            crate::waits::resized(&mut app);
+        }
         match event {
             winit::event::WindowEvent::HoveredFile(_) => show(true),
             winit::event::WindowEvent::HoveredFileCancelled => show(false),

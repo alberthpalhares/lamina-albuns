@@ -25,10 +25,12 @@ fn project() -> Project {
 
 #[test]
 fn op_b1_formato_6_abre_o_5_e_volta_igual() {
-    const { assert!(CURRENT_SCHEMA_VERSION == 6) };
+    // Desde a v7 (specs TM e CD), o arquivo atual faz o papel do 6 aqui.
+    const { assert!(CURRENT_SCHEMA_VERSION >= 6) };
     let v6 = project().to_json().unwrap();
     assert!(!v6.contains("opacidade"), "100% não vai para o arquivo");
-    let v5 = v6.replace("\"schema_version\": 6", "\"schema_version\": 5");
+    let current = format!("\"schema_version\": {CURRENT_SCHEMA_VERSION}");
+    let v5 = v6.replace(&current, "\"schema_version\": 5");
     assert_ne!(v5, v6);
     let opened = Project::from_json(&v5).unwrap();
     assert!(
@@ -51,7 +53,8 @@ fn op_b1_arquivo_6_com_opacidade_pede_versao_nova() {
     p.spreads[0].frames[0].opacity = Opacity::new(40).unwrap();
     let json = p.to_json().unwrap();
     assert!(json.contains("\"opacidade\": 40"), "{json}");
-    assert!(json.contains("\"schema_version\": 6"));
+    // Desde a v7 (specs TM e CD), o arquivo atual faz o papel do 6 aqui.
+    assert!(json.contains(&format!("\"schema_version\": {CURRENT_SCHEMA_VERSION}")));
     assert_eq!(Project::from_json(&json).unwrap(), p, "volta igual");
     // Uma versão que só conhece até a anterior recusa o arquivo em vez de apagar a opacidade: o
     // mesmo caminho de hoje com uma versão mais nova que a do programa.

@@ -225,6 +225,7 @@ fn af_b8_tela_igual_a_impressao() {
             brightness: 30,
             contrast: 40,
             bw: false,
+            ..PhotoAdjust::default()
         },
     );
     album.frame(id, [0.55, 0.2, 0.3, 0.6], Crop::default());
@@ -294,6 +295,7 @@ fn six() -> Album {
             brightness: 10,
             contrast: 20,
             bw: k % 2 == 0,
+            ..PhotoAdjust::default()
         };
         let id = album.photo(&format!("f{k}.jpg"), gradient(3000, 2000), adjust);
         album.frame(id, *rect, Crop::default());

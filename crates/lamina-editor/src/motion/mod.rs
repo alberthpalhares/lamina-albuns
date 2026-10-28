@@ -5,6 +5,7 @@
 pub mod drag;
 pub mod durations;
 pub mod navigation;
+pub mod quiet;
 pub mod roll;
 pub mod roll_bar;
 pub mod roll_nav;
@@ -14,6 +15,7 @@ pub mod roll_timeline;
 pub mod roll_view;
 pub mod rows;
 pub mod slots;
+pub mod strip_drag;
 pub mod timings;
 
 pub use drag::{
@@ -22,6 +24,7 @@ pub use drag::{
 };
 pub use durations::Durations;
 pub use navigation::{Navigator, RAPID, Transition};
+pub use quiet::{BAR_GRACE_MS, DOUBLE_CLICK_MS, HeaderClicks, HoverGrace, Quiet, RESIZE_QUIET_MS};
 pub use roll::{
     Landing, ROLL_BYTES, Revisions, RollAsk, RollGot, RollPlan, RollView, SCREEN_MAX, SMALL_WIDTH,
     Tier,
@@ -38,4 +41,7 @@ pub use rows::{
     timeline_rows,
 };
 pub use slots::{Place, Slot, SlotContent, Slots};
+pub use strip_drag::{
+    STRIP_SPACING, strip_drop, strip_gap, strip_landing, strip_lefts, strip_shift,
+};
 pub use timings::{BURST_GAP, TIMINGS_VAR, Timings};

@@ -7,7 +7,7 @@ use crate::Command;
 /// Os comandos que a barra de cima chama, da esquerda para a direita (JE-B9).
 pub const BAR_COMMANDS: [Command; 4] = [
     Command::CloseAlbum,
-    Command::TogglePhotos,
+    Command::ToggleStrips,
     Command::TogglePanel,
     Command::Export,
 ];
@@ -17,8 +17,11 @@ pub const BAR_COMMANDS: [Command; 4] = [
 pub fn bar_tip(command: Command, open: bool) -> String {
     let action = match command {
         Command::CloseAlbum => "Início: fechar o álbum",
-        Command::TogglePhotos if open => "Esconder fotos",
-        Command::TogglePhotos => "Mostrar fotos",
+        Command::TogglePhotos if open => "Esconder fotografias",
+        Command::TogglePhotos => "Mostrar fotografias",
+        // O botão das faixas de baixo (spec FX, regra 8).
+        Command::ToggleStrips if open => "Esconder as faixas de baixo",
+        Command::ToggleStrips => "Mostrar as faixas de baixo",
         Command::TogglePanel if open => "Esconder painel",
         Command::TogglePanel => "Mostrar painel",
         Command::Export => "Exportar",

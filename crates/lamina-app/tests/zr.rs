@@ -15,17 +15,17 @@ fn ui(file: &str) -> String {
 
 #[test]
 fn zr_b1_balao_na_janela_e_linha_de_ajuda_na_destacada() {
+    // Desde a spec BO, os botões moram na barra de cima e a paleta destacada saiu: o balão vale
+    // sempre, e os comandos de Alinhar, Igualar e Distribuir viraram menus (BO-B4).
     let palette = ui("palette.slint");
+    assert!(palette.contains("    Tip {"), "o balão, dentro da janela");
     assert!(
-        palette.contains("if !PaletteUi.detached: Tip {"),
-        "o balão, dentro da janela"
+        !palette.contains("detached"),
+        "não há mais paleta destacada"
     );
-    assert!(
-        palette.contains("if PaletteUi.detached: Text {"),
-        "a linha, na destacada"
-    );
-    // As dicas vêm do editor, uma por botão, na ordem da paleta.
-    let used: Vec<usize> = palette
+    let bar = ui("organize.slint");
+    // As dicas das ferramentas e do zoom vêm do editor, uma por botão, na ordem da paleta.
+    let used: Vec<usize> = bar
         .split("tip: ")
         .skip(1)
         .filter_map(|p| p.split(';').next()?.trim().parse().ok())
@@ -33,7 +33,12 @@ fn zr_b1_balao_na_janela_e_linha_de_ajuda_na_destacada() {
     let mut sorted = used.clone();
     sorted.sort_unstable();
     sorted.dedup();
-    assert_eq!(sorted, (0..PALETTE_BUTTONS.len()).collect::<Vec<_>>());
+    assert_eq!(sorted, (0..9).collect::<Vec<_>>());
+    assert_eq!(
+        PALETTE_BUTTONS.len(),
+        20,
+        "os outros 11 são as linhas dos menus"
+    );
     // O atraso do balão é o da tabela do editor.
     let widgets = ui("widgets.slint");
     assert!(widgets.contains(&format!("interval: {TIP_DELAY_MS}ms;")));

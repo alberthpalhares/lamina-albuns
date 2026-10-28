@@ -29,7 +29,18 @@ export component StripHeader inherits Rectangle {
         padding-left: 10px;
         padding-right: 8px;
         spacing: 8px;
-        Text { text: root.open ? "▾" : "▸"; color: Theme.muted; font-size: 12px; vertical-alignment: center; }
+        // A seta é um desenho nosso: a fonte da janela não tem "▾" e "▸" (apareciam quadradinhos).
+        VerticalLayout {
+            alignment: center;
+            Image {
+                accessible-role: none;
+                width: 12px;
+                height: 12px;
+                source: @image-url("../icons/eg/seta-baixo.svg");
+                colorize: Theme.muted;
+                transform-rotation: root.open ? 0deg : -90deg;
+            }
+        }
         Text { text: root.name; color: Theme.text; font-size: 12px; font-weight: 700; vertical-alignment: center; }
         Text {
             text: root.summary;

@@ -106,6 +106,10 @@ export global RollUi {
     pure callback hit(length, length) -> RollHitData;
     // Quantos lugares a lâmina anda durante o arrasto pela alça (lâmina, vão, lâmina).
     pure callback shift(int, int, int) -> int;
+    // A barra da lâmina (spec FB, regra 7): o ponteiro perto dela (lâmina, barra ou o vão entre
+    // as duas) vai para o Rust, que a mantém 500 ms depois de ele sair.
+    callback bar-near(bool);
+    in property <bool> bar-held;
 }
 
 // Uma coluna da imagem pronta: o `source` só troca quando a versão muda (ADR 0011, decisão 4).
@@ -433,7 +437,17 @@ export component SpreadRoll inherits Rectangle {
     }
 
     // A barra da lâmina sob o mouse, 24 px acima dela.
-    property <bool> bar-on: RollUi.on && root.bar-index >= 0 && root.bar-index < RollUi.count && DragUi.kind == 0 && (root.live-hover || root.hover >= 0 || bar.touched);
+    // O vão de 2 px entre a lâmina e a barra também conta como perto (spec FB, regra 7).
+    bridge := TouchArea {
+        x: root.left(root.bar-index);
+        y: root.y0 - 2px;
+        width: RollUi.width;
+        height: 2px;
+        enabled: root.bar-index >= 0;
+    }
+    property <bool> bar-near: root.live-hover || root.hover >= 0 || bar.touched || bridge.has-hover;
+    changed bar-near => { RollUi.bar-near(self.bar-near); }
+    property <bool> bar-on: RollUi.on && root.bar-index >= 0 && root.bar-index < RollUi.count && DragUi.kind == 0 && (root.bar-near || RollUi.bar-held);
     bar := SpreadBar {
         x: root.left(root.bar-index);
         y: root.y0 - 26px;

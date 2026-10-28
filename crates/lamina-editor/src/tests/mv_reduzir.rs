@@ -65,11 +65,12 @@ fn mv_b14_a_preferencia_fica_em_janela_json() {
     let text = std::fs::read_to_string(&file).unwrap();
     let json: serde_json::Value = serde_json::from_str(&text).unwrap();
     assert_eq!(json["reduzir_movimento"], serde_json::Value::Bool(true));
-    assert_eq!(json["laminas"], serde_json::Value::Bool(false));
+    // O arquivo antigo abre a faixa Lâminas uma vez (spec FX, regra 11).
+    assert_eq!(json["laminas"], serde_json::Value::Bool(true));
     assert_eq!(json["linha_do_tempo"], serde_json::Value::Bool(true));
     // Na próxima vez, vale o que ficou gravado.
     let mut next = Editor::new();
     next.set_strips(StripsStore::load(&file));
     assert!(next.reduce_motion());
-    assert!(!next.strips().spreads);
+    assert!(next.strips().spreads);
 }
