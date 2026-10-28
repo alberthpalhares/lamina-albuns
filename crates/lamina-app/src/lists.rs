@@ -101,7 +101,9 @@ impl<K: PartialEq, V: PartialEq, T: Clone + 'static> Synced<K, V, T> {
 /// As listas da janela que mudam linha a linha e a chave dos cartões da faixa de layouts.
 pub struct Lists {
     pub strip: Synced<lamina_core::SpreadId, lamina_editor::motion::StripRow, crate::SpreadData>,
-    pub line: Synced<lamina_editor::motion::TimelineKey, usize, crate::TimelineItem>,
+    /// A linha do tempo: a chave, e a lâmina e a posição de cada item (a posição muda o `x` dele;
+    /// sem ela, um item que só andou ficava no lugar antigo, spec SQ).
+    pub line: Synced<lamina_editor::motion::TimelineKey, (usize, usize), crate::TimelineItem>,
     pub browser: Synced<lamina_core::PhotoId, lamina_editor::motion::PhotoRow, crate::PhotoData>,
     /// Os cartões da faixa mostrados agora (MV-B17, FL-B12): igual, não são refeitos.
     pub panel: Option<lamina_editor::motion::PanelKey>,

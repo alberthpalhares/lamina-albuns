@@ -43,7 +43,10 @@ pub fn run_command(app: &Shared, command: Command) {
         Command::Open => files::request(&mut a, Pending::Open),
         Command::OpenExample => files::request(&mut a, Pending::Example),
         Command::CloseAlbum => files::request(&mut a, Pending::CloseAlbum),
+        // Como o X da janela: pergunta antes se há alterações (spec SA).
+        Command::Quit => files::request(&mut a, Pending::Close),
         Command::ClearRecents => crate::recents::ask_clear(&a),
+        Command::ClearAllPhotos | Command::DeleteAllSpreads => crate::clear_all::ask(&a, command),
         Command::Save => {
             files::save(&mut a, false, |_, _| {});
         }

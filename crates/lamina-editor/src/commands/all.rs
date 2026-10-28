@@ -5,7 +5,7 @@ use super::Command;
 
 impl Command {
     /// Todos os comandos, na ordem em que a IA e os testes os veem.
-    pub const ALL: [Command; 103] = [
+    pub const ALL: [Command; 106] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
@@ -36,6 +36,8 @@ impl Command {
         Command::NewSpreadFromSelection,
         Command::NewSpread,
         Command::DeleteSpread,
+        Command::ClearAllPhotos,
+        Command::DeleteAllSpreads,
         Command::MoveSpreadLeft,
         Command::MoveSpreadRight,
         Command::CropMode,
@@ -60,6 +62,7 @@ impl Command {
         Command::OpenLogs,
         Command::OpenExample,
         Command::CloseAlbum,
+        Command::Quit,
         Command::ClearRecents,
         Command::MountAlbum,
         Command::ToggleReduceMotion,

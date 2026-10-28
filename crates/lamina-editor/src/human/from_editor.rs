@@ -48,6 +48,11 @@ impl Human for EditorError {
                     spread + 1
                 ),
             ),
+            EditorError::LastPhoto { spread } => (
+                format!("A lâmina {} ficaria sem fotos.", spread + 1),
+                "Leve outra foto para ela antes, ou apague a lâmina se não precisa mais dela."
+                    .to_owned(),
+            ),
             EditorError::NoFrame => return bug(details),
             EditorError::Media(e) => return e.human(),
             EditorError::Build(e) => return e.human(),

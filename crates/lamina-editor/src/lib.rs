@@ -81,6 +81,7 @@ pub mod respec;
 pub mod roll_image;
 pub mod rulers;
 pub mod screens;
+pub mod sequence;
 pub mod session;
 pub mod shortcuts;
 pub mod sliders;

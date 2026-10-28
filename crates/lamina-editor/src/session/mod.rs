@@ -147,6 +147,11 @@ impl Session {
         true
     }
 
+    /// Volta para a posição 0, que vale também num álbum sem lâminas (spec LL).
+    pub(crate) fn rewind(&mut self) {
+        self.current = 0;
+    }
+
     /// "3 lâminas (6 páginas) · 12 de 12 fotos usadas".
     pub fn counter(&self) -> String {
         let project = self.project();

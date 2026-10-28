@@ -128,6 +128,18 @@ impl Command {
                 Menu::Spread,
                 Some(S::ctrl_key(Key::Delete)),
             ),
+            C::ClearAllPhotos => (
+                "lamina.tirar-todas-as-fotos",
+                "Tirar as fotos de todas as lâminas…",
+                Menu::Spread,
+                None,
+            ),
+            C::DeleteAllSpreads => (
+                "lamina.apagar-todas",
+                "Apagar todas as lâminas…",
+                Menu::Spread,
+                None,
+            ),
             C::MoveSpreadLeft => (
                 "lamina.mover-esquerda",
                 "Mover lâmina para a esquerda",

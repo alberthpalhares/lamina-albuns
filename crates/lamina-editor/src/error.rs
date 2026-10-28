@@ -40,4 +40,7 @@ pub enum EditorError {
     /// Acrescentar uma foto que já está na lâmina (spec ML, regra 9).
     #[error("Esta foto já está na lâmina {}.", spread + 1)]
     AlreadyInSpread { spread: usize },
+    /// Levar embora a única foto da lâmina pela Sequência (spec SQ, regra 5).
+    #[error("A lâmina {} ficaria sem fotos.", spread + 1)]
+    LastPhoto { spread: usize },
 }

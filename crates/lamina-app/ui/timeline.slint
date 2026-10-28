@@ -1,5 +1,6 @@
 // Linha do tempo (spec FQ, regra 8): as fotos na ordem do álbum e um corte entre as lâminas.
-// Arrastar um corte leva fotos de uma lâmina para a vizinha. Só os itens perto da parte visível
+// Arrastar um corte leva fotos de uma lâmina para a vizinha; arrastar uma foto a leva para outra
+// lâmina ou muda a ordem dela (spec SQ). Só os itens perto da parte visível
 // existem na tela (spec RL, regra 22; PF, seção 10): o Rust dá a posição de cada um e a largura
 // toda, e troca os itens quando a rolagem passa de um trecho para outro.
 
@@ -17,11 +18,24 @@ export struct TimelineItem {
     spread: int,
     // A posição na linha inteira.
     x: length,
+    // A posição na lista inteira da Sequência (o editor acha a foto por ela; spec SQ).
+    row: int,
 }
 
 export component TimelineStrip inherits Rectangle {
     in property <[TimelineItem]> timeline;
     callback cut-moved(int, int);
+    // Arrastar uma foto (spec SQ): o x da linha de entrada para o ponteiro e o soltar.
+    pure callback seq-marker(length) -> length;
+    callback seq-drop(int, length);
+    // A foto levantada: o ponteiro na linha inteira, a miniatura, a posição e se está na faixa.
+    property <length> seq-x;
+    property <image> seq-img;
+    property <int> seq-row: -1;
+    property <bool> seq-inside: true;
+    property <bool> seq-on: DragUi.kind == 5 && !DragUi.cancel;
+    // O ponteiro dentro da parte visível, para rolar sozinho perto das bordas (spec FX, regra 4).
+    property <length> seq-view-x: root.seq-x + line-scroll.content-x;
     // Clique numa foto: vai para a lâmina dela (spec RL, regra 22).
     callback go-to(int);
     callback focus-main();
@@ -114,11 +128,40 @@ export component TimelineStrip inherits Rectangle {
                 source: t.img;
                 image-fit: contain;
             }
+            // Clique vai para a lâmina; depois de 6 px a foto levanta e segue o mouse (spec SQ).
             TouchArea {
                 visible: !t.cut;
-                clicked => {
-                    root.go-to(t.spread);
-                    root.focus-main();
+                pointer-event(e) => {
+                    if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
+                        DragUi.press-x = self.absolute-position.x + self.mouse-x;
+                        DragUi.press-y = self.absolute-position.y + self.mouse-y;
+                        DragUi.cancel = false;
+                    }
+                    if (e.kind == PointerEventKind.move && self.pressed) {
+                        if (DragUi.kind == 0 && DragUi.far(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y)) {
+                            DragUi.kind = 5;
+                            root.seq-img = t.img;
+                            root.seq-row = t.row;
+                        }
+                        if (DragUi.kind == 5) {
+                            root.seq-x = t.x + self.mouse-x;
+                            root.seq-inside = self.mouse-y > -12px && self.mouse-y < line-scroll.height;
+                        }
+                    }
+                    if (e.button == PointerEventButton.left && e.kind == PointerEventKind.up) {
+                        if (DragUi.kind == 5) {
+                            // Esc ou soltar fora da faixa: desiste.
+                            if (!DragUi.cancel && root.seq-inside) {
+                                root.seq-drop(root.seq-row, root.seq-x);
+                            }
+                            DragUi.kind = 0;
+                            DragUi.cancel = false;
+                            root.seq-row = -1;
+                        } else {
+                            root.go-to(t.spread);
+                        }
+                        root.focus-main();
+                    }
                 }
             }
             Rectangle {
@@ -143,6 +186,36 @@ export component TimelineStrip inherits Rectangle {
                     background: cut-touch.has-hover || cut-touch.pressed ? Theme.selected : Theme.muted;
                 }
             }
+        }
+        // Fora do `for` (spec RL, regra 31): a linha de onde a foto entra e a miniatura levantada.
+        if root.seq-on && root.seq-inside: Rectangle {
+            x: root.seq-marker(root.seq-x) - 1.5px;
+            y: 2px;
+            width: 3px;
+            height: line-scroll.height - 4px;
+            border-radius: 1.5px;
+            background: Theme.selected;
+        }
+        if root.seq-on: Image {
+            accessible-role: none;
+            x: root.seq-x - 22px;
+            y: 7px;
+            width: 44px;
+            height: 44px;
+            source: root.seq-img;
+            image-fit: contain;
+            opacity: root.seq-inside ? 0.85 : 0.4;
+        }
+    }
+    // Perto das bordas, a faixa rola sozinha com a foto levantada; o ponteiro fica parado na tela.
+    Timer {
+        interval: 16ms;
+        running: root.seq-on && (root.seq-view-x < 40px || root.seq-view-x > line-scroll.visible-width - 40px);
+        triggered => {
+            let step = root.seq-view-x < 40px ? 8px : -8px;
+            let to = max(line-scroll.visible-width - RollUi.line-w, min(0px, line-scroll.content-x + step));
+            root.seq-x = root.seq-x - (to - line-scroll.content-x);
+            line-scroll.content-x = to;
         }
     }
 }

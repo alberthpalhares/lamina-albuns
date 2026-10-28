@@ -43,6 +43,7 @@ impl Command {
                 Menu::File,
                 Some(S::ctrl('w')),
             ),
+            C::Quit => ("arquivo.sair", "Sair", Menu::File, Some(S::ctrl('q'))),
             C::ClearRecents => (
                 "arquivo.limpar-recentes",
                 "Limpar recentes não fixados…",

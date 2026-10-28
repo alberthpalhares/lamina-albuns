@@ -68,6 +68,8 @@ pub(super) fn is_dialog(command: Command) -> bool {
             | C::ToggleBeta
             | C::SendFeedback
             | C::OpenLogs
+            // Sair fecha o programa: só pela janela (spec SA).
+            | C::Quit
     )
 }
 

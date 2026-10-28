@@ -12,6 +12,7 @@ mod band;
 mod browser;
 mod build_album;
 mod calibrate;
+mod clear_all;
 mod context;
 mod convert;
 mod crop;
@@ -137,6 +138,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     models::connect(window, app);
     history::connect(window, app);
     recents::connect(window, app);
+    clear_all::connect(window, app);
     importing::connect(window, app);
     calibrate::connect(window, app);
     roll_connect::connect(window, app);

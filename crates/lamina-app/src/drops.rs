@@ -165,6 +165,34 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         let changed = usize::try_from(k).is_ok_and(|k| app.editor.drag_cut(k, delta));
         after_edit(&mut app, changed);
     });
+    connect_sequence(window, app);
+}
+
+/// A foto arrastada na Sequência (spec SQ): a linha de onde ela entra, pelo editor, e o soltar.
+/// Uma recusa mostra o aviso dela.
+fn connect_sequence(window: &AppWindow, app: &Shared) {
+    let a = app.clone();
+    window.on_seq_marker(move |x| {
+        // Uma conta da tela no meio de outra edição: a linha fica fora de vista.
+        let at = a
+            .try_borrow()
+            .ok()
+            .and_then(|app| app.editor.sequence_target(f64::from(x)));
+        // Pixels da faixa cabem com folga em f32.
+        #[allow(clippy::cast_possible_truncation)]
+        at.map_or(-100.0, |(_, line)| line as f32)
+    });
+    let a = app.clone();
+    window.on_seq_drop(move |row, x| {
+        let mut app = a.borrow_mut();
+        let changed =
+            usize::try_from(row).is_ok_and(|row| app.editor.sequence_drop(row, f64::from(x)));
+        if changed {
+            app.refresh_all();
+        } else {
+            app.refresh_current();
+        }
+    });
 }
 
 /// A lâmina `from` solta no vão `gap` (da faixa ou da alça do rolo): o vão vira a posição final
@@ -187,25 +215,91 @@ pub fn refresh_timeline(app: &mut App) {
     let rows = timeline_rows(&project);
     let mut items: Vec<TimelineItem> = rows
         .iter()
-        .map(|(key, spread)| {
+        .enumerate()
+        .map(|(i, (key, spread))| {
             let spread = i32::try_from(*spread).unwrap_or(0);
+            let row = i32::try_from(i).unwrap_or(-1);
             match key {
                 TimelineKey::Photo(id, _) => TimelineItem {
                     img: thumbs.get(id).cloned().unwrap_or_default(),
                     cut: false,
                     spread,
                     x: 0.0,
+                    row,
                 },
                 TimelineKey::Cut(_) => TimelineItem {
                     img: slint::Image::default(),
                     cut: true,
                     spread,
                     x: 0.0,
+                    row,
                 },
             }
         })
         .collect();
     crate::line_window::place(&mut items);
-    app.lists.line.sync(rows, |i| items[i].clone());
+    app.lists
+        .line
+        .sync(with_position(rows), |i| items[i].clone());
     crate::roll_connect::refresh_line(app);
+}
+
+/// As linhas da Sequência com a posição de cada uma junto da lâmina: um item que só andou (a foto
+/// levada para outra lâmina empurra os do meio) também é regravado, com o `x` novo (spec SQ).
+fn with_position<K>(rows: Vec<(K, usize)>) -> Vec<(K, (usize, usize))> {
+    rows.into_iter()
+        .enumerate()
+        .map(|(i, (key, spread))| (key, (spread, i)))
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use slint::Model;
+
+    use super::*;
+    use crate::lists::Synced;
+
+    /// A linha da tela para estas chaves (um algarismo é o corte depois daquela lâmina), com as
+    /// posições já calculadas.
+    fn line(keys: &str) -> (Vec<(char, usize)>, Vec<TimelineItem>) {
+        let mut spread = 0;
+        let rows: Vec<(char, usize)> = keys
+            .chars()
+            .map(|k| {
+                let row = (k, spread);
+                if k.is_ascii_digit() {
+                    spread += 1;
+                }
+                row
+            })
+            .collect();
+        let mut items: Vec<TimelineItem> = rows
+            .iter()
+            .map(|(k, s)| TimelineItem {
+                cut: k.is_ascii_digit(),
+                spread: i32::try_from(*s).unwrap_or(0),
+                ..TimelineItem::default()
+            })
+            .collect();
+        crate::line_window::place(&mut items);
+        (rows, items)
+    }
+
+    #[test]
+    fn foto_levada_para_outra_lamina_regrava_quem_andou() {
+        let mut list: Synced<char, (usize, usize), TimelineItem> = Synced::new();
+        let (rows, items) = line("ab0cd1e");
+        list.sync(with_position(rows), |i| items[i].clone());
+        // "b" vai para o meio da lâmina 2: o corte e o "c" andam uma vaga para a esquerda.
+        let (rows, items) = line("a0cbd1e");
+        list.sync(with_position(rows), |i| items[i].clone());
+        let model = list.model();
+        let got: Vec<f32> = (0..model.row_count())
+            .filter_map(|i| model.row_data(i))
+            .map(|t| t.x)
+            .collect();
+        let want: Vec<f32> = items.iter().map(|t| t.x).collect();
+        assert_eq!(got, want, "cada item no x novo");
+    }
 }

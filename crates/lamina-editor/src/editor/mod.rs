@@ -20,6 +20,7 @@ mod backup;
 mod band;
 mod bottom_strips;
 mod build_album;
+mod clear_all;
 mod clipboard;
 mod context;
 mod crop;
@@ -48,6 +49,7 @@ mod photo_style;
 mod recents;
 mod rename;
 mod report;
+mod sequence_move;
 mod style;
 mod text_edit;
 

@@ -229,6 +229,7 @@ fn editor() -> Vec<Sample> {
             capacity: 24,
         },
         EditorError::AlreadyInSpread { spread: 4 },
+        EditorError::LastPhoto { spread: 2 },
     ];
     let models = vec![
         ModelError::EmptyName,

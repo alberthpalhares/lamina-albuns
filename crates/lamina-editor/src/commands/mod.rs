@@ -56,6 +56,9 @@ pub enum Command {
     NewSpreadFromSelection,
     NewSpread,
     DeleteSpread,
+    /// Limpar as lâminas (spec LL): tirar as fotos de todas e apagar todas; a janela pergunta.
+    ClearAllPhotos,
+    DeleteAllSpreads,
     MoveSpreadLeft,
     MoveSpreadRight,
     CropMode,
@@ -81,6 +84,8 @@ pub enum Command {
     OpenExample,
     /// Fechar o álbum e voltar à tela inicial (spec TI, regra 6).
     CloseAlbum,
+    /// Sair do Lamina pelo menu Arquivo, como o X da janela (spec SA).
+    Quit,
     ClearRecents,
     /// A etapa 2 do Novo projeto para o álbum aberto (spec NP, regra 11).
     MountAlbum,
