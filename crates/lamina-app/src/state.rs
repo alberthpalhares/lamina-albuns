@@ -69,6 +69,8 @@ pub struct App {
     pub(crate) images: Images,
     /// Foto original sendo carregada para o modo recorte.
     pub(crate) loading: Option<PhotoId>,
+    /// O último clique foi na grade de fotos: o Delete tira do álbum (spec TF, regra 2).
+    pub grid_focus: bool,
     /// Fecha o gesto de zoom da roda depois de uma pausa (spec RC, regra 4).
     pub(crate) crop_timer: slint::Timer,
     /// A medição de `LAMINA_TEMPOS=1` (spec MV, seção 4).
@@ -131,6 +133,7 @@ impl App {
             updater: crate::updates::Shared::default(),
             images,
             loading: None,
+            grid_focus: false,
             crop_timer: crate::crop::timer(),
             clock: crate::timings::Clock::default(),
             lists: crate::lists::Lists::new(window),

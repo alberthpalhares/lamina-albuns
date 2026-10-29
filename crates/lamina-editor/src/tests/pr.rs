@@ -164,6 +164,7 @@ fn custom(name: &str) -> Preset {
             space: ColorSpace::AdobeRgb,
             pages: false,
         },
+        lab: None,
     }
 }
 

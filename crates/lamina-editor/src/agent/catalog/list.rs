@@ -1,9 +1,9 @@
 //! A lista das ferramentas, na ordem da spec IA (seção 3): as do IA-M1 e depois as do IA-M2.
 
 use super::super::calls::{
-    ApplyLayout, BuildAlbumCall, BuildSpread, ExportCall, FrameArg, ListPhotos, MovePhoto,
-    MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, PlacePhoto, Position, RenameAlbum, RunCommand,
-    SaveAlbum, SpreadArg, Steps, SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
+    ApplyLayout, BuildAlbumCall, BuildSpread, ExportCall, FrameArg, LeaveAlbum, ListPhotos,
+    MovePhoto, MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, PlacePhoto, Position, RenameAlbum,
+    RunCommand, SaveAlbum, SpreadArg, Steps, SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
 };
 use super::super::params::{
     AddText, CropCall, EditText, LookCall, RelinkCall, RespecCall, SaveModel, UseModel,
@@ -89,6 +89,12 @@ fn first_part() -> Vec<ToolInfo> {
             "tirar_foto",
             "Tira a foto com o quadro e refaz o layout da página ou da lâmina para as fotos que \
              restaram (sem fotos, a lâmina fica em branco).",
+        ),
+        info::<LeaveAlbum>(
+            "tirar_do_album",
+            "Tira as fotos do álbum: saem da lista de fotos e de todas as lâminas, que são \
+             refeitas. O arquivo continua no computador. Confirme com o fotógrafo antes, se \
+             alguma foto estiver em lâmina.",
         ),
         info::<BuildSpread>(
             "montar_lamina",

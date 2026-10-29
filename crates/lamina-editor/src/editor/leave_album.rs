@@ -1,0 +1,48 @@
+//! Tirar fotos do álbum pela grade (spec TF): uma edição que Ctrl+Z desfaz inteira (regra 6).
+
+use lamina_core::PhotoId;
+
+use super::Editor;
+use crate::leaving::{leave_label, remove_from_album, used_in_spreads};
+
+impl Editor {
+    /// O arquivo da foto no disco (relativo à pasta do álbum, se o álbum tem arquivo).
+    pub fn photo_file(&self, id: PhotoId) -> Option<std::path::PathBuf> {
+        let session = self.session.as_ref()?;
+        let photo = session.project().photo(id).ok()?;
+        Some(match session.file().and_then(|f| f.parent()) {
+            Some(dir) => dir.join(&photo.path),
+            None => photo.path.clone(),
+        })
+    }
+
+    /// Quantas das fotos estão em lâminas (para a pergunta da regra 4).
+    pub fn photos_in_spreads(&self, photos: &[PhotoId]) -> usize {
+        self.session
+            .as_ref()
+            .map_or(0, |s| used_in_spreads(s.project(), photos))
+    }
+
+    /// Tira as fotos do álbum e das lâminas, numa edição só; a seleção perde essas fotos.
+    pub fn remove_from_album(&mut self, photos: &[PhotoId]) -> bool {
+        if photos.is_empty() {
+            return false;
+        }
+        self.exit_crop();
+        let Some(session) = self.session.as_mut() else {
+            return false;
+        };
+        let label = leave_label(photos.len());
+        match session.edit(&label, |p| remove_from_album(p, photos)) {
+            Ok(()) => {
+                self.selection.retain(|id| !photos.contains(id));
+                self.selected_frame = None;
+                true
+            }
+            Err(e) => {
+                self.report(&e);
+                false
+            }
+        }
+    }
+}

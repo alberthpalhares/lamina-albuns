@@ -56,4 +56,7 @@ pub enum EditorError {
     /// Levar embora a única foto da lâmina pela Sequência (spec SQ, regra 5).
     #[error("A lâmina {} ficaria sem fotos.", spread + 1)]
     LastPhoto { spread: usize },
+    /// "Mostrar no Explorador" de uma foto cujo arquivo sumiu (spec TF, seção 6).
+    #[error("O arquivo {0} não existe mais.")]
+    PhotoFileMissing(String),
 }

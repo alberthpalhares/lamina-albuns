@@ -35,4 +35,11 @@ impl Editor {
         self.strips.strips.format = format;
         self.save_strips();
     }
+
+    /// O tamanho do último álbum criado (nome do preset e laboratório), marcado na próxima vez
+    /// (spec ET, regra 1); nenhum = um tamanho personalizado.
+    pub fn remember_size(&mut self, size: Option<(String, Option<String>)>) {
+        self.strips.strips.last_size = size;
+        self.save_strips();
+    }
 }

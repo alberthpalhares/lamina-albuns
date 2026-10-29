@@ -144,6 +144,7 @@ pub fn connect(window: &AppWindow, app: &Shared) {
             "Selecionar quadro",
             |app| {
                 // Fora dos quadros desmarca (no modo organizar, todos).
+                app.grid_focus = false;
                 match usize::try_from(i) {
                     Ok(frame) => app.editor.select_frame(Some(frame)),
                     Err(_) => app.editor.click_nothing(),

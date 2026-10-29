@@ -26,6 +26,7 @@ mod error;
 mod export;
 mod frames;
 mod layout;
+mod leave;
 mod listing;
 mod look;
 mod lookup;
@@ -46,9 +47,9 @@ mod values;
 pub use album::SPREADS_NEED_BUILD;
 pub use calls::{
     ApplyLayout, BuildAlbumCall, BuildSpread, ColorArg, ExportCall, FormatArg, FrameArg,
-    ListPhotos, MovePhoto, MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, OrderArg, PartArg,
-    PhotoFilter, PlacePhoto, Position, RenameAlbum, RunCommand, SaveAlbum, SpreadArg, Steps,
-    SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
+    LeaveAlbum, ListPhotos, MovePhoto, MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, OrderArg,
+    PartArg, PhotoFilter, PlacePhoto, Position, RenameAlbum, RunCommand, SaveAlbum, SpreadArg,
+    Steps, SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
 };
 pub use catalog::{ToolCall, ToolInfo, tools};
 pub use error::ToolError;
@@ -158,6 +159,7 @@ impl Agent {
             ToolCall::SwapPhotos(a) => self.swap(editor, &a),
             ToolCall::MovePhoto(a) => self.move_photo(editor, &a),
             ToolCall::ClearFrame(a) => self.clear(editor, &a),
+            ToolCall::LeaveAlbum(a) => self.leave_album(editor, &a),
             ToolCall::BuildSpread(a) => self.build_spread(editor, &a),
             ToolCall::BuildAlbum(a) => self.build_album(editor, &a, progress),
             ToolCall::NewSpread(a) => self.new_spread(editor, a.posicao),

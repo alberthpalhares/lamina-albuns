@@ -11,6 +11,8 @@ export struct FormatCard {
     label: string,
     // Largura ÷ altura da página.
     aspect: float,
+    // Há tamanho deste formato no laboratório do filtro (spec ET, regra 4).
+    enabled: bool,
 }
 
 // A lâmina aberta em frações do canvas (corte + sangria).
@@ -36,9 +38,18 @@ export global NewProjectUi {
     in property <int> mode;
     // Etapa 1.
     in-out property <int> tab;
+    // Filtro por laboratório (spec ET, regra 4): "Todos", os laboratórios e o convite; vazio sem
+    // laboratórios.
+    in property <[string]> labs;
+    in-out property <int> lab;
     in property <[FormatCard]> formats;
     in-out property <int> format;
     in property <[string]> sizes;
+    // O tamanho marcado no seletor; −1 com medidas personalizadas.
+    in property <int> size: -1;
+    in property <string> short-summary;
+    // "Ajustes da gráfica" aberto no Personalizado (spec ET, regra 6).
+    in-out property <bool> advanced-open;
     in property <string> label;
     in-out property <int> unit: 1;
     in-out property <bool> open-spread;
@@ -86,6 +97,7 @@ export global NewProjectUi {
     in property <int> photos;
     in property <string> suggestion;
     in property <string> create-error;
+    callback pick-lab(int);
     callback pick-format(int);
     callback pick-size(int);
     callback unit-changed(int);
@@ -167,18 +179,20 @@ component SpreadDrawing inherits Rectangle {
     }
 }
 
-// Um cartão de formato: o desenho de uma lâmina aberta na proporção, com a dobra no meio.
+// Um cartão de formato: o desenho de uma lâmina aberta na proporção, com a dobra no meio. Apagado
+// quando o laboratório do filtro não tem esse formato (spec ET, regra 4).
 component FormatButton inherits Rectangle {
     in property <FormatCard> card;
     in property <bool> chosen;
     callback clicked();
-    width: 150px;
-    height: 120px;
+    width: 132px;
+    height: 108px;
     border-radius: 6px;
-    background: root.chosen ? #3d4a5a : (touch.has-hover ? #3a3a3a : #2a2a2a);
+    opacity: root.card.enabled ? 1 : 0.35;
+    background: root.chosen ? #3d4a5a : (touch.has-hover && root.card.enabled ? #3a3a3a : #2a2a2a);
     border-width: root.chosen ? 2px : 0px;
     border-color: #4f8fd6;
-    property <length> box: 90px;
+    property <length> box: 80px;
     property <float> spread: 2 * root.card.aspect;
     Rectangle {
         y: 12px;
@@ -188,67 +202,97 @@ component FormatButton inherits Rectangle {
         background: #e6e6e6;
         Rectangle { x: parent.width / 2 - 0.5px; width: 1px; background: #707070; }
     }
-    Text { y: parent.height - 26px; width: parent.width; text: root.card.label; color: Theme.text; horizontal-alignment: center; }
-    touch := TouchArea { clicked => { root.clicked(); } }
+    Text { y: parent.height - 24px; width: parent.width; text: root.card.label; color: Theme.text; horizontal-alignment: center; }
+    touch := TouchArea {
+        enabled: root.card.enabled;
+        clicked => { root.clicked(); }
+    }
 }
 
-component StepOne inherits VerticalLayout {
-    spacing: 10px;
+// Tamanhos prontos (spec ET): o filtro por laboratório, os três formatos e o tamanho escolhido.
+component ReadySizes inherits VerticalLayout {
+    spacing: 14px;
+    if NewProjectUi.labs.length > 0: HorizontalLayout {
+        spacing: 8px;
+        Label { text: "Laboratório"; width: 90px; }
+        ComboBox {
+            width: 260px;
+            model: NewProjectUi.labs;
+            current-index <=> NewProjectUi.lab;
+            selected => { NewProjectUi.pick-lab(self.current-index); }
+        }
+        Rectangle { horizontal-stretch: 1; }
+    }
+    HorizontalLayout {
+        spacing: 10px;
+        for card[i] in NewProjectUi.formats: FormatButton {
+            card: card;
+            chosen: NewProjectUi.format == i;
+            clicked => { NewProjectUi.pick-format(i); }
+        }
+        Rectangle { horizontal-stretch: 1; }
+    }
     HorizontalLayout {
         spacing: 8px;
-        Button { text: "Formatos"; primary: NewProjectUi.tab == 0; clicked => { NewProjectUi.tab = 0; } }
-        Button { text: "Personalizado"; primary: NewProjectUi.tab == 1; clicked => { NewProjectUi.tab = 1; } }
+        Label { text: "Tamanho"; width: 90px; }
+        ComboBox {
+            width: 260px;
+            model: NewProjectUi.sizes;
+            current-index: NewProjectUi.size;
+            selected => { NewProjectUi.pick-size(self.current-index); }
+        }
+        if NewProjectUi.size < 0: Label { text: "medidas personalizadas"; }
         Rectangle { horizontal-stretch: 1; }
-        Label { text: NewProjectUi.label; }
     }
-    if NewProjectUi.tab == 0: VerticalLayout {
-        spacing: 12px;
-        HorizontalLayout {
-            spacing: 12px;
-            alignment: center;
-            for card[i] in NewProjectUi.formats: FormatButton {
-                card: card;
-                chosen: NewProjectUi.format == i;
-                clicked => { NewProjectUi.pick-format(i); }
-            }
-        }
-        HorizontalLayout {
-            spacing: 8px;
-            alignment: center;
-            for size[i] in NewProjectUi.sizes: Button { text: size; clicked => { NewProjectUi.pick-size(i); } }
+    if NewProjectUi.labs.length == 0: Button {
+        text: "Adicionar o meu laboratório…";
+        clicked => { NewProjectUi.tab = 1; NewProjectUi.advanced-open = true; }
+    }
+    Rectangle { vertical-stretch: 1; }
+}
+
+// Personalizado (spec ET, regra 6): o tamanho à vista; o resto em "Ajustes da gráfica".
+component CustomSize inherits VerticalLayout {
+    spacing: 6px;
+    HorizontalLayout {
+        spacing: 8px;
+        Label { text: "Unidade"; width: 150px; }
+        ComboBox {
+            width: 90px;
+            model: ["mm", "cm", "pol"];
+            current-index <=> NewProjectUi.unit;
+            selected => { NewProjectUi.unit-changed(self.current-index); }
         }
     }
-    if NewProjectUi.tab == 1: HorizontalLayout {
+    HorizontalLayout {
+        spacing: 8px;
+        Label { text: "Medidas de"; width: 150px; }
+        ComboBox {
+            width: 140px;
+            model: ["uma página", "lâmina aberta"];
+            current-index: NewProjectUi.open-spread ? 1 : 0;
+            selected => { NewProjectUi.open-spread = self.current-index == 1; NewProjectUi.unit-changed(NewProjectUi.unit); }
+        }
+    }
+    Field { label: "Largura"; text <=> NewProjectUi.width; edited => { NewProjectUi.size-changed(); } }
+    Field { label: "Altura"; text <=> NewProjectUi.height; edited => { NewProjectUi.size-changed(); } }
+    HorizontalLayout {
+        Button {
+            text: NewProjectUi.advanced-open ? "Esconder os ajustes da gráfica" : "Ajustes da gráfica (DPI, páginas, sangria)…";
+            clicked => { NewProjectUi.advanced-open = !NewProjectUi.advanced-open; }
+        }
+        Rectangle { horizontal-stretch: 1; }
+    }
+    if NewProjectUi.advanced-open: HorizontalLayout {
         spacing: 24px;
         VerticalLayout {
             spacing: 6px;
-            HorizontalLayout {
-                spacing: 8px;
-                Label { text: "Unidade"; width: 150px; }
-                ComboBox {
-                    width: 90px;
-                    model: ["mm", "cm", "pol"];
-                    current-index <=> NewProjectUi.unit;
-                    selected => { NewProjectUi.unit-changed(self.current-index); }
-                }
-            }
-            HorizontalLayout {
-                spacing: 8px;
-                Label { text: "Medidas de"; width: 150px; }
-                ComboBox {
-                    width: 140px;
-                    model: ["uma página", "lâmina aberta"];
-                    current-index: NewProjectUi.open-spread ? 1 : 0;
-                    selected => { NewProjectUi.open-spread = self.current-index == 1; NewProjectUi.unit-changed(NewProjectUi.unit); }
-                }
-            }
-            Field { label: "Largura"; text <=> NewProjectUi.width; edited => { NewProjectUi.size-changed(); } }
-            Field { label: "Altura"; text <=> NewProjectUi.height; edited => { NewProjectUi.size-changed(); } }
             Field { label: "DPI"; text <=> NewProjectUi.dpi; edited => { NewProjectUi.size-changed(); } }
             CheckBox { text: "Começa com página simples"; checked <=> NewProjectUi.starts; toggled => { NewProjectUi.size-changed(); } }
             CheckBox { text: "Termina com página simples"; checked <=> NewProjectUi.ends; toggled => { NewProjectUi.size-changed(); } }
             Field { label: "Páginas mínimas"; text <=> NewProjectUi.min-pages; edited => { NewProjectUi.size-changed(); } }
             Field { label: "Páginas máximas"; text <=> NewProjectUi.max-pages; edited => { NewProjectUi.size-changed(); } }
+            Button { text: "Salvar como preset…"; enabled: NewProjectUi.error == ""; clicked => { PresetUi.save-as(0); } }
         }
         VerticalLayout {
             spacing: 6px;
@@ -261,15 +305,37 @@ component StepOne inherits VerticalLayout {
             Field { label: "Cima e baixo"; text <=> NewProjectUi.safe-top; edited => { NewProjectUi.size-changed(); } }
             Field { label: "Lombada"; text <=> NewProjectUi.safe-spine; edited => { NewProjectUi.size-changed(); } }
             Button { text: "Igual em todas as bordas"; clicked => { NewProjectUi.same-margins(); } }
-            Button { text: "Salvar como preset…"; enabled: NewProjectUi.error == ""; clicked => { PresetUi.save-as(0); } }
         }
     }
-    SpreadDrawing { d: NewProjectUi.drawing; height: 190px; }
-    Text { text: NewProjectUi.summary; color: Theme.muted; horizontal-alignment: center; }
-    if NewProjectUi.error != "": Text { text: NewProjectUi.error; color: Theme.warning; horizontal-alignment: center; }
+    Rectangle { vertical-stretch: 1; }
 }
 
-// Uma explicação curta embaixo de cada opção, para quem faz o primeiro álbum.
+// A etapa 1: as duas abas à esquerda e, ao lado, o resultado (spec ET, regra 3).
+component StepOne inherits VerticalLayout {
+    spacing: 12px;
+    HorizontalLayout {
+        spacing: 8px;
+        Button { text: "Tamanhos prontos"; primary: NewProjectUi.tab == 0; clicked => { NewProjectUi.tab = 0; } }
+        Button { text: "Personalizado"; primary: NewProjectUi.tab == 1; clicked => { NewProjectUi.tab = 1; } }
+        Rectangle { horizontal-stretch: 1; }
+    }
+    HorizontalLayout {
+        spacing: 20px;
+        vertical-stretch: 1;
+        if NewProjectUi.tab == 0: ReadySizes { horizontal-stretch: 1; }
+        if NewProjectUi.tab == 1: CustomSize { horizontal-stretch: 1; }
+        VerticalLayout {
+            width: 300px;
+            spacing: 8px;
+            SpreadDrawing { d: NewProjectUi.drawing; height: 150px; }
+            Text { text: NewProjectUi.label; color: Theme.text; font-weight: 600; wrap: word-wrap; }
+            Text { text: NewProjectUi.short-summary; color: Theme.text; wrap: word-wrap; }
+            Text { text: NewProjectUi.summary; color: Theme.muted; font-size: 11px; wrap: word-wrap; }
+            if NewProjectUi.error != "": Text { text: NewProjectUi.error; color: Theme.warning; wrap: word-wrap; }
+            Rectangle { vertical-stretch: 1; }
+        }
+    }
+}
 component Hint inherits Text {
     color: Theme.muted;
     font-size: 12px;

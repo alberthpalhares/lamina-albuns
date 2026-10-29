@@ -239,6 +239,7 @@ fn editor() -> Vec<Sample> {
         },
         EditorError::AlreadyInSpread { spread: 4 },
         EditorError::LastPhoto { spread: 2 },
+        EditorError::PhotoFileMissing("D:/Fotos/IMG_0001.jpg".into()),
     ];
     let models = vec![
         ModelError::EmptyName,

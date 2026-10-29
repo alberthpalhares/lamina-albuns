@@ -7,6 +7,8 @@ import { Button, ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { SpreadData, FrameData, BoxData } from "canvas.slint";
 import { ConfirmDialog, MessageDialog, BusyOverlay, RecoverDialog, RecoverUi } from "dialogs.slint";
+import { PhotoMenuUi, RemoveAskDialog } from "photo_menu.slint";
+export { PhotoMenuUi }
 import { NewProjectDialog, NewProjectUi, FormatCard, DrawData } from "new_project.slint";
 import { ImportUi, DropOverlay } from "importing.slint";
 import { BuildUi, BuildAlbumDialog } from "build_album.slint";
@@ -404,7 +406,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(event) => {
-            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || ClearUi.show || RelinkUi.show || CalibrateUi.show || ShortcutsUi.show || NewsUi.show || BuildUi.show || RecoverUi.show || root.busy-text != "") {
+            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || ClearUi.show || RelinkUi.show || PhotoMenuUi.show-ask || CalibrateUi.show || ShortcutsUi.show || NewsUi.show || BuildUi.show || RecoverUi.show || root.busy-text != "") {
                 return reject;
             }
             // No modo organizar, Espaço segurado é a mão (spec EG, seção 3).
@@ -648,6 +650,9 @@ export component AppWindow inherits Window {
         closed => { root.focus-main(); }
     }
     if RelinkUi.show: RelinkDialog {
+        closed => { root.focus-main(); }
+    }
+    if PhotoMenuUi.show-ask: RemoveAskDialog {
         closed => { root.focus-main(); }
     }
     // Por cima de tudo na abertura, até das novidades (spec CS, regra 4).

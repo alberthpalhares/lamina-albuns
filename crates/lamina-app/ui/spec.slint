@@ -30,6 +30,9 @@ export global PresetUi {
     // Nome de um preset novo.
     in-out property <bool> show-name;
     in-out property <string> name;
+    // O laboratório do preset novo, opcional (spec ET, regra 7).
+    in-out property <string> lab;
+    in property <string> labs-text;
     in property <string> name-message;
     // Presets do fotógrafo.
     in-out property <bool> show-list;
@@ -168,7 +171,9 @@ export component PresetNameDialog inherits Shade {
             padding: 24px;
             spacing: 12px;
             Text { text: "Salvar como preset"; font-size: 16px; font-weight: 600; color: Theme.text; }
-            LineEdit { text <=> PresetUi.name; placeholder-text: "ex.: Laboratório da cidade, 30 × 30"; }
+            LineEdit { text <=> PresetUi.name; placeholder-text: "ex.: Flat 30 × 30"; }
+            LineEdit { text <=> PresetUi.lab; placeholder-text: "Laboratório (opcional)"; }
+            if PresetUi.labs-text != "": Text { text: "Já usados: " + PresetUi.labs-text; color: Theme.muted; font-size: 12px; wrap: word-wrap; }
             Text { text: PresetUi.name-message; color: Theme.warning; wrap: word-wrap; vertical-stretch: 1; }
             HorizontalLayout {
                 alignment: end;

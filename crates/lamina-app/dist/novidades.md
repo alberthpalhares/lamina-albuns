@@ -15,7 +15,7 @@ botão "Experimente agora": `<!-- imagem: atalhos.png; comando: ajuda.atalhos --
 
 ## [0.1.0-beta.7] - 2026-10-29
 
-Esta versão traz as fontes do computador nos textos, reencontra as fotos que mudaram de lugar, deixa editar os textos que já estão na lâmina e leva fotos de uma lâmina para outra pela Sequência.
+Esta versão traz as fontes do computador nos textos, reencontra as fotos que mudaram de lugar, tira fotos do álbum pela grade, simplifica a escolha do tamanho, deixa editar os textos que já estão na lâmina e leva fotos de uma lâmina para outra pela Sequência.
 
 - **As fontes do computador nos textos.** O campo Fonte da aba Quadro abre uma lista com busca: em
   cima, as 6 fontes do Lamina; embaixo, todas as fontes instaladas no seu computador, cada nome
@@ -45,6 +45,17 @@ Esta versão traz as fontes do computador nos textos, reencontra as fotos que mu
   melhor arrumação para as fotos que ficaram, sem buraco vazio. Experimente: selecione uma foto
   numa lâmina com três e aperte Delete.
   <!-- imagem: tirar-foto-refaz.png -->
+- **Tirar fotos do álbum pela grade e achar o arquivo.** Clique com o botão direito numa foto da
+  faixa Fotografias: "Tirar do álbum" tira a foto do álbum, e "Mostrar no Explorador" (no Mac,
+  "Mostrar no Finder") abre a pasta com o arquivo já selecionado. Com a grade em foco, Delete faz o
+  mesmo. Se a foto estiver numa lâmina, o Lamina pergunta antes e refaz a lâmina. O arquivo nunca
+  é apagado do computador, e Ctrl+Z desfaz tudo. Experimente: clique com o botão direito numa foto
+  da faixa Fotografias.
+- **Escolher o tamanho do álbum ficou mais simples.** No álbum novo, o tamanho do último álbum já
+  vem marcado, com o desenho da lâmina e um resumo de uma linha (tamanho, páginas, DPI e sangria)
+  ao lado. Dá para filtrar os tamanhos pelo laboratório, e no Personalizado os números da gráfica
+  ficam recolhidos em "Ajustes da gráfica". Experimente: crie um álbum novo.
+  <!-- comando: arquivo.novo -->
 - **Editar os textos que já estão na lâmina.** Um clique num texto mostra o campo dele na aba
   Quadro, mesmo com o painel escondido, e o texto fica sempre por cima das fotos. "Editar texto"
   também está no menu Lâmina e no botão direito. Experimente: clique num texto do álbum de exemplo

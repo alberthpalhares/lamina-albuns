@@ -34,6 +34,7 @@ mod group_gesture;
 mod hand;
 mod hand_frames;
 mod layouts;
+mod leave_album;
 mod models;
 mod mounting;
 mod moving;
@@ -280,7 +281,7 @@ impl Editor {
 
     /// Quais faixas estão abertas.
     pub fn strips(&self) -> Strips {
-        self.strips.strips
+        self.strips.strips.clone()
     }
 
     /// "Reduzir movimento" ligado (spec MV, regra 14).

@@ -6,6 +6,9 @@ use lamina_core::{ExportPrefs, PageLimits};
 use crate::album::SpecFields;
 use crate::presets::Preset;
 
+/// O laboratório dos presets abaixo, no filtro da etapa 1 (spec ET).
+pub const PROALBUNS: &str = "ProAlbuns";
+
 /// Os álbuns da ProAlbuns, com o nome que o laboratório usa (altura × largura da página). O
 /// arquivo que ela pede é a lâmina aberta com a sangria só em cima e embaixo: 15,2 × 40 cm no
 /// 15x20, então a página tem 20 × 15 cm e 1 mm de sangria em cima e embaixo, nada nas laterais.
@@ -33,6 +36,7 @@ pub fn proalbuns_presets() -> Vec<Preset> {
             max: Some(80),
         },
         export: ExportPrefs::default(),
+        lab: Some(PROALBUNS.to_owned()),
     })
     .collect()
 }

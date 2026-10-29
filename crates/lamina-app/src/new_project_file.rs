@@ -214,9 +214,10 @@ fn create(app: &mut App) {
     // "Montar o álbum…" começa com a variedade usada por último nesta sessão (spec BR, regra 9).
     w.global::<crate::BuildUi>().set_reuse(ui.get_reuse());
     app.wizard = None;
-    // O cartão marcado na próxima vez é o deste álbum (regra 1).
+    // O cartão e o tamanho marcados na próxima vez são os deste álbum (NP regra 1, ET regra 1).
     app.editor
         .remember_format(lamina_editor::new_project::Format::of(&wizard.size.fields));
+    app.editor.remember_size(wizard.size.chosen().cloned());
     if ui.get_no_photos() {
         match app.editor.adopt_saved(empty_album(&new), &file) {
             Ok(_) => {

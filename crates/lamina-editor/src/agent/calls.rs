@@ -203,6 +203,14 @@ pub struct BuildSpread {
     pub posicao: Option<usize>,
 }
 
+/// Fotos que saem do álbum (spec TF, regra 8).
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct LeaveAlbum {
+    /// Números das fotos (como em listar_fotos) que saem do álbum e das lâminas.
+    pub fotos: Vec<u64>,
+}
+
 #[derive(Debug, Clone, Default, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Position {

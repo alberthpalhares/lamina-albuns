@@ -20,6 +20,8 @@ pub fn connect(window: &AppWindow, app: &Shared) {
             if let Ok(index) = usize::try_from(i) {
                 app.editor.click_photo(&shown, index, ctrl, shift);
             }
+            app.grid_focus = true;
+            crate::photo_menu::refresh(app);
             true
         };
         let show = |app: &mut App| {

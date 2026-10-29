@@ -93,6 +93,12 @@ pub fn run_command(app: &Shared, command: Command) {
         Command::ToggleBeta => updates::toggle_beta(&mut a),
         Command::SendFeedback => help::send_feedback(&a),
         Command::OpenLogs => help::open_logs(&a),
+        // Delete com a grade em foco tira as fotos do álbum (spec TF, regra 2).
+        Command::ClearFrame
+            if a.grid_focus && !a.editor.organizing() && !a.editor.selection().is_empty() =>
+        {
+            crate::photo_menu::ask_remove(&mut a);
+        }
         _ => {
             // Navegar e as guias só mudam a lâmina mostrada; o resto edita o álbum e muda também
             // a faixa, a timeline e os usos no navegador.

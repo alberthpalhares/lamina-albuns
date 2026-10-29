@@ -57,6 +57,12 @@ impl Human for EditorError {
                 ),
                 "Solte a foto sobre um quadro para trocar, ou leve-a para outra lâmina.".to_owned(),
             ),
+            EditorError::PhotoFileMissing(_) => (
+                "Não achei esta foto no computador.".to_owned(),
+                "Ela pode ter sido movida ou apagada. Confira se o disco está conectado; se a foto \
+                 mudou de pasta, use Reencontrar fotos."
+                    .to_owned(),
+            ),
             EditorError::AlreadyInSpread { spread } => (
                 format!("Esta foto já está na lâmina {}.", spread + 1),
                 format!(

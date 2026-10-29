@@ -8,6 +8,7 @@ import { Theme } from "theme.slint";
 import { Motion } from "motion.slint";
 import { StripTheme } from "strip_header.slint";
 import { DragUi } from "drag.slint";
+import { PhotoMenuUi } from "photo_menu.slint";
 
 export struct PhotoData {
     img: image,
@@ -124,6 +125,11 @@ component PhotoTile inherits Rectangle {
         border-width: 2px;
         border-color: #4fc3f7;
     }
+    ContextMenuArea {
+        Menu {
+            MenuItem { title: PhotoMenuUi.remove-text; activated => { PhotoMenuUi.remove(); } }
+            MenuItem { title: PhotoMenuUi.reveal-text; activated => { PhotoMenuUi.reveal(); } }
+        }
     TouchArea {
         double-clicked => { root.double-clicked(root.index); }
         scroll-event(e) => {
@@ -145,6 +151,10 @@ component PhotoTile inherits Rectangle {
             DragUi.y = y;
         }
         pointer-event(e) => {
+            if (e.button == PointerEventButton.right && e.kind == PointerEventKind.down && !root.lit) {
+                // Botão direito numa foto fora da seleção seleciona só ela (spec TF, regra 1).
+                root.pressed(root.index, false, false);
+            }
             if (e.button == PointerEventButton.left && e.kind == PointerEventKind.down) {
                 DragUi.press-x = self.absolute-position.x + self.mouse-x;
                 DragUi.press-y = self.absolute-position.y + self.mouse-y;
@@ -159,6 +169,7 @@ component PhotoTile inherits Rectangle {
                 root.focus-main();
             }
         }
+    }
     }
 }
 

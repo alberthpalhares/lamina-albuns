@@ -14,9 +14,9 @@ use crate::human::Human as _;
 
 /// Arquivo dos presets do fotógrafo, ao lado das preferências de layout.
 pub const PRESETS_FILE: &str = "presets.json";
-/// Versão do formato do arquivo: a 2 guarda a sangria e a zona segura por borda (spec NP); a 1,
-/// lida como margens iguais nas bordas, não tinha esses campos.
-const VERSION: u32 = 2;
+/// Versão do formato do arquivo: a 3 guarda o laboratório (spec ET, regra 8); a 2, a sangria e a
+/// zona segura por borda (spec NP); a 1, lida como margens iguais nas bordas, não tinha esses campos.
+const VERSION: u32 = 3;
 
 /// Uma especificação pronta.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -29,6 +29,13 @@ pub struct Preset {
     pub limits: PageLimits,
     #[serde(rename = "exportacao", default)]
     pub export: ExportPrefs,
+    /// O laboratório do preset, só um rótulo para filtrar (spec ET); sem ele, um tamanho comum.
+    #[serde(
+        rename = "laboratorio",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub lab: Option<String>,
 }
 
 /// Os presets do Lamina (regra 1): os tamanhos padrão de mercado de cada formato, largura ×
@@ -71,6 +78,7 @@ fn common_presets() -> Vec<Preset> {
             max: Some(80),
         },
         export: ExportPrefs::default(),
+        lab: None,
     })
     .collect()
 }
@@ -147,16 +155,25 @@ impl PresetsStore {
         self.all().into_iter().find(|p| p.name == name)
     }
 
-    /// Já existe um preset do fotógrafo com esse nome (para perguntar antes de substituir)?
-    pub fn exists(&self, name: &str) -> bool {
-        self.user.iter().any(|p| p.name == name.trim())
+    /// Já existe um preset do fotógrafo com esse nome no laboratório (para perguntar antes de
+    /// substituir)? O mesmo nome em laboratórios diferentes são dois presets (spec ET, seção 6).
+    pub fn exists(&self, name: &str, lab: Option<&str>) -> bool {
+        let lab = crate::new_project::clean_lab(lab);
+        self.user
+            .iter()
+            .any(|p| p.name == name.trim() && p.lab == lab)
     }
 
     /// Salva (ou substitui) o preset e grava o arquivo (regra 2).
     pub fn save(&mut self, mut preset: Preset) -> Result<(), PresetError> {
         preset.name = preset.name.trim().to_owned();
+        preset.lab = crate::new_project::clean_lab(preset.lab.as_deref());
         check(&preset)?;
-        match self.user.iter_mut().find(|p| p.name == preset.name) {
+        match self
+            .user
+            .iter_mut()
+            .find(|p| p.name == preset.name && p.lab == preset.lab)
+        {
             Some(existing) => *existing = preset,
             None => self.user.push(preset),
         }
@@ -180,7 +197,7 @@ impl PresetsStore {
         };
         preset.name = new.trim().to_owned();
         check(&preset)?;
-        if self.exists(&preset.name) && preset.name != old {
+        if self.exists(&preset.name, preset.lab.as_deref()) && preset.name != old {
             return Err(PresetError::Exists(preset.name));
         }
         // Renomear deixa o preset no mesmo lugar da lista (auditoria do Marco 3, D5).

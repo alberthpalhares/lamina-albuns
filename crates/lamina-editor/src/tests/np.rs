@@ -21,6 +21,7 @@ fn preset(name: &str, width_cm: f64, height_cm: f64) -> Preset {
         },
         limits: lamina_core::PageLimits::default(),
         export: lamina_core::ExportPrefs::default(),
+        lab: None,
     }
 }
 
@@ -237,7 +238,8 @@ fn np_b16_presets_com_margens_por_borda() {
     new.fields = fields;
     store.save(new).unwrap();
     let text = std::fs::read_to_string(&file).unwrap();
-    assert!(text.contains("\"versao\": 2"), "{text}");
+    // A versão 3 (spec ET) só acrescentou o laboratório; as margens por borda continuam.
+    assert!(text.contains("\"versao\": 3"), "{text}");
     assert!(text.contains("\"sangria_cima_baixo_mm\": 5.0"), "{text}");
     let again = PresetsStore::load(&file);
     let saved = again.find("Novo").unwrap();
