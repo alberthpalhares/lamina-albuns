@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Formulário sem conta no GitHub
+    url: https://tally.so/r/Dq2ldl
+    about: O mesmo do Lamina (Ajuda → Enviar sugestão ou problema…), sem precisar de conta.
+  - name: Guia de instalação
+    url: https://github.com/alberthpalhares/lamina-albuns/blob/main/crates/lamina-app/dist/instalar.md
+    about: Cada clique para passar pelos avisos do Windows e do Mac.

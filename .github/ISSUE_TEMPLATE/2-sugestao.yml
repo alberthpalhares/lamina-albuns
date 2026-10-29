@@ -1,0 +1,24 @@
+name: Sugestão
+description: Uma ideia para o Lamina ficar melhor no seu dia a dia.
+labels: ["sugestão"]
+body:
+  - type: textarea
+    id: ideia
+    attributes:
+      label: O que você gostaria de fazer?
+      placeholder: Ex.: trocar a ordem das fotos de uma lâmina arrastando no painel de fotos.
+    validations:
+      required: true
+  - type: textarea
+    id: hoje
+    attributes:
+      label: Como você faz hoje?
+      description: No Lamina ou em outro programa, sem precisar dizer qual.
+  - type: dropdown
+    id: importancia
+    attributes:
+      label: Quanto isso pesa no seu trabalho?
+      options:
+        - Seria bom ter
+        - Uso toda semana
+        - Me impede de usar o Lamina

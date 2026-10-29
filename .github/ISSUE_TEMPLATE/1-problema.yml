@@ -1,0 +1,48 @@
+name: Algo deu errado
+description: O Lamina fechou, travou, exportou errado ou fez algo inesperado.
+labels: ["problema"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por avisar! **Nunca anexe fotos de clientes**: se precisar mostrar uma lâmina, use o álbum de exemplo.
+  - type: textarea
+    id: oque
+    attributes:
+      label: O que aconteceu?
+      placeholder: Ex.: ao arrastar 20 fotos para uma lâmina nova, o Lamina fechou.
+    validations:
+      required: true
+  - type: textarea
+    id: passos
+    attributes:
+      label: Como fazer acontecer de novo
+      placeholder: |
+        1. Abri o álbum de exemplo
+        2. Cliquei em…
+        3. …
+  - type: input
+    id: versao
+    attributes:
+      label: Versão do Lamina
+      description: Ajuda → Sobre o Lamina.
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: sistema
+    attributes:
+      label: Sistema
+      options:
+        - Windows 11
+        - Windows 10
+        - Mac com chip Apple (M1, M2…)
+        - Mac com Intel
+        - Linux
+    validations:
+      required: true
+  - type: textarea
+    id: registro
+    attributes:
+      label: Registro de erros
+      description: Ajuda → Abrir pasta de registros → arraste o arquivo `lamina.log` para cá.
