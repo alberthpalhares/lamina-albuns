@@ -6,7 +6,7 @@ use super::{
     session, spread_index,
 };
 use crate::Editor;
-use crate::edits::{clear_frame, place_photo, swap_photos};
+use crate::edits::{place_photo, remove_photos, spread_photos, swap_photos};
 
 impl Agent {
     pub(super) fn place(
@@ -62,9 +62,13 @@ impl Agent {
         let index = spread_index(p, a.lamina)?;
         let frame = photo_frame(p, index, a.quadro)?;
         edit_on(editor, index, "Tirar foto", |p| {
-            clear_frame(p, index, frame)
+            remove_photos(p, index, &[frame])
         })?;
-        let text = format!("Quadro {} da lâmina {} vazio.", a.quadro, a.lamina);
+        let left = spread_photos(session(editor)?.project(), index).len();
+        let text = format!(
+            "Foto do quadro {} tirada; a lâmina {} ficou com {left} foto(s), em layout novo.",
+            a.quadro, a.lamina
+        );
         self.edited(editor, index, &text)
     }
 }

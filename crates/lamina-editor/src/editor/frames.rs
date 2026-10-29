@@ -6,8 +6,8 @@ use lamina_core::{PhotoId, Project};
 use super::Editor;
 use crate::EditorError;
 use crate::edits::{
-    capacity, clear_frame, delete_spread, insert_spread, layout_with, move_cut, move_spread,
-    place_photo, swap_photos,
+    capacity, delete_spread, insert_spread, layout_with, move_cut, move_spread, place_photo,
+    remove_photos, swap_photos,
 };
 use crate::suggestions::{Selection, Unavailable};
 
@@ -140,7 +140,11 @@ impl Editor {
         let Some(frame) = self.selected_frame else {
             return false;
         };
-        self.change("Tirar foto", |p, i| clear_frame(p, i, frame))
+        let done = self.change("Tirar foto", |p, i| remove_photos(p, i, &[frame]));
+        if done {
+            self.selected_frame = None;
+        }
+        done
     }
 
     /// Enter ou clique numa opção com seleção: a lâmina atual só com as fotos dela (regra 5).

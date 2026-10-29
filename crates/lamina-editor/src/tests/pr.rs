@@ -21,8 +21,9 @@ fn pr_b1_presets_do_lamina() {
         .into_iter()
         .map(|p| p.name)
         .collect();
+    let common = &builtin_presets()[..15];
     assert_eq!(
-        names,
+        names[..15],
         [
             "Quadrado 15 × 15",
             "Quadrado 20 × 20",
@@ -42,7 +43,7 @@ fn pr_b1_presets_do_lamina() {
         ]
     );
     // Os números de cada preset, escritos aqui (auditoria do Marco 3, M5).
-    let sizes: Vec<(f64, f64)> = builtin_presets()
+    let sizes: Vec<(f64, f64)> = common
         .iter()
         .map(|p| (p.fields.width_cm, p.fields.height_cm))
         .collect();
@@ -66,7 +67,7 @@ fn pr_b1_presets_do_lamina() {
             (25.0, 30.0)
         ]
     );
-    for preset in builtin_presets() {
+    for preset in common {
         let f = &preset.fields;
         assert_eq!(
             (f.dpi, f.bleed_mm, f.safe_mm),
@@ -78,6 +79,47 @@ fn pr_b1_presets_do_lamina() {
         assert_eq!(spec.dpi().get(), 300, "{}", preset.name);
         assert_eq!((preset.limits.min, preset.limits.max), (Some(20), Some(80)));
         assert_eq!(preset.export, ExportPrefs::default());
+    }
+}
+
+#[test]
+fn pr_b12_presets_da_proalbuns() {
+    let lab: Vec<Preset> = builtin_presets()[15..].to_vec();
+    let names: Vec<&str> = lab.iter().map(|p| p.name.as_str()).collect();
+    assert_eq!(
+        names,
+        [
+            "ProAlbuns 15x20",
+            "ProAlbuns 20x15",
+            "ProAlbuns 20x20",
+            "ProAlbuns 20x25",
+            "ProAlbuns 25x20"
+        ]
+    );
+    // O arquivo da lâmina aberta, com a sangria, no tamanho que a ProAlbuns pediu (cm).
+    let files: Vec<(f64, f64)> = lab
+        .iter()
+        .map(|p| {
+            let canvas = p.fields.to_spec().unwrap().canvas_rect();
+            (canvas.height.get() / 10.0, canvas.width.get() / 10.0)
+        })
+        .collect();
+    let asked = [
+        (15.2, 40.0),
+        (20.3, 30.0),
+        (20.3, 40.0),
+        (20.3, 50.0),
+        (25.4, 40.0),
+    ];
+    for ((h, w), (ah, aw)) in files.iter().zip(asked) {
+        assert!((h - ah).abs() < 1e-9 && (w - aw).abs() < 1e-9, "{h} × {w}");
+    }
+    for preset in &lab {
+        let bleed = preset.fields.bleed();
+        assert_eq!(bleed.outer.get(), 0.0, "sem sangria nas laterais");
+        assert_eq!(bleed.inner.get(), 0.0, "nem na lombada");
+        assert_eq!(preset.fields.dpi, 300);
+        assert_eq!((preset.limits.min, preset.limits.max), (Some(20), Some(80)));
     }
 }
 

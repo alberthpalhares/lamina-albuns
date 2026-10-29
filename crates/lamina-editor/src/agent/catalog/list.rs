@@ -81,7 +81,11 @@ fn first_part() -> Vec<ToolInfo> {
             "mover_foto",
             "Leva a foto de um quadro para outra lâmina: para um quadro (enche ou troca) ou, sem              para_quadro, como uma foto a mais (o layout do destino é refeito). O quadro de origem              fica vazio.",
         ),
-        info::<FrameArg>("tirar_foto", "Esvazia um quadro de foto."),
+        info::<FrameArg>(
+            "tirar_foto",
+            "Tira a foto com o quadro e refaz o layout da página ou da lâmina para as fotos que \
+             restaram (sem fotos, a lâmina fica em branco).",
+        ),
         info::<BuildSpread>(
             "montar_lamina",
             "Cria uma lâmina nova com as fotos escolhidas, no primeiro layout da lista.",
