@@ -8,12 +8,23 @@ use lamina_editor::updates::news;
 /// As notas de cada versão, em linguagem simples.
 pub const NOTES_FILE: &str = "crates/lamina-app/dist/novidades.md";
 
+/// O repositório público, num lugar só (spec VP, regra 7).
+macro_rules! repo {
+    () => {
+        "alberthpalhares/lamina-albuns"
+    };
+}
+pub const REPO: &str = repo!();
+
 /// O guia de instalação para leigos (spec PC, regra 7), publicado no repositório público.
-pub const GUIDE_URL: &str =
-    "https://github.com/alberthpalhares/lamina-app/blob/main/crates/lamina-app/dist/instalar.md";
+pub const GUIDE_URL: &str = concat!(
+    "https://github.com/",
+    repo!(),
+    "/blob/main/crates/lamina-app/dist/instalar.md"
+);
 
 /// Onde a release guarda os arquivos (o repositório público).
-const DOWNLOAD: &str = "https://github.com/alberthpalhares/lamina-app/releases/download";
+const DOWNLOAD: &str = concat!("https://github.com/", repo!(), "/releases/download");
 
 /// As notas de qualquer versão começam com o arquivo de cada sistema, com link direto, e terminam
 /// com o guia e o caminho do formulário (spec PC, regra 9; auditoria da Fase 4, achados 1 e 3).
@@ -111,7 +122,10 @@ pub fn run(args: &[String]) -> bool {
     match checked {
         Ok(text) => {
             if let Some(file) = out
-                && let Err(e) = std::fs::write(file, with_guide(&text, tag))
+                && let Err(e) = std::fs::write(
+                    file,
+                    with_guide(&crate::vitrine::note_images(&text, tag), tag),
+                )
             {
                 eprintln!("  ✘ versao: não deu para gravar {file}: {e}");
                 return false;

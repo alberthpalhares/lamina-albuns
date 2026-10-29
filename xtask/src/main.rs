@@ -34,6 +34,7 @@ mod size;
 mod specs;
 mod speed;
 mod versao;
+mod vitrine;
 
 use std::process::{Command, ExitCode};
 
