@@ -113,11 +113,12 @@ fn tx_b13_mesma_entrada_mesmos_arquivos() {
 
 #[test]
 fn tx_b14_fonte_que_nao_existe() {
+    let _fonts = lamina_render::testing::TestFonts::none();
     let mut lobster = small_album();
     lobster.frame(0, text("Ana & Pedro", "Lobster"), [0.55, 0.3, 0.4, 0.3]);
     assert_eq!(
         messages(&lobster),
-        ["Lâmina 1: a fonte \"Lobster\" não existe nesta versão; o texto usa Inter."]
+        ["Lâmina 1: a fonte \"Lobster\" não está neste computador; o texto usa Inter."]
     );
     // Sai igual ao mesmo texto em Inter.
     let mut inter = small_album();

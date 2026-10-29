@@ -6,11 +6,10 @@ use std::rc::Rc;
 
 use lamina_core::{TextAlign, TextVAlign};
 use lamina_editor::editor::TextFocus;
-use lamina_editor::frame_form::{font_names, parse_frame, parse_size, parse_spacing};
+use lamina_editor::frame_form::{parse_frame, parse_size, parse_spacing};
 use lamina_editor::{PALETTE, TextChange};
 use slint::{Color, ComponentHandle, SharedString};
 
-use crate::convert::model;
 use crate::state::App;
 use crate::{AppWindow, FrameUi};
 
@@ -60,9 +59,8 @@ fn fill(app: &App, w: &AppWindow) {
     if ui.get_text() != t.text.as_str() {
         ui.set_text(t.text.into());
     }
-    let fonts: Vec<SharedString> = font_names().into_iter().map(Into::into).collect();
-    ui.set_fonts(model(fonts));
-    ui.set_font(t.font.and_then(|i| i32::try_from(i).ok()).unwrap_or(-1));
+    ui.set_font_missing(t.font_label != t.font);
+    ui.set_font_label(t.font_label.into());
     ui.set_size(t.size.into());
     ui.set_size_error("".into());
     ui.set_bold(t.bold);
@@ -76,7 +74,7 @@ fn fill(app: &App, w: &AppWindow) {
     ui.set_spacing_error("".into());
 }
 
-fn change(app: &Shared, change: TextChange) {
+pub(crate) fn change(app: &Shared, change: TextChange) {
     let mut app = app.borrow_mut();
     if app.editor.change_text(change) {
         app.refresh_strip();
@@ -126,15 +124,6 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     });
     let a = app.clone();
     ui.on_text_edited(move |t| change(&a, TextChange::Text(t.into())));
-    let a = app.clone();
-    ui.on_font_picked(move |i| {
-        if let Some(name) = usize::try_from(i)
-            .ok()
-            .and_then(|i| font_names().get(i).copied())
-        {
-            change(&a, TextChange::Font(name.to_owned()));
-        }
-    });
     let a = app.clone();
     let w = window.as_weak();
     ui.on_size_accepted(move |t| match parse_size(&t) {

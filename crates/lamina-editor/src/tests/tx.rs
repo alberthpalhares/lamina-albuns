@@ -368,6 +368,7 @@ fn tx_b12_ordem_dos_quadros() {
 
 #[test]
 fn tx_b14_fonte_que_nao_existe_fica_guardada() {
+    let _fonts = lamina_render::testing::TestFonts::none();
     let mut editor = empty_spread();
     editor.new_text(None);
     editor.change_text(TextChange::Font("Lobster".into()));

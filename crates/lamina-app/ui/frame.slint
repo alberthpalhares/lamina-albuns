@@ -1,7 +1,8 @@
 // A aba Quadro (spec TX, seção 3): medidas do quadro selecionado em mm e, num quadro de texto, o
 // texto e os campos dele. Só desenho: os valores e as edições vêm do editor.
 
-import { Button, CheckBox, ComboBox, LineEdit, ScrollView, TextEdit } from "std-widgets.slint";
+import { Button, CheckBox, LineEdit, ScrollView, TextEdit } from "std-widgets.slint";
+import { FontField } from "font_list.slint";
 import { Theme } from "theme.slint";
 import { LookUi, Swatches } from "look.slint";
 
@@ -16,8 +17,9 @@ export global FrameUi {
     in property <string> unit: "mm";
     in property <string> rect-error;
     in-out property <string> text;
-    in property <[string]> fonts;
-    in-out property <int> font: -1;
+    // O nome da fonte, com "(não está neste computador)" quando falta (spec FS, regra 5).
+    in property <string> font-label;
+    in property <bool> font-missing;
     in-out property <string> size;
     in property <string> size-error;
     in-out property <bool> bold;
@@ -33,7 +35,6 @@ export global FrameUi {
     in property <int> focus-count;
     callback rect-accepted();
     callback text-edited(string);
-    callback font-picked(int);
     callback size-accepted(string);
     callback bold-toggled(bool);
     callback italic-toggled(bool);
@@ -114,10 +115,10 @@ export component FramePanel inherits ScrollView {
             init => { if (FrameUi.is-text && FrameUi.focus-count > 0) { self.focus(); } }
         }
         if FrameUi.is-text: Label { text: "Fonte"; }
-        if FrameUi.is-text: ComboBox {
-            model: FrameUi.fonts;
-            current-index <=> FrameUi.font;
-            selected => { FrameUi.font-picked(self.current-index); root.done(); }
+        if FrameUi.is-text: FontField {
+            label: FrameUi.font-label;
+            missing: FrameUi.font-missing;
+            done => { root.done(); }
         }
         if FrameUi.is-text: HorizontalLayout {
             spacing: 8px;

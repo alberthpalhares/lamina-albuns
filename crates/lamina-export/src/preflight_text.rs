@@ -1,5 +1,5 @@
 //! Avisos dos quadros de texto (spec TX, seção 4): não cabe, fora da zona segura (ou na dobra),
-//! caractere que a fonte não tem e fonte que não existe nesta versão.
+//! caractere que a fonte não tem e fonte que não está neste computador (spec FS).
 
 use lamina_core::{PageSide, Project, Rect, TextBox};
 use lamina_render::check_text;

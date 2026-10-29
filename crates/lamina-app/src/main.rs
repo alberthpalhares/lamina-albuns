@@ -22,6 +22,7 @@ mod drag_motion;
 mod drops;
 mod export;
 mod files;
+mod font_list;
 mod frame_panel;
 mod ghost;
 mod grid;
@@ -135,6 +136,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     look::connect(window, app);
     hand::connect(window, app);
     frame_panel::connect(window, app);
+    font_list::connect(window, app);
     models::connect(window, app);
     history::connect(window, app);
     recents::connect(window, app);

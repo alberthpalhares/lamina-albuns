@@ -36,8 +36,9 @@ rayon = "1"
 tiny-skia = { version = "0.12", default-features = false, features = ["std", "simd"] }
 fast_image_resize = "6"
 # Texto (spec TX; ADR 0006, adendo): linhas com o `parley` e contorno das letras com o `skrifa`,
-# as mesmas versões que o Slint já usa. Sem fontes do sistema (só as embutidas).
-parley = { version = "0.11", default-features = false, features = ["std"] }
+# as mesmas versões que o Slint já usa. A feature `system` lê as fontes do computador (spec FS);
+# o Slint já compila os mesmos pacotes, e nenhum entra de novo no Cargo.lock.
+parley = { version = "0.11", default-features = false, features = ["std", "system"] }
 skrifa = "0.44"
 # Perfil de cor sRGB embutido nos JPEGs de impressão (ADR 0007).
 moxcms = "0.8"
