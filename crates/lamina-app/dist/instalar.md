@@ -17,10 +17,20 @@ são das atualizações automáticas: não precisa baixar.
 
 ## Por que o sistema avisa na primeira vez
 
-O Lamina ainda não tem a assinatura paga da Microsoft e da Apple. Por isso, na primeira vez, o
-Windows e o Mac dizem que não reconhecem o programa. **O aviso não quer dizer vírus:** o código do
-Lamina é aberto e qualquer pessoa pode conferir. Depois da instalação, as atualizações chegam
-pelo próprio Lamina, sem esse aviso.
+![Os avisos do Windows e do Mac e os cliques que liberam o Lamina](../../../site/midia/instalar.png)
+
+O Lamina não paga a assinatura de desenvolvedor da Microsoft e da Apple. Por isso, na primeira
+vez, o Windows e o Mac dizem que não reconhecem o programa. **O aviso não quer dizer vírus:** o
+código do Lamina é aberto, cada instalador é montado pelo GitHub Actions a partir dele, e cada
+versão publica o arquivo `SHA256SUMS` para você conferir o arquivo baixado (veja o fim deste
+guia). Depois da instalação, as atualizações chegam pelo próprio Lamina, sem esse aviso.
+
+Há três caminhos em cada sistema:
+
+- **Plano A, sem aviso:** o comando do fim deste guia, colado no PowerShell ou no Terminal.
+- **Plano B, pelos cliques:** baixar o arquivo e passar pelo aviso, como mostram as seções abaixo.
+- **Plano C, de reserva:** se o botão de liberar não aparecer (Windows) ou o Mac disser que o
+  Lamina está danificado.
 
 ## Windows
 
@@ -37,6 +47,11 @@ pelo próprio Lamina, sem esse aviso.
    sozinho.
 5. Nas próximas vezes, abra pelo atalho **Lamina** na área de trabalho ou no menu Iniciar.
 
+**Plano C (Windows):** se o botão **Executar assim mesmo** não aparecer (alguns computadores de
+empresa escondem), clique com o botão direito no `Setup.exe` → **Propriedades** → na parte de
+baixo, em Segurança, marque **Desbloquear** → **OK**, e abra de novo. Pelo PowerShell, o mesmo:
+`Unblock-File "$HOME\Downloads\Lamina-win*-Setup.exe"`.
+
 ## Mac
 
 1. Abra o arquivo `Setup.pkg` que você baixou (na pasta Transferências) e siga o instalador. O Mac
@@ -48,9 +63,18 @@ pelo próprio Lamina, sem esse aviso.
    3. role até o fim e, ao lado da mensagem sobre o Lamina, clique em **Abrir mesmo assim**;
    4. confirme com a sua senha do Mac, se ele pedir.
 3. Isso pode acontecer duas vezes: ao abrir o instalador e ao abrir o Lamina pela primeira vez.
-   Depois, abra o Lamina pela pasta **Aplicativos** ou pelo Launchpad, sem aviso.
+   Depois, abra o Lamina pela pasta **Aplicativos** ou pelo Launchpad, sem aviso. No macOS 15
+   (Sequoia) ou mais novo, o antigo atalho "botão direito → Abrir" não libera mais: use os Ajustes.
 4. Para abrir um álbum, dê dois cliques no arquivo `.lamina` no Finder. Se o Finder ainda mostrar
    outro programa, clique com o botão direito no arquivo → **Abrir com** → **Lamina**.
+
+**Plano C (Mac):** se o Mac disser que o Lamina **está danificado** ou continuar sem abrir, abra
+o Terminal (Launchpad → Outros → Terminal), cole o comando abaixo e abra o Lamina de novo. Ele tira
+do Lamina a marca de "baixado da internet":
+
+```sh
+xattr -dr com.apple.quarantine /Applications/Lamina.app
+```
 
 ## Linux
 
@@ -86,10 +110,10 @@ No Lamina, use **Ajuda → Enviar sugestão ou problema…**. Abre um formulári
 sem precisar de conta. Se algo deu errado, anexe o registro: **Ajuda → Abrir pasta de registros**
 mostra o arquivo `lamina.log`. Não anexe fotos de clientes.
 
-## Para quem prefere o terminal
+## Para quem prefere o terminal (plano A)
 
 Estes comandos instalam o Lamina sem o aviso do sistema (o antivírus continua examinando os
-arquivos):
+arquivos) e conferem o SHA-256 antes de instalar:
 
 - **Windows (PowerShell):**
   `irm https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.ps1 | iex`
@@ -99,3 +123,16 @@ arquivos):
   (a versão de teste; sem o `-s -- --beta`, a estável, quando houver). No Mac, o Lamina vai para
   a pasta **Aplicativos** sem pedir senha; se o seu usuário não puder gravar lá, vai para a pasta
   Aplicativos da sua pasta pessoal, e o comando avisa.
+
+## Conferir o arquivo baixado
+
+Na página da versão, o arquivo `SHA256SUMS` traz a impressão digital de cada instalador. Compare
+com a do arquivo que você baixou:
+
+- **Windows (PowerShell):** `Get-FileHash "$HOME\Downloads\Lamina-win*-Setup.exe"`
+- **Mac:** `shasum -a 256 ~/Downloads/Lamina-osx*-Setup.pkg`
+- **Linux:** `sha256sum ~/Downloads/Lamina-linux*.AppImage`
+
+Se o antivírus acusar o Lamina, é quase sempre um alarme falso de programa sem assinatura: confira
+o SHA-256, envie o arquivo para análise da Microsoft em
+<https://www.microsoft.com/wdsi/filesubmission> e avise pelo formulário do Lamina.
