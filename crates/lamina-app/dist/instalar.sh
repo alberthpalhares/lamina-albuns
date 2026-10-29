@@ -2,7 +2,7 @@
 # Instala o Lamina no Mac ou no Linux pelo terminal (spec DS, regra 14), sem senha e sem
 # administrador, só na pasta do usuário:
 #
-#   curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-app/main/crates/lamina-app/dist/instalar.sh | sh
 #   curl -fsSL .../instalar.sh | sh -s -- --beta      (a versão de teste mais nova)
 #
 # Sem versão estável publicada, instala a versão de teste mais nova e avisa (Rodada 0, R0-15:
@@ -17,7 +17,7 @@
 
 set -eu
 
-REPO="alberthpalhares/lamina-albuns"
+REPO="alberthpalhares/lamina-app"
 BETA=0
 for arg in "$@"; do
     case "$arg" in

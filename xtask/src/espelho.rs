@@ -1,4 +1,4 @@
-//! Espelho do código no repositório público `lamina-albuns`: só o código vai; estudo, specs e
+//! Espelho do código no repositório público `lamina-app`: só o código vai; estudo, specs e
 //! documentos ficam no privado. `cargo xtask espelho <pasta>` copia o código para a pasta (um
 //! clone do público); `cargo xtask espelho --trazer <pasta>` traz o código de volta.
 
@@ -183,7 +183,7 @@ mod tests {
     fn readme_publico_tem_comandos_que_funcionam() {
         assert!(!PUBLIC_README.contains("releases/latest/download"));
         assert!(PUBLIC_README.contains(
-            "raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.sh"
+            "raw.githubusercontent.com/alberthpalhares/lamina-app/main/crates/lamina-app/dist/instalar.sh"
         ));
     }
 

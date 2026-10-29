@@ -11,7 +11,7 @@ pub const NOTES_FILE: &str = "crates/lamina-app/dist/novidades.md";
 /// O repositório público, num lugar só (spec VP, regra 7).
 macro_rules! repo {
     () => {
-        "alberthpalhares/lamina-albuns"
+        "alberthpalhares/lamina-app"
     };
 }
 pub const REPO: &str = repo!();
@@ -197,7 +197,7 @@ mod tests {
         let beta = with_guide("- Teste.", "v0.1.0-beta.4");
         let first = beta.lines().next().unwrap();
         assert!(first.starts_with("**Para instalar"), "{first}");
-        let win = "[`Lamina-win-beta-Setup.exe`](https://github.com/alberthpalhares/lamina-albuns/\
+        let win = "[`Lamina-win-beta-Setup.exe`](https://github.com/alberthpalhares/lamina-app/\
                    releases/download/v0.1.0-beta.4/Lamina-win-beta-Setup.exe)";
         assert!(first.contains(win), "{first}");
         assert!(first.contains("Lamina-osx-beta-Setup.pkg"), "{first}");

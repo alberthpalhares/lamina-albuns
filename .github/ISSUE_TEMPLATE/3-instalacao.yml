@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Antes, veja o plano de cada sistema na [página inicial](https://github.com/alberthpalhares/lamina-albuns#instalar) e o [guia de instalação](https://github.com/alberthpalhares/lamina-albuns/blob/main/crates/lamina-app/dist/instalar.md). O aviso "O Windows protegeu o computador" e o "não pode verificar o desenvolvedor" do Mac são esperados: o Lamina não paga a assinatura da Microsoft e da Apple.
+        Antes, veja o plano de cada sistema na [página inicial](https://github.com/alberthpalhares/lamina-app#instalar) e o [guia de instalação](https://github.com/alberthpalhares/lamina-app/blob/main/crates/lamina-app/dist/instalar.md). O aviso "O Windows protegeu o computador" e o "não pode verificar o desenvolvedor" do Mac são esperados: o Lamina não paga a assinatura da Microsoft e da Apple.
   - type: dropdown
     id: sistema
     attributes:
