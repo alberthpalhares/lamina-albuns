@@ -1,0 +1,38 @@
+name: Site
+
+# A página do Lamina no GitHub Pages (spec VP): a pasta site/ mais as ilustrações das novidades,
+# publicada a cada mudança na main do repositório público (repositório público não gasta minutos).
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", "crates/lamina-app/dist/novidades/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    if: github.repository == 'alberthpalhares/lamina-albuns'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Montar o site
+        run: |
+          mkdir -p _site/novidades
+          cp -r site/. _site/
+          cp crates/lamina-app/dist/novidades/*.png _site/novidades/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4

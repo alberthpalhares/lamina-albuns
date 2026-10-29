@@ -1,0 +1,43 @@
+name: Problema na instalação
+description: O Lamina não instala, não abre ou o sistema bloqueia.
+labels: ["instalação"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Antes, veja o plano de cada sistema na [página inicial](https://github.com/alberthpalhares/lamina-albuns#instalar) e o [guia de instalação](https://github.com/alberthpalhares/lamina-albuns/blob/main/crates/lamina-app/dist/instalar.md). O aviso "O Windows protegeu o computador" e o "não pode verificar o desenvolvedor" do Mac são esperados: o Lamina não paga a assinatura da Microsoft e da Apple.
+  - type: dropdown
+    id: sistema
+    attributes:
+      label: Sistema
+      options:
+        - Windows 11
+        - Windows 10
+        - Mac com chip Apple (M1, M2…)
+        - Mac com Intel
+        - Linux
+    validations:
+      required: true
+  - type: dropdown
+    id: caminho
+    attributes:
+      label: Por onde você tentou instalar?
+      multiple: true
+      options:
+        - Comando no PowerShell ou no Terminal
+        - Arquivo baixado pelo navegador
+        - winget
+    validations:
+      required: true
+  - type: textarea
+    id: oque
+    attributes:
+      label: O que apareceu?
+      description: A mensagem exata ou uma captura da tela.
+    validations:
+      required: true
+  - type: input
+    id: antivirus
+    attributes:
+      label: Antivírus (se houver)
+      placeholder: Ex.: Windows Defender, Avast…

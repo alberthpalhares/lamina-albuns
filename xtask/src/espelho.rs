@@ -11,6 +11,7 @@ pub const CODE: &[&str] = &[
     "xtask",
     ".cargo",
     ".github",
+    "site",
     "Cargo.toml",
     "Cargo.lock",
     "rust-toolchain.toml",
@@ -30,9 +31,11 @@ pub const SLINT_BADGE: &str = "[![Made with Slint](https://raw.githubusercontent
 /// links e os comandos são conferidos na release (`release.yml`, job `instalacao`).
 pub const PUBLIC_README: &str = include_str!("readme_publico.md");
 
-/// O README do público como vai para o clone: o texto e o selo do Slint no fim.
-pub fn public_readme() -> String {
-    format!("{PUBLIC_README}\n{SLINT_BADGE}\n")
+/// O README do público como vai para o clone: o texto com os links da versão (spec VP) e o selo
+/// do Slint no fim.
+pub fn public_readme(version: &str) -> String {
+    let text = crate::vitrine::fill(PUBLIC_README, version);
+    format!("{text}\n{SLINT_BADGE}\n")
 }
 
 /// Caminhos de `CODE` relativos à raiz, arquivo por arquivo (sem `target`).
@@ -128,8 +131,14 @@ pub fn run(args: &[String]) -> bool {
     let result = if back {
         copy_code(there, here)
     } else {
+        let Some(version) = crate::versao::workspace_version(
+            &fs::read_to_string(here.join("Cargo.toml")).unwrap_or_default(),
+        ) else {
+            eprintln!("  ✘ espelho: o Cargo.toml não tem a versão em [workspace.package]");
+            return false;
+        };
         copy_code(here, there)
-            .and_then(|n| fs::write(there.join("README.md"), public_readme()).map(|()| n))
+            .and_then(|n| fs::write(there.join("README.md"), public_readme(&version)).map(|()| n))
     };
     match result {
         Ok(n) => {
@@ -164,32 +173,29 @@ mod tests {
     /// Trava da atribuição do Slint (ADR 0002, adendo): o selo não pode sumir do README.
     #[test]
     fn readme_publico_tem_o_selo_do_slint() {
-        assert!(public_readme().ends_with(&format!("\n{SLINT_BADGE}\n")));
+        assert!(public_readme("1.0.0").ends_with(&format!("\n{SLINT_BADGE}\n")));
         assert!(SLINT_BADGE.contains("MadeWithSlint") && SLINT_BADGE.contains("slint.dev"));
     }
 
-    /// Rodada 0, R0-16: os links relativos do README do público apontam arquivos que vão para lá,
-    /// e os comandos de instalação usam o endereço "raw" (o "latest" não vê as versões de teste).
+    /// Rodada 0, R0-16: os comandos de instalação usam o endereço "raw" (o "latest" não vê as
+    /// versões de teste). Os links relativos são conferidos pelo VP-B5.
     #[test]
-    fn readme_publico_aponta_arquivos_do_codigo_e_comandos_que_funcionam() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
-        let links: Vec<&str> = PUBLIC_README
-            .split("](")
-            .skip(1)
-            .filter_map(|rest| rest.split(')').next())
-            .filter(|l| !l.starts_with("http") && !l.starts_with('#'))
-            .collect();
-        assert!(links.len() >= 3, "{links:?}");
-        // O `LICENSE` só existe no público, e o espelho o mantém lá.
-        for link in links.into_iter().filter(|l| *l != "LICENSE") {
-            assert!(root.join(link).exists(), "{link} não existe");
-            let top = link.split('/').next().unwrap();
-            assert!(CODE.contains(&top), "{link} não vai para o público");
-        }
+    fn readme_publico_tem_comandos_que_funcionam() {
         assert!(!PUBLIC_README.contains("releases/latest/download"));
         assert!(PUBLIC_README.contains(
             "raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.sh"
         ));
+    }
+
+    #[test]
+    fn vp_b1_o_site_vai_ao_publico() {
+        let (a, b) = (tempfile::tempdir().unwrap(), tempfile::tempdir().unwrap());
+        fs::create_dir_all(a.path().join("site")).unwrap();
+        fs::write(a.path().join("site/index.html"), "x").unwrap();
+        fs::create_dir_all(b.path().join("site")).unwrap();
+        assert!(strays(b.path()).is_empty());
+        copy_code(a.path(), b.path()).unwrap();
+        assert!(b.path().join("site/index.html").exists());
     }
 
     /// Proveta: documento nunca vai para o público; código apagado some de lá.

@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lamina — diagramador de álbuns de fotografia, grátis</title>
+  <meta name="description" content="Escolha a pasta das fotos e o Lamina monta o álbum. Grátis, de código aberto, para Windows, Mac e Linux.">
+  <meta property="og:title" content="Lamina — diagramador de álbuns de fotografia">
+  <meta property="og:description" content="Grátis, de código aberto, para Windows, Mac e Linux.">
+  <meta property="og:image" content="https://alberthpalhares.github.io/lamina-albuns/midia/previa-social.png">
+  <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#16181B" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="midia/simbolo.svg" type="image/svg+xml">
+  <link rel="preload" href="fontes/sora.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="estilo.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="topo">
+    <a href="#" class="topo-logo" aria-label="Lamina, início">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="midia/logo-escuro.svg">
+        <img src="midia/logo-claro.svg" alt="Lamina" width="132" height="29">
+      </picture>
+    </a>
+    <nav aria-label="Seções">
+      <a href="#por-que">Por que</a>
+      <a href="#por-dentro">Por dentro</a>
+      <a href="#instalar">Instalar</a>
+      <a href="#apoiar">Apoiar</a>
+      <a href="https://github.com/alberthpalhares/lamina-albuns">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="conteudo">
+    <section class="capa">
+      <div class="capa-texto">
+        <h1>Escolha a pasta das fotos. O&nbsp;Lamina monta o&nbsp;álbum.</h1>
+        <p class="lead">Um diagramador de álbuns de fotografia grátis e de código aberto, para
+          Windows, Mac e Linux. Troque layouts com as setas, ajuste cada foto e mande para a
+          gráfica em PDF/X-4, TIFF ou JPEG.</p>
+        <div class="acoes">
+          <a class="botao" id="baixar" href="#instalar" data-sistema="">
+            <span id="baixar-rotulo">Baixar o Lamina</span>
+            <small id="baixar-detalhe">grátis · sem conta</small>
+          </a>
+          <a class="botao botao-quieto" href="#instalar">Outros sistemas e instalação</a>
+        </div>
+        <p class="aviso-curto">Na primeira vez, o Windows e o Mac avisam que não conhecem o Lamina:
+          ele não paga a assinatura da Microsoft e da Apple. <a href="#instalar">Veja os dois
+          cliques que liberam.</a></p>
+      </div>
+      <figure class="corte capa-midia">
+        <img src="midia/diagramar.webp" width="1200" height="708" alt="O Lamina com o álbum de exemplo: as lâminas passam e o layout de cada uma muda pelas setas">
+      </figure>
+    </section>
+
+    <section id="por-que" class="secao">
+      <h2>Feito para quem entrega álbum toda semana</h2>
+      <div class="recurso">
+        <figure class="corte"><img src="novidades/faixa-de-layouts.png" width="1280" height="720" alt="" loading="lazy"></figure>
+        <div>
+          <h3>Layouts feitos para as suas fotos</h3>
+          <p>Cada layout é calculado pela proporção de cada foto: nada de biblioteca fixa de
+            modelos, nada de cortar foto sem necessidade. As setas trocam de layout, <kbd>E</kbd>
+            espelha, <kbd>F</kbd> favorita e <kbd>L</kbd> mostra todas as opções de uma vez.</p>
+        </div>
+      </div>
+      <div class="recurso recurso-inverso">
+        <figure class="corte"><img src="novidades/rolo.png" width="1280" height="720" alt="" loading="lazy"></figure>
+        <div>
+          <h3>O álbum montado sozinho</h3>
+          <p>A montagem automática agrupa as fotos por momento, cuida do ritmo e da variedade das
+            lâminas e explica por que escolheu cada layout. Você começa revisando, não do zero.</p>
+        </div>
+      </div>
+      <div class="recurso">
+        <figure class="corte"><img src="novidades/temperatura-e-matiz.png" width="1280" height="720" alt="" loading="lazy"></figure>
+        <div>
+          <h3>Cada foto no ponto, sem sair do álbum</h3>
+          <p>Endireitar com precisão de 0,1°, girar, escala, brilho, contraste, preto e branco,
+            temperatura e matiz por controles deslizantes. O que você vê é o que vai para a
+            gráfica.</p>
+        </div>
+      </div>
+      <dl class="fatos">
+        <div><dt>&lt; 40 ms</dt><dd>para cada mudança aparecer na tela. 1.000 fotos de 24&nbsp;MP entram em menos de um minuto.</dd></div>
+        <div><dt>1 minuto</dt><dd>entre uma cópia de segurança e outra. Se o computador desligar, o Lamina pergunta "Recuperar?".</dd></div>
+        <div><dt>PDF/X-4</dt><dd>TIFF sem perda, JPEG 95 com cor 4:4:4, Adobe RGB, marcas de corte e uma pré-impressão que aponta os problemas.</dd></div>
+      </dl>
+    </section>
+
+    <section class="secao">
+      <h2>O Lamina e os programas de diagramação comuns</h2>
+      <div class="tabela-rolagem">
+        <table class="comparacao">
+          <thead><tr><th scope="col"><span class="sr">Aspecto</span></th><th scope="col">Lamina</th><th scope="col">Comum em outros programas</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Preço</th><td>Grátis; apoiador opcional, R$ 99 por versão maior</td><td>Assinatura mensal ou licença paga</td></tr>
+            <tr><th scope="row">Sistemas</th><td>Windows, Mac (Intel e Apple) e Linux</td><td>Windows e Mac</td></tr>
+            <tr><th scope="row">Conta e internet</th><td>Sem conta; funciona sem internet</td><td>Conta e ativação pela internet</td></tr>
+            <tr><th scope="row">Seus dados</th><td>Não envia nada sozinho</td><td>Varia</td></tr>
+            <tr><th scope="row">Código</th><td>Aberto (Apache-2.0)</td><td>Fechado</td></tr>
+            <tr><th scope="row">Layouts</th><td>Calculados para cada foto</td><td>Biblioteca fixa de modelos</td></tr>
+            <tr><th scope="row">Trabalho salvo</th><td>Cópia a cada minuto e histórico completo</td><td>Varia</td></tr>
+            <tr><th scope="row">IA</th><td>Pelo Claude Desktop, cada passo desfazível</td><td>Raro</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="nota">Comparação geral com o que é comum no mercado de diagramação de álbuns; cada programa tem seus pontos fortes.</p>
+    </section>
+
+    <section id="por-dentro" class="secao">
+      <h2>Por dentro do Lamina</h2>
+      <p class="secao-lead">Telas do programa de verdade, com o álbum de exemplo que vem junto (fotos livres, CC0).</p>
+      <div class="galeria" tabindex="0" aria-label="Telas do Lamina; role para o lado">
+        <figure><img src="midia/tela-album.webp" width="1600" height="944" alt="O álbum aberto, com a lâmina grande e as faixas embaixo" loading="lazy"><figcaption><b>O álbum inteiro à vista.</b> A lâmina grande em cima; embaixo, lâminas, sequência e fotos.</figcaption></figure>
+        <figure><img src="midia/faixa-de-layouts.webp" width="960" height="720" alt="A faixa de layouts com as opções e a nota de cada uma" loading="lazy"><figcaption><b>Faixa de layouts.</b> Todas as opções para as fotos da lâmina, com nota.</figcaption></figure>
+        <figure><img src="midia/tela-foto.webp" width="1600" height="944" alt="A foto selecionada com a temperatura mais quente" loading="lazy"><figcaption><b>Ajustes da foto.</b> Girar, escala, brilho, contraste, temperatura e matiz.</figcaption></figure>
+        <figure><img src="midia/tela-organizar.webp" width="1600" height="944" alt="O modo organizar com régua e ferramentas" loading="lazy"><figcaption><b>Modo organizar.</b> Régua, lupa, 1:1, espaço entre fotos, fundo e bordas.</figcaption></figure>
+        <figure><img src="midia/tela-exportar.webp" width="1600" height="944" alt="A exportação com JPEG, PDF/X-4 e TIFF" loading="lazy"><figcaption><b>Exportar.</b> JPEG 95, PDF/X-4 ou TIFF sem perda.</figcaption></figure>
+        <figure><img src="midia/tela-recuperar.webp" width="1600" height="944" alt="A pergunta Recuperar as alterações" loading="lazy"><figcaption><b>Nada se perde.</b> Depois de uma queda, o Lamina pergunta se quer recuperar.</figcaption></figure>
+        <figure><img src="midia/tela-inicial.webp" width="1600" height="646" alt="A tela inicial com os álbuns recentes" loading="lazy"><figcaption><b>Tela inicial.</b> Os álbuns recentes e o álbum de exemplo.</figcaption></figure>
+      </div>
+    </section>
+
+    <section id="instalar" class="secao">
+      <h2>Instalar, mesmo com o aviso do sistema</h2>
+      <div class="porque">
+        <figure class="corte"><img src="midia/instalar.png" width="1280" height="720" alt="Os avisos do Windows e do Mac e os cliques que liberam o Lamina" loading="lazy"></figure>
+        <div>
+          <p><strong>Por que o aviso aparece?</strong> A Microsoft e a Apple cobram uma assinatura
+            anual para reconhecer um programa. O Lamina é grátis e não paga, então o sistema avisa
+            na primeira vez. O aviso não quer dizer vírus.</p>
+          <ul class="confianca">
+            <li>O código é aberto e cada instalador é montado pelo GitHub Actions, à vista de todos.</li>
+            <li>Cada versão publica o <code>SHA256SUMS</code>, para conferir o arquivo baixado.</li>
+            <li>Depois de instalado, o Lamina se atualiza sozinho, sem aviso.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="abas" role="tablist" aria-label="Sistema">
+        <button role="tab" id="aba-windows" aria-controls="painel-windows" aria-selected="true">Windows</button>
+        <button role="tab" id="aba-mac" aria-controls="painel-mac" aria-selected="false" tabindex="-1">Mac</button>
+        <button role="tab" id="aba-linux" aria-controls="painel-linux" aria-selected="false" tabindex="-1">Linux</button>
+      </div>
+
+      <div class="painel" role="tabpanel" id="painel-windows" aria-labelledby="aba-windows">
+        <ol class="planos">
+          <li>
+            <h3>Plano A · pelo PowerShell, sem aviso</h3>
+            <p>Menu Iniciar → digite <b>PowerShell</b> → abra e cole:</p>
+            <div class="comando"><code>irm https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.ps1 | iex</code><button type="button" class="copiar">Copiar</button></div>
+            <p class="miudo">Baixa a versão mais nova, confere o SHA-256 e instala sem senha de administrador.</p>
+          </li>
+          <li>
+            <h3>Plano B · pelo navegador</h3>
+            <p><a class="link-baixar" data-sistema="windows" href="https://github.com/alberthpalhares/lamina-albuns/releases">Baixe o Setup.exe</a>. Se o navegador segurar o arquivo: no Edge, <b>⋯ → Manter → Mostrar mais → Manter mesmo assim</b>; no Chrome, <b>Manter</b>. Ao abrir, na janela azul <b>"O Windows protegeu o computador"</b>, clique em <b>Mais informações</b> e depois em <b>Executar assim mesmo</b>.</p>
+          </li>
+          <li>
+            <h3>Plano C · desbloquear antes de abrir</h3>
+            <p>Se "Executar assim mesmo" não aparecer: botão direito no <code>Setup.exe</code> → <b>Propriedades</b> → marque <b>Desbloquear</b> → <b>OK</b>. Ou no PowerShell:</p>
+            <div class="comando"><code>Unblock-File "$HOME\Downloads\Lamina-win*-Setup.exe"</code><button type="button" class="copiar">Copiar</button></div>
+          </li>
+        </ol>
+      </div>
+
+      <div class="painel" role="tabpanel" id="painel-mac" aria-labelledby="aba-mac" hidden>
+        <ol class="planos">
+          <li>
+            <h3>Plano A · pelo Terminal, sem aviso</h3>
+            <p>Launchpad → Outros → <b>Terminal</b> → cole:</p>
+            <div class="comando"><code>curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.sh | sh</code><button type="button" class="copiar">Copiar</button></div>
+            <p class="miudo">O Lamina vai para Aplicativos e abre os arquivos <code>.lamina</code> com dois cliques.</p>
+          </li>
+          <li>
+            <h3>Plano B · pelo instalador</h3>
+            <p><a class="link-baixar" data-sistema="mac" href="https://github.com/alberthpalhares/lamina-albuns/releases">Baixe o Setup.pkg</a> e abra. Se o Mac disser que <b>não pode verificar o desenvolvedor</b>, clique em OK, abra <b>Ajustes do Sistema → Privacidade e Segurança</b>, role até o fim e clique em <b>Abrir mesmo assim</b>. Pode acontecer duas vezes: no instalador e ao abrir o Lamina. No macOS 15 ou mais novo, o atalho "botão direito → Abrir" não libera mais: use os Ajustes.</p>
+          </li>
+          <li>
+            <h3>Plano C · tirar a marca de "baixado da internet"</h3>
+            <p>Se o Mac disser que o Lamina "está danificado" ou não abrir:</p>
+            <div class="comando"><code>xattr -dr com.apple.quarantine /Applications/Lamina.app</code><button type="button" class="copiar">Copiar</button></div>
+          </li>
+        </ol>
+      </div>
+
+      <div class="painel" role="tabpanel" id="painel-linux" aria-labelledby="aba-linux" hidden>
+        <ol class="planos">
+          <li>
+            <h3>Plano A · pelo terminal</h3>
+            <div class="comando"><code>curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.sh | sh</code><button type="button" class="copiar">Copiar</button></div>
+            <p class="miudo">Fica em <code>~/.local/bin/Lamina.AppImage</code>; abra uma vez para o atalho entrar no menu.</p>
+          </li>
+          <li>
+            <h3>Plano B · pelo navegador</h3>
+            <p><a class="link-baixar" data-sistema="linux" href="https://github.com/alberthpalhares/lamina-albuns/releases">Baixe o .AppImage</a>, botão direito → Propriedades → <b>Permitir executar como programa</b>, e abra.</p>
+          </li>
+          <li>
+            <h3>Se nada abrir</h3>
+            <div class="comando"><code>sudo apt install libfuse2</code><button type="button" class="copiar">Copiar</button></div>
+            <p class="miudo">No Ubuntu 24.04 ou mais novo, o pacote é <code>libfuse2t64</code>.</p>
+          </li>
+        </ol>
+      </div>
+      <p class="nota">Conferir o arquivo: compare o resultado de <code>Get-FileHash</code> (Windows) ou <code>shasum -a 256</code> (Mac) com o <code>SHA256SUMS</code> da <a href="https://github.com/alberthpalhares/lamina-albuns/releases">página da versão</a>. Passo a passo com as telas no <a href="https://github.com/alberthpalhares/lamina-albuns/blob/main/crates/lamina-app/dist/instalar.md">guia de instalação</a>.</p>
+    </section>
+
+    <section id="apoiar" class="secao apoiar">
+      <h2>Grátis de verdade. Apoiador, se quiser.</h2>
+      <div class="colunas">
+        <div>
+          <h3>Grátis, sem prazo</h3>
+          <p>Montar o álbum, layouts, cortar, girar, escala, brilho, contraste, preto e branco,
+            texto com as fontes embutidas, JPEG, TIFF e PDF/X-4 em sRGB com marcas de corte, cópia
+            de segurança e atualizações.</p>
+        </div>
+        <div class="apoiador">
+          <h3>Licença de apoiador · R$ 99 por versão maior</h3>
+          <p>A licença da 1 vale em toda a 1.x, sem conta e sem cadastro. Libera:</p>
+          <ul>
+            <li>temperatura e matiz;</li>
+            <li>tamanhos próprios e modelos de lâmina salvos;</li>
+            <li>exportação em Adobe RGB;</li>
+            <li>o programa <code>lamina</code> no terminal;</li>
+            <li>o controle por IA pelo Claude Desktop;</li>
+            <li>fontes instaladas no computador.</li>
+          </ul>
+          <p class="miudo">Nada se perde no grátis: um álbum feito com recursos de apoiador abre e exporta igual. A compra abre pelo menu Ajuda do Lamina quando a venda começar.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="secao perguntas">
+      <h2>Perguntas frequentes</h2>
+      <details><summary>O aviso do sistema quer dizer que o Lamina tem vírus?</summary><p>Não. Ele aparece para todo programa que não paga a assinatura da Microsoft ou da Apple. O código é aberto, os instaladores são montados pelo GitHub Actions e o <code>SHA256SUMS</code> permite conferir o arquivo.</p></details>
+      <details><summary>Preciso de internet?</summary><p>Só para baixar e atualizar. O Lamina funciona sem internet, sem conta e não envia nada sozinho.</p></details>
+      <details><summary>Meus álbuns ficam onde?</summary><p>No seu computador, num arquivo <code>.lamina</code> que aponta as fotos nas pastas originais. As fotos nunca são copiadas nem alteradas.</p></details>
+      <details><summary>E se o Lamina fechar no meio do trabalho?</summary><p>Ao abrir de novo, ele pergunta "Recuperar?" e volta o trabalho da última cópia de segurança, feita a cada minuto.</p></details>
+      <details><summary>Como relato um problema?</summary><p>No Lamina, <b>Ajuda → Enviar sugestão ou problema…</b>, sem precisar de conta. Ou abra uma <a href="https://github.com/alberthpalhares/lamina-albuns/issues/new/choose">issue no GitHub</a>. Nunca anexe fotos de clientes.</p></details>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="midia/simbolo-escuro.svg">
+      <img src="midia/simbolo.svg" alt="" width="40" height="40">
+    </picture>
+    <p>Lamina · projeto acadêmico, grátis e de código aberto (Apache-2.0).
+      <a href="https://github.com/alberthpalhares/lamina-albuns">Código</a> ·
+      <a href="https://github.com/alberthpalhares/lamina-albuns/releases">Versões</a> ·
+      <a href="https://github.com/alberthpalhares/lamina-albuns/blob/main/crates/lamina-app/exemplo/CREDITOS.md">Créditos das fotos</a></p>
+    <p class="miudo">Fontes Sora e Inter (SIL OFL 1.1). Interface feita com <a href="https://slint.dev">Slint</a>.</p>
+  </footer>
+</body>
+</html>
