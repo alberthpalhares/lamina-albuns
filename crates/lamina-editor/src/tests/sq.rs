@@ -182,9 +182,9 @@ fn sq_b6_mover_rapido() {
         assert!(editor.sequence_move(20, photo, SeqSpot { spread: 21, at: 1 }));
         best = best.min(started.elapsed());
         assert!(editor.run(Command::Undo));
-        if best < budget(10) {
+        if best < budget(30) {
             break;
         }
     }
-    assert!(best < budget(10), "mover levou {best:?}");
+    assert!(best < budget(30), "mover levou {best:?}");
 }

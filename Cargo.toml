@@ -8,7 +8,7 @@ version = "0.1.0-beta.6"
 edition = "2024"
 rust-version = "1.99"
 license = "Apache-2.0"
-repository = "https://github.com/alberthpalhares/lamina-albuns"
+repository = "https://github.com/alberthpalhares/lamina-app"
 authors = ["Equipe Lâmina"]
 
 # Versões centralizadas: cada crate declara `dep = { workspace = true }`.

@@ -1,7 +1,7 @@
 name: CI
 
 # Plano de economia de minutos (2026-10-16, decisão do dono): o CI roda só no repositório
-# público (lamina-albuns). Em PR e na main, só Linux; Windows e macOS só à mão (Actions → CI →
+# público (lamina-app). Em PR e na main, só Linux; Windows e macOS só à mão (Actions → CI →
 # Run workflow), antes de fechar um marco. O Windows também é coberto pelo `cargo xtask verify`
 # local, que roda antes de todo PR.
 on:
@@ -34,10 +34,12 @@ env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
 
+# Os jobs só rodam no repositório público, pelo que ele é, não pelo nome: o nome já mudou duas
+# vezes, e a condição antiga pulava tudo sem aviso (2026-10-19 e 2026-10-28).
 jobs:
   testes:
     name: Testes (${{ matrix.os }})
-    if: github.repository == 'alberthpalhares/lamina-albuns'
+    if: github.event.repository.private == false
     strategy:
       fail-fast: true
       matrix:
@@ -61,7 +63,7 @@ jobs:
   # sem lâminas e 1.000 fotos de 24 MP. Só à mão; a memória máxima sai no fim do passo.
   importacao:
     name: Fumaça da importação (macOS)
-    if: github.repository == 'alberthpalhares/lamina-albuns' && github.event_name == 'workflow_dispatch' && inputs.importacao
+    if: github.event.repository.private == false && github.event_name == 'workflow_dispatch' && inputs.importacao
     runs-on: macos-latest
     timeout-minutes: 45
     steps:
@@ -81,7 +83,7 @@ jobs:
   # (o `open` passa pelo mesmo serviço do duplo clique), com o Lamina fechado e aberto. Só à mão.
   mac_abrir:
     name: Abrir no Mac (macOS)
-    if: github.repository == 'alberthpalhares/lamina-albuns' && github.event_name == 'workflow_dispatch' && inputs.mac_abrir
+    if: github.event.repository.private == false && github.event_name == 'workflow_dispatch' && inputs.mac_abrir
     runs-on: macos-latest
     timeout-minutes: 45
     env:
@@ -220,7 +222,7 @@ jobs:
 
   licencas:
     name: Licenças e avisos de segurança
-    if: github.repository == 'alberthpalhares/lamina-albuns'
+    if: github.event.repository.private == false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
