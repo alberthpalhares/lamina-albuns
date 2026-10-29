@@ -31,11 +31,56 @@ pub fn search_moved(
     to: &Path,
     progress: &dyn Fn(usize, usize),
 ) -> Vec<Found> {
-    search_moved_with(project, missing, (from, to), progress, &|p| {
-        #[cfg(test)]
-        READS.with(|r| r.set(r.get() + 1));
-        fingerprint(p).ok()
-    })
+    search_moved_with(project, missing, (from, to), progress, &counted)
+}
+
+/// A impressão digital de um arquivo (nos testes, contando a leitura).
+pub(crate) fn counted(path: &Path) -> Option<String> {
+    #[cfg(test)]
+    READS.with(|r| r.set(r.get() + 1));
+    fingerprint(path).ok()
+}
+
+/// Só o passo 1 da regra 3: as fotos de `missing` no mesmo caminho dentro de `to`, trocando
+/// `from` por `to`. Lê só os arquivos que existem nesse caminho (a descoberta da regra 11).
+pub(crate) fn same_place(
+    project: &Project,
+    missing: &[PhotoId],
+    from: &Path,
+    to: &Path,
+) -> Vec<Found> {
+    wanted(project, missing)
+        .into_iter()
+        .filter_map(|w| {
+            let rel = w.path.strip_prefix(from).ok()?;
+            confirm(&w, &to.join(rel), &counted)
+        })
+        .collect()
+}
+
+/// As fotos de `missing` que estão em `folder` com outro nome (o mesmo conteúdo): lê os arquivos
+/// da pasta, sem as subpastas (a descoberta da regra 11).
+pub(crate) fn renamed_in(project: &Project, missing: &[PhotoId], folder: &Path) -> Vec<Found> {
+    let want = wanted(project, missing);
+    let files: Vec<PathBuf> = std::fs::read_dir(folder)
+        .map(|entries| {
+            entries
+                .filter_map(|e| e.ok().map(|e| e.path()))
+                .filter(|p| p.is_file() && lamina_media::ImageFormat::from_path(p).is_some())
+                .collect()
+        })
+        .unwrap_or_default();
+    let mut out: Vec<Found> = Vec::new();
+    for path in files {
+        let Some(fp) = counted(&path) else { continue };
+        if let Some(w) = want
+            .iter()
+            .find(|w| w.print == fp && !out.iter().any(|f| f.id == w.id))
+        {
+            out.extend(measured(w.id, &path, None));
+        }
+    }
+    out
 }
 
 #[cfg(test)]

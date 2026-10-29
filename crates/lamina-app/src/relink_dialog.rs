@@ -11,10 +11,10 @@ use lamina_editor::relink_text::{
     DIFFERENT, HINT, INTRO, PLUG_IN, TITLE, not_found_in, relink_view,
 };
 use lamina_editor::{
-    Found, Human, HumanMessage, Located, MissingFolder, guarded, locate, relinked_message,
-    search_moved, still_missing,
+    Discovery, Found, Human, HumanMessage, Located, MissingFolder, discover, guarded, locate,
+    missing_among, photo_paths, relinked_message, search_moved,
 };
-use slint::{ComponentHandle, ModelRc, VecModel};
+use slint::{ComponentHandle, ModelRc, Timer, TimerMode, VecModel};
 
 use crate::state::{App, Msg};
 use crate::{AppWindow, RelinkRowUi, RelinkUi};
@@ -27,7 +27,14 @@ thread_local! {
     static SHOWN: RefCell<Vec<MissingFolder>> = const { RefCell::new(Vec::new()) };
     static SEARCHING: RefCell<Option<MissingFolder>> = const { RefCell::new(None) };
     static WAITING: RefCell<Option<Found>> = const { RefCell::new(None) };
+    // O que a descoberta achou (regra 11) e se uma conferência já está rodando (regra 10).
+    static DISCOVERED: RefCell<Vec<Discovery>> = const { RefCell::new(Vec::new()) };
+    static CHECKING: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    static EVERY: Timer = Timer::default();
 }
+
+/// De quanto em quanto tempo o Lamina confere se as fotos continuam no lugar (regra 10).
+const EVERY_SECONDS: u64 = 5;
 
 /// Abre (ou refaz) a janela com o que falta agora; sem nada faltando, ela fecha.
 pub fn show(app: &App) {
@@ -39,16 +46,28 @@ pub fn show(app: &App) {
         ui.set_show(false);
         return;
     };
+    let discovered = DISCOVERED.with_borrow(|d| d.clone());
+    let solved = |f: &MissingFolder| discovered.iter().any(|d| d.folder().path == f.path);
     let rows: Vec<RelinkRowUi> = view
         .folders
         .iter()
+        .filter(|f| !solved(f))
         .map(|f| RelinkRowUi {
             name: f.name().into(),
             detail: f.place().into(),
             unplugged: f.disk.is_some(),
         })
         .collect();
-    SHOWN.set(view.folders);
+    SHOWN.set(view.folders.into_iter().filter(|f| !solved(f)).collect());
+    let sentences: Vec<String> = discovered.iter().map(Discovery::sentence).collect();
+    ui.set_discovered(
+        sentences
+            .join(
+                "
+",
+            )
+            .into(),
+    );
     ui.set_title(TITLE.into());
     ui.set_intro(INTRO.into());
     ui.set_hint(HINT.into());
@@ -137,37 +156,99 @@ fn search(app: &mut App, from: MissingFolder, to: PathBuf) {
     });
 }
 
-/// "Tentar de novo" e a volta para a janela: os arquivos voltaram aos mesmos caminhos? Não é
-/// uma edição (regra 6).
+/// A conferência de 5 em 5 segundos, de "Tentar de novo" e da volta para a janela: os arquivos
+/// continuam no lugar? Só olha se existem, fora da linha da janela; se a anterior não terminou,
+/// esta é pulada (regras 6 e 10). Não é uma edição.
 pub fn recheck(app: &App) {
     let Some(session) = app.session() else {
         return;
     };
-    if session.missing().is_empty() {
+    if CHECKING.get() {
         return;
     }
-    let project = session.project().clone();
+    CHECKING.set(true);
+    let paths = photo_paths(session.project());
     let file = session.file().map(Path::to_path_buf);
     let tx = app.tx.clone();
     std::thread::spawn(move || {
-        let still = still_missing(&project);
+        let still = missing_among(&paths);
         let _ = tx.send(Msg::Rechecked { file, still });
     });
 }
 
 pub fn rechecked(app: &mut App, file: Option<PathBuf>, still: &[PhotoId]) {
+    CHECKING.set(false);
     let Some(session) = app.editor.session_mut() else {
         return;
     };
     if session.file().map(Path::to_path_buf) != file || !session.checked_missing(still) {
         return;
     }
+    let ask = session.take_relink_prompt();
     app.project_changed();
-    app.notice.clear();
+    if session_missing(app) == 0 {
+        app.notice.clear();
+        DISCOVERED.set(Vec::new());
+    }
     app.refresh_current();
-    if is_open(app) {
+    if ask {
+        find_out(app);
+    } else if is_open(app) {
         show(app);
     }
+}
+
+fn session_missing(app: &App) -> usize {
+    app.session().map_or(0, |s| s.missing().len())
+}
+
+/// Fotos sumiram com o álbum aberto: descobre o que aconteceu, em segundo plano, e abre a
+/// janela com isso (regras 11 e 12).
+fn find_out(app: &App) {
+    let Some(session) = app.session() else {
+        return;
+    };
+    let (project, missing) = (session.project().clone(), session.missing().to_vec());
+    let file = session.file().map(Path::to_path_buf);
+    let tx = app.tx.clone();
+    std::thread::spawn(move || {
+        let found = guarded(|| discover(&project, &missing, file.as_deref())).unwrap_or_default();
+        let _ = tx.send(Msg::Discovered { file, found });
+    });
+}
+
+pub fn discovered(app: &mut App, file: Option<PathBuf>, found: Vec<Discovery>) {
+    if app.session().and_then(|s| s.file().map(Path::to_path_buf)) != file {
+        return;
+    }
+    DISCOVERED.set(found);
+    show(app);
+}
+
+/// "Usar o lugar novo": tudo o que a descoberta achou, numa edição só (regra 11).
+fn use_new(app: &mut App) {
+    let found: Vec<Found> =
+        DISCOVERED.with_borrow(|d| d.iter().flat_map(|x| x.found().to_vec()).collect());
+    DISCOVERED.set(Vec::new());
+    apply(app, &found);
+}
+
+/// Liga a conferência de 5 em 5 segundos (regra 10).
+fn start_checking(app: &Shared) {
+    let a = Rc::downgrade(app);
+    EVERY.with(|t| {
+        t.start(
+            TimerMode::Repeated,
+            std::time::Duration::from_secs(EVERY_SECONDS),
+            move || {
+                if let Some(app) = a.upgrade()
+                    && let Ok(app) = app.try_borrow()
+                {
+                    recheck(&app);
+                }
+            },
+        );
+    });
 }
 
 /// "Localizar esta foto…" (regra 4): o arquivo, e a conferência em segundo plano.
@@ -234,6 +315,9 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     });
     let a = app.clone();
     ui.on_retry(move || recheck(&a.borrow()));
+    let a = app.clone();
+    ui.on_use_new(move || use_new(&mut a.borrow_mut()));
+    start_checking(app);
     ui.on_later(|| SEARCHING.set(None));
     let a = app.clone();
     let w = window.as_weak();

@@ -80,6 +80,7 @@ pub mod presets;
 pub mod received;
 pub mod recents;
 pub mod relink;
+pub mod relink_discover;
 pub mod relink_folders;
 pub mod relink_moved;
 pub mod relink_text;
@@ -134,13 +135,14 @@ pub use recents::{RECENTS_FILE, Recent, RecentsStore};
 pub use relink::{
     Found, RELINK_LATER, not_found_message, relinked_message, search_folder, search_near,
 };
+pub use relink_discover::{Discovery, discover};
 pub use relink_folders::{MissingFolder, disconnected, missing_folders};
 pub use relink_moved::{Located, locate, search_moved};
 pub use roll_image::{ImageSize, RollPainter, RollSource, SpreadImage, render_spread_image};
 pub use screens::{
     Arrival, ScreenPlan, load_original, load_screen, load_thumb, load_thumb_sized, prepare_images,
 };
-pub use session::{HistoryList, HistoryStep, Session, still_missing};
+pub use session::{HistoryList, HistoryStep, Session, missing_among, photo_paths, still_missing};
 pub use snap::{Grip, SnapLine};
 pub use strips::{
     Install, STRIPS_FILE, STRIPS_UNREADABLE, STRIPS_VERSION, Strip, Strips, StripsStore,

@@ -26,17 +26,20 @@ export global RelinkUi {
     in property <string> status;
     // A pergunta do arquivo com outro conteúdo (regra 4): não vazia = mostrar.
     in property <string> question;
+    // O que a descoberta achou, uma frase por linha (regra 11): não vazio = "Usar o lugar novo".
+    in property <string> discovered;
     callback pick(int);
     callback retry();
     callback later();
     callback answer(bool);
+    callback use-new();
 }
 
 export component RelinkDialog inherits Shade {
     callback closed();
     Panel {
         width: 560px;
-        height: RelinkUi.question != "" ? 170px : min(520px, 230px + RelinkUi.rows.length * 52px);
+        height: RelinkUi.question != "" ? 170px : min(560px, 130px + (RelinkUi.discovered != "" ? 80px : 0px) + (RelinkUi.rows.length > 0 ? 100px + RelinkUi.rows.length * 52px : 0px));
         if RelinkUi.question != "": VerticalLayout {
             padding: 24px;
             spacing: 12px;
@@ -53,7 +56,15 @@ export component RelinkDialog inherits Shade {
             padding: 24px;
             spacing: 10px;
             Text { text: RelinkUi.title; font-size: 18px; font-weight: 700; color: Theme.text; wrap: word-wrap; }
-            Text { text: RelinkUi.intro; color: Theme.muted; wrap: word-wrap; }
+            if RelinkUi.discovered != "": VerticalLayout {
+                spacing: 10px;
+                Text { text: RelinkUi.discovered; color: Theme.text; font-weight: 600; wrap: word-wrap; }
+                HorizontalLayout {
+                    alignment: start;
+                    Button { text: "Usar o lugar novo"; primary: true; clicked => { RelinkUi.use-new(); } }
+                }
+            }
+            if RelinkUi.rows.length > 0: Text { text: RelinkUi.intro; color: Theme.muted; wrap: word-wrap; }
             for row[i] in RelinkUi.rows: HorizontalLayout {
                 height: 44px;
                 spacing: 12px;
@@ -75,7 +86,7 @@ export component RelinkDialog inherits Shade {
                 }
             }
             if RelinkUi.more != "": Text { text: RelinkUi.more; color: Theme.muted; font-size: 12px; }
-            Text { text: RelinkUi.hint; color: Theme.text; wrap: word-wrap; }
+            if RelinkUi.rows.length > 0: Text { text: RelinkUi.hint; color: Theme.text; wrap: word-wrap; }
             if RelinkUi.plug-in != "": Text { text: RelinkUi.plug-in; color: Theme.warning; wrap: word-wrap; }
             if RelinkUi.status != "": Text { text: RelinkUi.status; color: Theme.warning; wrap: word-wrap; }
             Rectangle { vertical-stretch: 1; }

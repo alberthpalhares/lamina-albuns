@@ -321,3 +321,103 @@ fn rf_b7_duplo_clique_numa_foto_ausente_pede_para_localizar() {
         })
     ));
 }
+
+/// Confere de novo, como a janela faz a cada 5 s (regra 10).
+fn recheck(editor: &mut Editor) -> bool {
+    let still = still_missing(editor.session().unwrap().project());
+    session(editor).checked_missing(&still)
+}
+
+#[test]
+fn rf_b12_a_foto_que_some_com_o_album_aberto_e_percebida_na_hora() {
+    let (base, file) = wedding(4);
+    let mut editor = opened(&file);
+    assert!(editor.session().unwrap().missing().is_empty());
+    assert!(!session(&mut editor).take_relink_prompt());
+    std::fs::rename(
+        base.path("fotos/Casamento"),
+        base.path("fotos/Casamento Ana"),
+    )
+    .unwrap();
+    take_reads();
+    assert!(recheck(&mut editor));
+    assert_eq!(editor.session().unwrap().missing().len(), 4);
+    assert_eq!(take_reads(), 0, "perceber a perda não lê as fotos");
+    assert!(session(&mut editor).take_relink_prompt());
+    assert!(
+        !session(&mut editor).take_relink_prompt(),
+        "uma vez por perda"
+    );
+}
+
+#[test]
+fn rf_b13_a_pasta_renomeada_e_descoberta() {
+    let (base, file) = wedding(4);
+    let mut editor = opened(&file);
+    std::fs::rename(
+        base.path("fotos/Casamento"),
+        base.path("fotos/Casamento Ana"),
+    )
+    .unwrap();
+    recheck(&mut editor);
+    let s = editor.session().unwrap();
+    let found = crate::discover(s.project(), s.missing(), Some(&file));
+    assert_eq!(found.len(), 1);
+    assert!(matches!(&found[0], crate::Discovery::Renamed { .. }));
+    assert_eq!(
+        found[0].sentence(),
+        "A pasta “Casamento” foi renomeada para “Casamento Ana”."
+    );
+    assert_eq!(session(&mut editor).relink(found[0].found()), 4);
+    assert_eq!(label(&editor), "Reencontrar fotos · 4 fotos");
+    assert!(editor.run(crate::Command::Undo));
+    assert_eq!(editor.session().unwrap().missing().len(), 4);
+}
+
+#[test]
+fn rf_b14_as_fotos_renomeadas_sao_descobertas_pelo_conteudo() {
+    let (base, file) = wedding(5);
+    let mut editor = opened(&file);
+    // f02, f03 e f04 ficam direto em Casamento; f00 e f01, em Making of.
+    for i in 2..5 {
+        std::fs::rename(
+            base.path(&format!("fotos/Casamento/f{i:02}.jpg")),
+            base.path(&format!("fotos/Casamento/renomeada {i}.jpg")),
+        )
+        .unwrap();
+    }
+    recheck(&mut editor);
+    let s = editor.session().unwrap();
+    assert_eq!(s.missing().len(), 3);
+    take_reads();
+    let found = crate::discover(s.project(), s.missing(), Some(&file));
+    assert_eq!(found.len(), 1);
+    assert_eq!(
+        found[0].sentence(),
+        "3 fotos de “Casamento” foram renomeadas."
+    );
+    assert_eq!(found[0].found().len(), 3);
+    assert_eq!(take_reads(), 3, "só os arquivos daquela pasta");
+}
+
+#[test]
+fn rf_b15_sem_rastro_a_janela_de_sempre() {
+    let (base, file) = wedding(4);
+    let mut editor = opened(&file);
+    move_dir(
+        &base.path("fotos/Casamento/Making of"),
+        &base.path("ssd/Making of"),
+    );
+    recheck(&mut editor);
+    let s = editor.session().unwrap();
+    assert_eq!(s.missing().len(), 2);
+    assert!(crate::discover(s.project(), s.missing(), Some(&file)).is_empty());
+    assert!(session(&mut editor).take_relink_prompt());
+    // "Agora não": conferir de novo, com as mesmas fotos faltando, não abre a janela.
+    recheck(&mut editor);
+    assert!(!session(&mut editor).take_relink_prompt());
+    // Outras fotos somem: a janela abre de novo.
+    move_dir(&base.path("fotos/Casamento"), &base.path("ssd/Casamento"));
+    assert!(recheck(&mut editor));
+    assert!(session(&mut editor).take_relink_prompt());
+}

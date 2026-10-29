@@ -230,6 +230,25 @@ pub fn still_missing(project: &Project) -> Vec<PhotoId> {
     missing_of(project)
 }
 
+/// Os caminhos das fotos do álbum, para a conferência de 5 em 5 segundos levar só eles para fora
+/// da linha da janela, sem copiar o álbum (spec RF, regra 10).
+pub fn photo_paths(project: &Project) -> Vec<(PhotoId, PathBuf)> {
+    project
+        .photos
+        .iter()
+        .map(|p| (p.id, p.path.clone()))
+        .collect()
+}
+
+/// As fotos de `paths` cujo arquivo não existe agora (só olha se existe; regra 10).
+pub fn missing_among(paths: &[(PhotoId, PathBuf)]) -> Vec<PhotoId> {
+    paths
+        .iter()
+        .filter(|(_, path)| !path.exists())
+        .map(|(id, _)| *id)
+        .collect()
+}
+
 fn missing_of(project: &Project) -> Vec<PhotoId> {
     project
         .photos

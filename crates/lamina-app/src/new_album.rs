@@ -77,6 +77,7 @@ pub fn message(app: &mut App, msg: Msg) {
         Msg::Searching(..) | Msg::Relinked { .. } => crate::relink::message(app, msg),
         Msg::Rechecked { file, still } => crate::relink_dialog::rechecked(app, file, &still),
         Msg::Located { file, result } => crate::relink_dialog::located(app, file, result),
+        Msg::Discovered { file, found } => crate::relink_dialog::discovered(app, file, found),
         Msg::Update(outcome) => crate::updates::message(app, outcome),
         Msg::Failed(problem) => failed(app, &problem),
         Msg::RecentsChecked(_) | Msg::ThumbReady => crate::recents::message(app, msg),

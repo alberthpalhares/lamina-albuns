@@ -26,8 +26,10 @@ Esta versão traz as fontes do computador nos textos, reencontra as fotos que mu
 - **As fotos que mudaram de lugar são reencontradas.** Se você levou a pasta de fotos para um SSD
   externo ou outra pasta, o Lamina avisa ao abrir o álbum qual pasta sumiu. Clique em "Mostrar
   onde está…", aponte a pasta nova uma vez, e as fotos voltam sozinhas, mesmo com milhares. Com o
-  disco desconectado, ele avisa; conecte o disco e clique em "Tentar de novo". Experimente: dê um
-  clique duplo numa foto com a marca amarela para localizá-la.
+  disco desconectado, ele avisa; conecte o disco e clique em "Tentar de novo". Se você renomear ou
+  mover a pasta com o álbum aberto, o Lamina percebe em segundos, diz o que aconteceu e traz as
+  fotos com um clique em "Usar o lugar novo". Experimente: com o álbum aberto, renomeie a pasta
+  das fotos no Explorador e volte para o Lamina.
   <!-- imagem: reencontrar-fotos.png; comando: arquivo.procurar-fotos -->
 - **Fotos de uma lâmina para outra pela Sequência.** Na faixa Sequência, arraste uma foto para
   outra lâmina ou para outra posição: uma linha azul mostra onde ela vai entrar, e as lâminas que

@@ -37,6 +37,11 @@ pub enum Msg {
         file: Option<PathBuf>,
         still: Vec<lamina_core::PhotoId>,
     },
+    /// O que aconteceu com as fotos que sumiram com o álbum aberto (spec RF, regra 11).
+    Discovered {
+        file: Option<PathBuf>,
+        found: Vec<lamina_editor::Discovery>,
+    },
     /// "Localizar esta foto…" (spec RF, regra 4) no projeto `file`.
     Located {
         file: Option<PathBuf>,

@@ -53,16 +53,21 @@ impl Session {
         true
     }
 
-    /// O resultado de conferir de novo (spec RF, regra 6): as fotos que ainda faltam nos mesmos
-    /// caminhos. Não é uma edição. `true` = alguma voltou.
-    pub fn checked_missing(&mut self, still: &[PhotoId]) -> bool {
+    /// O resultado de conferir de novo (spec RF, regras 6 e 10): as fotos que faltam agora, das que
+    /// o álbum tem. Não é uma edição. Uma foto que sumiu agora libera a janela de novo (regra 12).
+    /// `true` = a lista mudou (alguma voltou ou sumiu).
+    pub fn checked_missing(&mut self, now: &[PhotoId]) -> bool {
         let now: Vec<PhotoId> = self
-            .missing
+            .project()
+            .photos
             .iter()
-            .copied()
-            .filter(|id| still.contains(id))
+            .map(|p| p.id)
+            .filter(|id| now.contains(id))
             .collect();
-        let changed = now.len() != self.missing.len();
+        if now.iter().any(|id| !self.missing.contains(id)) {
+            self.relink_asked = false;
+        }
+        let changed = now != self.missing;
         self.missing = now;
         changed
     }
