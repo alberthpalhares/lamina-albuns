@@ -1,7 +1,7 @@
 // Página do Lamina (spec VP): escolhe o sistema de quem visita, aponta os botões para o
 // instalador da versão mais nova (a estável; sem estável, a de teste), troca as abas de
 // instalação e copia os comandos.
-const REPO = 'alberthpalhares/lamina-albuns';
+const REPO = 'alberthpalhares/lamina-app';
 const VERSOES = `https://github.com/${REPO}/releases`;
 
 const SISTEMAS = {

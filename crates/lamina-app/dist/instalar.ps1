@@ -1,7 +1,7 @@
 # Instala o Lamina no Windows pelo terminal (spec DS, regra 14), sem administrador, na pasta do
 # usuário:
 #
-#   irm https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.ps1 | iex
+#   irm https://raw.githubusercontent.com/alberthpalhares/lamina-app/main/crates/lamina-app/dist/instalar.ps1 | iex
 #   $env:LAMINA_BETA = 1; irm .../instalar.ps1 | iex      (a versão de teste mais nova)
 #
 # O endereço "raw" diz que o arquivo é UTF-8; sem isso, o PowerShell 5.1 troca os acentos.
@@ -20,7 +20,7 @@ function Install-Lamina {
     $ErrorActionPreference = 'Stop'
     $ProgressPreference = 'SilentlyContinue'
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-    $repo = 'alberthpalhares/lamina-albuns'
+    $repo = 'alberthpalhares/lamina-app'
     $semRede = 'Não foi possível baixar o Lamina. Confira a internet e tente de novo.'
 
     if (-not [Environment]::Is64BitOperatingSystem) {
