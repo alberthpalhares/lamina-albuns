@@ -79,7 +79,7 @@ fn eg_b3_fora_do_modo_nada_muda() {
     let right = Shortcut::key(Key::Right);
     assert_eq!(
         Command::from_shortcut_in(right, editor.mode()),
-        Some(Command::NextLayout)
+        Some(Command::NextSpread)
     );
     // Arrastar o corpo de uma foto para outro quadro troca as fotos (FQ-B2).
     let photo =
@@ -113,7 +113,7 @@ fn eg_b4_atalhos_por_modo() {
     );
     assert_eq!(
         Command::from_shortcut_in(right, Mode::Normal),
-        Some(Command::NextLayout)
+        Some(Command::NextSpread)
     );
     assert_eq!(
         Command::from_shortcut_in(Shortcut::shift(Key::Down), Mode::Organize),

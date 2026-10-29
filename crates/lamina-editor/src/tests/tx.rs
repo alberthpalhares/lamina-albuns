@@ -233,7 +233,7 @@ fn tx_b8_alt_setas() {
     assert_eq!(undo_label(&editor), "Novo texto", "uma edição só");
     assert!(
         !editor.nudge_key(Shortcut::key(Key::Right)),
-        "→ sem Alt é do layout"
+        "→ sem Alt muda de lâmina"
     );
 }
 

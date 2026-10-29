@@ -20,10 +20,23 @@ pub const ALIASES: [(Shortcut, Shortcut); 4] = [
     (Shortcut::key(Key::F1), Shortcut::ctrl('/')),
 ];
 
-/// O atalho principal de um alternativo; os outros ficam como estão.
-pub fn main_of(shortcut: Shortcut) -> Shortcut {
+/// Os alternativos que só valem fora do modo organizar, onde as setas movem a seleção: ← e →
+/// mudam de lâmina, como o Page Up e o Page Down (pedido do dono de 2026-10-28).
+pub const NORMAL_ALIASES: [(Shortcut, Shortcut); 2] = [
+    (Shortcut::key(Key::Right), Shortcut::key(Key::PageDown)),
+    (Shortcut::key(Key::Left), Shortcut::key(Key::PageUp)),
+];
+
+/// O atalho principal de um alternativo no modo `mode`; os outros ficam como estão.
+pub fn main_of(shortcut: Shortcut, mode: Mode) -> Shortcut {
+    let normal: &[(Shortcut, Shortcut)] = if mode == Mode::Normal {
+        &NORMAL_ALIASES
+    } else {
+        &[]
+    };
     ALIASES
         .iter()
+        .chain(normal)
         .find(|(alias, _)| *alias == shortcut)
         .map_or(shortcut, |(_, main)| *main)
 }
@@ -100,6 +113,7 @@ fn command_row(command: Command, platform: Platform) -> Row {
     let main = command.shortcut();
     let aliases = ALIASES
         .iter()
+        .chain(&NORMAL_ALIASES)
         .filter(|(_, m)| Some(*m) == main)
         .map(|(alias, _)| *alias);
     Row {

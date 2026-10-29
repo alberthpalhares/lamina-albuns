@@ -312,9 +312,9 @@ fn zr_b8_voltar_anima_e_sai() {
         assert!(!editor.organizing(), "o editor sai na hora");
         assert!(editor.selected_frames().is_empty());
         assert_eq!(
-            Command::from_shortcut(Shortcut::key(Key::Right)),
+            Command::from_shortcut(Shortcut::key(Key::Down)),
             Some(Command::NextLayout),
-            "→ troca o layout"
+            "↓ troca o layout"
         );
         assert_eq!(editor.session().unwrap().history_list().steps.len(), steps);
         assert_eq!(editor.zoom(), Zoom::Fit);

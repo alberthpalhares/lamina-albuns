@@ -41,37 +41,13 @@ impl Command {
                 "layout.proximo",
                 "Próximo layout",
                 Menu::Layout,
-                k(Key::Right),
+                k(Key::Down),
             ),
             C::PreviousLayout => (
                 "layout.anterior",
                 "Layout anterior",
                 Menu::Layout,
-                k(Key::Left),
-            ),
-            C::NextLeft => (
-                "layout.esquerda-proximo",
-                "Próximo layout da página esquerda",
-                Menu::Layout,
-                k(Key::Down),
-            ),
-            C::PreviousLeft => (
-                "layout.esquerda-anterior",
-                "Layout anterior da página esquerda",
-                Menu::Layout,
                 k(Key::Up),
-            ),
-            C::NextRight => (
-                "layout.direita-proximo",
-                "Próximo layout da página direita",
-                Menu::Layout,
-                shift(Key::Down),
-            ),
-            C::PreviousRight => (
-                "layout.direita-anterior",
-                "Layout anterior da página direita",
-                Menu::Layout,
-                shift(Key::Up),
             ),
             C::Mirror => (
                 "layout.espelhar",

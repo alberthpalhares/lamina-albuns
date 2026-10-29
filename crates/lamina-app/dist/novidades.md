@@ -13,6 +13,12 @@ botão "Experimente agora": `<!-- imagem: atalhos.png; comando: ajuda.atalhos --
 
 ## [Não lançado]
 
+- **As setas ↑ e ↓ trocam o layout, e ← e → passam de lâmina.** As setas para cima e para baixo
+  trocam o layout da lâmina inteira; as setas para os lados vão para a próxima lâmina e para a
+  anterior, como o Page Down e o Page Up, também com a faixa de layouts aberta. A troca do layout
+  de uma página só saiu do teclado e do menu Layout. No modo organizar, as setas continuam movendo
+  os quadros. Experimente: aperte ↓ para trocar o layout e → para ir à próxima lâmina.
+
 ## [0.1.0-beta.6] - 2026-10-28
 
 Esta versão corrige o Lamina que fechava sozinho, guarda uma cópia de segurança do trabalho e traz temperatura e matiz, controles deslizantes, lâminas que mudam de lugar arrastando e uma barra única no modo organizar.
