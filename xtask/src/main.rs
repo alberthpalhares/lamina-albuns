@@ -7,7 +7,7 @@
 //! - `asserts`: nenhuma assertiva frouxa (`is_err()` sem conferir o erro) nos testes.
 //! - `erros`: nenhum erro chega à janela sem a frase de fotógrafo (spec EH).
 //! - `sala-limpa`: nada da marca ou dos arquivos do software de referência no produto.
-//! - `espelho [--trazer] <pasta>`: copia só o código para o clone do público (`lamina-albuns`).
+//! - `espelho [--trazer] <pasta>`: copia só o código para o clone do público (`lamina-app`).
 //! - `esquema`: grava o JSON Schema do formato do projeto em `docs/formato/` (spec EI).
 //! - `portao <termos>`: lista o que foi alocado para a fase que está abrindo.
 //! - `fotos <pasta> [quantas] [--lado N]`: fotos sintéticas para os testes de fumaça (da release e

@@ -15,7 +15,7 @@ Windows, no Mac e no Linux. Projeto acadêmico, em fase de testes (versões *bet
 
 ## Baixar e instalar
 
-1. Abra a [página de versões](https://github.com/alberthpalhares/lamina-albuns/releases). A
+1. Abra a [página de versões](https://github.com/alberthpalhares/lamina-app/releases). A
    versão mais nova fica no topo; o selo **Pre-release** quer dizer que é uma versão de teste.
 2. O começo das notas da versão tem o link do arquivo do seu sistema:
 
@@ -41,13 +41,13 @@ os arquivos). Enquanto não houver versão estável, eles instalam a versão de 
 **Windows** (no PowerShell):
 
 ```powershell
-irm https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.ps1 | iex
+irm https://raw.githubusercontent.com/alberthpalhares/lamina-app/main/crates/lamina-app/dist/instalar.ps1 | iex
 ```
 
 **Mac e Linux** (no Terminal):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.sh | sh
+curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-app/main/crates/lamina-app/dist/instalar.sh | sh
 ```
 
 Para sempre ficar com a versão de teste mais nova: rode `$env:LAMINA_BETA = 1` antes do comando
@@ -67,7 +67,7 @@ livres, para você ver o Lamina funcionando. Depois, **Novo álbum com minhas fo
 No Lamina, **Ajuda → Enviar sugestão ou problema…** abre um formulário curto, sem precisar de
 conta, já com a versão do programa. Se algo deu errado, **Ajuda → Abrir pasta de registros**
 mostra o arquivo `lamina.log` para anexar. O Lamina não envia nada sozinho. Quem tem conta no
-GitHub também pode abrir uma [issue](https://github.com/alberthpalhares/lamina-albuns/issues).
+GitHub também pode abrir uma [issue](https://github.com/alberthpalhares/lamina-app/issues).
 
 ## Usar com o Claude Desktop
 

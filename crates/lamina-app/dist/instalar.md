@@ -92,10 +92,10 @@ Estes comandos instalam o Lamina sem o aviso do sistema (o antivírus continua e
 arquivos):
 
 - **Windows (PowerShell):**
-  `irm https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.ps1 | iex`
+  `irm https://raw.githubusercontent.com/alberthpalhares/lamina-app/main/crates/lamina-app/dist/instalar.ps1 | iex`
   (para a versão de teste, rode antes `$env:LAMINA_BETA = 1`);
 - **Mac e Linux:**
-  `curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.sh | sh -s -- --beta`
+  `curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-app/main/crates/lamina-app/dist/instalar.sh | sh -s -- --beta`
   (a versão de teste; sem o `-s -- --beta`, a estável, quando houver). No Mac, o Lamina vai para
   a pasta **Aplicativos** sem pedir senha; se o seu usuário não puder gravar lá, vai para a pasta
   Aplicativos da sua pasta pessoal, e o comando avisa.

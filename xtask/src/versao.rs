@@ -10,10 +10,10 @@ pub const NOTES_FILE: &str = "crates/lamina-app/dist/novidades.md";
 
 /// O guia de instalação para leigos (spec PC, regra 7), publicado no repositório público.
 pub const GUIDE_URL: &str =
-    "https://github.com/alberthpalhares/lamina-albuns/blob/main/crates/lamina-app/dist/instalar.md";
+    "https://github.com/alberthpalhares/lamina-app/blob/main/crates/lamina-app/dist/instalar.md";
 
 /// Onde a release guarda os arquivos (o repositório público).
-const DOWNLOAD: &str = "https://github.com/alberthpalhares/lamina-albuns/releases/download";
+const DOWNLOAD: &str = "https://github.com/alberthpalhares/lamina-app/releases/download";
 
 /// As notas de qualquer versão começam com o arquivo de cada sistema, com link direto, e terminam
 /// com o guia e o caminho do formulário (spec PC, regra 9; auditoria da Fase 4, achados 1 e 3).
@@ -183,7 +183,7 @@ mod tests {
         let beta = with_guide("- Teste.", "v0.1.0-beta.4");
         let first = beta.lines().next().unwrap();
         assert!(first.starts_with("**Para instalar"), "{first}");
-        let win = "[`Lamina-win-beta-Setup.exe`](https://github.com/alberthpalhares/lamina-albuns/\
+        let win = "[`Lamina-win-beta-Setup.exe`](https://github.com/alberthpalhares/lamina-app/\
                    releases/download/v0.1.0-beta.4/Lamina-win-beta-Setup.exe)";
         assert!(first.contains(win), "{first}");
         assert!(first.contains("Lamina-osx-beta-Setup.pkg"), "{first}");
