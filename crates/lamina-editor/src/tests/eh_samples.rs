@@ -210,6 +210,15 @@ fn editor() -> Vec<Sample> {
     let editors = vec![
         EditorError::MissingFolder("/clientes/Ana/Festa".into()),
         EditorError::NoPhotos("/clientes/Ana/Festa".into()),
+        EditorError::OnlyOtherFiles {
+            folder: "/clientes/Ana/Festa".into(),
+            others: 3,
+        },
+        EditorError::NoPhotoReadable {
+            folder: "/clientes/Ana/Festa".into(),
+            found: 50,
+            first: "festa-01.jpg: sem permissão de acesso".into(),
+        },
         EditorError::Media(media().remove(0)),
         EditorError::Build(BuildError::InvalidPhoto("x.jpg".into())),
         EditorError::File(files().remove(0)),

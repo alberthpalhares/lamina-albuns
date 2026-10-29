@@ -2,8 +2,8 @@
 
 use super::super::calls::{
     ApplyLayout, BuildAlbumCall, BuildSpread, ExportCall, FrameArg, ListPhotos, MovePhoto,
-    MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, PlacePhoto, Position, RunCommand, SaveAlbum,
-    SpreadArg, Steps, SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
+    MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, PlacePhoto, Position, RenameAlbum, RunCommand,
+    SaveAlbum, SpreadArg, Steps, SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
 };
 use super::super::params::{
     AddText, CropCall, EditText, LookCall, RelinkCall, RespecCall, SaveModel, UseModel,
@@ -34,6 +34,10 @@ fn first_part() -> Vec<ToolInfo> {
             "salvar_album",
             "Grava o álbum no arquivo dele ou, com caminho, salva como outro arquivo. O Lamina não \
              salva sozinho.",
+        ),
+        info::<RenameAlbum>(
+            "renomear_album",
+            "Troca o nome do álbum (o do topo da janela), como Arquivo → Renomear álbum…. O              arquivo .lamina não muda de nome; o nome novo vai para ele ao salvar.",
         ),
         info::<NoArgs>(
             "resumo_do_album",

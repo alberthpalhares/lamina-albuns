@@ -9,8 +9,8 @@ use serde_json::Value;
 use super::ToolError;
 use super::calls::{
     ApplyLayout, BuildAlbumCall, BuildSpread, ExportCall, FrameArg, ListPhotos, MovePhoto,
-    MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, PlacePhoto, Position, RunCommand, SaveAlbum,
-    SpreadArg, Steps, SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
+    MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, PlacePhoto, Position, RenameAlbum, RunCommand,
+    SaveAlbum, SpreadArg, Steps, SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
 };
 use super::params::{
     AddText, CropCall, EditText, LookCall, RelinkCall, RespecCall, SaveModel, UseModel,
@@ -30,6 +30,8 @@ pub enum ToolCall {
     NewAlbum(NewAlbumCall),
     #[serde(rename = "salvar_album")]
     SaveAlbum(SaveAlbum),
+    #[serde(rename = "renomear_album")]
+    RenameAlbum(RenameAlbum),
     #[serde(rename = "resumo_do_album")]
     Summary(NoArgs),
     #[serde(rename = "ver_lamina")]

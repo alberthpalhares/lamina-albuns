@@ -62,6 +62,7 @@ pub(super) fn is_dialog(command: Command) -> bool {
             | C::Presets
             | C::About
             | C::SaveModel
+            | C::RenameAlbum
             | C::Models
             | C::CheckUpdates
             | C::ToggleAutoUpdates
@@ -82,6 +83,7 @@ fn tool_for(command: Command) -> Option<&'static str> {
         Command::Specification => Some("trocar_especificacao"),
         Command::SaveModel => Some("salvar_modelo"),
         Command::BuildAlbum => Some("montar_album"),
+        Command::RenameAlbum => Some("renomear_album"),
         _ => None,
     }
 }

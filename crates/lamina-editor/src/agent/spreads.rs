@@ -152,6 +152,10 @@ fn insert_at(project: &mut Project, at: usize) -> Result<usize, EditorError> {
         return Ok(insert_spread(project, at - 1));
     }
     let new = insert_spread(project, 0);
-    move_spread(project, new, 0)?;
+    // Num álbum em branco, a lâmina nova já é a primeira: não há o que mover (relato do teste
+    // pelo MCP, IA-B25; mover para o mesmo lugar recusava com "Quadro ou lâmina que não existe").
+    if new != 0 {
+        move_spread(project, new, 0)?;
+    }
     Ok(0)
 }

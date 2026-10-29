@@ -41,6 +41,7 @@ mod ia_edit;
 mod ia_files;
 mod ia_models;
 mod ia_read;
+mod ia_relato;
 mod ia_style;
 mod im;
 mod im_drop;

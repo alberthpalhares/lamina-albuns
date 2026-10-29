@@ -11,7 +11,10 @@ use super::paths::{ensure_parent, lamina_file, same_file};
 use super::{
     Agent, NewAlbumCall, OpenAlbum, SaveAlbum, ToolError, ToolReply, session, session_mut,
 };
-use crate::{Editor, NewAlbum, SpecFields, Step, create_album, folder_name};
+use crate::{Editor, NewAlbum, SpecFields, Step, clean_album_name, create_album};
+
+/// `nome` vazio no `novo_album` e no `renomear_album`.
+pub const EMPTY_NAME: &str = "O nome do álbum não pode ficar vazio.";
 
 /// `laminas` sem `montar` no `novo_album` (spec BR, regra 14).
 pub const SPREADS_NEED_BUILD: &str = "O número de lâminas só vale com montar: true. Sem montar, \
@@ -113,7 +116,7 @@ impl Agent {
             .to_spec()
             .map_err(|e| ToolError::Refused(e.to_string()))?;
         Ok(NewAlbum {
-            name: Some(folder_name(&folder)),
+            name: Some(album_name(a)?),
             folder,
             spec,
             spreads: a.laminas,
@@ -176,4 +179,32 @@ fn refuse_unsaved(editor: &Editor, discard: bool) -> Result<(), ToolError> {
         Some(s) if s.is_dirty() && !discard => Err(ToolError::Unsaved(s.title().to_owned())),
         _ => Ok(()),
     }
+}
+
+/// O nome do álbum novo: `nome`, limpo como na janela, ou o nome do arquivo pedido (sem
+/// `.lamina`), que é o que o fotógrafo chamou o álbum; o da pasta das fotos só em último caso.
+fn album_name(a: &NewAlbumCall) -> Result<String, ToolError> {
+    if let Some(nome) = &a.nome {
+        return clean_album_name(nome).ok_or_else(|| ToolError::Refused(EMPTY_NAME.to_owned()));
+    }
+    let file = lamina_file(&a.salvar_em);
+    let stem = file.file_stem().map(|s| s.to_string_lossy().into_owned());
+    Ok(stem
+        .as_deref()
+        .and_then(clean_album_name)
+        .unwrap_or_else(|| crate::folder_name(Path::new(&a.pasta_fotos))))
+}
+
+/// `renomear_album`: a mesma edição da janela (spec NA), com as recusas em frase.
+pub(super) fn rename_album(editor: &mut Editor, nome: &str) -> Result<ToolReply, ToolError> {
+    let clean = clean_album_name(nome).ok_or_else(|| ToolError::Refused(EMPTY_NAME.to_owned()))?;
+    if session(editor)?.project().name == clean {
+        return Err(ToolError::Refused(format!("O álbum já se chama {clean}.")));
+    }
+    editor.rename_album(&clean);
+    let s = session(editor)?;
+    Ok(ToolReply::new(
+        format!("Álbum renomeado: {clean}. O arquivo .lamina continua com o mesmo nome."),
+        json!({ "nome": clean, "alteracoes_nao_salvas": s.is_dirty() }),
+    ))
 }

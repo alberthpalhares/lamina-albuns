@@ -12,6 +12,19 @@ pub enum EditorError {
     MissingFolder(String),
     #[error("Nenhuma foto encontrada em {0}.")]
     NoPhotos(String),
+    /// A pasta tem arquivos, mas nenhum é foto.
+    #[error(
+        "Nenhuma foto encontrada em {folder}: {}, mas nenhum em JPEG, PNG, TIFF ou HEIC.",
+        crate::empty_import::files(*others, "arquivo")
+    )]
+    OnlyOtherFiles { folder: String, others: usize },
+    /// Há fotos, mas nenhuma pôde ser lida (sem permissão, disco desconectado, arquivo estragado).
+    #[error("Nenhuma das {found} fotos de {folder} pôde ser lida. Primeiro motivo: {first}.")]
+    NoPhotoReadable {
+        folder: String,
+        found: usize,
+        first: String,
+    },
     #[error(transparent)]
     Media(#[from] MediaError),
     #[error(transparent)]

@@ -46,9 +46,9 @@ mod values;
 pub use album::SPREADS_NEED_BUILD;
 pub use calls::{
     ApplyLayout, BuildAlbumCall, BuildSpread, ColorArg, ExportCall, FormatArg, FrameArg,
-    ListPhotos, MovePhoto, MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, PartArg, PhotoFilter,
-    PlacePhoto, Position, RunCommand, SaveAlbum, SpreadArg, Steps, SuggestLayouts, SwapPhotos,
-    ViewPhotos, ViewSpread,
+    ListPhotos, MovePhoto, MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, OrderArg, PartArg,
+    PhotoFilter, PlacePhoto, Position, RenameAlbum, RunCommand, SaveAlbum, SpreadArg, Steps,
+    SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
 };
 pub use catalog::{ToolCall, ToolInfo, tools};
 pub use error::ToolError;
@@ -93,7 +93,8 @@ pub struct Agent {
 #[derive(Debug)]
 struct Listed {
     spread: Spread,
-    count: usize,
+    /// A posição no painel de cada opção mostrada, na ordem da lista que a IA viu.
+    picks: Vec<usize>,
 }
 
 impl Agent {
@@ -144,6 +145,7 @@ impl Agent {
             ToolCall::OpenAlbum(a) => self.open_album(editor, &a),
             ToolCall::NewAlbum(a) => self.new_album(editor, &a, progress),
             ToolCall::SaveAlbum(a) => self.save_album(editor, &a),
+            ToolCall::RenameAlbum(a) => album::rename_album(editor, &a.nome),
             ToolCall::Summary(_) => self.summary(editor),
             ToolCall::ViewSpread(a) => self.view_spread(editor, &a),
             ToolCall::ListPhotos(a) => listing::list_photos(editor, a.filtro),

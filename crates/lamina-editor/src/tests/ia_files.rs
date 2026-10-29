@@ -9,7 +9,6 @@ use super::ia_common::{Lab, album_project, read, unused};
 use crate::agent::ToolError;
 use crate::{
     Editor, ExportOptions, NewAlbum, Session, builtin_presets, create_album, export_project,
-    folder_name,
 };
 
 #[test]
@@ -114,7 +113,8 @@ fn ia_b14_novo_album_igual_ao_da_janela() {
     let window = Editor::new();
     let folder = base.path("fotos");
     let new = NewAlbum {
-        name: Some(folder_name(&folder)),
+        // O nome do arquivo pedido, não o da pasta das fotos (IA-B26).
+        name: Some("album".into()),
         folder,
         spec: preset.fields.to_spec().unwrap(),
         spreads: Some(8),
