@@ -359,12 +359,8 @@ export component AppWindow inherits Window {
         }
         Menu {
             title: "Layout";
-            MenuItem { title: "Próximo layout  (→)"; enabled: root.has-project; activated => { root.command("layout.proximo"); } }
-            MenuItem { title: "Layout anterior  (←)"; enabled: root.has-project; activated => { root.command("layout.anterior"); } }
-            MenuItem { title: "Próximo da página esquerda  (↓)"; enabled: root.has-project; activated => { root.command("layout.esquerda-proximo"); } }
-            MenuItem { title: "Anterior da página esquerda  (↑)"; enabled: root.has-project; activated => { root.command("layout.esquerda-anterior"); } }
-            MenuItem { title: "Próximo da página direita  (Shift+↓)"; enabled: root.has-project; activated => { root.command("layout.direita-proximo"); } }
-            MenuItem { title: "Anterior da página direita  (Shift+↑)"; enabled: root.has-project; activated => { root.command("layout.direita-anterior"); } }
+            MenuItem { title: "Próximo layout  (↓)"; enabled: root.has-project; activated => { root.command("layout.proximo"); } }
+            MenuItem { title: "Layout anterior  (↑)"; enabled: root.has-project; activated => { root.command("layout.anterior"); } }
             MenuSeparator { }
             MenuItem { title: "Espelhar lâmina  (E)"; enabled: root.has-project; activated => { root.command("layout.espelhar"); } }
             MenuItem { title: "Favoritar layout  (F)"; enabled: root.has-project; activated => { root.command("layout.favoritar"); } }

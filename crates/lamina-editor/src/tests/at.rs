@@ -8,7 +8,9 @@ use lamina_core::FrameContent;
 
 use super::tl_common::{editor_at, three_spreads};
 use crate::commands::Mode;
-use crate::shortcuts::{ALIASES, CROP, GROUPS, Group, ORGANIZE, Row, group_of, search, sheet};
+use crate::shortcuts::{
+    ALIASES, CROP, GROUPS, Group, NORMAL_ALIASES, ORGANIZE, Row, group_of, main_of, search, sheet,
+};
 use crate::{Command, Editor, Key, Platform, Shortcut};
 
 /// A linha de `does` na lista, com o grupo dela.
@@ -141,7 +143,7 @@ fn at_b4_grupos_por_menu_e_por_modo() {
     );
     for (does, group, key) in [
         ("Salvar", "Arquivo", "Ctrl+S"),
-        ("Próximo layout", "Layout", "→"),
+        ("Próximo layout", "Layout", "↓"),
         ("Mover 1 mm para a esquerda", ORGANIZE, "←"),
         ("Selecionar todos os quadros", ORGANIZE, "Ctrl+A"),
         ("Recortar foto", CROP, "C"),
@@ -179,6 +181,24 @@ fn at_b5_atalhos_alternativos_numa_tabela_so() {
     assert_eq!(keys(&groups, "Mais zoom"), ["+", "="]);
     assert_eq!(keys(&groups, "Aproximar a lâmina"), ["+", "="]);
     assert_eq!(keys(&groups, "Atalhos do teclado…"), ["Ctrl+/", "F1"]);
+    assert_eq!(keys(&groups, "Próxima lâmina"), ["Page Down", "→"]);
+    assert_eq!(keys(&groups, "Lâmina anterior"), ["Page Up", "←"]);
+    // ← e → só são alternativos fora do modo organizar: lá elas movem a seleção.
+    let right = Shortcut::key(Key::Right);
+    assert_eq!(main_of(right, Mode::Normal), Shortcut::key(Key::PageDown));
+    assert_eq!(main_of(right, Mode::Organize), right);
+    for (alias, main) in NORMAL_ALIASES {
+        assert_eq!(
+            Command::from_shortcut_in(alias, Mode::Normal),
+            Command::from_shortcut_in(main, Mode::Normal),
+            "{alias:?}"
+        );
+        assert_ne!(
+            Command::from_shortcut_in(alias, Mode::Organize),
+            Command::from_shortcut_in(main, Mode::Organize),
+            "{alias:?}"
+        );
+    }
     // Cada alternativo leva ao comando do principal, no modo em que ele vale.
     for (alias, main) in ALIASES {
         for mode in [Mode::Normal, Mode::Organize] {
@@ -240,6 +260,17 @@ fn at_b10_nenhum_atalho_se_repete() {
             all.contains(&main),
             "{main:?} não é atalho de comando nenhum"
         );
+    }
+    // Os alternativos de um modo só (← e → fora do modo organizar) não são atalho principal
+    // naquele modo, e levam a um atalho que vale nele.
+    let normal: Vec<Shortcut> = Command::ALL
+        .into_iter()
+        .filter(|c| c.in_mode(Mode::Normal))
+        .filter_map(Command::shortcut)
+        .collect();
+    for (alias, main) in NORMAL_ALIASES {
+        assert!(!normal.contains(&alias), "{alias:?} é atalho principal");
+        assert!(normal.contains(&main), "{main:?} não vale fora do modo");
     }
     // Alt+setas e Espaço ficam fora da tabela (a lista só os mostra).
     for key in [Key::Left, Key::Right, Key::Up, Key::Down, Key::Char(' ')] {

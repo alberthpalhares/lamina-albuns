@@ -138,14 +138,14 @@ impl Editor {
         }
     }
 
-    pub(super) fn can_step(&self, part: Part) -> bool {
-        let panel = self.panel(part);
+    pub(super) fn can_step(&self) -> bool {
+        let panel = self.panel(Part::Spread);
         panel.unavailable.is_none() && !panel.options.is_empty()
     }
 
-    /// Setas: a opção seguinte (ou anterior) da lista; no fim volta ao começo (regra 3).
-    pub(super) fn step(&mut self, part: Part, forward: bool) -> bool {
-        let panel = self.panel(part);
+    /// ↓ e ↑: a opção seguinte (ou anterior) da lâmina inteira; no fim volta ao começo (regra 3).
+    pub(super) fn step(&mut self, forward: bool) -> bool {
+        let panel = self.panel(Part::Spread);
         let n = panel.options.len();
         if n == 0 {
             return false;
@@ -156,7 +156,7 @@ impl Editor {
             (None, true) => 0,
             (None, false) => n - 1,
         };
-        self.apply_option(part, target)
+        self.apply_option(Part::Spread, target)
     }
 
     pub(super) fn can_mirror(&self) -> bool {

@@ -34,6 +34,11 @@ Esta versão traz as fontes do computador nos textos, reencontra as fotos que mu
   mudam são refeitas sozinhas. Esc desiste. Experimente: arraste uma foto da lâmina 1 para depois
   do corte da lâmina 2.
   <!-- imagem: fotos-na-sequencia.png -->
+- **As setas ↑ e ↓ trocam o layout, e ← e → passam de lâmina.** As setas para cima e para baixo
+  trocam o layout da lâmina inteira; as setas para os lados vão para a próxima lâmina e para a
+  anterior, como o Page Down e o Page Up, também com a faixa de layouts aberta. A troca do layout
+  de uma página só saiu do teclado e do menu Layout. No modo organizar, as setas continuam movendo
+  os quadros. Experimente: aperte ↓ para trocar o layout e → para ir à próxima lâmina.
 - **Tirar uma foto refaz o layout.** Com Delete, a foto sai junto com o quadro, e a página ganha a
   melhor arrumação para as fotos que ficaram, sem buraco vazio. Experimente: selecione uma foto
   numa lâmina com três e aperte Delete.

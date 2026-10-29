@@ -81,16 +81,16 @@ pub(super) fn apply_choice(
     Ok(())
 }
 
-/// As teclas do menu Layout: com a faixa aberta, limpam a prévia e a deixam aberta (regra 8).
+/// As teclas do menu Layout, e a próxima lâmina e a anterior (→ ←, Page Down e Page Up): com a
+/// faixa aberta, limpam a prévia e a deixam aberta, com as opções da lâmina mostrada (regra 8).
+/// Home e End fecham a faixa, como antes: o pedido do dono foi só das setas.
 fn keeps_band(command: Command) -> bool {
     matches!(
         command,
         Command::NextLayout
             | Command::PreviousLayout
-            | Command::NextLeft
-            | Command::PreviousLeft
-            | Command::NextRight
-            | Command::PreviousRight
+            | Command::NextSpread
+            | Command::PreviousSpread
             | Command::Mirror
             | Command::Favorite
             | Command::Reject
@@ -148,8 +148,8 @@ impl Editor {
         before != after
     }
 
-    /// Antes de um comando (regra 8): as teclas do menu Layout limpam a prévia e deixam a faixa
-    /// aberta; L e o Esc ficam com o próprio comando; qualquer outro fecha a faixa antes de
+    /// Antes de um comando (regra 8): as teclas do menu Layout e a próxima lâmina e a anterior
+    /// limpam a prévia e deixam a faixa aberta; L e o Esc ficam com o próprio comando; qualquer outro fecha a faixa antes de
     /// rodar. `true` se a faixa fechou.
     pub fn close_band_for(&mut self, command: Command) -> bool {
         match command {

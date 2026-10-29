@@ -33,7 +33,7 @@ fn at_b6_busca_sem_acento_e_sem_maiuscula() {
     for does in [
         "Mover lâmina para a esquerda",
         "Próximo layout",
-        "Próximo layout da página direita",
+        "Próxima lâmina",
         "Mover 10 mm para baixo",
         "Mover o quadro selecionado 1 mm",
         "Mover o quadro selecionado 10 mm",
