@@ -10,16 +10,16 @@
 Escolha a pasta das fotos e o Lamina monta o álbum, lâmina por lâmina. Depois é trocar layouts,
 ajustar as fotos e mandar para a gráfica.
 
-[![Versão](https://img.shields.io/github/v/release/alberthpalhares/lamina-albuns?include_prereleases&label=vers%C3%A3o&color=0095B6)](https://github.com/alberthpalhares/lamina-albuns/releases)
-[![Downloads](https://img.shields.io/github/downloads/alberthpalhares/lamina-albuns/total?label=downloads&color=2A2D31)](https://github.com/alberthpalhares/lamina-albuns/releases)
+[![Versão](https://img.shields.io/github/v/release/alberthpalhares/lamina-app?include_prereleases&label=vers%C3%A3o&color=0095B6)](https://github.com/alberthpalhares/lamina-app/releases)
+[![Downloads](https://img.shields.io/github/downloads/alberthpalhares/lamina-app/total?label=downloads&color=2A2D31)](https://github.com/alberthpalhares/lamina-app/releases)
 [![Licença](https://img.shields.io/badge/licen%C3%A7a-Apache--2.0-2A2D31)](LICENSE)
-[![Verificação](https://github.com/alberthpalhares/lamina-albuns/actions/workflows/ci.yml/badge.svg)](https://github.com/alberthpalhares/lamina-albuns/actions/workflows/ci.yml)
+[![Verificação](https://github.com/alberthpalhares/lamina-app/actions/workflows/ci.yml/badge.svg)](https://github.com/alberthpalhares/lamina-app/actions/workflows/ci.yml)
 
-[![Baixar para Windows](https://img.shields.io/badge/Baixar_para-Windows_10_e_11-0095B6?style=for-the-badge)](https://github.com/alberthpalhares/lamina-albuns/releases/download/v0.1.0-beta.6/Lamina-win-beta-Setup.exe)
-[![Baixar para Mac](https://img.shields.io/badge/Baixar_para-Mac_Intel_e_Apple-0095B6?style=for-the-badge)](https://github.com/alberthpalhares/lamina-albuns/releases/download/v0.1.0-beta.6/Lamina-osx-beta-Setup.pkg)
-[![Baixar para Linux](https://img.shields.io/badge/Baixar_para-Linux-0095B6?style=for-the-badge)](https://github.com/alberthpalhares/lamina-albuns/releases/download/v0.1.0-beta.6/Lamina-linux-beta.AppImage)
+[![Baixar para Windows](https://img.shields.io/badge/Baixar_para-Windows_10_e_11-0095B6?style=for-the-badge)](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.6/Lamina-win-beta-Setup.exe)
+[![Baixar para Mac](https://img.shields.io/badge/Baixar_para-Mac_Intel_e_Apple-0095B6?style=for-the-badge)](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.6/Lamina-osx-beta-Setup.pkg)
+[![Baixar para Linux](https://img.shields.io/badge/Baixar_para-Linux-0095B6?style=for-the-badge)](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.6/Lamina-linux-beta.AppImage)
 
-<sub>Versão 0.1.0-beta.6 · [como instalar sem susto](#instalar) · [site](https://alberthpalhares.github.io/lamina-albuns/) · [todas as versões](https://github.com/alberthpalhares/lamina-albuns/releases)</sub>
+<sub>Versão 0.1.0-beta.6 · [como instalar sem susto](#instalar) · [site](https://alberthpalhares.github.io/lamina-app/) · [todas as versões](https://github.com/alberthpalhares/lamina-app/releases)</sub>
 
 <img src="site/midia/diagramar.webp" alt="O Lamina com o álbum de exemplo: as lâminas passam e o layout de cada uma troca pelas setas" width="900">
 
@@ -111,7 +111,7 @@ um programa. O Lamina é gratuito e não paga essa assinatura, então o sistema 
 genérico na primeira vez. Para você confiar sem precisar acreditar na nossa palavra:
 
 - o código é aberto e cada instalador é montado pelo GitHub Actions, à vista de todos, a partir
-  deste código ([veja as compilações](https://github.com/alberthpalhares/lamina-albuns/actions/workflows/release.yml));
+  deste código ([veja as compilações](https://github.com/alberthpalhares/lamina-app/actions/workflows/release.yml));
 - cada versão publica o arquivo `SHA256SUMS`, para você conferir que o arquivo baixado é o mesmo
   (veja [Conferir o download](#conferir-o-download));
 - depois de instalado, o Lamina se atualiza sozinho, sem o aviso.
@@ -131,7 +131,7 @@ antivírus continua examinando tudo normalmente.
 
 **Plano B — pelo navegador (com o aviso).**
 
-1. Baixe o [`Setup.exe`](https://github.com/alberthpalhares/lamina-albuns/releases/download/v0.1.0-beta.6/Lamina-win-beta-Setup.exe).
+1. Baixe o [`Setup.exe`](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.6/Lamina-win-beta-Setup.exe).
 2. Se o navegador segurar o arquivo: no **Edge**, clique nos três pontinhos ao lado do download →
    **Manter** → **Mostrar mais** → **Manter mesmo assim**; no **Chrome**, clique em **Manter**.
 3. Abra o arquivo. Na janela azul **"O Windows protegeu o computador"**, clique em
@@ -160,7 +160,7 @@ O Lamina vai para a pasta **Aplicativos** e passa a abrir os arquivos `.lamina` 
 
 **Plano B — pelo instalador (com o aviso).**
 
-1. Baixe o [`Setup.pkg`](https://github.com/alberthpalhares/lamina-albuns/releases/download/v0.1.0-beta.6/Lamina-osx-beta-Setup.pkg) e abra.
+1. Baixe o [`Setup.pkg`](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.6/Lamina-osx-beta-Setup.pkg) e abra.
 2. Se o Mac disser que **não pode verificar o desenvolvedor**, clique em **OK** (ou **Concluído**).
 3. Abra **Ajustes do Sistema** → **Privacidade e Segurança**, role até o fim e, ao lado da
    mensagem sobre o Lamina, clique em **Abrir mesmo assim**. Confirme com a senha do Mac.
@@ -184,12 +184,12 @@ xattr -dr com.apple.quarantine /Applications/Lamina.app
 **Plano A — pelo terminal:**
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-albuns/main/crates/lamina-app/dist/instalar.sh | sh
+curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-app/main/crates/lamina-app/dist/instalar.sh | sh
 ```
 
 O Lamina fica em `~/.local/bin/Lamina.AppImage`; abra uma vez por ele para o atalho entrar no menu.
 
-**Plano B — pelo navegador.** Baixe o [`.AppImage`](https://github.com/alberthpalhares/lamina-albuns/releases/download/v0.1.0-beta.6/Lamina-linux-beta.AppImage), clique com o botão direito →
+**Plano B — pelo navegador.** Baixe o [`.AppImage`](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.6/Lamina-linux-beta.AppImage), clique com o botão direito →
 Propriedades → **Permitir executar como programa** (ou `chmod +x Lamina-linux*.AppImage`) e abra.
 
 **Se nada abrir:** instale o FUSE 2 — `sudo apt install libfuse2` (no Ubuntu 24.04 ou mais novo,
@@ -214,7 +214,7 @@ sha256sum ~/Downloads/Lamina-linux*.AppImage           # Linux
 Se o antivírus acusar o Lamina, é quase sempre um alarme falso de programa sem assinatura: confira
 o SHA-256, envie o arquivo para análise da Microsoft em
 <https://www.microsoft.com/wdsi/filesubmission> e nos avise numa
-[issue](https://github.com/alberthpalhares/lamina-albuns/issues/new/choose).
+[issue](https://github.com/alberthpalhares/lamina-app/issues/new/choose).
 
 **Versões de teste:** os comandos instalam a versão estável mais nova (enquanto não houver uma, a
 de teste mais nova). Para ficar sempre com a de teste, rode `$env:LAMINA_BETA = 1` antes do comando no Windows, ou troque o fim por
@@ -344,7 +344,7 @@ O Lamina avisa sozinho quando há versão nova e se atualiza com um clique, sem 
 No Lamina, **Ajuda → Enviar sugestão ou problema…** abre um formulário curto, sem precisar de
 conta, já com a versão do programa. Se algo deu errado, **Ajuda → Abrir pasta de registros**
 mostra o arquivo `lamina.log` para anexar. Quem tem conta no GitHub também pode abrir uma
-[issue](https://github.com/alberthpalhares/lamina-albuns/issues/new/choose). Nunca anexe fotos de
+[issue](https://github.com/alberthpalhares/lamina-app/issues/new/choose). Nunca anexe fotos de
 clientes.
 
 ## Para quem programa

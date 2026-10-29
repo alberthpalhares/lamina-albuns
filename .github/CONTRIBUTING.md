@@ -8,7 +8,7 @@ ou mandar código.
 
 - **Sem conta no GitHub:** no Lamina, use **Ajuda → Enviar sugestão ou problema…**. O formulário já
   leva a versão do programa.
-- **Com conta no GitHub:** abra uma [issue](https://github.com/alberthpalhares/lamina-albuns/issues/new/choose)
+- **Com conta no GitHub:** abra uma [issue](https://github.com/alberthpalhares/lamina-app/issues/new/choose)
   e escolha o modelo (problema, sugestão ou problema na instalação).
 - Se algo deu errado, **Ajuda → Abrir pasta de registros** mostra o `lamina.log`: anexe esse
   arquivo.

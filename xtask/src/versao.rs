@@ -11,7 +11,7 @@ pub const NOTES_FILE: &str = "crates/lamina-app/dist/novidades.md";
 /// O repositório público, num lugar só (spec VP, regra 7).
 macro_rules! repo {
     () => {
-        "alberthpalhares/lamina-albuns"
+        "alberthpalhares/lamina-app"
     };
 }
 pub const REPO: &str = repo!();
