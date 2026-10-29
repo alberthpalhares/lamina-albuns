@@ -52,7 +52,13 @@ impl Command {
             ),
             C::FindMissing => (
                 "arquivo.procurar-fotos",
-                "Procurar fotos ausentes…",
+                "Reencontrar fotos…",
+                Menu::File,
+                None,
+            ),
+            C::LocatePhoto => (
+                "arquivo.localizar-foto",
+                "Localizar esta foto…",
                 Menu::File,
                 None,
             ),

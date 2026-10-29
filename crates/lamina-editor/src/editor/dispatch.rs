@@ -56,6 +56,10 @@ impl Editor {
             Command::Export | Command::Specification | Command::Presets => true,
             Command::MountAlbum | Command::ImportPhotos | Command::ImportFolder => true,
             Command::FindMissing => !s.missing().is_empty(),
+            Command::LocatePhoto => self
+                .selected_frame()
+                .and_then(|f| self.missing_photo_at(f))
+                .is_some(),
             Command::About | Command::ToggleReordered => true,
             Command::Undo => s.can_undo(),
             Command::Redo => s.can_redo(),

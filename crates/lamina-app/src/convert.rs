@@ -158,6 +158,7 @@ pub fn photo_data(row: &PhotoRow, aspect: f32, image: Option<Image>) -> PhotoDat
         selected: row.picked,
         aspect,
         dim: row.dim,
+        missing: row.missing,
     }
 }
 

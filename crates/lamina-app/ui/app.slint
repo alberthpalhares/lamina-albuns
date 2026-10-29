@@ -33,6 +33,7 @@ import { OrganizeUi, LassoBox, MarkData, TickData, BarRow } from "organize.slint
 import { Motion } from "motion.slint";
 import { ClearRecentsDialog, RecentsUi, RecentCard, RecentItem } from "welcome.slint";
 import { ClearAllDialog, ClearUi } from "clear_all.slint";
+import { RelinkDialog, RelinkUi, RelinkRowUi } from "relink.slint";
 import { DragUi } from "drag.slint";
 import { TopBar, NoticeBar } from "topbar.slint";
 import { Stage } from "stage.slint";
@@ -42,7 +43,7 @@ import { NewsUi, NewsDialog, NewsEntryData } from "news.slint";
 import { RollUi, RollCell, RollButton, RollHitData } from "roll.slint";
 
 export { BuildUi }
-export { CalibrateUi, SpreadData, FrameData, BoxData, LayoutItem, BandUi, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, FontUi, FontRowUi, ModelUi, RecentsUi, ClearUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, BarRow, ContextUi, ContextRow, PaletteUi, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, ShortcutsUi, RecoverUi, ShortcutGroup, ShortcutRow, NewsUi, NewsEntryData, RollUi, RollCell, RollButton, RollHitData }
+export { CalibrateUi, SpreadData, FrameData, BoxData, LayoutItem, BandUi, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, FontUi, FontRowUi, ModelUi, RecentsUi, ClearUi, RelinkUi, RelinkRowUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, BarRow, ContextUi, ContextRow, PaletteUi, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, ShortcutsUi, RecoverUi, ShortcutGroup, ShortcutRow, NewsUi, NewsEntryData, RollUi, RollCell, RollButton, RollHitData }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -293,7 +294,7 @@ export component AppWindow inherits Window {
             MenuItem { title: "Renomear álbum…"; enabled: root.has-project; activated => { root.command("arquivo.renomear"); } }
             MenuSeparator { }
             MenuItem { title: "Exportar…  (Ctrl+E)"; enabled: root.has-project; activated => { root.command("arquivo.exportar"); } }
-            MenuItem { title: "Procurar fotos ausentes…"; enabled: root.has-missing; activated => { root.command("arquivo.procurar-fotos"); } }
+            MenuItem { title: "Reencontrar fotos…"; enabled: root.has-missing; activated => { root.command("arquivo.procurar-fotos"); } }
             MenuSeparator { }
             MenuItem { title: "Especificação do álbum…"; enabled: root.has-project; activated => { root.command("arquivo.especificacao"); } }
             MenuItem { title: "Montagem do álbum…"; enabled: root.has-project; activated => { root.command("arquivo.montagem"); } }
@@ -407,7 +408,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(event) => {
-            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || ClearUi.show || CalibrateUi.show || ShortcutsUi.show || NewsUi.show || BuildUi.show || RecoverUi.show || root.busy-text != "") {
+            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || ClearUi.show || RelinkUi.show || CalibrateUi.show || ShortcutsUi.show || NewsUi.show || BuildUi.show || RecoverUi.show || root.busy-text != "") {
                 return reject;
             }
             // No modo organizar, Espaço segurado é a mão (spec EG, seção 3).
@@ -648,6 +649,9 @@ export component AppWindow inherits Window {
         closed => { root.focus-main(); }
     }
     if ClearUi.show: ClearAllDialog {
+        closed => { root.focus-main(); }
+    }
+    if RelinkUi.show: RelinkDialog {
         closed => { root.focus-main(); }
     }
     // Por cima de tudo na abertura, até das novidades (spec CS, regra 4).

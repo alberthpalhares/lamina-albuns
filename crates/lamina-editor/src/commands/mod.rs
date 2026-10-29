@@ -32,6 +32,9 @@ pub enum Command {
     SaveAs,
     Export,
     FindMissing,
+    /// "Localizar esta foto…": o arquivo de uma foto ausente, pelo botão direito ou pelo duplo
+    /// clique no quadro (spec RF, regra 4).
+    LocatePhoto,
     Specification,
     Presets,
     Undo,

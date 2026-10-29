@@ -56,6 +56,7 @@ mod presets;
 mod recents;
 mod refresh;
 mod relink;
+mod relink_dialog;
 mod roll;
 mod roll_cells;
 mod roll_connect;
@@ -141,6 +142,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     history::connect(window, app);
     recents::connect(window, app);
     clear_all::connect(window, app);
+    relink_dialog::connect(window, app);
     importing::connect(window, app);
     calibrate::connect(window, app);
     roll_connect::connect(window, app);

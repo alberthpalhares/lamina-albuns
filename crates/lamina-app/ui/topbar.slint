@@ -155,7 +155,7 @@ export component TopBar inherits Rectangle {
     }
 }
 
-// O aviso amarelo embaixo da barra, com "Procurar fotos…" quando faltam fotos.
+// O aviso amarelo embaixo da barra, com "Reencontrar fotos…" quando faltam fotos (spec RF).
 export component NoticeBar inherits Rectangle {
     in property <string> text;
     in property <bool> has-missing;
@@ -167,6 +167,6 @@ export component NoticeBar inherits Rectangle {
         padding-right: 8px;
         spacing: 12px;
         Text { text: root.text; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
-        if root.has-missing: BarButton { text: "Procurar fotos…"; clicked => { root.command("arquivo.procurar-fotos"); } }
+        if root.has-missing: BarButton { text: "Reencontrar fotos…"; clicked => { root.command("arquivo.procurar-fotos"); } }
     }
 }

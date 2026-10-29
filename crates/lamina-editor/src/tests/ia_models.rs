@@ -162,7 +162,7 @@ fn ia_b23_reencontrar_fotos() {
     assert_eq!(reply.text, "3 fotos reencontradas.");
     assert!(lab.editor.session().unwrap().missing().is_empty());
     assert_eq!(lab.labels(), ["IA: Reencontrar fotos · 3 fotos"]);
-    // Arquivo → Procurar fotos ausentes… na mesma pasta.
+    // Arquivo → Reencontrar fotos… na mesma pasta.
     let mut window = Session::open(&file).unwrap();
     let missing = window.missing().to_vec();
     let found = search_folder(window.project(), &missing, &moved, &|_, _| {});

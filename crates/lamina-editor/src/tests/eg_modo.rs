@@ -65,6 +65,9 @@ fn eg_b1_entrar_e_sair() {
 #[test]
 fn eg_b2_lamina_toda_sangrada() {
     let mut editor = editor_at(album(4), 1);
+    // As fotos de teste não têm arquivo: aqui elas contam como presentes. Numa foto ausente, o
+    // duplo clique leva a "Localizar esta foto…" (spec RF, regra 8; RF-B7).
+    editor.session_mut().unwrap().checked_missing(&[]);
     // Duplo clique na margem fora da lâmina (nenhum quadro): entra no modo.
     assert_eq!(editor.double_click(None), DoubleClick::Organize);
     // Duplo clique na foto: abre o recorte, também dentro do modo.

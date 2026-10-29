@@ -58,6 +58,7 @@ pub(super) fn is_dialog(command: Command) -> bool {
             | C::SaveAs
             | C::Export
             | C::FindMissing
+            | C::LocatePhoto
             | C::Specification
             | C::Presets
             | C::About

@@ -5,13 +5,14 @@ use super::Command;
 
 impl Command {
     /// Todos os comandos, na ordem em que a IA e os testes os veem.
-    pub const ALL: [Command; 106] = [
+    pub const ALL: [Command; 107] = [
         Command::NewAlbum,
         Command::Open,
         Command::Save,
         Command::SaveAs,
         Command::Export,
         Command::FindMissing,
+        Command::LocatePhoto,
         Command::Specification,
         Command::Presets,
         Command::Undo,

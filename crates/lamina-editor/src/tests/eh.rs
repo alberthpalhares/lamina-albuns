@@ -117,7 +117,7 @@ fn eh_b5_foto_que_sumiu_ao_exportar() {
     let m = err.human();
     assert!(m.title.contains("\"f03.jpg\""), "{m:?}");
     assert!(
-        m.what_to_do.contains("Arquivo → Procurar fotos ausentes…"),
+        m.what_to_do.contains("Arquivo → Reencontrar fotos…"),
         "{m:?}"
     );
 }

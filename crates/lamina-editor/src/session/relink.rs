@@ -3,6 +3,8 @@
 
 use std::convert::Infallible;
 
+use lamina_core::PhotoId;
+
 use super::{Session, missing_of};
 use crate::relink::Found;
 
@@ -30,12 +32,39 @@ impl Session {
                     photo.path.clone_from(&f.path);
                     photo.width_px = f.width;
                     photo.height_px = f.height;
+                    if let Some(print) = &f.fingerprint {
+                        photo.fingerprint = Some(print.clone());
+                    }
                 }
             }
             Ok(())
         });
         self.missing = missing_of(self.project());
         n
+    }
+
+    /// A janela "Algumas fotos mudaram de lugar" abre uma vez por abertura, e só quando ainda
+    /// faltam fotos depois da procura de sempre (spec RF, regra 2). `true` = abrir agora.
+    pub fn take_relink_prompt(&mut self) -> bool {
+        if self.missing.is_empty() || self.relink_asked {
+            return false;
+        }
+        self.relink_asked = true;
+        true
+    }
+
+    /// O resultado de conferir de novo (spec RF, regra 6): as fotos que ainda faltam nos mesmos
+    /// caminhos. Não é uma edição. `true` = alguma voltou.
+    pub fn checked_missing(&mut self, still: &[PhotoId]) -> bool {
+        let now: Vec<PhotoId> = self
+            .missing
+            .iter()
+            .copied()
+            .filter(|id| still.contains(id))
+            .collect();
+        let changed = now.len() != self.missing.len();
+        self.missing = now;
+        changed
     }
 
     /// A procura ao abrir chega depois, em segundo plano: se o fotógrafo já desfez algo, aplicar

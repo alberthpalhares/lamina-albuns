@@ -109,7 +109,7 @@ impl Human for ProjectFileError {
             ),
             ProjectFileError::MissingPhoto { name: photo, .. } => (
                 format!("A foto \"{}\" não está mais onde estava.", name(photo)),
-                "Use Arquivo → Procurar fotos ausentes… e escolha a pasta onde ela está agora."
+                "Use Arquivo → Reencontrar fotos… e escolha a pasta onde ela está agora."
                     .to_owned(),
             ),
             ProjectFileError::Core(e) => return e.human(),

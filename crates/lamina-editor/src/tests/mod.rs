@@ -80,6 +80,7 @@ mod pf_selecao;
 mod pn;
 mod pr;
 mod rc;
+mod rf;
 mod rl;
 mod rl_contas;
 mod rl_imagem;
