@@ -27,6 +27,8 @@ pub struct Session {
     saved: Option<Project>,
     current: usize,
     missing: Vec<PhotoId>,
+    /// A janela "Algumas fotos mudaram de lugar" já abriu nesta abertura (spec RF, regra 2).
+    relink_asked: bool,
     warnings: Vec<Warning>,
     /// Aberto de um arquivo (o histórico começa em "Álbum aberto"; spec HI).
     opened: bool,
@@ -64,6 +66,7 @@ impl Session {
             file,
             current: 0,
             missing,
+            relink_asked: false,
             warnings,
             opened: saved,
             export_folder: None,
@@ -147,6 +150,11 @@ impl Session {
         true
     }
 
+    /// Volta para a posição 0, que vale também num álbum sem lâminas (spec LL).
+    pub(crate) fn rewind(&mut self) {
+        self.current = 0;
+    }
+
     /// "3 lâminas (6 páginas) · 12 de 12 fotos usadas".
     pub fn counter(&self) -> String {
         let project = self.project();
@@ -216,6 +224,12 @@ impl Session {
 }
 
 /// As fotos cujo arquivo não existe no caminho do projeto.
+/// As fotos cujo arquivo não existe agora (spec RF, regra 6: só olha se existe, sem ler o
+/// conteúdo). Pode levar um tempo num disco de rede: a janela chama fora da linha dela.
+pub fn still_missing(project: &Project) -> Vec<PhotoId> {
+    missing_of(project)
+}
+
 fn missing_of(project: &Project) -> Vec<PhotoId> {
     project
         .photos

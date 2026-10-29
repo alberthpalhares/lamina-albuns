@@ -7,7 +7,7 @@ use lamina_core::{Frame, FrameContent, FrameId, Mm, Project, Rect, SpreadId};
 
 use super::Editor;
 use crate::EditorError;
-use crate::edits::clear_frame;
+use crate::edits::remove_photos;
 use crate::hand::{fit_rect, remove_frame};
 
 /// Quanto o colado na mesma lâmina sai deslocado, em mm (regra 12).
@@ -130,7 +130,8 @@ impl Editor {
         done
     }
 
-    /// Delete no modo, em camadas: com fotos na seleção, tira as fotos ("Tirar 2 fotos"); sem
+    /// Delete no modo, em camadas: com fotos na seleção, tira as fotos com os quadros e refaz o
+    /// layout ("Tirar 2 fotos"); sem
     /// fotos, apaga os quadros ("Apagar 3 quadros").
     pub(super) fn delete_group(&mut self) -> bool {
         let frames = self.selected_frames();
@@ -145,9 +146,11 @@ impl Editor {
             .collect();
         if !photos.is_empty() {
             let label = counted("Tirar", PHOTOS, photos.len());
-            return self.change(&label, |p, i| {
-                photos.iter().try_for_each(|f| clear_frame(p, i, *f))
-            });
+            let done = self.change(&label, |p, i| remove_photos(p, i, &photos));
+            if done {
+                self.clear_frames();
+            }
+            return done;
         }
         let label = counted("Apagar", FRAMES, frames.len());
         let done = self.change(&label, |p, i| {

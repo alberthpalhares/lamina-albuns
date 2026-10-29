@@ -1,13 +1,13 @@
-//! Reencontrar fotos pela IA (spec IA, `reencontrar_fotos`; spec EI, regras 6 e 7): procura as
-//! fotos faltando numa pasta permitida pela impressão digital, como Arquivo → Procurar fotos
-//! ausentes…, e religa numa edição só.
+//! Reencontrar fotos pela IA (spec IA, `reencontrar_fotos`; spec EI, regras 6 e 7; spec RF, regra
+//! 9): procura as fotos faltando numa pasta permitida como Arquivo → Reencontrar fotos… (o nome
+//! primeiro, o conteúdo só se precisar) e religa numa edição só.
 
 use std::path::Path;
 
 use serde_json::json;
 
 use super::{Agent, Progress, RelinkCall, ToolError, ToolReply, session, session_mut};
-use crate::{Editor, not_found_message, relinked_message, search_folder};
+use crate::{Editor, not_found_message, relinked_message, search_moved};
 
 impl Agent {
     pub(super) fn relink(
@@ -22,7 +22,7 @@ impl Agent {
         if missing.is_empty() {
             return Err(ToolError::NothingMissing);
         }
-        let found = search_folder(s.project(), &missing, &folder, progress);
+        let found = search_moved(s.project(), &missing, None, &folder, progress);
         let s = session_mut(editor)?;
         let relinked = s.relink(&found);
         if relinked == 0 {

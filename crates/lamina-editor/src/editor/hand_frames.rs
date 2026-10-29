@@ -3,8 +3,9 @@
 
 use lamina_core::{FrameContent, Mm, PageSide, Rect};
 
-use super::Editor;
+use super::{Editor, TextFocus};
 use crate::hand::{add_empty_frame, add_frame_at, add_text, page_for, remove_frame, reorder};
+use crate::hand_click::{is_click, sized_at, text_at};
 
 impl Editor {
     /// T: texto novo na página pedida (a do mouse), selecionado (regra 11).
@@ -12,7 +13,7 @@ impl Editor {
     pub fn new_text(&mut self, side: Option<PageSide>) -> bool {
         let done = self.new_frame("Novo texto", side, true);
         if done {
-            self.ask_panel_for_selected();
+            self.show_text(TextFocus::Cursor);
         }
         done
     }
@@ -51,12 +52,29 @@ impl Editor {
         let w = canvas.width.get();
         let (x0, x1) = (a.0.min(b.0), a.0.max(b.0));
         let (y0, y1) = (a.1.min(b.1), a.1.max(b.1));
-        let rect = Rect::new(
+        let mut rect = Rect::new(
             Mm(canvas.x.get() + x0 * w),
             Mm(canvas.y.get() + y0 * w),
             Mm((x1 - x0) * w),
             Mm((y1 - y0) * w),
         );
+        // Um clique sem arrastar: com Texto, em cima de um texto, abre esse texto; no vazio, o
+        // quadro nasce no tamanho de um novo, centrado no clique (correção TX de 2026-10-28).
+        if is_click(rect) {
+            let at = (
+                rect.x.get() + rect.width.get() / 2.0,
+                rect.y.get() + rect.height.get() / 2.0,
+            );
+            if let Some(frame) = text
+                .then(|| text_at(s.project(), s.current(), at))
+                .flatten()
+            {
+                self.selected_frame = Some(frame);
+                self.show_text(TextFocus::Cursor);
+                return false;
+            }
+            rect = sized_at(s.project(), at, text);
+        }
         let label = if text { "Novo texto" } else { "Novo quadro" };
         let mut at = None;
         let done = self.change(label, |p, i| {
@@ -69,6 +87,8 @@ impl Editor {
         });
         if let (true, Some(id)) = (done, id) {
             self.select_ids(vec![id]);
+            // O texto novo nasce vazio: o cursor vai para o campo dele.
+            self.show_text(TextFocus::Cursor);
         }
         done
     }

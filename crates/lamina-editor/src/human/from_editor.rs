@@ -16,6 +16,22 @@ impl Human for EditorError {
                 format!("Não encontrei fotos na pasta \"{}\".", name(folder)),
                 "Escolha uma pasta com fotos em JPEG, PNG ou TIFF.".to_owned(),
             ),
+            EditorError::OnlyOtherFiles { folder, others } => (
+                format!("Não encontrei fotos na pasta \"{}\".", name(folder)),
+                format!(
+                    "Ela tem {}, mas nenhum é foto em JPEG, PNG ou TIFF. Escolha a pasta das                      fotos.",
+                    crate::empty_import::files(*others, "arquivo")
+                ),
+            ),
+            EditorError::NoPhotoReadable { folder, found, .. } => (
+                format!(
+                    "Não consegui ler {} da pasta \"{}\".",
+                    if *found == 1 { "a foto".to_owned() } else { format!("as {found} fotos") },
+                    name(folder)
+                ),
+                "Confira se o disco está conectado e se o Lamina tem permissão para ler essa                  pasta; os motivos estão nos detalhes."
+                    .to_owned(),
+            ),
             EditorError::NoProject => (
                 "Nenhum álbum está aberto.".to_owned(),
                 "Abra um álbum ou crie um novo.".to_owned(),
@@ -47,6 +63,11 @@ impl Human for EditorError {
                     "Para mudá-la de lugar dentro dela, vá até a lâmina {} e arraste lá.",
                     spread + 1
                 ),
+            ),
+            EditorError::LastPhoto { spread } => (
+                format!("A lâmina {} ficaria sem fotos.", spread + 1),
+                "Leve outra foto para ela antes, ou apague a lâmina se não precisa mais dela."
+                    .to_owned(),
             ),
             EditorError::NoFrame => return bug(details),
             EditorError::Media(e) => return e.human(),

@@ -90,10 +90,14 @@ impl Editor {
 
     fn frame_menu(&self) -> Vec<ContextEntry> {
         use Command as C;
-        let mut menu: Vec<ContextEntry> = [C::CropMode, C::AdjustPhoto, C::ClearFrame]
+        let mut menu: Vec<ContextEntry> = [C::EditText, C::CropMode, C::AdjustPhoto, C::ClearFrame]
             .iter()
             .map(|c| self.entry(*c))
             .collect();
+        // Só numa foto ausente, e no topo: é o que o fotógrafo precisa fazer (spec RF, regra 8).
+        if self.available(C::LocatePhoto) {
+            menu.insert(0, self.entry(C::LocatePhoto));
+        }
         menu.push(ContextEntry::Separator);
         for c in [C::CopyFrames, C::PasteFrames, C::DuplicateFrames] {
             menu.push(self.entry(c));

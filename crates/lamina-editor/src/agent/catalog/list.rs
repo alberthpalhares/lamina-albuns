@@ -2,8 +2,8 @@
 
 use super::super::calls::{
     ApplyLayout, BuildAlbumCall, BuildSpread, ExportCall, FrameArg, ListPhotos, MovePhoto,
-    MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, PlacePhoto, Position, RunCommand, SaveAlbum,
-    SpreadArg, Steps, SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
+    MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, PlacePhoto, Position, RenameAlbum, RunCommand,
+    SaveAlbum, SpreadArg, Steps, SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
 };
 use super::super::params::{
     AddText, CropCall, EditText, LookCall, RelinkCall, RespecCall, SaveModel, UseModel,
@@ -34,6 +34,10 @@ fn first_part() -> Vec<ToolInfo> {
             "salvar_album",
             "Grava o álbum no arquivo dele ou, com caminho, salva como outro arquivo. O Lamina não \
              salva sozinho.",
+        ),
+        info::<RenameAlbum>(
+            "renomear_album",
+            "Troca o nome do álbum (o do topo da janela), como Arquivo → Renomear álbum…. O              arquivo .lamina não muda de nome; o nome novo vai para ele ao salvar.",
         ),
         info::<NoArgs>(
             "resumo_do_album",
@@ -81,7 +85,11 @@ fn first_part() -> Vec<ToolInfo> {
             "mover_foto",
             "Leva a foto de um quadro para outra lâmina: para um quadro (enche ou troca) ou, sem              para_quadro, como uma foto a mais (o layout do destino é refeito). O quadro de origem              fica vazio.",
         ),
-        info::<FrameArg>("tirar_foto", "Esvazia um quadro de foto."),
+        info::<FrameArg>(
+            "tirar_foto",
+            "Tira a foto com o quadro e refaz o layout da página ou da lâmina para as fotos que \
+             restaram (sem fotos, a lâmina fica em branco).",
+        ),
         info::<BuildSpread>(
             "montar_lamina",
             "Cria uma lâmina nova com as fotos escolhidas, no primeiro layout da lista.",

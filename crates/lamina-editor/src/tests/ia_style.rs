@@ -8,7 +8,6 @@ use super::common::Base;
 use super::ia_common::Lab;
 use crate::agent::ToolError;
 use crate::editor::{crop_for, set_crop};
-use crate::frame_form::font_names;
 use crate::{Editor, EditorError, TextChange};
 
 fn crop_of(project: &Project, index: usize, frame: usize) -> Crop {
@@ -143,7 +142,7 @@ fn definir_recorte_grava_e_recusa_quadro_sem_foto() {
 fn ia_b21_aparencia_e_texto() {
     let base = Base::with_photos(30, (600, 400));
     let (mut lab, file) = Lab::opened(&base, true);
-    let font = font_names()[1];
+    let font = lamina_render::FAMILIES[1].name;
     lab.ok(
         "aparencia",
         json!({ "lamina": 2, "espaco_mm": 5.0, "borda_mm": 1.0 }),
@@ -182,6 +181,8 @@ fn ia_b21_aparencia_e_texto() {
 
 #[test]
 fn aparencia_e_texto_recusam_sem_mudar_nada() {
+    // A recusa da fonte lista as do computador: nenhuma, para não depender da máquina.
+    let _fonts = lamina_render::testing::TestFonts::none();
     let base = Base::with_photos(30, (600, 400));
     let (mut lab, _) = Lab::opened(&base, true);
     let before = lab.project().clone();

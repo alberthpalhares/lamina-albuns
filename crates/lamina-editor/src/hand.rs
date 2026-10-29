@@ -8,7 +8,7 @@ use crate::EditorError;
 /// Menor quadro aceito, em mm (regra 6).
 pub const MIN_FRAME_MM: f64 = 5.0;
 /// Altura de um texto novo: duas linhas de 24 pt com entrelinha 1,2 (regra 11).
-const NEW_TEXT_HEIGHT_MM: f64 = 2.0 * 24.0 * 1.2 * 25.4 / 72.0;
+pub(crate) const NEW_TEXT_HEIGHT_MM: f64 = 2.0 * 24.0 * 1.2 * 25.4 / 72.0;
 
 fn spread_mut(project: &mut Project, index: usize) -> Result<&mut Spread, EditorError> {
     project.spreads.get_mut(index).ok_or(EditorError::NoFrame)

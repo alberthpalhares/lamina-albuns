@@ -2,14 +2,14 @@
 //!
 //! Renderizador único (ADR 0006): a mesma cena gera a prévia na tela e o arquivo de
 //! impressão (spec `renderizacao`). Tela de desenho com `tiny-skia`; fotos reduzidas com
-//! `fast_image_resize`; texto com `parley` e `skrifa`, só com as fontes embutidas (spec TX).
+//! `fast_image_resize`; texto com `parley` e `skrifa`, com as fontes embutidas (spec TX) e as do computador (spec FS).
 
 mod frame_photo;
 mod place;
 mod render;
 mod screen;
 mod style;
-mod text;
+pub(crate) mod text;
 mod tone;
 mod turn;
 mod types;
@@ -22,7 +22,10 @@ pub use screen::{
 };
 pub use style::Fill;
 pub use text::{
-    FAMILIES, Family, TextCheck, check_text, family, known_families, text_image, text_lines,
+    FAMILIES, Face, Family, FontReads, FontSource, FontStyles, InstalledFont, TextCheck,
+    check_text, family, font_preview, font_styles, installed_name, installed_names,
+    installed_names_ready, known_families, request_installed_names, testing, text_image,
+    text_lines,
 };
 pub use tone::{apply_tone, color_tables, gray, tone_table};
 pub use types::{MIN_PREVIEW, PhotoSource, RenderError, RenderTarget};
@@ -97,6 +100,10 @@ mod rd;
 #[cfg(test)]
 #[path = "tests/tx.rs"]
 mod tx;
+
+#[cfg(test)]
+#[path = "tests/fs.rs"]
+mod fs;
 
 #[cfg(test)]
 #[path = "tests/af.rs"]

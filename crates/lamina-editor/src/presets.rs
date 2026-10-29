@@ -1,6 +1,7 @@
 //! Presets (spec PR): especificações prontas, com a faixa de páginas e o que o laboratório pede na
-//! exportação. Os do Lamina vêm do programa (tamanhos comuns, sem nome de laboratório: regra 6 do
-//! AGENTS); os do fotógrafo ficam em `presets.json`, na pasta de configuração.
+//! exportação. Os do Lamina vêm do programa (tamanhos comuns e, desde 2026-10-29, os que um
+//! laboratório nos passou, em `lab_presets`); os do fotógrafo ficam em `presets.json`, na pasta de
+//! configuração.
 
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
@@ -32,8 +33,14 @@ pub struct Preset {
 
 /// Os presets do Lamina (regra 1): os tamanhos padrão de mercado de cada formato, largura ×
 /// altura da página (decisão do dono, 2026-10-19), todos a 300 DPI, 3 mm de sangria, 10 mm de
-/// zona segura, 20 a 80 páginas, JPEG em sRGB.
+/// zona segura, 20 a 80 páginas, JPEG em sRGB. Depois deles, os de laboratório.
 pub fn builtin_presets() -> Vec<Preset> {
+    let mut all = common_presets();
+    all.extend(crate::lab_presets::proalbuns_presets());
+    all
+}
+
+fn common_presets() -> Vec<Preset> {
     [
         ("Quadrado 15 × 15", 15.0, 15.0),
         ("Quadrado 20 × 20", 20.0, 20.0),

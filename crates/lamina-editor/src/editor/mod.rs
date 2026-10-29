@@ -20,6 +20,7 @@ mod backup;
 mod band;
 mod bottom_strips;
 mod build_album;
+mod clear_all;
 mod clipboard;
 mod context;
 mod crop;
@@ -48,6 +49,7 @@ mod photo_style;
 mod recents;
 mod rename;
 mod report;
+mod sequence_move;
 mod style;
 mod text_edit;
 
@@ -66,6 +68,7 @@ pub use organize::{DoubleClick, PaletteTool, SidePanel};
 pub use organize_zoom::{
     MAX_VIEW_ZOOM, VIEW_STEP, Zoom, ZoomMove, real_factor, step_factor, times_label, zoom_about,
 };
+pub use panel_need::TextFocus;
 pub use photo_style::PhotoStyle;
 pub use rename::{MAX_ALBUM_NAME, clean_album_name};
 pub use style::Look;
@@ -104,6 +107,8 @@ pub struct Editor {
     turning: bool,
     /// A janela deve abrir a aba Detalhes (spec AF, regra 10).
     wants_details: bool,
+    /// A janela deve abrir a aba Quadro do texto selecionado, com ou sem o cursor (spec TX).
+    text_focus: Option<TextFocus>,
     /// A última leitura da câmera (spec AF, regra 12): o arquivo é lido ao selecionar a foto, não
     /// a cada redesenho.
     camera: std::cell::RefCell<Option<(std::path::PathBuf, lamina_media::CameraDetails)>>,
@@ -176,6 +181,7 @@ impl Editor {
             pending_crop: None,
             turning: false,
             wants_details: false,
+            text_focus: None,
             camera: std::cell::RefCell::new(None),
             busy: false,
             strips: StripsStore::default(),

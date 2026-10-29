@@ -174,7 +174,8 @@ component Slot inherits Rectangle {
     }
     if f.missing && !root.small: Text {
         width: parent.width - 16px;
-        text: "Foto não encontrada\n" + f.label;
+        // O que fazer está no próprio quadro (spec RF, regra 8).
+        text: "Foto não encontrada\n" + f.label + "\nclique duas vezes para localizar";
         color: white;
         font-size: 12px;
         horizontal-alignment: center;

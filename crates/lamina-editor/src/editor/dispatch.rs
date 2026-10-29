@@ -33,6 +33,7 @@ impl Editor {
                     | Command::OpenLogs
                     | Command::ShowShortcuts
                     | Command::ShowNews
+                    | Command::Quit
             ) || (command == Command::ClearRecents && self.recents.has_unpinned());
         };
         // Atalhos por modo (spec EG, regra 2) e os comandos do modo organizar.
@@ -50,10 +51,15 @@ impl Editor {
         match command {
             Command::NewAlbum | Command::Open | Command::Save | Command::SaveAs => true,
             Command::OpenExample | Command::CloseAlbum | Command::RenameAlbum => true,
+            Command::Quit => true,
             Command::ClearRecents => self.recents.has_unpinned(),
             Command::Export | Command::Specification | Command::Presets => true,
             Command::MountAlbum | Command::ImportPhotos | Command::ImportFolder => true,
             Command::FindMissing => !s.missing().is_empty(),
+            Command::LocatePhoto => self
+                .selected_frame()
+                .and_then(|f| self.missing_photo_at(f))
+                .is_some(),
             Command::About | Command::ToggleReordered => true,
             Command::Undo => s.can_undo(),
             Command::Redo => s.can_redo(),
@@ -86,6 +92,8 @@ impl Editor {
             }
             Command::NewSpread => true,
             Command::DeleteSpread => s.spread_count() > 1,
+            Command::ClearAllPhotos => self.clear_counts().0 > 0,
+            Command::DeleteAllSpreads => s.spread_count() > 0,
             Command::MoveSpreadLeft => s.current() > 0,
             Command::MoveSpreadRight => s.current() < last,
             Command::CropMode => self.can_clear(),
@@ -136,6 +144,7 @@ impl Editor {
             | Command::TogglePanel
             | Command::ToggleReduceMotion
             | Command::AdjustPhoto
+            | Command::EditText
             | Command::ToggleLayoutBand
             | Command::Loupe
             | Command::ActualSize
@@ -234,6 +243,8 @@ impl Editor {
             Command::NewSpreadFromSelection => self.new_spread_from_selection(),
             Command::NewSpread => self.new_spread(),
             Command::DeleteSpread => self.delete_current(),
+            Command::ClearAllPhotos => self.clear_all_photos(),
+            Command::DeleteAllSpreads => self.delete_all_spreads(),
             Command::MoveSpreadLeft => self.move_by(-1),
             Command::MoveSpreadRight => self.move_by(1),
             // Os de diálogo chegam aqui pela janela: desmarcam o quadro e não mudam nada.

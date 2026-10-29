@@ -72,6 +72,8 @@ pub enum DoubleClick {
     Crop,
     /// Num texto: o cursor vai para o campo do texto.
     Text,
+    /// Numa foto ausente: "Localizar esta foto…" (spec RF, regra 8).
+    Locate(lamina_core::PhotoId),
     Nothing,
 }
 
@@ -139,9 +141,11 @@ impl Editor {
             };
         };
         self.select_frame(Some(frame));
-        if self.selected_text().is_some() {
-            // É no painel que se digita o texto (spec JE, regra 5).
-            self.ask_panel_for_selected();
+        if let Some(photo) = self.missing_photo_at(frame) {
+            return DoubleClick::Locate(photo);
+        }
+        // É no painel que se digita o texto (spec JE, regra 5); no modo organizar, sai dele.
+        if self.show_text(super::TextFocus::Cursor) {
             DoubleClick::Text
         } else if self.enter_crop(frame) {
             DoubleClick::Crop

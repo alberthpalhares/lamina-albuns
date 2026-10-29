@@ -1,0 +1,90 @@
+// Reencontrar fotos que mudaram de lugar (spec RF): a janela que diz qual pasta sumiu e o que
+// fazer, com "Mostrar onde está…" em cada pasta. Os textos e as decisões vêm do editor.
+
+import { Button } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Shade, Panel } from "widgets.slint";
+
+export struct RelinkRowUi {
+    // "Casamento".
+    name: string,
+    // "8 fotos · estava em D:\Fotos" ou "… · no disco E:, que não está conectado".
+    detail: string,
+    unplugged: bool,
+}
+
+export global RelinkUi {
+    in-out property <bool> show;
+    in property <string> title;
+    in property <string> intro;
+    in property <string> hint;
+    // A frase do disco externo, quando alguma pasta está num disco desconectado (regra 5).
+    in property <string> plug-in;
+    in property <[RelinkRowUi]> rows;
+    in property <string> more;
+    // O resultado da última procura ("Nenhuma das 8 fotos…"), dentro da janela (seção 6).
+    in property <string> status;
+    // A pergunta do arquivo com outro conteúdo (regra 4): não vazia = mostrar.
+    in property <string> question;
+    callback pick(int);
+    callback retry();
+    callback later();
+    callback answer(bool);
+}
+
+export component RelinkDialog inherits Shade {
+    callback closed();
+    Panel {
+        width: 560px;
+        height: RelinkUi.question != "" ? 170px : min(520px, 230px + RelinkUi.rows.length * 52px);
+        if RelinkUi.question != "": VerticalLayout {
+            padding: 24px;
+            spacing: 12px;
+            Text { text: "Localizar esta foto"; font-size: 18px; font-weight: 700; color: Theme.text; }
+            Text { text: RelinkUi.question; color: Theme.muted; wrap: word-wrap; }
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Button { text: "Cancelar"; clicked => { RelinkUi.answer(false); } }
+                Button { text: "Usar mesmo assim"; primary: true; clicked => { RelinkUi.answer(true); } }
+            }
+        }
+        if RelinkUi.question == "": VerticalLayout {
+            padding: 24px;
+            spacing: 10px;
+            Text { text: RelinkUi.title; font-size: 18px; font-weight: 700; color: Theme.text; wrap: word-wrap; }
+            Text { text: RelinkUi.intro; color: Theme.muted; wrap: word-wrap; }
+            for row[i] in RelinkUi.rows: HorizontalLayout {
+                height: 44px;
+                spacing: 12px;
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    alignment: center;
+                    Text { text: row.name; color: Theme.text; font-weight: 600; overflow: elide; }
+                    Text {
+                        text: row.detail;
+                        color: row.unplugged ? Theme.warning : Theme.muted;
+                        font-size: 12px;
+                        overflow: elide;
+                    }
+                }
+                Button {
+                    text: "Mostrar onde está…";
+                    accessible-label: "Mostrar onde está a pasta " + row.name;
+                    clicked => { RelinkUi.pick(i); }
+                }
+            }
+            if RelinkUi.more != "": Text { text: RelinkUi.more; color: Theme.muted; font-size: 12px; }
+            Text { text: RelinkUi.hint; color: Theme.text; wrap: word-wrap; }
+            if RelinkUi.plug-in != "": Text { text: RelinkUi.plug-in; color: Theme.warning; wrap: word-wrap; }
+            if RelinkUi.status != "": Text { text: RelinkUi.status; color: Theme.warning; wrap: word-wrap; }
+            Rectangle { vertical-stretch: 1; }
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Button { text: "Tentar de novo"; clicked => { RelinkUi.retry(); } }
+                Button { text: "Agora não"; clicked => { RelinkUi.show = false; RelinkUi.later(); root.closed(); } }
+            }
+        }
+    }
+}

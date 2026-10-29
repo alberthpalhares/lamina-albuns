@@ -76,8 +76,11 @@ fn three_steps(lab: &mut Lab) -> Vec<Project> {
     );
     assert_eq!(swapped.data["lamina"]["quadros"][1]["foto"]["numero"], free);
     states.push(lab.project().clone());
+    let before = lab.project().spreads[1].frames.len();
     let cleared = lab.ok("tirar_foto", json!({ "lamina": 2, "quadro": 3 }));
-    assert_eq!(kind(&cleared.data["lamina"]["quadros"][2]), "vazio");
+    let frames = cleared.data["lamina"]["quadros"].as_array().unwrap();
+    assert_eq!(frames.len(), before - 1, "a foto sai com o quadro");
+    assert!(frames.iter().all(|f| kind(f) != "vazio"));
     states.push(lab.project().clone());
     states
 }
@@ -96,11 +99,12 @@ fn ia_b6_colocar_trocar_e_tirar_fotos() {
             "IA: Tirar foto · lâmina 2"
         ]
     );
-    let text = lab.project().spreads[1].frames.len();
-    assert!(matches!(
-        lab.project().spreads[1].frames[text - 1].content,
-        FrameContent::Text(_)
-    ));
+    // O texto continua na lâmina depois de tirar a foto (o layout novo muda a ordem dos quadros).
+    let text = 1 + lab.project().spreads[1]
+        .frames
+        .iter()
+        .position(|f| matches!(f.content, FrameContent::Text(_)))
+        .unwrap();
     let free = unused(lab.project())[0].get();
     let err = lab
         .call(

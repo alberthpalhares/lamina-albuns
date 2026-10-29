@@ -77,6 +77,8 @@ export component BottomStrips inherits VerticalLayout {
     pure callback strip-landing(int, int) -> length;
     pure callback strip-edge(length, length) -> length;
     callback cut-moved(int, int);
+    pure callback seq-marker(length) -> length;
+    callback seq-drop(int, length);
     callback filter-changed(int);
     callback photo-double-clicked(int);
     callback photo-pressed(int, bool, bool);
@@ -165,6 +167,8 @@ export component BottomStrips inherits VerticalLayout {
                 height: 58px;
                 timeline: root.timeline;
                 cut-moved(spread, delta) => { root.cut-moved(spread, delta); }
+                seq-marker(x) => { root.seq-marker(x) }
+                seq-drop(row, x) => { root.seq-drop(row, x); }
                 go-to(i) => { root.go-to(i); }
                 focus-main => { root.focus-main(); }
             }

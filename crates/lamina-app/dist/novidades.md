@@ -13,6 +13,51 @@ botão "Experimente agora": `<!-- imagem: atalhos.png; comando: ajuda.atalhos --
 
 ## [Não lançado]
 
+## [0.1.0-beta.7] - 2026-10-29
+
+Esta versão traz as fontes do computador nos textos, reencontra as fotos que mudaram de lugar, deixa editar os textos que já estão na lâmina e leva fotos de uma lâmina para outra pela Sequência.
+
+- **As fontes do computador nos textos.** O campo Fonte da aba Quadro abre uma lista com busca: em
+  cima, as 6 fontes do Lamina; embaixo, todas as fontes instaladas no seu computador, cada nome
+  escrito na própria fonte. O texto sai na fonte escolhida na tela e na exportação. Se o álbum for
+  aberto num computador que não tem a fonte, o texto aparece em Inter, com aviso. Experimente:
+  selecione um texto, clique em Fonte e digite parte do nome de uma fonte.
+  <!-- imagem: fontes-do-computador.png -->
+- **As fotos que mudaram de lugar são reencontradas.** Se você levou a pasta de fotos para um SSD
+  externo ou outra pasta, o Lamina avisa ao abrir o álbum qual pasta sumiu. Clique em "Mostrar
+  onde está…", aponte a pasta nova uma vez, e as fotos voltam sozinhas, mesmo com milhares. Com o
+  disco desconectado, ele avisa; conecte o disco e clique em "Tentar de novo". Experimente: dê um
+  clique duplo numa foto com a marca amarela para localizá-la.
+  <!-- imagem: reencontrar-fotos.png; comando: arquivo.procurar-fotos -->
+- **Fotos de uma lâmina para outra pela Sequência.** Na faixa Sequência, arraste uma foto para
+  outra lâmina ou para outra posição: uma linha azul mostra onde ela vai entrar, e as lâminas que
+  mudam são refeitas sozinhas. Esc desiste. Experimente: arraste uma foto da lâmina 1 para depois
+  do corte da lâmina 2.
+  <!-- imagem: fotos-na-sequencia.png -->
+- **Tirar uma foto refaz o layout.** Com Delete, a foto sai junto com o quadro, e a página ganha a
+  melhor arrumação para as fotos que ficaram, sem buraco vazio. Experimente: selecione uma foto
+  numa lâmina com três e aperte Delete.
+  <!-- imagem: tirar-foto-refaz.png -->
+- **Editar os textos que já estão na lâmina.** Um clique num texto mostra o campo dele na aba
+  Quadro, mesmo com o painel escondido, e o texto fica sempre por cima das fotos. "Editar texto"
+  também está no menu Lâmina e no botão direito. Experimente: clique num texto do álbum de exemplo
+  e escreva.
+  <!-- comando: lamina.editar-texto -->
+- **Limpar as lâminas de uma vez.** No menu Lâmina, "Tirar as fotos de todas as lâminas…" deixa os
+  quadros vazios para diagramar de novo, e "Apagar todas as lâminas…" deixa o álbum sem lâminas;
+  as fotos continuam importadas, e Ctrl+Z desfaz. Experimente: abra o menu Lâmina.
+- **Sair pelo menu Arquivo.** Arquivo → Sair (Ctrl+Q; no Mac, Cmd+Q) fecha o Lamina, perguntando
+  antes se quer salvar. Experimente: abra o menu Arquivo.
+- **Botões de girar menores.** Girar 90°, ajustar 0,1° e voltar a 0° viraram ícones pequenos, numa
+  linha só ao lado do ângulo, cada um com o balão do que faz. Experimente: selecione uma foto e
+  passe o mouse nos ícones de girar.
+- **Tamanhos da ProAlbuns.** Os álbuns 15x20, 20x15, 20x20, 20x25 e 25x20 da ProAlbuns entraram
+  entre os tamanhos prontos, com a sangria que o laboratório pede. Experimente: crie um álbum novo
+  e escolha um tamanho ProAlbuns.
+- **Controle por IA mais certeiro.** A IA monta a primeira lâmina de um álbum em branco, dá nome ao
+  álbum novo e troca o nome dele, mostra quanto cada sugestão de layout preenche, e explica por que
+  uma importação ficou vazia. Experimente: peça à IA para criar um álbum com um nome.
+
 ## [0.1.0-beta.6] - 2026-10-28
 
 Esta versão corrige o Lamina que fechava sozinho, guarda uma cópia de segurança do trabalho e traz temperatura e matiz, controles deslizantes, lâminas que mudam de lugar arrastando e uma barra única no modo organizar.

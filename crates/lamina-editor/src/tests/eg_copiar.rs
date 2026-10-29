@@ -55,17 +55,19 @@ fn eg_b18_delete_em_camadas() {
     assert_eq!(photos, 2, "o álbum de teste tem duas fotos selecionadas");
     let frames = contents(&editor).len();
 
+    // Com fotos na seleção, elas saem com os quadros e o layout é refeito (spec FQ, regra 3).
     assert!(editor.run(Command::ClearFrame));
     assert_eq!(last_label(&editor), "Tirar 2 fotos");
     let now = contents(&editor);
-    assert_eq!(now.len(), frames, "nenhum quadro some na primeira camada");
-    assert!(matches!(now[0], FrameContent::Empty) && matches!(now[1], FrameContent::Empty));
-    assert!(matches!(now[2], FrameContent::Text(_)), "o texto fica");
-
-    assert!(editor.run(Command::ClearFrame));
-    assert_eq!(last_label(&editor), "Apagar 3 quadros");
-    assert_eq!(contents(&editor).len(), frames - 3);
+    assert_eq!(now.len(), frames - 2, "as fotos saem com os quadros");
+    assert!(matches!(now[0], FrameContent::Text(_)), "o texto fica");
     assert!(editor.selected_frames().is_empty());
+
+    // Sem fotos na seleção, os quadros são apagados.
+    editor.organize_click(0, false, false);
+    assert!(editor.run(Command::ClearFrame));
+    assert!(last_label(&editor).starts_with("Apagar"));
+    assert_eq!(contents(&editor).len(), frames - 3);
     assert!(!editor.available(Command::ClearFrame));
 }
 

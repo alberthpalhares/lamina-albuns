@@ -58,16 +58,20 @@ pub(super) fn is_dialog(command: Command) -> bool {
             | C::SaveAs
             | C::Export
             | C::FindMissing
+            | C::LocatePhoto
             | C::Specification
             | C::Presets
             | C::About
             | C::SaveModel
+            | C::RenameAlbum
             | C::Models
             | C::CheckUpdates
             | C::ToggleAutoUpdates
             | C::ToggleBeta
             | C::SendFeedback
             | C::OpenLogs
+            // Sair fecha o programa: só pela janela (spec SA).
+            | C::Quit
     )
 }
 
@@ -82,6 +86,7 @@ fn tool_for(command: Command) -> Option<&'static str> {
         Command::Specification => Some("trocar_especificacao"),
         Command::SaveModel => Some("salvar_modelo"),
         Command::BuildAlbum => Some("montar_album"),
+        Command::RenameAlbum => Some("renomear_album"),
         _ => None,
     }
 }

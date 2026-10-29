@@ -9,7 +9,7 @@ use parley::{
     OverflowWrap, StyleProperty,
 };
 
-use super::fonts::{family_or_default, with_context};
+use super::fonts::{drawn_or_default, with_context};
 
 /// Pontos tipográficos por polegada.
 const PT_PER_INCH: f64 = 72.0;
@@ -36,22 +36,22 @@ fn f32_of(v: f64) -> f32 {
 
 /// Monta as linhas de `text` num quadro de `size_mm` (largura, altura).
 pub(crate) fn lay_out(text: &TextBox, size_mm: (f64, f64)) -> Laid {
-    let family = family_or_default(&text.font);
+    let family = drawn_or_default(&text.font);
     let (width, height) = (f32_of(pt(size_mm.0)), f32_of(pt(size_mm.1)));
-    let mut layout = with_context(|fonts, scratch| {
+    let mut layout = with_context(&family, |fonts, scratch| {
         // `false`: sem arredondar as posições para a grade, que aqui é de pontos (regra 1).
         let mut b = scratch.ranged_builder(fonts, &text.text, 1.0, false);
-        b.push_default(StyleProperty::FontFamily(FontFamily::named(family.name)));
+        b.push_default(StyleProperty::FontFamily(FontFamily::named(family.name())));
         b.push_default(StyleProperty::FontSize(f32_of(text.size_pt)));
         b.push_default(StyleProperty::LineHeight(LineHeight::FontSizeRelative(
             f32_of(text.line_spacing),
         )));
         // Palavra maior que o quadro quebra no meio, em vez de vazar pela lateral.
         b.push_default(StyleProperty::OverflowWrap(OverflowWrap::Anywhere));
-        if text.bold && family.bold {
+        if text.bold && family.bold() {
             b.push_default(StyleProperty::FontWeight(FontWeight::BOLD));
         }
-        if text.italic && family.italic {
+        if text.italic && family.italic() {
             b.push_default(StyleProperty::FontStyle(FontStyle::Italic));
         }
         b.build(&text.text)

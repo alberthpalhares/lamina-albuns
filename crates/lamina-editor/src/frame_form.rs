@@ -2,7 +2,9 @@
 //! regra 3; a pendência foi para a EG), contadas do canto do corte, e os campos do texto. Ler o que o fotógrafo digitou também mora aqui (regra 12).
 
 use lamina_core::{LINE_SPACING, Mm, PageSide, Project, Rect, Rgb, TEXT_SIZE_PT, TextBox};
-use lamina_render::{FAMILIES, family};
+use lamina_render::font_styles;
+
+use crate::font_picker::MISSING;
 
 use crate::Editor;
 use crate::hand::frame_mm;
@@ -28,8 +30,11 @@ pub struct FrameForm {
 #[derive(Debug, Clone, PartialEq)]
 pub struct TextForm {
     pub text: String,
-    /// Posição da fonte na lista ([`font_names`]); `None` para fonte que não existe.
-    pub font: Option<usize>,
+    /// O nome guardado no álbum.
+    pub font: String,
+    /// O que o campo Fonte mostra: o nome, com "(não está neste computador)" quando falta
+    /// (spec FS, regra 5).
+    pub font_label: String,
     pub size: String,
     pub bold: bool,
     pub italic: bool,
@@ -40,11 +45,6 @@ pub struct TextForm {
     pub align: usize,
     pub valign: usize,
     pub spacing: String,
-}
-
-/// Os nomes das fontes, na ordem da lista.
-pub fn font_names() -> Vec<&'static str> {
-    FAMILIES.iter().map(|f| f.name).collect()
 }
 
 /// Número com uma casa e vírgula: 12,5; inteiro sai sem casa.
@@ -67,15 +67,20 @@ pub fn parse_number(s: &str) -> Option<f64> {
 }
 
 fn text_form(t: &TextBox) -> TextForm {
-    let fam = family(&t.font);
+    let styles = font_styles(&t.font);
+    let font_label = match styles {
+        Some(_) => t.font.clone(),
+        None => format!("{}{MISSING}", t.font),
+    };
     TextForm {
         text: t.text.clone(),
-        font: FAMILIES.iter().position(|f| f.name == t.font),
+        font: t.font.clone(),
+        font_label,
         size: decimal(t.size_pt),
         bold: t.bold,
         italic: t.italic,
-        can_bold: fam.is_some_and(|f| f.bold),
-        can_italic: fam.is_some_and(|f| f.italic),
+        can_bold: styles.is_some_and(|f| f.bold),
+        can_italic: styles.is_some_and(|f| f.italic),
         color: t.color,
         align: t.align as usize,
         valign: t.valign as usize,

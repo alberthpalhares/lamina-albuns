@@ -19,6 +19,8 @@ export struct PhotoData {
     // aqui, ficaria velha quando o Rust só insere ou remove linhas.
     aspect: float,
     dim: bool,
+    // A foto não está onde estava: a marca âmbar; o duplo clique localiza (spec RF, regra 8).
+    missing: bool,
 }
 
 // O que outras partes da janela leem da grade: a divisória sendo arrastada (a lâmina acompanha
@@ -86,6 +88,21 @@ component PhotoTile inherits Rectangle {
         font-size: 11px;
         vertical-alignment: center;
         overflow: elide;
+    }
+    if root.data.missing: Rectangle {
+        x: 4px;
+        y: 4px;
+        width: 18px;
+        height: 18px;
+        border-radius: 9px;
+        background: Theme.warning;
+        Text {
+            accessible-role: none;
+            text: "!";
+            color: #1a1a1a;
+            font-size: 12px;
+            font-weight: 700;
+        }
     }
     // O selo de usos: na linha do nome; sem nome, sobre o canto da miniatura.
     if root.data.uses > 0: Rectangle {

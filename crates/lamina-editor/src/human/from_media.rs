@@ -8,7 +8,7 @@ use lamina_render::RenderError;
 use super::{Human, HumanMessage, REPORT, bug, name, technical};
 
 /// O que fazer com uma foto que não abre: ela pode ter mudado de lugar ou estar corrompida.
-const PHOTO_WHAT: &str = "Se ela mudou de lugar, use Arquivo → Procurar fotos ausentes…; se \
+const PHOTO_WHAT: &str = "Se ela mudou de lugar, use Arquivo → Reencontrar fotos…; se \
                           estiver corrompida, exporte-a de novo pelo seu editor.";
 
 impl Human for MediaError {

@@ -7,7 +7,7 @@ use lamina_editor::frame_form::page_at;
 use lamina_editor::{Command, Key, Shortcut};
 
 use crate::state::{App, Pending};
-use crate::{AppWindow, export, files, frame_panel, help, models, relink, spec_dialog, updates};
+use crate::{AppWindow, export, files, help, models, spec_dialog, updates};
 
 type Shared = Rc<RefCell<App>>;
 
@@ -43,7 +43,10 @@ pub fn run_command(app: &Shared, command: Command) {
         Command::Open => files::request(&mut a, Pending::Open),
         Command::OpenExample => files::request(&mut a, Pending::Example),
         Command::CloseAlbum => files::request(&mut a, Pending::CloseAlbum),
+        // Como o X da janela: pergunta antes se há alterações (spec SA).
+        Command::Quit => files::request(&mut a, Pending::Close),
         Command::ClearRecents => crate::recents::ask_clear(&a),
+        Command::ClearAllPhotos | Command::DeleteAllSpreads => crate::clear_all::ask(&a, command),
         Command::Save => {
             files::save(&mut a, false, |_, _| {});
         }
@@ -51,7 +54,16 @@ pub fn run_command(app: &Shared, command: Command) {
             files::save(&mut a, true, |_, _| {});
         }
         Command::Export => export::start(&mut a),
-        Command::FindMissing => relink::find(&mut a),
+        Command::FindMissing => crate::relink_dialog::show(&a),
+        Command::LocatePhoto => {
+            let photo = a
+                .editor
+                .selected_frame()
+                .and_then(|f| a.editor.missing_photo_at(f));
+            if let Some(photo) = photo {
+                crate::relink_dialog::locate_photo(&mut a, photo);
+            }
+        }
         Command::Specification => crate::new_project::open_spec(&mut a),
         Command::MountAlbum => crate::new_project::open_mount(&mut a),
         Command::ImportPhotos => crate::importing::pick(&mut a, false),
@@ -98,6 +110,7 @@ pub fn run_command(app: &Shared, command: Command) {
                     | Command::ToggleReduceMotion
                     | Command::TogglePanel
                     | Command::AdjustPhoto
+                    | Command::EditText
                     | Command::ToggleLayoutBand
             );
             let done = a.timed(
@@ -132,7 +145,6 @@ fn new_text(app: &mut App) {
         .and_then(|s| page_at(s.project(), f64::from(fx)));
     if app.editor.new_text(side) {
         app.refresh_all();
-        frame_panel::focus_text(app);
     }
 }
 

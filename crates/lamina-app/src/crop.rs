@@ -250,11 +250,12 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         // Fora dos quadros (-1) entra no modo organizar (spec EG); numa foto abre o recorte; num
         // texto, o cursor vai para o campo do texto (spec TX).
         match app.editor.double_click(usize::try_from(i).ok()) {
-            DoubleClick::Text => {
+            DoubleClick::Text | DoubleClick::Organize | DoubleClick::Crop => app.refresh_current(),
+            // Numa foto ausente: "Localizar esta foto…" (spec RF, regra 8).
+            DoubleClick::Locate(photo) => {
                 app.refresh_current();
-                crate::frame_panel::focus_text(&app);
+                crate::relink_dialog::locate_photo(&mut app, photo);
             }
-            DoubleClick::Organize | DoubleClick::Crop => app.refresh_current(),
             DoubleClick::Nothing => {}
         }
     });

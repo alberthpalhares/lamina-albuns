@@ -274,8 +274,12 @@ impl App {
         let project = session.project().clone();
         let title = photos_title(session, self.editor.selection().len());
         let filter = self.editor.photo_filter();
+        let missing = session.missing().to_vec();
         self.list = photo_list(&project, filter);
-        let rows = photo_rows(&self.list, self.editor.selection(), filter);
+        let mut rows = photo_rows(&self.list, self.editor.selection(), filter);
+        for (id, row) in &mut rows {
+            row.missing = missing.contains(id);
+        }
         let made: Vec<_> = rows.iter().map(|(_, r)| r.clone()).collect();
         let (images, window) = (&self.images, self.grid_view.window.clone());
         let count = self.lists.browser.sync(rows, |i| {

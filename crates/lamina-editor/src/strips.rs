@@ -283,7 +283,7 @@ pub fn strip_titles(session: &Session) -> [String; 3] {
             plural(spreads, "lâmina"),
             plural(pages, "página")
         ),
-        "Sequência · arraste um corte para passar fotos entre lâminas".to_owned(),
+        "Sequência · arraste uma foto ou um corte para mudar as fotos de lâmina".to_owned(),
         photos_title(session, 0),
     ]
 }

@@ -40,7 +40,7 @@ pub enum WarningKind {
     TextOutsideSafe { text: String },
     /// A fonte do texto não tem o caractere.
     MissingChar { char: char },
-    /// A fonte do projeto não existe nesta versão; o texto sai na padrão.
+    /// A fonte do projeto não é do Lamina nem está neste computador; o texto sai na padrão (spec FS).
     UnknownFont { font: String },
 }
 
@@ -76,7 +76,7 @@ impl fmt::Display for Warning {
             }
             WarningKind::UnknownFont { font } => write!(
                 f,
-                "Lâmina {n}: a fonte \"{font}\" não existe nesta versão; o texto usa {}.",
+                "Lâmina {n}: a fonte \"{font}\" não está neste computador; o texto usa {}.",
                 lamina_core::DEFAULT_FONT
             ),
         }

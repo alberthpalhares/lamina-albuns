@@ -6,6 +6,7 @@ use lamina_layout::{LayoutOptions, MAX_PER_PAGE, layout_options};
 
 use crate::EditorError;
 
+pub use crate::removing::remove_photos;
 pub use crate::spreads::{delete_spread, insert_spread, move_spread};
 
 /// Só a lista na ordem: a 1ª opção dela é a mesma da lista completa, sem calcular as reordenadas.

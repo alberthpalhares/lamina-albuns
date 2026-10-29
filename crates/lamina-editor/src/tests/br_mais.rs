@@ -170,7 +170,8 @@ fn br_b15_a_ia_comeca_em_branco_e_monta_quando_pede() {
         .unwrap();
     let folder = base.path("fotos");
     let window = crate::NewAlbum {
-        name: Some(crate::folder_name(&folder)),
+        // O nome que a janela recebe: o do arquivo pedido (relato do teste pelo MCP, IA-B26).
+        name: Some("album".into()),
         folder,
         spec: preset.fields.to_spec().unwrap(),
         limits: preset.limits,

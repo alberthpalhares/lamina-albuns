@@ -32,6 +32,9 @@ pub enum Command {
     SaveAs,
     Export,
     FindMissing,
+    /// "Localizar esta foto…": o arquivo de uma foto ausente, pelo botão direito ou pelo duplo
+    /// clique no quadro (spec RF, regra 4).
+    LocatePhoto,
     Specification,
     Presets,
     Undo,
@@ -56,6 +59,9 @@ pub enum Command {
     NewSpreadFromSelection,
     NewSpread,
     DeleteSpread,
+    /// Limpar as lâminas (spec LL): tirar as fotos de todas e apagar todas; a janela pergunta.
+    ClearAllPhotos,
+    DeleteAllSpreads,
     MoveSpreadLeft,
     MoveSpreadRight,
     CropMode,
@@ -81,6 +87,8 @@ pub enum Command {
     OpenExample,
     /// Fechar o álbum e voltar à tela inicial (spec TI, regra 6).
     CloseAlbum,
+    /// Sair do Lamina pelo menu Arquivo, como o X da janela (spec SA).
+    Quit,
     ClearRecents,
     /// A etapa 2 do Novo projeto para o álbum aberto (spec NP, regra 11).
     MountAlbum,
@@ -127,6 +135,8 @@ pub enum Command {
     /// O painel da direita (Alt+4) e "Ajustar a foto…" (spec AF, regras 10 e 11).
     TogglePanel,
     AdjustPhoto,
+    /// "Editar texto": o cursor no campo do texto selecionado (correção TX de 2026-10-28).
+    EditText,
     /// A janela nova (Rodada 0b): registrados, mas inertes até a spec de cada um ligar.
     /// A faixa de layouts (FL), os atalhos e as novidades (AT e NV), a lupa e o tamanho real (ZR),
     /// montar o álbum (BR) e selecionar as fotos mostradas (PF).

@@ -99,6 +99,8 @@ export component IconButton inherits Rectangle {
     in property <bool> enabled: true;
     // Onde o balão fica, para não sair da janela: -1 começa no botão, 0 no meio, 1 termina nele.
     in property <int> tip-side;
+    // O desenho dentro do botão; os botões pequenos do giro usam 18 px (spec CD).
+    in property <length> icon-size: 20px;
     callback clicked();
     width: 32px;
     height: 32px;
@@ -106,8 +108,8 @@ export component IconButton inherits Rectangle {
     background: root.checked ? #ffffff26 : (touch.has-hover && root.enabled ? #ffffff1a : transparent);
     Image {
         accessible-role: none;
-        width: 20px;
-        height: 20px;
+        width: root.icon-size;
+        height: root.icon-size;
         source: root.icon;
         colorize: root.enabled ? Theme.text : #6b6b6b;
     }
