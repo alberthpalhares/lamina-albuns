@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 use super::{Agent, LeaveAlbum, ToolError, ToolReply, photo_id, session, session_mut};
 use crate::Editor;
-use crate::leaving::{leave_label, remove_from_album};
+use crate::leaving::{remove_from_album, remove_label};
 
 impl Agent {
     pub(super) fn leave_album(
@@ -24,7 +24,7 @@ impl Agent {
             }
             photos.push(photo_id(p, n)?);
         }
-        let label = leave_label(photos.len());
+        let label = remove_label(photos.len());
         session_mut(editor)?.edit(&label, |p| remove_from_album(p, &photos))?;
         let index = session(editor)?.current();
         let text = format!(

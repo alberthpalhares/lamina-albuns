@@ -71,7 +71,7 @@ pub struct App {
     pub(crate) loading: Option<PhotoId>,
     /// O último clique foi na grade de fotos: o Delete tira do álbum (spec TF, regra 2).
     pub grid_focus: bool,
-    /// As fotos esperando a resposta de "Tirar do álbum?" (spec TF, regra 4).
+    /// As fotos esperando a resposta de "Remover fotografia do álbum?" (spec TF, regra 4).
     pub leaving: Vec<lamina_core::PhotoId>,
     /// Fecha o gesto de zoom da roda depois de uma pausa (spec RC, regra 4).
     pub(crate) crop_timer: slint::Timer,

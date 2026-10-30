@@ -5,7 +5,7 @@ use lamina_core::{FrameContent, PhotoId, Project};
 
 use super::tl_common::{editor_at, three_spreads};
 use crate::editor::ContextEntry;
-use crate::leaving::{leave_label, leave_question, remove_from_album};
+use crate::leaving::{leave_question, remove_from_album, remove_label};
 use crate::reveal::{System, reveal_command};
 use crate::{Command, Editor, EditorError};
 
@@ -49,7 +49,7 @@ fn tf_b1_tirar_uma_foto_que_nao_esta_em_lamina() {
     assert!(editor.remove_from_album(&[loose]));
     assert!(!photo_ids(&editor).contains(&loose));
     let s = editor.session().unwrap();
-    assert_eq!(s.undo_label(), Some("Tirar foto do álbum"));
+    assert_eq!(s.undo_label(), Some("Remover fotografia do álbum"));
     assert_eq!(s.project().spreads, project.spreads, "as lâminas não mudam");
 }
 
@@ -65,7 +65,7 @@ fn tf_b2_tirar_fotos_usadas_pede_confirmacao() {
         "2 fotos estão em lâminas. Elas saem das lâminas e o layout delas é refeito. O arquivo \
          continua no computador."
     );
-    assert_eq!(leave_label(3), "Tirar 3 fotos do álbum");
+    assert_eq!(remove_label(3), "Remover 3 fotografias do álbum");
 }
 
 #[test]
@@ -135,9 +135,10 @@ fn tf_b7_mostrar_no_explorador() {
     std::fs::write(&file, b"x").unwrap();
     let shown = file.display().to_string();
     let (program, args) = reveal_command(&file, System::Windows).unwrap();
+    let windows = shown.replace('/', "\\");
     assert_eq!(
         (program.as_str(), args),
-        ("explorer", vec![format!("/select,{shown}")])
+        ("explorer", vec![format!("/select,\"{windows}\"")])
     );
     let (program, args) = reveal_command(&file, System::Mac).unwrap();
     assert_eq!(
@@ -205,4 +206,58 @@ fn tf_b11_remover_fotografia_do_album_pela_lamina() {
     // Num quadro vazio, o item continua "Apagar quadro".
     editor.select_frame(None);
     assert!(!editor.available(Command::RemoveFromAlbum));
+}
+
+#[test]
+fn tf_b12_um_nome_so_para_remover_do_album() {
+    let (project, loose) = with_loose();
+    let first = in_spread(&project, 1)[0];
+    let mut editor = editor_at(project, 1);
+    // O item do menu do quadro.
+    let menu = editor.context_menu(Some(0));
+    let frame_label = menu
+        .iter()
+        .find_map(|e| match e {
+            ContextEntry::Item {
+                command: Command::RemoveFromAlbum,
+                label,
+                ..
+            } => Some(label.clone()),
+            _ => None,
+        })
+        .unwrap();
+    // O menu da grade e a pergunta usam o mesmo texto; o histórico também.
+    assert_eq!(frame_label, remove_label(1));
+    assert_eq!(remove_label(1), "Remover fotografia do álbum");
+    assert!(editor.remove_from_album(&[first]));
+    let undo = editor.session().unwrap().undo_label().map(str::to_owned);
+    assert_eq!(undo.as_deref(), Some("Remover fotografia do álbum"));
+    assert!(editor.remove_from_album(&[loose]));
+    assert_eq!(remove_label(2), "Remover 2 fotografias do álbum");
+}
+
+#[test]
+fn tf_b13_o_explorador_abre_com_a_foto_selecionada() {
+    let dir = tempfile::tempdir().unwrap();
+    // Uma pasta com espaço no nome, e o caminho da foto com barra normal, como no arquivo do álbum.
+    let folder = dir.path().join("Casamento Ana");
+    std::fs::create_dir_all(folder.join("fotos")).unwrap();
+    std::fs::write(folder.join("fotos").join("IMG 01.jpg"), b"x").unwrap();
+    let file = folder.join("fotos/IMG 01.jpg");
+    let (program, args) = reveal_command(&file, System::Windows).unwrap();
+    assert_eq!(program, "explorer");
+    let arg = &args[0];
+    let inside = arg
+        .strip_prefix("/select,\"")
+        .and_then(|a| a.strip_suffix('"'))
+        .unwrap_or_else(|| panic!("{arg}"));
+    assert!(!inside.contains('/'), "só barras invertidas: {inside}");
+    // O caminho absoluto da foto (o CI roda no Linux: a conta vale nos dois).
+    let full = std::path::absolute(&file).unwrap();
+    assert_eq!(inside, full.display().to_string().replace('/', "\\"));
+    assert!(
+        inside.ends_with(r"Casamento Ana\fotos\IMG 01.jpg"),
+        "{inside}"
+    );
+    assert_eq!(args.len(), 1);
 }

@@ -42,21 +42,11 @@ pub fn remove_from_album(project: &mut Project, photos: &[PhotoId]) -> Result<()
     Ok(())
 }
 
-/// "Tirar foto do álbum" ou "Tirar 3 fotos do álbum" (regra 1 e o histórico).
-pub fn leave_label(count: usize) -> String {
-    if count == 1 {
-        "Tirar foto do álbum".to_owned()
-    } else {
-        format!("Tirar {count} fotos do álbum")
-    }
-}
-
-/// O botão que confirma a pergunta: pela grade e pelo menu do quadro (TF-B11).
-pub const LEAVE_BUTTON: &str = "Tirar do álbum";
+/// O botão que confirma a pergunta, pela grade e pelo menu do quadro (TF-B11).
 pub const REMOVE_BUTTON: &str = "Remover do álbum";
 
-/// O item do menu do quadro: "Remover fotografia do álbum" ou "Remover 3 fotografias do álbum"
-/// (correção de 2026-10-29, TF-B11).
+/// O nome do recurso, igual na grade, no menu do quadro e no histórico: "Remover fotografia do
+/// álbum" ou "Remover 3 fotografias do álbum" (correções do dono de 2026-10-29, TF-B11 e TF-B12).
 pub fn remove_label(count: usize) -> String {
     if count <= 1 {
         "Remover fotografia do álbum".to_owned()

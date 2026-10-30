@@ -3,7 +3,7 @@
 use lamina_core::PhotoId;
 
 use super::Editor;
-use crate::leaving::{leave_label, remove_from_album, used_in_spreads};
+use crate::leaving::{remove_from_album, remove_label, used_in_spreads};
 
 impl Editor {
     /// O arquivo da foto no disco (relativo à pasta do álbum, se o álbum tem arquivo).
@@ -53,7 +53,7 @@ impl Editor {
         let Some(session) = self.session.as_mut() else {
             return false;
         };
-        let label = leave_label(photos.len());
+        let label = remove_label(photos.len());
         match session.edit(&label, |p| remove_from_album(p, photos)) {
             Ok(()) => {
                 self.selection.retain(|id| !photos.contains(id));

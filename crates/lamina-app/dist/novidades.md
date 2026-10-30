@@ -45,11 +45,10 @@ Esta versão traz as fontes do computador nos textos, reencontra as fotos que mu
   melhor arrumação para as fotos que ficaram, sem buraco vazio. Experimente: selecione uma foto
   numa lâmina com três e aperte Delete.
   <!-- imagem: tirar-foto-refaz.png -->
-- **Tirar fotos do álbum pela grade e achar o arquivo.** Clique com o botão direito numa foto da
-  faixa Fotografias: "Tirar do álbum" tira a foto do álbum, e "Mostrar no Explorador" (no Mac,
-  "Mostrar no Finder") abre a pasta com o arquivo já selecionado. Com a grade em foco, Delete faz o
-  mesmo. Na lâmina, o botão direito numa foto traz "Remover fotografia do álbum". Se a foto estiver
-  numa lâmina, o Lamina pergunta antes e refaz a lâmina. O arquivo nunca é apagado do computador,
+- **Remover fotografias do álbum e achar o arquivo.** Clique com o botão direito numa foto da
+  faixa Fotografias ou da lâmina: "Remover fotografia do álbum" tira a foto do álbum, e na faixa
+  "Mostrar no Explorador" (no Mac, "Mostrar no Finder") abre a pasta com o arquivo já selecionado.
+  Com a grade em foco, Delete faz o mesmo. Se a foto estiver numa lâmina, o Lamina pergunta antes e refaz a lâmina. O arquivo nunca é apagado do computador,
   e Ctrl+Z desfaz tudo. Experimente: clique com o botão direito numa foto da faixa Fotografias.
 - **Escolher o tamanho do álbum ficou mais simples.** No álbum novo, o tamanho do último álbum já
   vem marcado. Os três formatos aparecem como o álbum fechado e, embaixo, a lâmina aberta do

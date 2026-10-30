@@ -7,9 +7,7 @@ use std::rc::Rc;
 
 use lamina_core::PhotoId;
 use lamina_editor::Human;
-use lamina_editor::leaving::{
-    LEAVE_BUTTON, REMOVE_BUTTON, leave_label, leave_question, remove_label,
-};
+use lamina_editor::leaving::{REMOVE_BUTTON, leave_question, remove_label};
 use lamina_editor::reveal::{System, reveal_command};
 use slint::ComponentHandle;
 
@@ -24,19 +22,20 @@ pub fn refresh(app: &App) {
         return;
     };
     let ui = w.global::<PhotoMenuUi>();
-    ui.set_remove_text(leave_label(app.editor.selection().len().max(1)).into());
+    ui.set_remove_text(remove_label(app.editor.selection().len().max(1)).into());
     ui.set_reveal_text(System::current().reveal_label().into());
 }
 
-/// "Tirar do álbum" ou Delete na grade: pergunta só se alguma foto está em lâmina (regra 4).
+/// "Remover fotografia do álbum" ou Delete na grade: pergunta só se alguma foto está em lâmina
+/// (regra 4).
 pub fn ask_remove(app: &mut App) {
     let photos = app.editor.selection().to_vec();
-    ask_remove_these(app, photos, false);
+    ask_remove_these(app, photos);
 }
 
-/// Tira `photos` do álbum, perguntando antes se alguma está em lâmina; pelo menu do quadro
-/// (`from_frame`), a pergunta usa o nome do item, "Remover fotografia do álbum" (TF-B11).
-pub fn ask_remove_these(app: &mut App, photos: Vec<PhotoId>, from_frame: bool) {
+/// Tira `photos` do álbum, perguntando antes se alguma está em lâmina; o mesmo nome e a mesma
+/// pergunta pela grade e pelo menu do quadro (TF-B11 e TF-B12).
+pub fn ask_remove_these(app: &mut App, photos: Vec<PhotoId>) {
     let Some(w) = app.window.upgrade() else {
         return;
     };
@@ -47,13 +46,8 @@ pub fn ask_remove_these(app: &mut App, photos: Vec<PhotoId>, from_frame: bool) {
         Some(question) => {
             refresh(app);
             let ui = w.global::<PhotoMenuUi>();
-            if from_frame {
-                let label = remove_label(app.leaving.len());
-                ui.set_remove_text(label.into());
-                ui.set_confirm_text(REMOVE_BUTTON.into());
-            } else {
-                ui.set_confirm_text(LEAVE_BUTTON.into());
-            }
+            ui.set_remove_text(remove_label(app.leaving.len()).into());
+            ui.set_confirm_text(REMOVE_BUTTON.into());
             ui.set_question(question.into());
             ui.set_show_ask(true);
         }
@@ -83,7 +77,7 @@ fn reveal(app: &mut App) {
     match reveal_command(&file, System::current()) {
         Ok((program, args)) => {
             // O Explorador sai com código 1 mesmo quando abre: não há o que conferir.
-            let _ = std::process::Command::new(program).args(args).spawn();
+            let _ = command(&program, &args).spawn();
         }
         Err(e) => crate::files::show_error(app, &e.human()),
     }
@@ -99,4 +93,23 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     ui.on_confirm(on(remove));
     ui.on_reveal(on(reveal));
     refresh(&app.borrow());
+}
+
+/// No Windows, os argumentos vão como estão: o `/select,"caminho"` já vem com as aspas certas, e
+/// as do Rust em volta dele todo fariam o Explorador abrir outra pasta (TF-B13).
+#[cfg(windows)]
+fn command(program: &str, args: &[String]) -> std::process::Command {
+    use std::os::windows::process::CommandExt as _;
+    let mut command = std::process::Command::new(program);
+    for arg in args {
+        command.raw_arg(arg);
+    }
+    command
+}
+
+#[cfg(not(windows))]
+fn command(program: &str, args: &[String]) -> std::process::Command {
+    let mut command = std::process::Command::new(program);
+    command.args(args);
+    command
 }
