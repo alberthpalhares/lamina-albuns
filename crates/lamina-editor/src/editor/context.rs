@@ -6,6 +6,7 @@ use lamina_core::FrameContent;
 
 use super::Editor;
 use crate::Command;
+use crate::leaving::remove_label;
 
 /// Um item do menu de contexto: um comando (com o rótulo e se vale agora), um submenu ou um
 /// separador.
@@ -84,13 +85,20 @@ impl Editor {
                 });
                 if photo { "Tirar foto" } else { "Apagar quadro" }.to_owned()
             }
+            Command::RemoveFromAlbum => remove_label(self.selected_frame_photos().len()),
             c => c.label().to_owned(),
         }
     }
 
     fn frame_menu(&self) -> Vec<ContextEntry> {
         use Command as C;
-        let mut menu: Vec<ContextEntry> = [C::EditText, C::CropMode, C::AdjustPhoto, C::ClearFrame]
+        // Num quadro com foto, o item tira a foto do álbum; no vazio, apaga o quadro (spec TF-B11).
+        let clear = if self.selected_frame_photos().is_empty() {
+            C::ClearFrame
+        } else {
+            C::RemoveFromAlbum
+        };
+        let mut menu: Vec<ContextEntry> = [C::EditText, C::CropMode, C::AdjustPhoto, clear]
             .iter()
             .map(|c| self.entry(*c))
             .collect();

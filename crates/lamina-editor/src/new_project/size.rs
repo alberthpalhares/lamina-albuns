@@ -50,11 +50,11 @@ impl SizeForm {
     /// Escolher um tamanho preenche o Personalizado com os valores dele (regra 2).
     pub fn choose(&mut self, preset: &Preset) {
         self.fields = preset.fields.clone();
-        self.from = Some((preset.name.clone(), preset.lab.clone()));
+        self.from = Some((preset.name.clone(), preset.binder.clone()));
         self.edited = false;
     }
 
-    /// "Quadrado 30 × 30", "Personalizado (a partir de Quadrado 30 × 30)" ou "Personalizado".
+    /// "30x30cm", "Personalizado (a partir de 30x30cm)" ou "Personalizado".
     pub fn label(&self) -> String {
         match (&self.from, self.edited) {
             (Some((name, _)), false) => name.clone(),

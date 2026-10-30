@@ -5,8 +5,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use lamina_core::PhotoId;
 use lamina_editor::Human;
-use lamina_editor::leaving::{leave_label, leave_question};
+use lamina_editor::leaving::{
+    LEAVE_BUTTON, REMOVE_BUTTON, leave_label, leave_question, remove_label,
+};
 use lamina_editor::reveal::{System, reveal_command};
 use slint::ComponentHandle;
 
@@ -28,14 +31,29 @@ pub fn refresh(app: &App) {
 /// "Tirar do álbum" ou Delete na grade: pergunta só se alguma foto está em lâmina (regra 4).
 pub fn ask_remove(app: &mut App) {
     let photos = app.editor.selection().to_vec();
+    ask_remove_these(app, photos, false);
+}
+
+/// Tira `photos` do álbum, perguntando antes se alguma está em lâmina; pelo menu do quadro
+/// (`from_frame`), a pergunta usa o nome do item, "Remover fotografia do álbum" (TF-B11).
+pub fn ask_remove_these(app: &mut App, photos: Vec<PhotoId>, from_frame: bool) {
     let Some(w) = app.window.upgrade() else {
         return;
     };
-    match leave_question(app.editor.photos_in_spreads(&photos)) {
+    let used = app.editor.photos_in_spreads(&photos);
+    app.leaving = photos;
+    match leave_question(used) {
         None => remove(app),
         Some(question) => {
             refresh(app);
             let ui = w.global::<PhotoMenuUi>();
+            if from_frame {
+                let label = remove_label(app.leaving.len());
+                ui.set_remove_text(label.into());
+                ui.set_confirm_text(REMOVE_BUTTON.into());
+            } else {
+                ui.set_confirm_text(LEAVE_BUTTON.into());
+            }
             ui.set_question(question.into());
             ui.set_show_ask(true);
         }
@@ -43,7 +61,7 @@ pub fn ask_remove(app: &mut App) {
 }
 
 fn remove(app: &mut App) {
-    let photos = app.editor.selection().to_vec();
+    let photos = std::mem::take(&mut app.leaving);
     if let Some(w) = app.window.upgrade() {
         w.global::<PhotoMenuUi>().set_show_ask(false);
     }

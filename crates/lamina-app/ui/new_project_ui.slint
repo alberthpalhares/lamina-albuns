@@ -1,0 +1,115 @@
+// O estado do Novo projeto (specs NP e ET), num global como o dos presets: as três etapas o leem,
+// e o Rust (`src/new_project*.rs`) o preenche.
+
+export struct FormatCard {
+    label: string,
+    // Largura ÷ altura da página.
+    aspect: float,
+    // Há tamanho deste formato na encadernadora do filtro (spec ET, regra 4).
+    enabled: bool,
+}
+
+// A lâmina aberta em frações do canvas (corte + sangria).
+export struct DrawData {
+    aspect: float,
+    tx: float, ty: float, tw: float, th: float,
+    lx: float, ly: float, lw: float, lh: float,
+    rx: float, ry: float, rw: float, rh: float,
+    starts: bool,
+    ends: bool,
+}
+
+export struct ColorChoice {
+    c: color,
+    hex: string,
+}
+
+export global NewProjectUi {
+    in-out property <bool> show;
+    in property <int> step: 1;
+    // 0 = Novo álbum (as três etapas); 1 = Especificação do álbum (etapa 1);
+    // 2 = Montagem do álbum (etapa 2), os dois para o álbum aberto (regra 11).
+    in property <int> mode;
+    // Etapa 1.
+    in-out property <int> tab;
+    // Filtro por encadernadora (spec ET, regra 4, correção de 2026-10-29): o nome escolhido
+    // ("Todas as encadernadoras" ou uma delas); a lista com busca, em ordem alfabética.
+    in property <bool> has-binders;
+    in-out property <string> binder;
+    in-out property <string> binder-search;
+    in property <[string]> binder-rows;
+    in property <string> add-binder-text: "Adicionar a minha encadernadora…";
+    in property <[FormatCard]> formats;
+    in-out property <int> format;
+    in property <[string]> sizes;
+    // O tamanho marcado no seletor; −1 com medidas personalizadas.
+    in property <int> size: -1;
+    in property <string> short-summary;
+    // "Ajustes da gráfica" aberto no Personalizado (spec ET, regra 6).
+    in-out property <bool> advanced-open;
+    in property <string> label;
+    in-out property <int> unit: 1;
+    in-out property <bool> open-spread;
+    in-out property <string> width;
+    in-out property <string> height;
+    in-out property <string> dpi;
+    in-out property <string> bleed-outer;
+    in-out property <string> bleed-top;
+    in-out property <string> bleed-spine;
+    in-out property <string> safe-outer;
+    in-out property <string> safe-top;
+    in-out property <string> safe-spine;
+    in-out property <bool> starts;
+    in-out property <bool> ends;
+    in-out property <string> min-pages;
+    in-out property <string> max-pages;
+    in property <string> summary;
+    in property <string> error;
+    in property <DrawData> drawing;
+    // Etapa 2.
+    in-out property <bool> lay-flat: true;
+    in-out property <int> crop: 2;
+    in-out property <bool> bleed-page: true;
+    in-out property <bool> mosaics: true;
+    in-out property <int> reuse: 1;
+    in-out property <string> background;
+    in-out property <string> gap;
+    in-out property <string> border;
+    in-out property <string> border-color;
+    in-out property <string> radius;
+    in property <[image]> previews;
+    in property <[ColorChoice]> palette;
+    in property <color> background-color;
+    in property <color> border-swatch;
+    in property <string> look-error;
+    // Etapa 3.
+    in-out property <string> name;
+    in property <string> file;
+    in property <string> photos-text;
+    in-out property <bool> no-photos;
+    // "Montar as lâminas agora" (spec BR, regra 2): desmarcada, o álbum começa em branco.
+    in-out property <bool> build;
+    in property <string> build-text: "Montar as lâminas agora";
+    in-out property <int> spreads: 1;
+    in property <int> photos;
+    in property <string> suggestion;
+    in property <string> create-error;
+    callback pick-binder(string);
+    callback search-binders(string);
+    callback pick-format(int);
+    callback pick-size(int);
+    callback unit-changed(int);
+    callback size-changed();
+    callback same-margins();
+    callback mount-changed();
+    // Clique no quadro de cores: 0 = fundo, 1 = borda; posição de 0 a 1.
+    callback color-at(int, float, float);
+    callback file-changed();
+    callback change-file();
+    callback pick-folder();
+    callback next();
+    callback back();
+    callback cancel();
+    callback create();
+    callback apply();
+}

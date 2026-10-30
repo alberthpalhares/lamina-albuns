@@ -4,6 +4,7 @@
 use lamina_core::{FrameContent, PhotoId, Project};
 
 use super::tl_common::{editor_at, three_spreads};
+use crate::editor::ContextEntry;
 use crate::leaving::{leave_label, leave_question, remove_from_album};
 use crate::reveal::{System, reveal_command};
 use crate::{Command, Editor, EditorError};
@@ -175,4 +176,33 @@ fn tf_b9_foto_repetida_sai_de_todas_as_laminas() {
     let s = editor.session().unwrap();
     assert!(!used(s.project(), repeated), "sai das lâminas 1 e 3");
     s.project().validate().unwrap();
+}
+
+#[test]
+fn tf_b11_remover_fotografia_do_album_pela_lamina() {
+    let project = three_spreads();
+    let first = in_spread(&project, 1)[0];
+    let mut editor = editor_at(project, 1);
+    let menu = editor.context_menu(Some(0));
+    let labels: Vec<String> = menu
+        .iter()
+        .filter_map(|e| match e {
+            ContextEntry::Item { label, .. } => Some(label.clone()),
+            _ => None,
+        })
+        .collect();
+    assert!(labels.contains(&"Remover fotografia do álbum".to_owned()));
+    assert!(!labels.contains(&"Tirar foto".to_owned()));
+    // O item tira a foto do álbum e das lâminas, numa edição só.
+    assert!(editor.available(Command::RemoveFromAlbum));
+    assert!(editor.run(Command::RemoveFromAlbum));
+    let s = editor.session().unwrap();
+    assert!(!used(s.project(), first));
+    assert!(!photo_ids(&editor).contains(&first), "sai da grade também");
+    assert!(editor.run(Command::Undo));
+    assert!(photo_ids(&editor).contains(&first), "Ctrl+Z traz de volta");
+    assert!(used(editor.session().unwrap().project(), first));
+    // Num quadro vazio, o item continua "Apagar quadro".
+    editor.select_frame(None);
+    assert!(!editor.available(Command::RemoveFromAlbum));
 }

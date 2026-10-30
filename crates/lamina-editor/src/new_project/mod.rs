@@ -13,8 +13,8 @@ mod size;
 mod units;
 
 pub use choices::{
-    ADD_LAB, ALL_LABS, advanced_error, clean_lab, is_advanced, lab_or_all, labs, last_preset,
-    matching_preset, short_summary, size_choices, size_labels,
+    ADD_BINDER, ALL_BINDERS, advanced_error, binder_list, binder_or_all, binders, clean_binder,
+    is_advanced, last_preset, matching_preset, short_summary, size_choices, size_labels,
 };
 pub use colors::picker_color;
 pub use create::{

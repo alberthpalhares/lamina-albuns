@@ -1,4 +1,4 @@
-//! A escolha do tamanho na etapa 1 (spec ET): o filtro por laboratório, os tamanhos de cada
+//! A escolha do tamanho na etapa 1 (spec ET): o filtro por encadernadora, os tamanhos de cada
 //! formato, o tamanho que já vem marcado e o resumo de uma linha.
 
 use lamina_core::PageLimits;
@@ -8,71 +8,94 @@ use super::size::{SizeField, SizeForm};
 use super::units::number;
 use crate::Preset;
 use crate::album::SpecFields;
+use crate::font_picker::fold;
 
 /// O primeiro item do filtro (regra 4).
-pub const ALL_LABS: &str = "Todos";
-/// O convite do fim da lista de laboratórios (regra 5).
-pub const ADD_LAB: &str = "Adicionar o meu laboratório…";
+pub const ALL_BINDERS: &str = "Todas as encadernadoras";
+/// O convite do fim da lista de encadernadoras (regra 5).
+pub const ADD_BINDER: &str = "Adicionar a minha encadernadora…";
 
-/// O laboratório limpo: sem espaços nas pontas; vazio vira nenhum (seção 6).
-pub fn clean_lab(lab: Option<&str>) -> Option<String> {
-    lab.map(str::trim)
+/// A encadernadora limpa: sem espaços nas pontas; vazio vira nenhuma (seção 6).
+pub fn clean_binder(binder: Option<&str>) -> Option<String> {
+    binder
+        .map(str::trim)
         .filter(|l| !l.is_empty())
         .map(str::to_owned)
 }
 
-/// Os laboratórios dos presets, sem repetir, na ordem em que aparecem.
-pub fn labs(presets: &[Preset]) -> Vec<String> {
+/// As encadernadoras dos presets, sem repetir, em ordem alfabética sem ligar para maiúsculas e
+/// acentos (correção de 2026-10-29, ET-B11).
+pub fn binders(presets: &[Preset]) -> Vec<String> {
     let mut found: Vec<String> = Vec::new();
-    for lab in presets.iter().filter_map(|p| clean_lab(p.lab.as_deref())) {
-        if !found.contains(&lab) {
-            found.push(lab);
+    for binder in presets
+        .iter()
+        .filter_map(|p| clean_binder(p.binder.as_deref()))
+    {
+        if !found.contains(&binder) {
+            found.push(binder);
         }
     }
+    found.sort_by_key(|b| fold(b));
     found
 }
 
-/// O filtro que vale: um laboratório que não existe mais volta para "Todos" (seção 6).
-pub fn lab_or_all(presets: &[Preset], lab: Option<&str>) -> Option<String> {
-    clean_lab(lab).filter(|l| labs(presets).contains(l))
+/// A lista que a janela mostra: "Todas as encadernadoras", as que batem com a busca (sem ligar
+/// para maiúsculas e acentos) e o convite no fim (ET-B11). Com a busca, "Todas" sai.
+pub fn binder_list(presets: &[Preset], search: &str) -> Vec<String> {
+    let wanted = fold(search.trim());
+    let mut list = Vec::new();
+    if wanted.is_empty() {
+        list.push(ALL_BINDERS.to_owned());
+    }
+    list.extend(
+        binders(presets)
+            .into_iter()
+            .filter(|b| fold(b).contains(&wanted)),
+    );
+    list.push(ADD_BINDER.to_owned());
+    list
+}
+
+/// O filtro que vale: uma encadernadora que não existe mais volta para "Todas" (seção 6).
+pub fn binder_or_all(presets: &[Preset], binder: Option<&str>) -> Option<String> {
+    clean_binder(binder).filter(|l| binders(presets).contains(l))
 }
 
 /// Os tamanhos de cada formato com o filtro; um formato sem tamanho fica apagado (regra 4).
-pub fn size_choices(presets: &[Preset], lab: Option<&str>) -> Vec<(Format, Vec<Preset>)> {
-    let lab = lab_or_all(presets, lab);
+pub fn size_choices(presets: &[Preset], binder: Option<&str>) -> Vec<(Format, Vec<Preset>)> {
+    let binder = binder_or_all(presets, binder);
     let kept: Vec<Preset> = presets
         .iter()
-        .filter(|p| lab.is_none() || clean_lab(p.lab.as_deref()) == lab)
+        .filter(|p| binder.is_none() || clean_binder(p.binder.as_deref()) == binder)
         .cloned()
         .collect();
     formats(&kept)
 }
 
-/// Os nomes no seletor de tamanho: "Quadrado 30 × 30" vira "30 × 30"; com o filtro em "Todos",
-/// um nome repetido leva o laboratório entre parênteses (seção 6).
-pub fn size_labels(format: Format, sizes: &[Preset], all_labs: bool) -> Vec<String> {
+/// Os nomes no seletor de tamanho, como são ("30x30cm"); com o filtro em "Todas", um nome
+/// repetido leva a encadernadora entre parênteses (seção 6).
+pub fn size_labels(sizes: &[Preset], all_binders: bool) -> Vec<String> {
     sizes
         .iter()
         .map(|p| {
-            let name = p
-                .name
-                .strip_prefix(format.label())
-                .map_or(&*p.name, str::trim);
             let repeated = sizes.iter().filter(|q| q.name == p.name).count() > 1;
-            match clean_lab(p.lab.as_deref()) {
-                Some(lab) if all_labs && repeated => format!("{name} ({lab})"),
-                _ => name.to_owned(),
+            match clean_binder(p.binder.as_deref()) {
+                Some(binder) if all_binders && repeated => format!("{} ({binder})", p.name),
+                _ => p.name.clone(),
             }
         })
         .collect()
 }
 
-/// O tamanho que já vem marcado: o do último álbum criado, se ainda existe (regra 1).
+/// O tamanho que já vem marcado: o do último álbum criado, se ainda existe (regra 1). Um nome de
+/// antes da correção de 2026-10-29 ("Horizontal 30 × 20") volta pelo nome novo (ET-B12).
 pub fn last_preset(presets: &[Preset], last: Option<&(String, Option<String>)>) -> Option<Preset> {
-    let (name, lab) = last?;
+    let (name, binder) = last?;
+    let (name, binder) = crate::preset_names::renamed(name, binder.as_deref())
+        .unwrap_or_else(|| (name.clone(), binder.clone()));
     presets
         .iter()
-        .find(|p| p.name == *name && clean_lab(p.lab.as_deref()) == *lab)
+        .find(|p| p.name == name && clean_binder(p.binder.as_deref()) == binder)
         .cloned()
 }
 

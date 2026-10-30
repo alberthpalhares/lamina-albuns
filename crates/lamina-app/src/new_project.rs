@@ -37,7 +37,8 @@ pub fn start(app: &mut App) {
     let ui = w.global::<NewProjectUi>();
     ui.set_mode(0);
     ui.set_tab(0);
-    ui.set_lab(0);
+    ui.set_binder(lamina_editor::new_project::ALL_BINDERS.into());
+    ui.set_binder_search("".into());
     ui.set_advanced_open(false);
     ui.set_unit(unit_index(wizard.size.unit));
     ui.set_open_spread(false);
@@ -107,7 +108,8 @@ pub fn open_spec(app: &mut App) {
     let ui = w.global::<NewProjectUi>();
     ui.set_mode(1);
     ui.set_tab(if same.is_some() { 0 } else { 1 });
-    ui.set_lab(0);
+    ui.set_binder(lamina_editor::new_project::ALL_BINDERS.into());
+    ui.set_binder_search("".into());
     ui.set_advanced_open(false);
     ui.set_unit(unit_index(wizard.size.unit));
     ui.set_open_spread(false);

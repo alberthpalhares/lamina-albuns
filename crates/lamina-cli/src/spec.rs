@@ -113,7 +113,11 @@ pub fn print_presets() {
         };
         println!(
             "{} — {} × {} cm, {} DPI, sangria {} mm, {pages}",
-            p.name, f.width_cm, f.height_cm, f.dpi, f.bleed_mm
+            p.full_name(),
+            f.width_cm,
+            f.height_cm,
+            f.dpi,
+            f.bleed_mm
         );
     }
 }

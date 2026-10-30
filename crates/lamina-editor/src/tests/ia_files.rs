@@ -100,7 +100,7 @@ fn ia_b14_novo_album_igual_ao_da_janela() {
     let args = json!({
         "pasta_fotos": base.path("fotos"),
         "salvar_em": target,
-        "preset": "Quadrado 30 × 30",
+        "preset": "30x30cm",
         "laminas": 8,
         "montar": true,
     });
@@ -108,7 +108,7 @@ fn ia_b14_novo_album_igual_ao_da_janela() {
 
     let preset = builtin_presets()
         .into_iter()
-        .find(|p| p.name == "Quadrado 30 × 30")
+        .find(|p| p.name == "30x30cm")
         .unwrap();
     let window = Editor::new();
     let folder = base.path("fotos");

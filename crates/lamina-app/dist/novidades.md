@@ -48,13 +48,15 @@ Esta versão traz as fontes do computador nos textos, reencontra as fotos que mu
 - **Tirar fotos do álbum pela grade e achar o arquivo.** Clique com o botão direito numa foto da
   faixa Fotografias: "Tirar do álbum" tira a foto do álbum, e "Mostrar no Explorador" (no Mac,
   "Mostrar no Finder") abre a pasta com o arquivo já selecionado. Com a grade em foco, Delete faz o
-  mesmo. Se a foto estiver numa lâmina, o Lamina pergunta antes e refaz a lâmina. O arquivo nunca
-  é apagado do computador, e Ctrl+Z desfaz tudo. Experimente: clique com o botão direito numa foto
-  da faixa Fotografias.
+  mesmo. Na lâmina, o botão direito numa foto traz "Remover fotografia do álbum". Se a foto estiver
+  numa lâmina, o Lamina pergunta antes e refaz a lâmina. O arquivo nunca é apagado do computador,
+  e Ctrl+Z desfaz tudo. Experimente: clique com o botão direito numa foto da faixa Fotografias.
 - **Escolher o tamanho do álbum ficou mais simples.** No álbum novo, o tamanho do último álbum já
-  vem marcado, com o desenho da lâmina e um resumo de uma linha (tamanho, páginas, DPI e sangria)
-  ao lado. Dá para filtrar os tamanhos pelo laboratório, e no Personalizado os números da gráfica
-  ficam recolhidos em "Ajustes da gráfica". Experimente: crie um álbum novo.
+  vem marcado. Os três formatos aparecem como o álbum fechado e, embaixo, a lâmina aberta do
+  tamanho escolhido, com um resumo de uma linha (tamanho, páginas, DPI e sangria). Os nomes são a
+  medida, como 30x30cm e 20x15cm. Dá para escolher a encadernadora numa lista com busca, e o
+  Personalizado ficou na horizontal, com os números da gráfica em "Ajustes da gráfica". Experimente:
+  crie um álbum novo.
   <!-- comando: arquivo.novo -->
 - **Editar os textos que já estão na lâmina.** Um clique num texto mostra o campo dele na aba
   Quadro, mesmo com o painel escondido, e o texto fica sempre por cima das fotos. "Editar texto"
@@ -66,12 +68,17 @@ Esta versão traz as fontes do computador nos textos, reencontra as fotos que mu
   as fotos continuam importadas, e Ctrl+Z desfaz. Experimente: abra o menu Lâmina.
 - **Sair pelo menu Arquivo.** Arquivo → Sair (Ctrl+Q; no Mac, Cmd+Q) fecha o Lamina, perguntando
   antes se quer salvar. Experimente: abra o menu Arquivo.
+- **Setas nos campos de número.** Em qualquer campo de número (medidas, DPI, páginas, posição do
+  quadro, fonte, ângulo, escala), ↑ e ↓ sobem e descem o valor, e com Shift andam de dez em dez.
+  Experimente: selecione uma foto, clique no ângulo e aperte ↑.
+- **O painel da direita na altura toda.** O painel desce até o fim da janela, e as faixas de baixo
+  ficam ao lado dele. Experimente: abra um álbum e veja o painel da direita.
 - **Botões de girar menores.** Girar 90°, ajustar 0,1° e voltar a 0° viraram ícones pequenos, numa
   linha só ao lado do ângulo, cada um com o balão do que faz. Experimente: selecione uma foto e
   passe o mouse nos ícones de girar.
-- **Tamanhos da ProAlbuns.** Os álbuns 15x20, 20x15, 20x20, 20x25 e 25x20 da ProAlbuns entraram
-  entre os tamanhos prontos, com a sangria que o laboratório pede. Experimente: crie um álbum novo
-  e escolha um tamanho ProAlbuns.
+- **Tamanhos da ProAlbuns.** Os álbuns 20x15cm, 15x20cm, 25x20cm e 20x25cm da ProAlbuns entraram
+  entre os tamanhos prontos, com a sangria que a encadernadora pede. Experimente: crie um álbum
+  novo, escolha a encadernadora ProAlbuns e um tamanho.
 - **Controle por IA mais certeiro.** A IA monta a primeira lâmina de um álbum em branco, dá nome ao
   álbum novo e troca o nome dele, mostra quanto cada sugestão de layout preenche, e explica por que
   uma importação ficou vazia. Experimente: peça à IA para criar um álbum com um nome.

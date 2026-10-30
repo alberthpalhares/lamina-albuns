@@ -16,6 +16,27 @@ impl Editor {
         })
     }
 
+    /// As fotos dos quadros selecionados na lâmina mostrada, sem repetir (spec TF-B11).
+    pub fn selected_frame_photos(&self) -> Vec<PhotoId> {
+        let Some(spread) = self
+            .session
+            .as_ref()
+            .and_then(|s| s.project().spreads.get(s.current()))
+        else {
+            return Vec::new();
+        };
+        let mut photos = Vec::new();
+        for f in self.selected_frames() {
+            if let Some(lamina_core::FrameContent::Photo { photo, .. }) =
+                spread.frames.get(f).map(|fr| &fr.content)
+                && !photos.contains(photo)
+            {
+                photos.push(*photo);
+            }
+        }
+        photos
+    }
+
     /// Quantas das fotos estão em lâminas (para a pergunta da regra 4).
     pub fn photos_in_spreads(&self, photos: &[PhotoId]) -> usize {
         self.session

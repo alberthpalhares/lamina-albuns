@@ -51,6 +51,20 @@ pub fn leave_label(count: usize) -> String {
     }
 }
 
+/// O botão que confirma a pergunta: pela grade e pelo menu do quadro (TF-B11).
+pub const LEAVE_BUTTON: &str = "Tirar do álbum";
+pub const REMOVE_BUTTON: &str = "Remover do álbum";
+
+/// O item do menu do quadro: "Remover fotografia do álbum" ou "Remover 3 fotografias do álbum"
+/// (correção de 2026-10-29, TF-B11).
+pub fn remove_label(count: usize) -> String {
+    if count <= 1 {
+        "Remover fotografia do álbum".to_owned()
+    } else {
+        format!("Remover {count} fotografias do álbum")
+    }
+}
+
 /// A pergunta da regra 4, ou nenhuma quando nenhuma foto está em lâmina.
 pub fn leave_question(used: usize) -> Option<String> {
     match used {

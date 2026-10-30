@@ -2,6 +2,7 @@
 // laço e o painel do modo. Só desenho: o editor decide e o Rust preenche o `OrganizeUi`.
 
 import { Button, CheckBox, LineEdit, ScrollView } from "std-widgets.slint";
+import { NumberField } from "number_field.slint";
 import { Theme } from "theme.slint";
 import { BoxData } from "canvas.slint";
 import { LookPanel } from "look.slint";
@@ -209,13 +210,13 @@ component BarFields inherits HorizontalLayout {
     spacing: 4px;
     alignment: start;
     Text { text: "X"; color: root.ink; vertical-alignment: center; }
-    LineEdit { width: 58px; text <=> OrganizeUi.gx; accepted => { OrganizeUi.field-accepted(0); } }
+    NumberField { step-accepts: true; width: 58px; text <=> OrganizeUi.gx; accepted => { OrganizeUi.field-accepted(0); } }
     Text { text: "Y"; color: root.ink; vertical-alignment: center; }
-    LineEdit { width: 58px; text <=> OrganizeUi.gy; accepted => { OrganizeUi.field-accepted(1); } }
+    NumberField { step-accepts: true; width: 58px; text <=> OrganizeUi.gy; accepted => { OrganizeUi.field-accepted(1); } }
     Text { text: "L"; color: root.ink; vertical-alignment: center; }
-    LineEdit { width: 58px; text <=> OrganizeUi.gw; accepted => { OrganizeUi.field-accepted(2); } }
+    NumberField { step-accepts: true; width: 58px; text <=> OrganizeUi.gw; accepted => { OrganizeUi.field-accepted(2); } }
     Text { text: "A"; color: root.ink; vertical-alignment: center; }
-    LineEdit { width: 58px; text <=> OrganizeUi.gh; accepted => { OrganizeUi.field-accepted(3); } }
+    NumberField { step-accepts: true; width: 58px; text <=> OrganizeUi.gh; accepted => { OrganizeUi.field-accepted(3); } }
     Icon {
         icon: OrganizeUi.keep ? @image-url("../icons/eg/cadeado.svg") : @image-url("../icons/eg/cadeado-aberto.svg");
         label: OrganizeUi.keep ? "Manter proporção (ligado)" : "Manter proporção (desligado)";
@@ -344,15 +345,15 @@ export component OrganizeBar inherits Rectangle {
                                 spacing: 4px;
                                 Row {
                                     Text { text: "X"; color: Theme.text; vertical-alignment: center; }
-                                    LineEdit { text <=> OrganizeUi.gx; accepted => { OrganizeUi.field-accepted(0); } }
+                                    NumberField { step-accepts: true; text <=> OrganizeUi.gx; accepted => { OrganizeUi.field-accepted(0); } }
                                     Text { text: "Y"; color: Theme.text; vertical-alignment: center; }
-                                    LineEdit { text <=> OrganizeUi.gy; accepted => { OrganizeUi.field-accepted(1); } }
+                                    NumberField { step-accepts: true; text <=> OrganizeUi.gy; accepted => { OrganizeUi.field-accepted(1); } }
                                 }
                                 Row {
                                     Text { text: "L"; color: Theme.text; vertical-alignment: center; }
-                                    LineEdit { text <=> OrganizeUi.gw; accepted => { OrganizeUi.field-accepted(2); } }
+                                    NumberField { step-accepts: true; text <=> OrganizeUi.gw; accepted => { OrganizeUi.field-accepted(2); } }
                                     Text { text: "A"; color: Theme.text; vertical-alignment: center; }
-                                    LineEdit { text <=> OrganizeUi.gh; accepted => { OrganizeUi.field-accepted(3); } }
+                                    NumberField { step-accepts: true; text <=> OrganizeUi.gh; accepted => { OrganizeUi.field-accepted(3); } }
                                 }
                             }
                             if !OrganizeUi.bar-fields && OrganizeUi.can-fields: CheckBox { text: "Manter proporção"; checked <=> OrganizeUi.keep; }

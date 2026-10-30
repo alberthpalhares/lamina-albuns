@@ -29,7 +29,7 @@ pub struct NewAlbumCall {
     pub salvar_em: String,
     /// Nome do álbum (o que aparece no topo da janela). Sem ele, o nome do arquivo salvar_em.
     pub nome: Option<String>,
-    /// Nome de um preset, como "Quadrado 30 × 30" (lista em resumo_do_album). Sem preset, a
+    /// Nome de um preset, como "30x30cm" ou "25x20cm (ProAlbuns)" (lista em resumo_do_album). Sem preset, a
     /// especificação padrão do Novo álbum.
     pub preset: Option<String>,
     /// Número de lâminas; só vale com montar: true. Sem ele, a sugestão do Lamina (cerca de 4

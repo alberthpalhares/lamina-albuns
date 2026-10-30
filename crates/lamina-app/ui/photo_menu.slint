@@ -9,6 +9,8 @@ export global PhotoMenuUi {
     // "Tirar do álbum" ou "Tirar 3 fotos do álbum"; "Mostrar no Explorador" ou no Finder.
     in property <string> remove-text: "Tirar do álbum";
     in property <string> reveal-text: "Mostrar no Explorador";
+    // O botão da pergunta: "Tirar do álbum" pela grade, "Remover do álbum" pelo quadro.
+    in property <string> confirm-text: "Tirar do álbum";
     in-out property <bool> show-ask;
     in property <string> question;
     callback remove();
@@ -30,7 +32,7 @@ export component RemoveAskDialog inherits Shade {
                 alignment: end;
                 spacing: 8px;
                 Button { text: "Cancelar"; clicked => { PhotoMenuUi.show-ask = false; root.closed(); } }
-                Button { text: "Tirar do álbum"; primary: true; clicked => { PhotoMenuUi.confirm(); root.closed(); } }
+                Button { text: PhotoMenuUi.confirm-text; primary: true; clicked => { PhotoMenuUi.confirm(); root.closed(); } }
             }
         }
     }

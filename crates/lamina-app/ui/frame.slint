@@ -3,6 +3,7 @@
 
 import { Button, CheckBox, LineEdit, ScrollView, TextEdit } from "std-widgets.slint";
 import { FontField } from "font_list.slint";
+import { NumberField } from "number_field.slint";
 import { Theme } from "theme.slint";
 import { LookUi, Swatches } from "look.slint";
 
@@ -92,15 +93,15 @@ export component FramePanel inherits ScrollView {
             spacing: 6px;
             Row {
                 Label { text: "X"; }
-                LineEdit { width: 84px; text <=> FrameUi.x; accepted => { FrameUi.rect-accepted(); } }
+                NumberField { step-accepts: true; width: 84px; text <=> FrameUi.x; accepted => { FrameUi.rect-accepted(); } }
                 Label { text: "Y"; }
-                LineEdit { width: 84px; text <=> FrameUi.y; accepted => { FrameUi.rect-accepted(); } }
+                NumberField { step-accepts: true; width: 84px; text <=> FrameUi.y; accepted => { FrameUi.rect-accepted(); } }
             }
             Row {
                 Label { text: "Larg."; }
-                LineEdit { width: 84px; text <=> FrameUi.w; accepted => { FrameUi.rect-accepted(); } }
+                NumberField { step-accepts: true; width: 84px; text <=> FrameUi.w; accepted => { FrameUi.rect-accepted(); } }
                 Label { text: "Alt."; }
-                LineEdit { width: 84px; text <=> FrameUi.h; accepted => { FrameUi.rect-accepted(); } }
+                NumberField { step-accepts: true; width: 84px; text <=> FrameUi.h; accepted => { FrameUi.rect-accepted(); } }
             }
         }
         if FrameUi.rect-error != "": Error { text: FrameUi.rect-error; }
@@ -123,7 +124,9 @@ export component FramePanel inherits ScrollView {
         if FrameUi.is-text: HorizontalLayout {
             spacing: 8px;
             Label { text: "Tamanho (pt)"; }
-            LineEdit {
+            NumberField {
+                step-accepts: true;
+                minimum: 1;
                 width: 64px;
                 text <=> FrameUi.size;
                 accepted(t) => { FrameUi.size-accepted(t); }
@@ -166,7 +169,11 @@ export component FramePanel inherits ScrollView {
         if FrameUi.is-text: HorizontalLayout {
             spacing: 8px;
             Label { text: "Entrelinha"; }
-            LineEdit {
+            NumberField {
+                step-accepts: true;
+                step: 0.1;
+                minimum: 0.5;
+                maximum: 3;
                 width: 64px;
                 text <=> FrameUi.spacing;
                 accepted(t) => { FrameUi.spacing-accepted(t); }

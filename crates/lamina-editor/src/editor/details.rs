@@ -57,7 +57,7 @@ pub fn album_rows(project: &Project, unit: &str) -> Vec<(String, String)> {
         let outside =
             limits.min.is_some_and(|a| pages32 < a) || limits.max.is_some_and(|b| pages32 > b);
         let warn = if outside {
-            " · fora da faixa do laboratório"
+            " · fora da faixa da encadernadora"
         } else {
             ""
         };

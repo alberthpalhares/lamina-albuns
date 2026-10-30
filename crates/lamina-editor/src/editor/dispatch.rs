@@ -68,6 +68,7 @@ impl Editor {
             Command::Favorite | Command::Reject => self.panel(Part::Spread).in_use.is_some(),
             Command::ClearFrame if self.organizing() => !self.selected_frames().is_empty(),
             Command::ClearFrame => self.selected_content().is_some(),
+            Command::RemoveFromAlbum => !self.selected_frame_photos().is_empty(),
             Command::NewText | Command::NewPhotoFrame | Command::Models => true,
             Command::CheckUpdates | Command::ToggleAutoUpdates | Command::ToggleBeta => true,
             Command::SendFeedback | Command::OpenLogs => true,
@@ -217,6 +218,11 @@ impl Editor {
             Command::Reject => self.reject(),
             Command::ClearFrame if self.organizing() => self.delete_group(),
             Command::ClearFrame => self.delete_selected(),
+            // Pela IA e pelo atalho de comando, sem a pergunta; a janela pergunta antes (TF-B11).
+            Command::RemoveFromAlbum => {
+                let photos = self.selected_frame_photos();
+                self.remove_from_album(&photos)
+            }
             Command::CopyFrames => self.copy_frames(),
             Command::PasteFrames => self.paste_frames(),
             Command::DuplicateFrames => self.duplicate_frames(),

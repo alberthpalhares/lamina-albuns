@@ -21,7 +21,8 @@ fn preset(name: &str, width_cm: f64, height_cm: f64) -> Preset {
         },
         limits: lamina_core::PageLimits::default(),
         export: lamina_core::ExportPrefs::default(),
-        lab: None,
+        binder: None,
+        album_type: None,
     }
 }
 
@@ -44,13 +45,7 @@ fn np_b1_presets_separados_por_formato() {
         [
             (
                 Format::Square,
-                vec![
-                    (15.0, 15.0),
-                    (20.0, 20.0),
-                    (25.0, 25.0),
-                    (30.0, 30.0),
-                    (20.0, 20.0)
-                ]
+                vec![(15.0, 15.0), (20.0, 20.0), (25.0, 25.0), (30.0, 30.0)]
             ),
             (
                 Format::Landscape,
@@ -87,11 +82,11 @@ fn np_b1_presets_separados_por_formato() {
 fn np_b2_tamanho_escolhido_preenche_o_personalizado() {
     let square = builtin_presets()
         .into_iter()
-        .find(|p| p.name == "Quadrado 30 × 30")
+        .find(|p| p.name == "30x30cm")
         .unwrap();
     let mut form = SizeForm::default();
     form.choose(&square);
-    assert_eq!(form.label(), "Quadrado 30 × 30");
+    assert_eq!(form.label(), "30x30cm");
     form.set(SizeField::Dpi, "350").unwrap();
     assert_eq!(
         form.fields,
@@ -100,7 +95,7 @@ fn np_b2_tamanho_escolhido_preenche_o_personalizado() {
             ..square.fields.clone()
         }
     );
-    assert_eq!(form.label(), "Personalizado (a partir de Quadrado 30 × 30)");
+    assert_eq!(form.label(), "Personalizado (a partir de 30x30cm)");
     assert_eq!(SizeForm::default().label(), "Personalizado");
 }
 

@@ -50,6 +50,7 @@ pub enum Command {
     Reject,
     ToggleReordered,
     ClearFrame,
+    RemoveFromAlbum,
     Deselect,
     BuildFromSelection,
     NewSpreadFromSelection,

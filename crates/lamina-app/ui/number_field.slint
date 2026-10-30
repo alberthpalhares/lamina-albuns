@@ -1,0 +1,35 @@
+// O campo de número (spec NU): um LineEdit em que ↑ e ↓ andam o passo, e Shift anda dez. A conta
+// é do editor (`lamina_editor::number_step`), pelo global `NumberStep`.
+
+import { LineEdit } from "std-widgets.slint";
+
+export global NumberStep {
+    // O texto depois de andar `times` passos; o mesmo texto quando não é número (regra 5).
+    pure callback apply(string, int, float, float, float) -> string;
+}
+
+export component NumberField inherits LineEdit {
+    // O passo e a faixa do campo (regras 1 e 3).
+    in property <float> step: 1;
+    in property <float> minimum: -1000000;
+    in property <float> maximum: 1000000;
+    // Os campos que só valem no Enter (posição do quadro, fonte) recebem `accepted` também.
+    in property <bool> step-accepts;
+    key-pressed(event) => {
+        if (event.text == Key.UpArrow || event.text == Key.DownArrow) {
+            let times = (event.text == Key.UpArrow ? 1 : -1) * (event.modifiers.shift ? 10 : 1);
+            let before = self.text;
+            // Ler de volta o texto do campo: o Slint 1.18.1 não deixa usar um texto local duas
+            // vezes depois de atribuí-lo.
+            self.text = NumberStep.apply(before, times, root.step, root.minimum, root.maximum);
+            if (self.text != before) {
+                self.edited(self.text);
+                if (root.step-accepts) {
+                    self.accepted(self.text);
+                }
+            }
+            return accept;
+        }
+        reject
+    }
+}

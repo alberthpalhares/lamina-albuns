@@ -99,6 +99,11 @@ pub fn run_command(app: &Shared, command: Command) {
         {
             crate::photo_menu::ask_remove(&mut a);
         }
+        // Pelo menu do quadro, com a mesma pergunta da grade (TF-B11).
+        Command::RemoveFromAlbum => {
+            let photos = a.editor.selected_frame_photos();
+            crate::photo_menu::ask_remove_these(&mut a, photos, true);
+        }
         _ => {
             // Navegar e as guias só mudam a lâmina mostrada; o resto edita o álbum e muda também
             // a faixa, a timeline e os usos no navegador.

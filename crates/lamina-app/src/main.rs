@@ -50,6 +50,7 @@ mod new_project_mount;
 mod new_project_size;
 mod news;
 mod news_player;
+mod number_field;
 mod opened;
 mod organize;
 mod palette;
@@ -148,6 +149,7 @@ fn connect(window: &AppWindow, app: &Shared) {
     clear_all::connect(window, app);
     relink_dialog::connect(window, app);
     photo_menu::connect(window, app);
+    number_field::connect(window);
     importing::connect(window, app);
     calibrate::connect(window, app);
     roll_connect::connect(window, app);

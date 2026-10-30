@@ -116,8 +116,8 @@ fn save_as(app: &mut App, target: i32) {
     let ui = w.global::<PresetUi>();
     ui.set_name("".into());
     ui.set_lab("".into());
-    let labs = lamina_editor::new_project::labs(&app.presets.all());
-    ui.set_labs_text(labs.join(", ").into());
+    let binders = lamina_editor::new_project::binders(&app.presets.all());
+    ui.set_labs_text(binders.join(", ").into());
     ui.set_name_message("".into());
     ui.set_show_name(true);
 }
@@ -144,7 +144,8 @@ fn current(app: &App, w: &AppWindow, name: &str) -> Result<Preset, String> {
         fields,
         limits,
         export,
-        lab: lamina_editor::new_project::clean_lab(Some(&ui.get_lab())),
+        binder: lamina_editor::new_project::clean_binder(Some(&ui.get_lab())),
+        album_type: None,
     })
 }
 
@@ -159,7 +160,7 @@ fn name_save(app: &mut App) {
         Ok(p) => p,
         Err(e) => return ui.set_name_message(e.into()),
     };
-    let exists = app.presets.exists(&name, preset.lab.as_deref());
+    let exists = app.presets.exists(&name, preset.binder.as_deref());
     if let Err(text) = app.name_guard.check(Named::Preset, &name, exists) {
         return ui.set_name_message(text.into());
     }

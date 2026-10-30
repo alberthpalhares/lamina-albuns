@@ -79,6 +79,12 @@ impl Command {
                 Menu::Edit,
                 k(Key::Delete),
             ),
+            C::RemoveFromAlbum => (
+                "editar.remover-do-album",
+                "Remover fotografia do álbum",
+                Menu::Edit,
+                None,
+            ),
             C::Deselect => ("editar.desmarcar", "Desmarcar", Menu::Edit, k(Key::Escape)),
             C::BuildFromSelection => (
                 "layout.montar",

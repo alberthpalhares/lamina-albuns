@@ -146,7 +146,7 @@ pub struct SaveModel {
 #[derive(Debug, Clone, Default, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RespecCall {
-    /// Nome de um preset, como "Quadrado 25 × 25" (lista em resumo_do_album).
+    /// Nome de um preset, como "25x25cm" ou "25x20cm (ProAlbuns)" (lista em resumo_do_album).
     pub preset: Option<String>,
     pub largura_cm: Option<f64>,
     pub altura_cm: Option<f64>,

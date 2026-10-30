@@ -9,6 +9,8 @@ import { SpreadData, FrameData, BoxData } from "canvas.slint";
 import { ConfirmDialog, MessageDialog, BusyOverlay, RecoverDialog, RecoverUi } from "dialogs.slint";
 import { PhotoMenuUi, RemoveAskDialog } from "photo_menu.slint";
 export { PhotoMenuUi }
+import { NumberStep } from "number_field.slint";
+export { NumberStep }
 import { NewProjectDialog, NewProjectUi, FormatCard, DrawData } from "new_project.slint";
 import { ImportUi, DropOverlay } from "importing.slint";
 import { BuildUi, BuildAlbumDialog } from "build_album.slint";
@@ -465,31 +467,68 @@ export component AppWindow inherits Window {
 
             HorizontalLayout {
                 vertical-stretch: 1;
-                // Lâmina atual.
-                stage := Stage {
+                // A lâmina e as faixas de baixo numa coluna; o painel da direita ao lado, na altura
+                // toda (correção do dono de 2026-10-29, spec FX).
+                VerticalLayout {
                     horizontal-stretch: 1;
-                    has-project: root.has-project;
-                    current: root.current;
-                    guides: root.guides;
-                    selected-frame: root.selected-frame;
-                    spread-count: root.spreads.length;
-                    photo-count: root.photos.length;
-                    blank-aspect: root.blank-aspect;
-                    blank-color: root.blank-color;
-                    can-build: root.can-build-album;
-                    hint: root.hint;
-                    crop-frame: root.crop-frame;
-                    has-preview: root.has-preview;
-                    preview: root.preview;
-                    preview-img: root.preview-img;
-                    crop-grid-thirds: root.crop-grid-thirds;
-                    crop-grid-fine: root.crop-grid-fine;
-                    hover-fx <=> root.hover-fx;
-                    ghost: root.ghost;
-                    leaving: root.leaving;
-                    has-leaving: root.has-leaving;
-                    command(name) => { root.command(name); }
-                    focus-main => { root.focus-main(); }
+                    // Lâmina atual.
+                    stage := Stage {
+                        horizontal-stretch: 1;
+                        vertical-stretch: 1;
+                        has-project: root.has-project;
+                        current: root.current;
+                        guides: root.guides;
+                        selected-frame: root.selected-frame;
+                        spread-count: root.spreads.length;
+                        photo-count: root.photos.length;
+                        blank-aspect: root.blank-aspect;
+                        blank-color: root.blank-color;
+                        can-build: root.can-build-album;
+                        hint: root.hint;
+                        crop-frame: root.crop-frame;
+                        has-preview: root.has-preview;
+                        preview: root.preview;
+                        preview-img: root.preview-img;
+                        crop-grid-thirds: root.crop-grid-thirds;
+                        crop-grid-fine: root.crop-grid-fine;
+                        hover-fx <=> root.hover-fx;
+                        ghost: root.ghost;
+                        leaving: root.leaving;
+                        has-leaving: root.has-leaving;
+                        command(name) => { root.command(name); }
+                        focus-main => { root.focus-main(); }
+                    }
+                    bottom := BottomStrips {
+                        has-project: root.has-project;
+                        strip-spreads: root.strip-spreads;
+                        strip-timeline: root.strip-timeline;
+                        strip-photos: root.strip-photos;
+                        spreads-open: root.spreads-open;
+                        timeline-open: root.timeline-open;
+                        photos-open: root.photos-open;
+                        spreads: root.spreads;
+                        current-index: root.current-index;
+                        current-aspect: root.current.aspect;
+                        timeline: root.timeline;
+                        photos: root.photos;
+                        selected-photo: root.selected-photo;
+                        filter: root.filter;
+                        can-build: root.can-build-album;
+                        photo-zoom <=> root.photo-zoom;
+                        photo-columns: root.photo-columns;
+                        photo-scroll <=> root.photo-scroll;
+                        photo-shown: root.photo-shown;
+                        room: root.height;
+                        above: top.height + (root.update-bar != "" ? 30px : 0px) + (root.notice != "" ? 30px : 0px);
+                        command(name) => { root.command(name); }
+                        header-clicked(i) => { root.strip-header-clicked(i); }
+                        focus-main => { root.focus-main(); }
+                        // Fora da faixa de lâminas, a foto cai na lâmina grande (num quadro ou nela).
+                        photos-dropped => {
+                            stage.land();
+                            root.drop-photo(DragUi.from, stage.frac-x(), stage.frac-y());
+                        }
+                    }
                 }
 
                 // A borda do painel, que muda a largura dele (spec FX, regra 13).
@@ -516,37 +555,6 @@ export component AppWindow inherits Window {
                     info-photo: root.info-photo;
                     history-go(i) => { root.history-go(i); }
                     done => { root.focus-main(); }
-                }
-            }
-            bottom := BottomStrips {
-                has-project: root.has-project;
-                strip-spreads: root.strip-spreads;
-                strip-timeline: root.strip-timeline;
-                strip-photos: root.strip-photos;
-                spreads-open: root.spreads-open;
-                timeline-open: root.timeline-open;
-                photos-open: root.photos-open;
-                spreads: root.spreads;
-                current-index: root.current-index;
-                current-aspect: root.current.aspect;
-                timeline: root.timeline;
-                photos: root.photos;
-                selected-photo: root.selected-photo;
-                filter: root.filter;
-                can-build: root.can-build-album;
-                photo-zoom <=> root.photo-zoom;
-                photo-columns: root.photo-columns;
-                photo-scroll <=> root.photo-scroll;
-                photo-shown: root.photo-shown;
-                room: root.height;
-                above: top.height + (root.update-bar != "" ? 30px : 0px) + (root.notice != "" ? 30px : 0px);
-                command(name) => { root.command(name); }
-                header-clicked(i) => { root.strip-header-clicked(i); }
-                focus-main => { root.focus-main(); }
-                // Fora da faixa de lâminas, a foto cai na lâmina grande (num quadro ou nela).
-                photos-dropped => {
-                    stage.land();
-                    root.drop-photo(DragUi.from, stage.frac-x(), stage.frac-y());
                 }
             }
         }

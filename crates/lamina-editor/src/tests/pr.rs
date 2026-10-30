@@ -25,21 +25,8 @@ fn pr_b1_presets_do_lamina() {
     assert_eq!(
         names[..15],
         [
-            "Quadrado 15 × 15",
-            "Quadrado 20 × 20",
-            "Quadrado 25 × 25",
-            "Quadrado 30 × 30",
-            "Horizontal 21 × 15",
-            "Horizontal 25 × 20",
-            "Horizontal 30 × 20",
-            "Horizontal 30 × 25",
-            "Horizontal 35 × 30",
-            "Horizontal 40 × 30",
-            "Horizontal 45 × 30",
-            "Vertical 15 × 21",
-            "Vertical 20 × 25",
-            "Vertical 20 × 30",
-            "Vertical 25 × 30"
+            "15x15cm", "20x20cm", "25x25cm", "30x30cm", "21x15cm", "25x20cm", "30x20cm", "30x25cm",
+            "35x30cm", "40x30cm", "45x30cm", "15x21cm", "20x25cm", "20x30cm", "25x30cm"
         ]
     );
     // Os números de cada preset, escritos aqui (auditoria do Marco 3, M5).
@@ -84,37 +71,25 @@ fn pr_b1_presets_do_lamina() {
 
 #[test]
 fn pr_b12_presets_da_proalbuns() {
-    let lab: Vec<Preset> = builtin_presets()[15..].to_vec();
-    let names: Vec<&str> = lab.iter().map(|p| p.name.as_str()).collect();
-    assert_eq!(
-        names,
-        [
-            "ProAlbuns 15x20",
-            "ProAlbuns 20x15",
-            "ProAlbuns 20x20",
-            "ProAlbuns 20x25",
-            "ProAlbuns 25x20"
-        ]
-    );
+    let binder: Vec<Preset> = builtin_presets()[15..].to_vec();
+    let names: Vec<&str> = binder.iter().map(|p| p.name.as_str()).collect();
+    assert_eq!(names, ["20x15cm", "15x20cm", "25x20cm", "20x25cm"]);
     // O arquivo da lâmina aberta, com a sangria, no tamanho que a ProAlbuns pediu (cm).
-    let files: Vec<(f64, f64)> = lab
+    let files: Vec<(f64, f64)> = binder
         .iter()
         .map(|p| {
             let canvas = p.fields.to_spec().unwrap().canvas_rect();
             (canvas.height.get() / 10.0, canvas.width.get() / 10.0)
         })
         .collect();
-    let asked = [
-        (15.2, 40.0),
-        (20.3, 30.0),
-        (20.3, 40.0),
-        (20.3, 50.0),
-        (25.4, 40.0),
-    ];
+    // O 20x20 saiu (correção do dono de 2026-10-29).
+    let asked = [(15.2, 40.0), (20.3, 30.0), (20.3, 50.0), (25.4, 40.0)];
     for ((h, w), (ah, aw)) in files.iter().zip(asked) {
         assert!((h - ah).abs() < 1e-9 && (w - aw).abs() < 1e-9, "{h} × {w}");
     }
-    for preset in &lab {
+    assert_eq!(files.len(), asked.len());
+    for preset in &binder {
+        assert_eq!(preset.binder.as_deref(), Some("ProAlbuns"));
         let bleed = preset.fields.bleed();
         assert_eq!(bleed.outer.get(), 0.0, "sem sangria nas laterais");
         assert_eq!(bleed.inner.get(), 0.0, "nem na lombada");
@@ -126,7 +101,7 @@ fn pr_b12_presets_da_proalbuns() {
 #[test]
 fn pr_b2_novo_album_a_partir_de_um_preset() {
     let base = Base::with_photos(12, (300, 200));
-    let preset = PresetsStore::default().find("Horizontal 30 × 20").unwrap();
+    let preset = PresetsStore::default().find("30x20cm").unwrap();
     let new = crate::NewAlbum {
         spec: preset.fields.to_spec().unwrap(),
         limits: preset.limits,
@@ -164,7 +139,8 @@ fn custom(name: &str) -> Preset {
             space: ColorSpace::AdobeRgb,
             pages: false,
         },
-        lab: None,
+        binder: None,
+        album_type: None,
     }
 }
 
@@ -177,10 +153,7 @@ fn pr_b3_salvar_ler_de_novo_e_apagar() {
     let again = PresetsStore::load(&file);
     assert_eq!(again.find("Laboratório X"), Some(custom("Laboratório X")));
     assert_eq!(again.warning, None);
-    assert_eq!(
-        store.save(custom("Quadrado 30 × 30")),
-        Err(PresetError::Builtin)
-    );
+    assert_eq!(store.save(custom("30x30cm")), Err(PresetError::Builtin));
     assert_eq!(
         PresetError::Builtin.to_string(),
         "Esse nome é de um preset do Lamina; escolha outro."
@@ -411,4 +384,22 @@ fn pr_b11_trocar_rapido() {
         }
     }
     assert!(best < budget(2000), "trocar a especificação levou {best:?}");
+}
+
+#[test]
+fn pr_b13_nome_repetido_em_encadernadoras_diferentes() {
+    let store = PresetsStore::default();
+    let lamina = store.find("25x20cm").unwrap();
+    assert_eq!(lamina.binder, None, "o nome sozinho acha o do Lamina");
+    let proalbuns = store.find("25x20cm (ProAlbuns)").unwrap();
+    assert_eq!(proalbuns.binder.as_deref(), Some("ProAlbuns"));
+    assert_eq!(proalbuns.full_name(), "25x20cm (ProAlbuns)");
+    assert!(
+        store.find("25X20CM (proalbuns)").is_some(),
+        "sem ligar para maiúsculas"
+    );
+    // A IA lista os presets pelo nome completo.
+    let names: Vec<String> = store.all().iter().map(Preset::full_name).collect();
+    assert!(names.contains(&"25x20cm".to_owned()));
+    assert!(names.contains(&"25x20cm (ProAlbuns)".to_owned()));
 }

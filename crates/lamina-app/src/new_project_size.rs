@@ -1,11 +1,12 @@
-//! A etapa 1 do Novo projeto (specs NP e ET): o filtro por laboratório, os cartões de formato e o
-//! seletor de tamanho. Os campos do Personalizado ficam em `new_project_fields.rs`. As decisões
+//! A etapa 1 do Novo projeto (specs NP e ET): o filtro por encadernadora, os cartões de formato e
+//! o seletor de tamanho. Os campos do Personalizado ficam em `new_project_fields.rs`. As decisões
 //! ficam no `lamina-editor::new_project` (regra 1).
 
 use lamina_editor::Preset;
 use lamina_editor::forms::limits_text;
 use lamina_editor::new_project::{
-    ADD_LAB, ALL_LABS, Format, Unit, labs, size_choices, size_labels,
+    ADD_BINDER, ALL_BINDERS, Format, Unit, binder_list, binder_or_all, binders, size_choices,
+    size_labels,
 };
 use slint::{ComponentHandle, SharedString};
 
@@ -32,17 +33,14 @@ fn index(i: Option<usize>) -> i32 {
     i.and_then(|i| i32::try_from(i).ok()).unwrap_or(-1)
 }
 
-/// O laboratório do filtro (0 = "Todos"; o último item é o convite).
-fn lab_filter(app: &App, ui: &NewProjectUi) -> Option<String> {
-    let found = labs(&app.presets.all());
-    usize::try_from(ui.get_lab() - 1)
-        .ok()
-        .and_then(|i| found.get(i).cloned())
+/// A encadernadora do filtro: o nome no campo; "Todas" ou uma que sumiu é nenhuma (seção 6).
+fn binder_filter(app: &App, ui: &NewProjectUi) -> Option<String> {
+    binder_or_all(&app.presets.all(), Some(&ui.get_binder()))
 }
 
-/// Os tamanhos de cada formato, com o filtro de laboratório (ET, regra 4).
+/// Os tamanhos de cada formato, com o filtro de encadernadora (ET, regra 4).
 fn groups(app: &App, ui: &NewProjectUi) -> Vec<(Format, Vec<Preset>)> {
-    size_choices(&app.presets.all(), lab_filter(app, ui).as_deref())
+    size_choices(&app.presets.all(), binder_filter(app, ui).as_deref())
 }
 
 /// Mostra o filtro, os cartões e os tamanhos do formato `index`, com o tamanho escolhido marcado
@@ -52,15 +50,13 @@ pub(crate) fn show_format(app: &App, index: i32) {
         return;
     };
     let ui = w.global::<NewProjectUi>();
-    let found = labs(&app.presets.all());
-    if found.is_empty() {
-        ui.set_labs(model(Vec::new()));
-    } else {
-        let mut names: Vec<SharedString> = vec![ALL_LABS.into()];
-        names.extend(found.iter().map(|l| SharedString::from(l.as_str())));
-        names.push(ADD_LAB.into());
-        ui.set_labs(model(names));
+    let presets = app.presets.all();
+    ui.set_has_binders(!binders(&presets).is_empty());
+    if binder_filter(app, &ui).is_none() {
+        ui.set_binder(ALL_BINDERS.into());
     }
+    ui.set_add_binder_text(ADD_BINDER.into());
+    search_binders(app, &ui.get_binder_search());
     let groups = groups(app, &ui);
     let cards = groups
         .iter()
@@ -72,12 +68,12 @@ pub(crate) fn show_format(app: &App, index: i32) {
         .collect();
     ui.set_formats(model(cards));
     ui.set_format(index);
-    let all_labs = lab_filter(app, &ui).is_none();
+    let all_binders = binder_filter(app, &ui).is_none();
     let (labels, chosen) = usize::try_from(index)
         .ok()
         .and_then(|i| groups.get(i))
-        .map(|(format, sizes)| {
-            let labels = size_labels(*format, sizes, all_labs);
+        .map(|(_, sizes)| {
+            let labels = size_labels(sizes, all_binders);
             (labels, chosen_index(app, sizes))
         })
         .unwrap_or_default();
@@ -99,9 +95,11 @@ fn aspect(format: Format, sizes: &[Preset]) -> f32 {
 /// A posição do tamanho escolhido na lista; −1 com medidas personalizadas.
 fn chosen_index(app: &App, sizes: &[Preset]) -> i32 {
     let chosen = app.wizard.as_ref().and_then(|w| w.size.chosen());
-    index(
-        chosen.and_then(|(name, lab)| sizes.iter().position(|p| p.name == *name && p.lab == *lab)),
-    )
+    index(chosen.and_then(|(name, binder)| {
+        sizes
+            .iter()
+            .position(|p| p.name == *name && p.binder == *binder)
+    }))
 }
 
 /// Clique num cartão: o formato e o primeiro tamanho dele, se o escolhido não é desse formato.
@@ -142,19 +140,30 @@ fn pick_size(app: &mut App, index: i32) {
     show_format(app, ui.get_format());
 }
 
-/// O filtro de laboratório mudou. O convite do fim abre o Personalizado com os ajustes da gráfica,
-/// onde fica "Salvar como preset…" (ET, regra 5).
-fn pick_lab(app: &mut App, index: i32) {
+/// A lista de encadernadoras com a busca (ET-B11).
+fn search_binders(app: &App, text: &str) {
+    let Some(w) = app.window.upgrade() else {
+        return;
+    };
+    let rows = binder_list(&app.presets.all(), text);
+    let rows: Vec<SharedString> = rows.into_iter().map(SharedString::from).collect();
+    w.global::<NewProjectUi>().set_binder_rows(model(rows));
+}
+
+/// O filtro de encadernadora mudou. O convite do fim abre o Personalizado com os ajustes da
+/// gráfica, onde fica "Salvar como preset…" (ET, regra 5).
+fn pick_binder(app: &mut App, name: &str) {
     let Some(w) = app.window.upgrade() else {
         return;
     };
     let ui = w.global::<NewProjectUi>();
-    if index + 1 >= index_of(slint::Model::row_count(&ui.get_labs())) {
-        ui.set_lab(0);
+    if name == ADD_BINDER {
+        ui.set_binder(ALL_BINDERS.into());
         ui.set_tab(1);
         ui.set_advanced_open(true);
         return show_format(app, ui.get_format());
     }
+    ui.set_binder(name.into());
     let groups = groups(app, &ui);
     let current = usize::try_from(ui.get_format()).unwrap_or(0);
     let format = if groups.get(current).is_some_and(|(_, s)| !s.is_empty()) {
@@ -192,7 +201,10 @@ pub fn connect(ui: &NewProjectUi, app: &crate::new_project::Shared) {
         let a = app.clone();
         move |i| f(&mut a.borrow_mut(), i)
     };
-    ui.on_pick_lab(with(pick_lab));
+    let a = app.clone();
+    ui.on_pick_binder(move |name| pick_binder(&mut a.borrow_mut(), &name));
+    let a = app.clone();
+    ui.on_search_binders(move |text| search_binders(&a.borrow(), &text));
     ui.on_pick_format(with(pick_format));
     ui.on_pick_size(with(pick_size));
 }

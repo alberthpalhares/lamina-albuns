@@ -3,118 +3,12 @@
 // Rust (`src/new_project.rs`). O estado fica num global, como o dos presets.
 
 import { Button, CheckBox, ComboBox, LineEdit, SpinBox, ScrollView } from "std-widgets.slint";
+import { NumberField } from "number_field.slint";
 import { Theme } from "theme.slint";
 import { Shade, Panel } from "widgets.slint";
-import { PresetUi } from "spec.slint";
-
-export struct FormatCard {
-    label: string,
-    // Largura ÷ altura da página.
-    aspect: float,
-    // Há tamanho deste formato no laboratório do filtro (spec ET, regra 4).
-    enabled: bool,
-}
-
-// A lâmina aberta em frações do canvas (corte + sangria).
-export struct DrawData {
-    aspect: float,
-    tx: float, ty: float, tw: float, th: float,
-    lx: float, ly: float, lw: float, lh: float,
-    rx: float, ry: float, rw: float, rh: float,
-    starts: bool,
-    ends: bool,
-}
-
-export struct ColorChoice {
-    c: color,
-    hex: string,
-}
-
-export global NewProjectUi {
-    in-out property <bool> show;
-    in property <int> step: 1;
-    // 0 = Novo álbum (as três etapas); 1 = Especificação do álbum (etapa 1);
-    // 2 = Montagem do álbum (etapa 2), os dois para o álbum aberto (regra 11).
-    in property <int> mode;
-    // Etapa 1.
-    in-out property <int> tab;
-    // Filtro por laboratório (spec ET, regra 4): "Todos", os laboratórios e o convite; vazio sem
-    // laboratórios.
-    in property <[string]> labs;
-    in-out property <int> lab;
-    in property <[FormatCard]> formats;
-    in-out property <int> format;
-    in property <[string]> sizes;
-    // O tamanho marcado no seletor; −1 com medidas personalizadas.
-    in property <int> size: -1;
-    in property <string> short-summary;
-    // "Ajustes da gráfica" aberto no Personalizado (spec ET, regra 6).
-    in-out property <bool> advanced-open;
-    in property <string> label;
-    in-out property <int> unit: 1;
-    in-out property <bool> open-spread;
-    in-out property <string> width;
-    in-out property <string> height;
-    in-out property <string> dpi;
-    in-out property <string> bleed-outer;
-    in-out property <string> bleed-top;
-    in-out property <string> bleed-spine;
-    in-out property <string> safe-outer;
-    in-out property <string> safe-top;
-    in-out property <string> safe-spine;
-    in-out property <bool> starts;
-    in-out property <bool> ends;
-    in-out property <string> min-pages;
-    in-out property <string> max-pages;
-    in property <string> summary;
-    in property <string> error;
-    in property <DrawData> drawing;
-    // Etapa 2.
-    in-out property <bool> lay-flat: true;
-    in-out property <int> crop: 2;
-    in-out property <bool> bleed-page: true;
-    in-out property <bool> mosaics: true;
-    in-out property <int> reuse: 1;
-    in-out property <string> background;
-    in-out property <string> gap;
-    in-out property <string> border;
-    in-out property <string> border-color;
-    in-out property <string> radius;
-    in property <[image]> previews;
-    in property <[ColorChoice]> palette;
-    in property <color> background-color;
-    in property <color> border-swatch;
-    in property <string> look-error;
-    // Etapa 3.
-    in-out property <string> name;
-    in property <string> file;
-    in property <string> photos-text;
-    in-out property <bool> no-photos;
-    // "Montar as lâminas agora" (spec BR, regra 2): desmarcada, o álbum começa em branco.
-    in-out property <bool> build;
-    in property <string> build-text: "Montar as lâminas agora";
-    in-out property <int> spreads: 1;
-    in property <int> photos;
-    in property <string> suggestion;
-    in property <string> create-error;
-    callback pick-lab(int);
-    callback pick-format(int);
-    callback pick-size(int);
-    callback unit-changed(int);
-    callback size-changed();
-    callback same-margins();
-    callback mount-changed();
-    // Clique no quadro de cores: 0 = fundo, 1 = borda; posição de 0 a 1.
-    callback color-at(int, float, float);
-    callback file-changed();
-    callback change-file();
-    callback pick-folder();
-    callback next();
-    callback back();
-    callback cancel();
-    callback create();
-    callback apply();
-}
+import { NewProjectUi, FormatCard, DrawData, ColorChoice } from "new_project_ui.slint";
+import { StepOne } from "new_project_size.slint";
+export { NewProjectUi, FormatCard, DrawData }
 
 component Label inherits Text {
     color: Theme.muted;
@@ -128,214 +22,6 @@ component Title inherits Text {
     font-weight: 600;
 }
 
-// Um campo com rótulo, do tamanho fixo das colunas da etapa 1.
-component Field inherits HorizontalLayout {
-    in property <string> label;
-    in-out property <string> text;
-    callback edited();
-    spacing: 8px;
-    Label { text: root.label; width: 150px; }
-    LineEdit { text <=> root.text; width: 90px; edited => { root.edited(); } }
-}
-
-// A lâmina aberta em escala: a sangria (faixa escura), o corte, a zona segura (tracejado leve)
-// e a dobra; a página vazia nas pontas com página simples.
-component SpreadDrawing inherits Rectangle {
-    in property <DrawData> d;
-    property <length> w: min(self.width, self.height * max(0.1, root.d.aspect));
-    property <length> h: root.w / max(0.1, root.d.aspect);
-    canvas := Rectangle {
-        x: (parent.width - root.w) / 2;
-        y: (parent.height - root.h) / 2;
-        width: root.w;
-        height: root.h;
-        background: #4a3030;
-        Rectangle {
-            x: root.d.tx * parent.width;
-            y: root.d.ty * parent.height;
-            width: root.d.tw * parent.width;
-            height: root.d.th * parent.height;
-            background: #f2f2f2;
-            Rectangle { x: 0; width: parent.width / 2; background: root.d.starts ? #9a9a9a : transparent; }
-            Rectangle { x: parent.width / 2; width: parent.width / 2; background: root.d.ends ? #9a9a9a : transparent; }
-            Rectangle { x: parent.width / 2 - 0.5px; width: 1px; background: #606060; }
-        }
-        Rectangle {
-            x: root.d.lx * parent.width;
-            y: root.d.ly * parent.height;
-            width: root.d.lw * parent.width;
-            height: root.d.lh * parent.height;
-            border-width: 1px;
-            border-color: #4f8fd6;
-        }
-        Rectangle {
-            x: root.d.rx * parent.width;
-            y: root.d.ry * parent.height;
-            width: root.d.rw * parent.width;
-            height: root.d.rh * parent.height;
-            border-width: 1px;
-            border-color: #4f8fd6;
-        }
-    }
-}
-
-// Um cartão de formato: o desenho de uma lâmina aberta na proporção, com a dobra no meio. Apagado
-// quando o laboratório do filtro não tem esse formato (spec ET, regra 4).
-component FormatButton inherits Rectangle {
-    in property <FormatCard> card;
-    in property <bool> chosen;
-    callback clicked();
-    width: 132px;
-    height: 108px;
-    border-radius: 6px;
-    opacity: root.card.enabled ? 1 : 0.35;
-    background: root.chosen ? #3d4a5a : (touch.has-hover && root.card.enabled ? #3a3a3a : #2a2a2a);
-    border-width: root.chosen ? 2px : 0px;
-    border-color: #4f8fd6;
-    property <length> box: 80px;
-    property <float> spread: 2 * root.card.aspect;
-    Rectangle {
-        y: 12px;
-        x: (parent.width - self.width) / 2;
-        width: root.spread >= 1 ? root.box : root.box * root.spread;
-        height: root.spread >= 1 ? root.box / root.spread : root.box;
-        background: #e6e6e6;
-        Rectangle { x: parent.width / 2 - 0.5px; width: 1px; background: #707070; }
-    }
-    Text { y: parent.height - 24px; width: parent.width; text: root.card.label; color: Theme.text; horizontal-alignment: center; }
-    touch := TouchArea {
-        enabled: root.card.enabled;
-        clicked => { root.clicked(); }
-    }
-}
-
-// Tamanhos prontos (spec ET): o filtro por laboratório, os três formatos e o tamanho escolhido.
-component ReadySizes inherits VerticalLayout {
-    spacing: 14px;
-    if NewProjectUi.labs.length > 0: HorizontalLayout {
-        spacing: 8px;
-        Label { text: "Laboratório"; width: 90px; }
-        ComboBox {
-            width: 260px;
-            model: NewProjectUi.labs;
-            current-index <=> NewProjectUi.lab;
-            selected => { NewProjectUi.pick-lab(self.current-index); }
-        }
-        Rectangle { horizontal-stretch: 1; }
-    }
-    HorizontalLayout {
-        spacing: 10px;
-        for card[i] in NewProjectUi.formats: FormatButton {
-            card: card;
-            chosen: NewProjectUi.format == i;
-            clicked => { NewProjectUi.pick-format(i); }
-        }
-        Rectangle { horizontal-stretch: 1; }
-    }
-    HorizontalLayout {
-        spacing: 8px;
-        Label { text: "Tamanho"; width: 90px; }
-        ComboBox {
-            width: 260px;
-            model: NewProjectUi.sizes;
-            current-index: NewProjectUi.size;
-            selected => { NewProjectUi.pick-size(self.current-index); }
-        }
-        if NewProjectUi.size < 0: Label { text: "medidas personalizadas"; }
-        Rectangle { horizontal-stretch: 1; }
-    }
-    if NewProjectUi.labs.length == 0: Button {
-        text: "Adicionar o meu laboratório…";
-        clicked => { NewProjectUi.tab = 1; NewProjectUi.advanced-open = true; }
-    }
-    Rectangle { vertical-stretch: 1; }
-}
-
-// Personalizado (spec ET, regra 6): o tamanho à vista; o resto em "Ajustes da gráfica".
-component CustomSize inherits VerticalLayout {
-    spacing: 6px;
-    HorizontalLayout {
-        spacing: 8px;
-        Label { text: "Unidade"; width: 150px; }
-        ComboBox {
-            width: 90px;
-            model: ["mm", "cm", "pol"];
-            current-index <=> NewProjectUi.unit;
-            selected => { NewProjectUi.unit-changed(self.current-index); }
-        }
-    }
-    HorizontalLayout {
-        spacing: 8px;
-        Label { text: "Medidas de"; width: 150px; }
-        ComboBox {
-            width: 140px;
-            model: ["uma página", "lâmina aberta"];
-            current-index: NewProjectUi.open-spread ? 1 : 0;
-            selected => { NewProjectUi.open-spread = self.current-index == 1; NewProjectUi.unit-changed(NewProjectUi.unit); }
-        }
-    }
-    Field { label: "Largura"; text <=> NewProjectUi.width; edited => { NewProjectUi.size-changed(); } }
-    Field { label: "Altura"; text <=> NewProjectUi.height; edited => { NewProjectUi.size-changed(); } }
-    HorizontalLayout {
-        Button {
-            text: NewProjectUi.advanced-open ? "Esconder os ajustes da gráfica" : "Ajustes da gráfica (DPI, páginas, sangria)…";
-            clicked => { NewProjectUi.advanced-open = !NewProjectUi.advanced-open; }
-        }
-        Rectangle { horizontal-stretch: 1; }
-    }
-    if NewProjectUi.advanced-open: HorizontalLayout {
-        spacing: 24px;
-        VerticalLayout {
-            spacing: 6px;
-            Field { label: "DPI"; text <=> NewProjectUi.dpi; edited => { NewProjectUi.size-changed(); } }
-            CheckBox { text: "Começa com página simples"; checked <=> NewProjectUi.starts; toggled => { NewProjectUi.size-changed(); } }
-            CheckBox { text: "Termina com página simples"; checked <=> NewProjectUi.ends; toggled => { NewProjectUi.size-changed(); } }
-            Field { label: "Páginas mínimas"; text <=> NewProjectUi.min-pages; edited => { NewProjectUi.size-changed(); } }
-            Field { label: "Páginas máximas"; text <=> NewProjectUi.max-pages; edited => { NewProjectUi.size-changed(); } }
-            Button { text: "Salvar como preset…"; enabled: NewProjectUi.error == ""; clicked => { PresetUi.save-as(0); } }
-        }
-        VerticalLayout {
-            spacing: 6px;
-            Label { text: "Sangria"; font-weight: 600; }
-            Field { label: "Externa"; text <=> NewProjectUi.bleed-outer; edited => { NewProjectUi.size-changed(); } }
-            Field { label: "Cima e baixo"; text <=> NewProjectUi.bleed-top; edited => { NewProjectUi.size-changed(); } }
-            Field { label: "Lombada"; text <=> NewProjectUi.bleed-spine; edited => { NewProjectUi.size-changed(); } }
-            Label { text: "Zona segura"; font-weight: 600; }
-            Field { label: "Externa"; text <=> NewProjectUi.safe-outer; edited => { NewProjectUi.size-changed(); } }
-            Field { label: "Cima e baixo"; text <=> NewProjectUi.safe-top; edited => { NewProjectUi.size-changed(); } }
-            Field { label: "Lombada"; text <=> NewProjectUi.safe-spine; edited => { NewProjectUi.size-changed(); } }
-            Button { text: "Igual em todas as bordas"; clicked => { NewProjectUi.same-margins(); } }
-        }
-    }
-    Rectangle { vertical-stretch: 1; }
-}
-
-// A etapa 1: as duas abas à esquerda e, ao lado, o resultado (spec ET, regra 3).
-component StepOne inherits VerticalLayout {
-    spacing: 12px;
-    HorizontalLayout {
-        spacing: 8px;
-        Button { text: "Tamanhos prontos"; primary: NewProjectUi.tab == 0; clicked => { NewProjectUi.tab = 0; } }
-        Button { text: "Personalizado"; primary: NewProjectUi.tab == 1; clicked => { NewProjectUi.tab = 1; } }
-        Rectangle { horizontal-stretch: 1; }
-    }
-    HorizontalLayout {
-        spacing: 20px;
-        vertical-stretch: 1;
-        if NewProjectUi.tab == 0: ReadySizes { horizontal-stretch: 1; }
-        if NewProjectUi.tab == 1: CustomSize { horizontal-stretch: 1; }
-        VerticalLayout {
-            width: 300px;
-            spacing: 8px;
-            SpreadDrawing { d: NewProjectUi.drawing; height: 150px; }
-            Text { text: NewProjectUi.label; color: Theme.text; font-weight: 600; wrap: word-wrap; }
-            Text { text: NewProjectUi.short-summary; color: Theme.text; wrap: word-wrap; }
-            Text { text: NewProjectUi.summary; color: Theme.muted; font-size: 11px; wrap: word-wrap; }
-            if NewProjectUi.error != "": Text { text: NewProjectUi.error; color: Theme.warning; wrap: word-wrap; }
-            Rectangle { vertical-stretch: 1; }
-        }
-    }
-}
 component Hint inherits Text {
     color: Theme.muted;
     font-size: 12px;
@@ -459,7 +145,7 @@ component StepTwo inherits VerticalLayout {
             HorizontalLayout {
                 spacing: 8px;
                 Hint { text: "Espessura (mm, 0 = sem borda)"; vertical-alignment: center; width: 170px; }
-                LineEdit { text <=> NewProjectUi.border; width: 70px; edited => { NewProjectUi.mount-changed(); } }
+                NumberField { text <=> NewProjectUi.border; width: 70px; minimum: 0; edited => { NewProjectUi.mount-changed(); } }
             }
             ColorPicker { which: 1; hex <=> NewProjectUi.border-color; current: NewProjectUi.border-swatch; }
         }
@@ -469,12 +155,12 @@ component StepTwo inherits VerticalLayout {
         HorizontalLayout {
             spacing: 8px;
             Text { text: "Espaço entre as fotos (mm)"; color: Theme.text; vertical-alignment: center; }
-            LineEdit { text <=> NewProjectUi.gap; width: 70px; edited => { NewProjectUi.mount-changed(); } }
+            NumberField { text <=> NewProjectUi.gap; width: 70px; minimum: 0; edited => { NewProjectUi.mount-changed(); } }
         }
         HorizontalLayout {
             spacing: 8px;
             Text { text: "Cantos arredondados (mm, 0 = retos)"; color: Theme.text; vertical-alignment: center; }
-            LineEdit { text <=> NewProjectUi.radius; width: 70px; edited => { NewProjectUi.mount-changed(); } }
+            NumberField { text <=> NewProjectUi.radius; width: 70px; minimum: 0; edited => { NewProjectUi.mount-changed(); } }
         }
     }
     if NewProjectUi.look-error != "": Text { text: NewProjectUi.look-error; color: Theme.warning; }
@@ -540,8 +226,10 @@ export component NewProjectDialog inherits Shade {
             reject
         }
         Panel {
-            width: min(root.width - 40px, 820px);
-            height: min(root.height - 40px, 680px);
+            // Cabe numa tela de 1920 × 1080 sem rolagem (spec ET, correção de 2026-10-29); a
+            // rolagem fica para janelas menores.
+            width: min(root.width - 40px, 1100px);
+            height: min(root.height - 40px, 780px);
             VerticalLayout {
                 padding: 24px;
                 spacing: 14px;
