@@ -3,7 +3,7 @@
 use std::sync::OnceLock;
 
 use image::codecs::jpeg::{JpegEncoder, PixelDensity};
-use image::{DynamicImage, ExtendedColorType, ImageEncoder, RgbaImage};
+use image::{ExtendedColorType, ImageEncoder, RgbaImage};
 use lamina_core::ColorSpace;
 
 /// Data fixa gravada no cabeçalho do perfil (2026-01-01 00:00:00): ano, mês, dia, hora,
@@ -58,7 +58,6 @@ pub fn encode(
     dpi: u32,
     space: ColorSpace,
 ) -> Result<Vec<u8>, String> {
-    let rgb = DynamicImage::ImageRgba8(image).into_rgb8();
     let mut bytes = Vec::new();
     let mut encoder = JpegEncoder::new_with_quality(&mut bytes, quality);
     let density = u16::try_from(dpi).unwrap_or(u16::MAX);
@@ -66,15 +65,22 @@ pub fn encode(
     encoder
         .set_icc_profile(embedded_profile(space)?.to_vec())
         .map_err(|e| e.to_string())?;
+    let (width, height) = image.dimensions();
     encoder
-        .write_image(
-            rgb.as_raw(),
-            rgb.width(),
-            rgb.height(),
-            ExtendedColorType::Rgb8,
-        )
+        .write_image(&drop_alpha(image), width, height, ExtendedColorType::Rgb8)
         .map_err(|e| e.to_string())?;
     Ok(bytes)
+}
+
+/// Os pixels em RGB, no mesmo espaço de memória: sem uma cópia inteira da lâmina (spec LV, regra 8).
+pub(crate) fn drop_alpha(image: RgbaImage) -> Vec<u8> {
+    let mut bytes = image.into_raw();
+    let pixels = bytes.len() / 4;
+    for i in 1..pixels {
+        bytes.copy_within(i * 4..i * 4 + 3, i * 3);
+    }
+    bytes.truncate(pixels * 3);
+    bytes
 }
 
 #[cfg(test)]

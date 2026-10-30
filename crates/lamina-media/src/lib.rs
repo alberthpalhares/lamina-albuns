@@ -35,17 +35,22 @@ mod testutil;
 #[path = "tests/tr.rs"]
 mod tr;
 
+#[cfg(test)]
+mod lv_tests;
+
 pub use camera::{CameraDetails, camera_details};
 pub use catalog::{Catalog, CatalogEntry};
 pub use color::{embedded_profile, profile_problem};
-pub use decode::{decode_in, decode_with_orientation, load_oriented, load_oriented_in};
+pub use decode::{decode_in, decode_with_orientation, load_oriented, load_oriented_in, to_rgba};
 pub use error::{MediaError, io_reason};
 pub use format::{Gathered, ImageFormat, gather_photos, list_photos};
 pub use import::{
     ImportReport, Progress, default_cache_dir, import_files, import_folder, import_folder_with,
 };
 pub use metadata::{PhotoMetadata, read_metadata};
-pub use photo_source::{Loaded, original_source, original_source_in, thumbnail_source};
+pub use photo_source::{
+    Loaded, cached_source, original_source, original_source_in, thumbnail_source,
+};
 pub use pool::{PHOTOS_AT_ONCE, map_photos, photos_at_once};
 pub use thumbnail::{
     DerivedDirs, SCREEN_SIZE, THUMB_SIZE, derived_path, ensure_derived, ensure_derived_for,

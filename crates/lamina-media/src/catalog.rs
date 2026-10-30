@@ -76,8 +76,10 @@ impl Catalog {
 
     /// Insere ou atualiza uma foto.
     pub fn upsert(&self, e: &CatalogEntry) -> Result<(), MediaError> {
-        self.conn.execute(
-            "INSERT INTO photos (path, fingerprint, file_size, modified, width, height,
+        // A mesma consulta preparada para o lote inteiro (spec LV, regra 8).
+        self.conn
+            .prepare_cached(
+                "INSERT INTO photos (path, fingerprint, file_size, modified, width, height,
                                  exif_orientation, taken_at, camera, thumbnail)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
              ON CONFLICT(path) DO UPDATE SET
@@ -85,7 +87,8 @@ impl Catalog {
                 modified = excluded.modified, width = excluded.width, height = excluded.height,
                 exif_orientation = excluded.exif_orientation, taken_at = excluded.taken_at,
                 camera = excluded.camera, thumbnail = excluded.thumbnail",
-            params![
+            )?
+            .execute(params![
                 path_text(&e.path),
                 e.fingerprint,
                 e.file_size,
@@ -96,8 +99,7 @@ impl Catalog {
                 e.taken_at.map(CaptureTime::seconds),
                 e.camera,
                 path_text(&e.thumbnail),
-            ],
-        )?;
+            ])?;
         Ok(())
     }
 
@@ -117,7 +119,8 @@ impl Catalog {
         let sql = format!("{SELECT} WHERE path = ?1");
         Ok(self
             .conn
-            .query_row(&sql, [path_text(path)], from_row)
+            .prepare_cached(&sql)?
+            .query_row([path_text(path)], from_row)
             .optional()?)
     }
 

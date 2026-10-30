@@ -11,7 +11,6 @@ use std::path::PathBuf;
 use lamina_core::{Project, Rect as MmRect};
 use pdf_writer::types::ColorSpaceOperand;
 use pdf_writer::{Chunk, Content, Filter, Name, Rect, Ref};
-use rayon::prelude::*;
 
 use crate::jobs::SpreadJob;
 use crate::write::{self, Ctx};
@@ -68,21 +67,30 @@ pub fn write(
 
     let total: usize = jobs.iter().map(|j| j.names().len()).sum();
     let mut kids = Vec::with_capacity(total);
-    for batch in jobs.chunks(crate::export::at_once()) {
-        let sheets: Vec<Result<Vec<Sheet>, ExportError>> =
-            batch.par_iter().map(|job| sheets(ctx, job)).collect();
-        for sheet in sheets
-            .into_iter()
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flatten()
-        {
-            let first = FIRST_PAGE + 3 * i32::try_from(kids.len()).unwrap_or(i32::MAX / 4);
-            let ids = (Ref::new(first), Ref::new(first + 1), Ref::new(first + 2));
-            write_sheet(&mut pdf, &sheet, ids, options.crop_marks)?;
-            kids.push(ids.0);
-            progress(kids.len(), total);
-        }
+    let mut failure = None;
+    crate::in_order::in_order(
+        jobs,
+        crate::export::at_once(),
+        &|job| sheets(ctx, job),
+        &mut |result| {
+            let written = result.and_then(|sheets| {
+                for sheet in &sheets {
+                    let first = FIRST_PAGE + 3 * i32::try_from(kids.len()).unwrap_or(i32::MAX / 4);
+                    let ids = (Ref::new(first), Ref::new(first + 1), Ref::new(first + 2));
+                    write_sheet(&mut pdf, sheet, ids, options.crop_marks)?;
+                    kids.push(ids.0);
+                    progress(kids.len(), total);
+                }
+                Ok(())
+            });
+            if let (None, Err(e)) = (&failure, written) {
+                failure = Some(e);
+            }
+            failure.is_none()
+        },
+    );
+    if let Some(e) = failure {
+        return Err(e);
     }
     let mut chunk = Chunk::new();
     chunk

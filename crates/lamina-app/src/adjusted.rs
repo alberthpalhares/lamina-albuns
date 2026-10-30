@@ -37,6 +37,11 @@ thread_local! {
     static NEXT: std::cell::Cell<i32> = const { std::cell::Cell::new(0) };
 }
 
+/// Outro álbum: as fotos ajustadas do anterior vão embora (spec LV, regra 4).
+pub fn clear() {
+    CACHE.with(|c| c.borrow_mut().clear());
+}
+
 /// O número da imagem ajustada do quadro, se ele tiver uma (negativo: nunca bate com o número de
 /// uma foto sem ajuste).
 pub fn version(frame: FrameId) -> Option<i32> {

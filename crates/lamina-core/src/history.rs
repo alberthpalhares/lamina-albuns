@@ -48,6 +48,12 @@ impl<T: Clone> History<T> {
         &self.present
     }
 
+    /// O estado atual compartilhado: quem precisa guardá-lo não copia o valor inteiro (spec LV,
+    /// regra 1). Dois `Arc` iguais por [`Arc::ptr_eq`] são o mesmo passo do histórico.
+    pub fn present_shared(&self) -> Arc<T> {
+        Arc::clone(&self.present)
+    }
+
     /// Aplica uma edição que pode falhar. Se `edit` devolver `Err`, nada muda.
     pub fn try_apply<R, E>(
         &mut self,

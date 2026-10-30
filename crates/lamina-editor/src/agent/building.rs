@@ -19,7 +19,7 @@ impl Agent {
             .album_build()
             .map_err(|message| ToolError::Refused(message.to_owned()))?;
         let spreads = a.laminas.unwrap_or(plan.suggestion);
-        let project = session(editor)?.project().clone();
+        let project = session(editor)?.project_shared();
         plan.check(&project, spreads)
             .map_err(|e| ToolError::Refused(e.to_string()))?;
         progress(0, spreads);

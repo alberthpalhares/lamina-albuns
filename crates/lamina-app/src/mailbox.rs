@@ -43,13 +43,18 @@ pub fn install(rx: Receiver<Msg>, app: &std::rc::Rc<RefCell<App>>) {
     INBOX.set(Some((rx, std::rc::Rc::downgrade(app))));
 }
 
-/// Trata todas as mensagens que chegaram. Se o estado estiver ocupado, elas esperam a próxima.
+/// Quanto esperar para tentar de novo quando o estado da janela está ocupado.
+const BUSY_RETRY: std::time::Duration = std::time::Duration::from_millis(10);
+
+/// Trata todas as mensagens que chegaram. Se o estado estiver ocupado, tenta de novo uma vez, logo
+/// depois; sem nada para entregar, a janela não gasta nada (spec LV, regra 7).
 pub fn drain() {
     let Some(app) = INBOX.with_borrow(|inbox| inbox.as_ref().and_then(|(_, app)| app.upgrade()))
     else {
         return;
     };
     let Ok(mut app) = app.try_borrow_mut() else {
+        slint::Timer::single_shot(BUSY_RETRY, drain);
         return;
     };
     let msgs: Vec<Msg> = INBOX.with_borrow(|inbox| {
@@ -107,5 +112,17 @@ pub fn with_app(f: impl FnOnce(&mut App) + 'static) {
         Err(_) => {
             slint::Timer::single_shot(std::time::Duration::from_millis(10), move || with_app(f));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn lv_b11_sem_conferencia_repetida_da_caixa() {
+        // A entrega de verdade passa pelo teste de fumaça da importação (TR); aqui fica a trava
+        // de que o temporizador repetido não volta.
+        let main = include_str!("main.rs");
+        assert!(!main.contains("mailbox::drain,"));
+        assert!(main.contains("single_shot(Duration::ZERO, mailbox::drain)"));
     }
 }

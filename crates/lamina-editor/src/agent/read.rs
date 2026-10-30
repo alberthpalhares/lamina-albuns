@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use image::RgbaImage;
 use lamina_core::{Frame, FrameContent, Photo, PhotoId, Project};
-use lamina_media::{SCREEN_SIZE, load_oriented};
+use lamina_media::{SCREEN_SIZE, load_oriented, to_rgba};
 use serde_json::{Value, json};
 
 use super::paths::file_name;
@@ -106,7 +106,7 @@ impl Agent {
             if needed.0.max(needed.1) <= SCREEN_SIZE
                 && let Some(Ok(screen)) = screens.get(&photo.id).map(image::open)
             {
-                return Ok(Arc::new(screen.into_rgba8()));
+                return Ok(Arc::new(to_rgba(screen)));
             }
             load_oriented(&photo.path)
                 .map(Arc::new)

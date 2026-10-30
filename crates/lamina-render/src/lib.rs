@@ -94,6 +94,10 @@ mod tests {
 }
 
 #[cfg(test)]
+#[path = "tests/lv.rs"]
+mod lv;
+
+#[cfg(test)]
 #[path = "tests/rd.rs"]
 mod rd;
 

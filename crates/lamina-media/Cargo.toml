@@ -17,6 +17,9 @@ image = { workspace = true }
 moxcms = { workspace = true }
 # Reduzir as cópias de tela e as miniaturas (spec TR, regra 3; o mesmo redutor do ADR 0006).
 fast_image_resize = { workspace = true }
+# Ler o JPEG já reduzido nas cópias de tela e miniaturas (spec LV, regra 9). A leitura para a
+# impressão continua no `image`, inteira.
+jpeg-decoder = { workspace = true }
 rusqlite = { workspace = true }
 blake3 = { workspace = true }
 rayon = { workspace = true }

@@ -35,6 +35,7 @@ rayon = "1"
 # Renderização (ADR 0006): tela de desenho e redução das fotos com Lanczos3.
 tiny-skia = { version = "0.12", default-features = false, features = ["std", "simd"] }
 fast_image_resize = "6"
+jpeg-decoder = { version = "0.3", default-features = false }
 # Texto (spec TX; ADR 0006, adendo): linhas com o `parley` e contorno das letras com o `skrifa`,
 # as mesmas versões que o Slint já usa. A feature `system` lê as fontes do computador (spec FS);
 # o Slint já compila os mesmos pacotes, e nenhum entra de novo no Cargo.lock.

@@ -164,7 +164,9 @@ fn photos_around(project: &Project, center: usize) -> Vec<PhotoId> {
 /// fora da linha da janela.
 pub fn load_screen(photo: &Photo, cache: &Cache) -> Option<Arc<RgbaImage>> {
     let path = cache.screen(photo)?;
-    image::open(path).ok().map(|i| Arc::new(i.into_rgba8()))
+    image::open(path)
+        .ok()
+        .map(|i| Arc::new(lamina_media::to_rgba(i)))
 }
 
 /// A miniatura da foto, lida do cache em RGB (spec TR, regra 6); `None` se ela ainda não existe

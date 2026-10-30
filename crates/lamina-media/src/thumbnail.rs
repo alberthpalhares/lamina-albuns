@@ -6,7 +6,7 @@ use image::codecs::jpeg::JpegEncoder;
 use image::{DynamicImage, ImageDecoder, ImageFormat, ImageReader};
 
 use crate::MediaError;
-use crate::derive::{derive_file, open, reduced, write_derived};
+use crate::derive::{derive_file, open, read_pixels, reduced, write_derived};
 
 /// Lado maior das miniaturas, em pixels: nítido na lista e na visão geral das lâminas.
 pub const THUMB_SIZE: u32 = 320;
@@ -18,14 +18,15 @@ pub fn make_thumbnail(
     exif_orientation: u8,
     max_side: u32,
 ) -> Result<DynamicImage, MediaError> {
-    let mut decoder = ImageReader::open(path)
-        .map_err(MediaError::io(path))?
+    let bytes = std::fs::read(path).map_err(MediaError::io(path))?;
+    let mut decoder = ImageReader::new(std::io::Cursor::new(bytes.as_slice()))
         .with_guessed_format()
         .map_err(MediaError::io(path))?
         .into_decoder()
         .map_err(MediaError::image(path))?;
     let icc = decoder.icc_profile().ok().flatten();
-    let full = DynamicImage::from_decoder(decoder).map_err(MediaError::image(path))?;
+    drop(decoder);
+    let full = read_pixels(path, bytes, max_side)?;
     Ok(reduced(full, icc.as_deref(), exif_orientation, max_side))
 }
 
@@ -43,8 +44,9 @@ pub struct DerivedDirs<'a> {
 }
 
 /// Versão das cópias reduzidas: a 2 converte as fotos com perfil próprio para sRGB (spec CT,
-/// regra 10). As cópias de outra versão são ignoradas e refeitas.
-const DERIVED_VERSION: u32 = 2;
+/// regra 10); a 3 sai do JPEG reduzido na leitura (spec LV, regra 9). As cópias de outra versão são
+/// ignoradas e refeitas.
+const DERIVED_VERSION: u32 = 3;
 
 /// Arquivo da cópia de uma foto (miniatura ou imagem de tela) dentro de `dir`.
 pub fn derived_path(dir: &Path, fingerprint: &str) -> PathBuf {
@@ -81,10 +83,10 @@ pub fn ensure_derived(
         return Ok(thumb);
     }
     let bytes = std::fs::read(path).map_err(MediaError::io(path))?;
-    let (mut opened, decoder) = open(path, bytes)?;
+    let mut opened = open(path, &bytes)?;
     fingerprint.clone_into(&mut opened.fingerprint);
     opened.metadata.exif_orientation = exif_orientation;
-    write_derived(path, decoder, &opened, dirs)
+    write_derived(path, bytes, &opened, dirs)
 }
 
 /// Como [`ensure_derived`] para uma foto do projeto: a orientação vem do EXIF e a impressão

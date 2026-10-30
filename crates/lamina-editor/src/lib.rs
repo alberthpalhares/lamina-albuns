@@ -133,7 +133,9 @@ pub use human::{Human, HumanMessage, guarded};
 pub use keys::{Key, Platform, Shortcut};
 pub use lamina_render::text_image;
 pub use models::{MODELS_FILE, ModelError, ModelsStore, model_from_spread};
-pub use photos::{Filter, PhotoInfo, PhotoItem, photo_info, photo_list, used_photos};
+pub use photos::{
+    Filter, PhotoInfo, PhotoItem, photo_info, photo_list, same_photo_list, used_photos,
+};
 pub use prefs_store::{PREFS_FILE, PrefsStore, config_dir};
 pub use presets::{PRESETS_FILE, Preset, PresetError, PresetsStore, builtin_presets};
 pub use recents::{RECENTS_FILE, Recent, RecentsStore};
@@ -143,7 +145,10 @@ pub use relink::{
 pub use relink_discover::{Discovery, discover};
 pub use relink_folders::{MissingFolder, disconnected, missing_folders};
 pub use relink_moved::{Located, locate, search_moved};
-pub use roll_image::{ImageSize, RollPainter, RollSource, SpreadImage, render_spread_image};
+pub use roll_image::{
+    ImageSize, ROLL_IMAGES_BYTES, RollImages, RollPainter, RollSource, SpreadImage,
+    render_spread_image,
+};
 pub use screens::{
     Arrival, ScreenPlan, load_original, load_screen, load_thumb, load_thumb_sized, prepare_images,
 };

@@ -235,12 +235,12 @@ fn rl_b27_imagem_de_tela_de_2048_px_rapido() {
 #[allow(clippy::cast_possible_truncation)]
 fn foto_rgb_vira_rgba_opaca_com_as_mesmas_cores() {
     let rgb = image::RgbImage::from_fn(3, 2, |x, y| image::Rgb([x as u8 * 40, y as u8 * 90, 7]));
-    let out = crate::roll_image::rgba(image::DynamicImage::ImageRgb8(rgb.clone()));
+    let out = lamina_media::to_rgba(image::DynamicImage::ImageRgb8(rgb.clone()));
     assert_eq!(out, image::DynamicImage::ImageRgb8(rgb).into_rgba8());
     let gray =
         image::DynamicImage::ImageLuma8(image::GrayImage::from_pixel(2, 2, image::Luma([9])));
     assert_eq!(
-        *crate::roll_image::rgba(gray).get_pixel(1, 1),
+        *lamina_media::to_rgba(gray).get_pixel(1, 1),
         Rgba([9, 9, 9, 255])
     );
 }

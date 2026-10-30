@@ -37,12 +37,6 @@ pub fn spread(ctx: &Ctx, job: &SpreadJob) -> Result<Vec<PathBuf>, ExportError> {
 /// As imagens de impressão da lâmina, uma por arquivo de saída e na mesma ordem: a lâmina
 /// inteira, ou cada página com a própria sangria. O PDF usa as mesmas (spec PD, regra 3).
 pub fn images(ctx: &Ctx, job: &SpreadJob) -> Result<Vec<RgbaImage>, ExportError> {
-    // A mesma foto em vários quadros (ou nas duas páginas renderizadas) é lida uma vez só.
-    let photos = ReadOnce::new(ctx.photos);
-    let ctx = &Ctx {
-        photos: &photos,
-        ..*ctx
-    };
     match &job.output {
         Output::Pages(pages) if pages.is_empty() => Ok(Vec::new()),
         Output::Whole(_) => Ok(vec![render(ctx, job.spread, Fill::Pages)?]),
@@ -72,12 +66,20 @@ pub fn images(ctx: &Ctx, job: &SpreadJob) -> Result<Vec<RgbaImage>, ExportError>
     }
 }
 
+/// Desenha a lâmina uma vez. A mesma foto em vários quadros é lida uma vez só, e cada original sai
+/// da memória no último quadro; páginas com fundos diferentes leem de novo em cada desenho, para
+/// não deixar todos os originais abertos entre um e outro (spec LV, regra 13).
 fn render(ctx: &Ctx, spread: usize, fill: Fill) -> Result<RgbaImage, ExportError> {
+    let frames = ctx
+        .project
+        .spreads
+        .get(spread)
+        .map_or(&[][..], |s| &s.frames);
     Ok(render_spread_with(
         ctx.project,
         spread,
         RenderTarget::Print,
-        ctx.photos,
+        &ReadOnce::new(ctx.photos, frames),
         fill,
     )?)
 }

@@ -51,6 +51,7 @@ type Shared = Arc<(Mutex<Queue>, Condvar)>;
 #[derive(Debug, Clone)]
 pub struct RollWorker {
     queue: Shared,
+    images: Arc<lamina_editor::RollImages>,
 }
 
 impl RollWorker {
@@ -61,8 +62,14 @@ impl RollWorker {
             RollPainter::new(THREADS, cache.clone()),
             mailbox.clone(),
         );
+        let images = painter.images();
         std::thread::spawn(move || serve(&q, &painter, &mailbox));
-        RollWorker { queue }
+        RollWorker { queue, images }
+    }
+
+    /// Outro álbum: as imagens lidas do anterior vão embora (spec LV, regra 10).
+    pub fn forget_images(&self) {
+        self.images.clear();
     }
 
     /// Troca a fila pelos pedidos de `job` (regra 7).

@@ -32,12 +32,11 @@ pub struct Opened {
     pub warning: Option<String>,
 }
 
-/// Abre a foto a partir dos `bytes` do arquivo: o que a importação guarda e o decodificador
-/// pronto para os pixels. `path` serve só às mensagens; nada mais é lido do disco.
-pub fn open(path: &Path, bytes: Vec<u8>) -> Result<(Opened, impl ImageDecoder), MediaError> {
-    let fingerprint = fingerprint_of(&bytes);
-    let exif = exif_of(&bytes);
-    // O decodificador fica com os bytes (o de JPEG copia e solta a leitura).
+/// Abre a foto a partir dos `bytes` do arquivo: o que a importação guarda, sem ler os pixels.
+/// `path` serve só às mensagens; nada mais é lido do disco.
+pub fn open(path: &Path, bytes: &[u8]) -> Result<Opened, MediaError> {
+    let fingerprint = fingerprint_of(bytes);
+    let exif = exif_of(bytes);
     let mut decoder = ImageReader::new(Cursor::new(bytes))
         .with_guessed_format()
         .map_err(MediaError::io(path))?
@@ -46,20 +45,67 @@ pub fn open(path: &Path, bytes: Vec<u8>) -> Result<(Opened, impl ImageDecoder), 
     let metadata = metadata_from(decoder.dimensions(), exif.as_ref());
     let icc = decoder.icc_profile().ok().flatten();
     let warning = icc.as_deref().and_then(|icc| problem_of(path, icc));
-    let opened = Opened {
+    Ok(Opened {
         fingerprint,
         metadata,
         icc,
         warning,
-    };
-    Ok((opened, decoder))
+    })
+}
+
+/// Os pixels da foto, grandes o bastante para reduzir até `max_side`: o JPEG já sai reduzido da
+/// leitura, em 1/2, 1/4 ou 1/8 (spec LV, regra 9); o resto, ou o JPEG que o leitor reduzido recusa,
+/// sai inteiro.
+pub fn read_pixels(path: &Path, bytes: Vec<u8>, max_side: u32) -> Result<DynamicImage, MediaError> {
+    if let Some(image) = jpeg_reduced(&bytes, max_side) {
+        return Ok(image);
+    }
+    let decoder = ImageReader::new(Cursor::new(bytes))
+        .with_guessed_format()
+        .map_err(MediaError::io(path))?
+        .into_decoder()
+        .map_err(MediaError::image(path))?;
+    DynamicImage::from_decoder(decoder).map_err(MediaError::image(path))
+}
+
+/// O JPEG reduzido na leitura, com pelo menos `max_side` no lado maior. `None` quando não vale a
+/// pena (foto pequena) ou não dá (outro formato, CMYK, arquivo que este leitor recusa).
+pub(crate) fn jpeg_reduced(bytes: &[u8], max_side: u32) -> Option<DynamicImage> {
+    if !bytes.starts_with(&[0xFF, 0xD8]) {
+        return None;
+    }
+    let mut decoder = jpeg_decoder::Decoder::new(bytes);
+    decoder.read_info().ok()?;
+    let info = decoder.info()?;
+    let (w, h) = (u32::from(info.width), u32::from(info.height));
+    // Abaixo de 2 vezes o lado pedido, nenhuma redução cabe: lê inteira como sempre.
+    if w.max(h) < max_side.saturating_mul(2) {
+        return None;
+    }
+    let (want_w, want_h) = fit(w, h, max_side);
+    let wanted = (u16::try_from(want_w).ok()?, u16::try_from(want_h).ok()?);
+    let (out_w, out_h) = decoder.scale(wanted.0, wanted.1).ok()?;
+    if u32::from(out_w.max(out_h)) < max_side {
+        return None;
+    }
+    let pixels = decoder.decode().ok()?;
+    let (out_w, out_h) = (u32::from(out_w), u32::from(out_h));
+    match decoder.info()?.pixel_format {
+        jpeg_decoder::PixelFormat::RGB24 => {
+            image::RgbImage::from_raw(out_w, out_h, pixels).map(DynamicImage::ImageRgb8)
+        }
+        jpeg_decoder::PixelFormat::L8 => {
+            image::GrayImage::from_raw(out_w, out_h, pixels).map(DynamicImage::ImageLuma8)
+        }
+        jpeg_decoder::PixelFormat::L16 | jpeg_decoder::PixelFormat::CMYK32 => None,
+    }
 }
 
 /// Grava o que faltar entre a miniatura e a imagem de tela; só decodifica se faltar alguma.
 /// Devolve o caminho da miniatura.
 pub fn write_derived(
     path: &Path,
-    decoder: impl ImageDecoder,
+    bytes: Vec<u8>,
     opened: &Opened,
     dirs: DerivedDirs<'_>,
 ) -> Result<PathBuf, MediaError> {
@@ -71,7 +117,7 @@ pub fn write_derived(
     if thumb.exists() && screen.is_none() {
         return Ok(thumb);
     }
-    let full = DynamicImage::from_decoder(decoder).map_err(MediaError::image(path))?;
+    let full = read_pixels(path, bytes, SCREEN_SIZE)?;
     let orientation = opened.metadata.exif_orientation;
     // A miniatura sai sempre da imagem de tela, com ou sem a imagem de tela pedida: a mesma
     // miniatura na janela e na linha de comando.
@@ -97,11 +143,11 @@ pub fn derive_file(
     dirs: DerivedDirs<'_>,
 ) -> Result<PathBuf, MediaError> {
     let bytes = std::fs::read(path).map_err(MediaError::io(path))?;
-    let (mut opened, decoder) = open(path, bytes)?;
+    let mut opened = open(path, &bytes)?;
     if let Some(fingerprint) = fingerprint {
         fingerprint.clone_into(&mut opened.fingerprint);
     }
-    write_derived(path, decoder, &opened, dirs)
+    write_derived(path, bytes, &opened, dirs)
 }
 
 /// A foto reduzida para caber em `max_side`, em sRGB e em pé. Reduzir vem antes de converter a
@@ -114,7 +160,7 @@ pub fn reduced(
 ) -> DynamicImage {
     let mut small = shrink(full, max_side);
     if icc.is_some() {
-        small = DynamicImage::ImageRgba8(convert(small.into_rgba8(), icc, ColorSpace::Srgb));
+        small = DynamicImage::ImageRgba8(convert(crate::to_rgba(small), icc, ColorSpace::Srgb));
     }
     if let Some(orientation) = Orientation::from_exif(exif_orientation) {
         small.apply_orientation(orientation);

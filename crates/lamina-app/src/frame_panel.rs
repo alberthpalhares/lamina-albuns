@@ -108,7 +108,7 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         };
         let ui = w.global::<FrameUi>();
         let mut app = a.borrow_mut();
-        let Some(project) = app.editor.session().map(|s| s.project().clone()) else {
+        let Some(project) = app.editor.session().map(|s| s.project_shared()) else {
             return;
         };
         let fields = [ui.get_x(), ui.get_y(), ui.get_w(), ui.get_h()];

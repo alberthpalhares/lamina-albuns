@@ -18,7 +18,7 @@ pub fn near(app: &App) {
     if session.missing().is_empty() {
         return;
     }
-    let project = session.project().clone();
+    let project = session.project_shared();
     let missing = session.missing().to_vec();
     let file = session.file().map(std::path::Path::to_path_buf);
     let (cache, tx) = (app.cache.clone(), app.tx.clone());

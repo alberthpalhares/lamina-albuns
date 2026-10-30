@@ -24,6 +24,8 @@ pdf-writer = { workspace = true }
 tiff = { workspace = true }
 
 [dev-dependencies]
+blake3 = { workspace = true }
+dhat = { workspace = true }
 serde_json = { workspace = true }
 lopdf = { workspace = true }
 

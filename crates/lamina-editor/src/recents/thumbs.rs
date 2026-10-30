@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::time::SystemTime;
 
 use image::{Rgba, RgbaImage};
-use lamina_core::{Photo, PhotoId, Project};
+use lamina_core::{FrameContent, Photo, PhotoId, Project};
 use lamina_render::{PhotoSource, RenderTarget};
 
 use crate::Cache;
@@ -44,7 +44,18 @@ pub fn thumbnail_image(project: &Project, cache: &Cache) -> Result<Option<RgbaIm
         .iter()
         .filter_map(|p| cache.thumbnail(p).map(|path| (p.id, path)))
         .collect();
-    let source = OrGray(lamina_media::thumbnail_source(thumbs));
+    let screens: HashMap<PhotoId, PathBuf> = project
+        .spreads
+        .first()
+        .map_or(&[][..], |s| &s.frames)
+        .iter()
+        .filter_map(|f| match &f.content {
+            FrameContent::Photo { photo, .. } => project.photo(*photo).ok(),
+            _ => None,
+        })
+        .filter_map(|p| cache.screen(p).map(|path| (p.id, path)))
+        .collect();
+    let source = OrGray(lamina_media::cached_source(thumbs, screens));
     // O renderizador acha o tamanho pela `preview_size`: 320 px no lado maior.
     let target_size = RenderTarget::Preview {
         max_side: THUMB_SIDE,
