@@ -59,7 +59,7 @@ pub use arrange_cmd::NEED_THREE;
 pub use band::{Band, Card};
 pub use context::ContextEntry;
 pub use crop::{ZOOM_STEP, crop_for, set_crop};
-pub use details::{Details, album_rows};
+pub use details::{Details, album_rows, album_sections};
 pub use dropping::DropPlace;
 pub use group_fields::{Field, GROUP_NOT_A_NUMBER};
 pub use layouts::Panel;
@@ -301,6 +301,24 @@ impl Editor {
         if let Err(message) = self.strips.save() {
             self.notice = Some(message);
         }
+        true
+    }
+
+    /// A sombra da dobra aparece na lâmina grande agora (spec DJ, regra 2): com a preferência
+    /// ligada, numa lâmina de duas páginas, fora do modo organizar e do tamanho real.
+    pub fn gutter_shadow_shown(&self) -> bool {
+        let Some(s) = self.session.as_ref() else {
+            return false;
+        };
+        let edges = s.project().spec.edges();
+        let pages = edges.active_pages(s.current(), s.spread_count());
+        self.strips.strips.gutter_shadow && pages.left && pages.right && !self.organizing()
+    }
+
+    /// Liga ou desliga a sombra da dobra e grava; se não gravar, vale nesta sessão, com aviso.
+    fn toggle_gutter_shadow(&mut self) -> bool {
+        self.strips.strips.gutter_shadow = !self.strips.strips.gutter_shadow;
+        self.save_strips();
         true
     }
 

@@ -14,6 +14,7 @@ impl Editor {
             Command::NextSpread | Command::LastSpread => s.current() < last,
             Command::PreviousSpread | Command::FirstSpread => s.current() > 0,
             Command::ToggleGuides | Command::ToggleReduceMotion | Command::TogglePanel => true,
+            Command::ToggleGutterShadow => true,
             Command::ToggleSpreads | Command::ToggleTimeline | Command::TogglePhotos => true,
             Command::ToggleStrips => true,
             Command::AdjustPhoto => self.photo_adjust().is_some(),
@@ -46,6 +47,7 @@ impl Editor {
             }
             Command::EditText => self.show_text(super::TextFocus::Cursor),
             Command::ToggleReduceMotion => self.toggle_reduce_motion(),
+            Command::ToggleGutterShadow => self.toggle_gutter_shadow(),
             Command::ToggleLayoutBand => {
                 // Os quadros da prévia são outros: abrir desmarca o quadro (spec FL, regra 2).
                 self.selected_frame = None;

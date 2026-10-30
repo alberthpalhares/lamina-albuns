@@ -132,8 +132,8 @@ fn pf_b4_altura_da_divisoria_e_os_limites() {
     editor.set_strips(StripsStore::load(&file));
     assert_eq!(
         editor.shown_photos_height(window, chrome),
-        252.0,
-        "sem o campo"
+        130.0,
+        "sem o campo: uma linha (spec DJ, regra 10)"
     );
     // Ao soltar, grava o que ficou na tela.
     editor.set_photos_height(700);
@@ -142,10 +142,10 @@ fn pf_b4_altura_da_divisoria_e_os_limites() {
     // A janela cai para 600: a grade mostra 340 (a lâmina fica com 160), o arquivo não muda.
     assert_eq!(editor.shown_photos_height(600.0, chrome), 340.0);
     assert_eq!(read(), Some(700));
-    // Duplo clique: volta a duas linhas e grava.
-    assert_eq!(editor.reset_photos_height(), 252);
-    assert_eq!(read(), Some(252));
-    assert_eq!(default_height(96), 252.0);
+    // Duplo clique: volta a uma linha e grava.
+    assert_eq!(editor.reset_photos_height(), 130);
+    assert_eq!(read(), Some(130));
+    assert_eq!(default_height(96), 130.0);
     // Janela tão baixa que nem uma linha cabe: vale uma linha.
     assert_eq!(shown_height(Some(700.0), 300.0, chrome, 96), 130.0);
 }

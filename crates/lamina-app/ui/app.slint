@@ -42,7 +42,7 @@ import { ClearRecentsDialog, RecentsUi, RecentCard, RecentItem } from "welcome.s
 import { ClearAllDialog, ClearUi } from "clear_all.slint";
 import { RelinkDialog, RelinkUi, RelinkRowUi } from "relink.slint";
 import { DragUi } from "drag.slint";
-import { TopBar, NoticeBar } from "topbar.slint";
+import { TopBar, NoticeBar, PageMeterData } from "topbar.slint";
 import { Stage } from "stage.slint";
 import { BottomStrips } from "bottom.slint";
 import { ShortcutsUi, ShortcutsDialog, ShortcutGroup, ShortcutRow } from "shortcuts.slint";
@@ -51,7 +51,7 @@ import { RollUi, RollCell, RollButton, RollHitData } from "roll.slint";
 import { Gallery } from "gallery.slint";
 
 export { BuildUi }
-export { CalibrateUi, SpreadData, FrameData, BoxData, LayoutItem, BandUi, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, FontUi, FontRowUi, ModelUi, RecentsUi, ClearUi, RelinkUi, RelinkRowUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, BarRow, ContextUi, ContextRow, PaletteUi, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, ShortcutsUi, RecoverUi, ShortcutGroup, ShortcutRow, NewsUi, NewsEntryData, RollUi, RollCell, RollButton, RollHitData }
+export { PageMeterData, CalibrateUi, SpreadData, FrameData, BoxData, LayoutItem, BandUi, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, FontUi, FontRowUi, ModelUi, RecentsUi, ClearUi, RelinkUi, RelinkRowUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, BarRow, ContextUi, ContextRow, PaletteUi, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, ShortcutsUi, RecoverUi, ShortcutGroup, ShortcutRow, NewsUi, NewsEntryData, RollUi, RollCell, RollButton, RollHitData }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -89,6 +89,12 @@ export component AppWindow inherits Window {
     in property <bool> can-prev;
     in property <bool> can-next;
     in property <bool> guides: true;
+    // A sombra da dobra: a preferência (menu) e se aparece agora (spec DJ, regra 2).
+    in property <bool> gutter-shadow-on: true;
+    in property <bool> gutter-shadow;
+    in property <PageMeterData> page-meter;
+    // A altura da faixa Lâminas (spec DJ, regra 12).
+    in property <length> strip-height: 128px;
     // "Reduzir movimento" ligado (spec MV, regra 14): a marca no menu Visualizar.
     in property <bool> reduce-motion;
     // Ir para outra lâmina (spec MV, seção 4): a lâmina que sai. O deslize e o relógio dele são da
@@ -130,6 +136,7 @@ export component AppWindow inherits Window {
     in property <[DetailRow]> details;
     in property <int> details-kind;
     in property <string> details-count;
+    in property <[DetailRow]> details-print;
 
     in-out property <bool> show-confirm;
     in-out property <bool> show-message;
@@ -395,6 +402,7 @@ export component AppWindow inherits Window {
             // Sem a marca: o título fixo não refaz a barra a cada abrir e fechar (spec MV, regra 16).
             MenuItem { title: "    Faixa de layouts  (L)"; enabled: root.has-project; activated => { root.command("ver.faixa-layouts"); } }
             MenuSeparator { }
+            MenuItem { title: (root.gutter-shadow-on ? "✓ " : "    ") + "Sombra da dobra"; activated => { root.command("ver.sombra-dobra"); } }
             MenuItem { title: (root.reduce-motion ? "✓ " : "    ") + "Reduzir movimento"; activated => { root.command("ver.reduzir-movimento"); } }
             MenuSeparator { }
             MenuItem { title: "Lupa  (Z)"; enabled: OrganizeUi.on; activated => { root.command("organizar.lupa"); } }
@@ -448,6 +456,7 @@ export component AppWindow inherits Window {
             top := TopBar {
                 // Por cima do resto, para os balões de dica dos botões descerem sobre a lâmina.
                 z: 10;
+                page-meter: root.page-meter;
                 has-project: root.has-project;
                 project-title: root.project-title;
                 album-name: root.album-name;
@@ -489,6 +498,7 @@ export component AppWindow inherits Window {
                         has-project: root.has-project;
                         current: root.current;
                         guides: root.guides;
+                        gutter-shadow: root.gutter-shadow;
                         selected-frame: root.selected-frame;
                         spread-count: root.spreads.length;
                         photo-count: root.photos.length;
@@ -510,6 +520,7 @@ export component AppWindow inherits Window {
                         focus-main => { root.focus-main(); }
                     }
                     bottom := BottomStrips {
+                        strip-height: root.strip-height;
                         has-project: root.has-project;
                         strip-spreads: root.strip-spreads;
                         strip-timeline: root.strip-timeline;
@@ -555,6 +566,7 @@ export component AppWindow inherits Window {
                     tab <=> root.panel-tab;
                     details: root.details;
                     details-kind: root.details-kind;
+                    details-print: root.details-print;
                     details-count: root.details-count;
                     history: root.history;
                     history-pos: root.history-pos;

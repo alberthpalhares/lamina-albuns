@@ -21,8 +21,9 @@ fn pn_b1_recolher_e_abrir_de_novo() {
     assert_eq!(open(&editor), [true, true, true]);
     assert!(editor.run(Command::ToggleTimeline));
     assert_eq!(open(&editor), [true, false, true]);
+    // Lâminas e Sequência em abas (spec DJ, regra 3): abrir uma fecha a outra.
     assert!(editor.run(Command::ToggleTimeline));
-    assert_eq!(open(&editor), [true, true, true]);
+    assert_eq!(open(&editor), [false, true, true]);
 }
 
 #[test]
@@ -50,13 +51,13 @@ fn pn_b3_a_janela_lembra_na_proxima_vez() {
     let file = dir.path().join("config").join("janela.json");
     let mut editor = editor_at(three_spreads(), 0);
     editor.set_strips(StripsStore::load(&file));
-    // Desde a versão 3 do estado da janela, as três faixas começam abertas (spec FX, regra 10).
-    assert_eq!(open(&editor), [true, true, true]);
+    // Lâminas e Fotografias começam abertas; a Sequência é a outra aba (spec DJ, regra 5).
+    assert_eq!(open(&editor), [true, false, true]);
     assert!(editor.run(Command::TogglePhotos));
     // Fechar e abrir: o estado é lido de novo do arquivo.
     let mut next = editor_at(three_spreads(), 0);
     next.set_strips(StripsStore::load(&file));
-    assert_eq!(open(&next), [true, true, false]);
+    assert_eq!(open(&next), [true, false, false]);
     assert_eq!(next.take_notice(), None);
 }
 
@@ -66,15 +67,15 @@ fn pn_b4_arquivo_ilegivel_volta_ao_padrao_com_aviso() {
     let file = dir.path().join("janela.json");
     std::fs::write(&file, "isto não é json").unwrap();
     let store = StripsStore::load(&file);
-    // O padrão novo (spec JE, com a FX): painel escondido e as três faixas de baixo abertas.
+    // O padrão novo (spec JE, com a DJ): painel escondido, aba Lâminas e Fotografias abertas.
     assert_eq!(store.strips, Strips::fresh());
     let mut editor = editor_at(three_spreads(), 0);
     editor.set_strips(store);
-    assert_eq!(open(&editor), [true, true, true]);
+    assert_eq!(open(&editor), [true, false, true]);
     assert_eq!(editor.take_notice().as_deref(), Some(STRIPS_UNREADABLE));
     // A próxima mudança regrava o arquivo, que volta a ler.
     assert!(editor.run(Command::ToggleTimeline));
-    assert!(!StripsStore::load(&file).strips.timeline);
+    assert!(StripsStore::load(&file).strips.timeline);
 }
 
 #[test]

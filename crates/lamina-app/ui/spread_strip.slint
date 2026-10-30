@@ -12,6 +12,8 @@ import { RollUi } from "roll.slint";
 
 export component SpreadStrip inherits Rectangle {
     in property <[SpreadData]> spreads;
+    // A altura do desenho da miniatura (spec DJ, regra 12).
+    in property <length> thumb: 84px;
     in property <int> current-index;
     in property <float> current-aspect;
     callback go-to(int);
@@ -26,7 +28,7 @@ export component SpreadStrip inherits Rectangle {
     pure callback strip-edge(length, length) -> length;
     // O vão mais perto do ponteiro para as fotos arrastadas do navegador (spec IM).
     function gap() -> int {
-        let item = 84px / max(0.01, root.current-aspect) + 16px;
+        let item = root.thumb / max(0.01, root.current-aspect) + 16px;
         let at = (DragUi.x - strip-scroll.absolute-position.x - strip-scroll.content-x - 10px) / item;
         max(0, min(root.spreads.length, round(at)))
     }
@@ -39,7 +41,7 @@ export component SpreadStrip inherits Rectangle {
     property <bool> snap;
     property <int> drop-gap: -1;
     property <length> lift-w: DragUi.kind == 3 && DragUi.from >= 0 && DragUi.from < root.spreads.length
-        ? 84px / max(0.01, root.spreads[DragUi.from].aspect) + 6px : 0px;
+        ? root.thumb / max(0.01, root.spreads[DragUi.from].aspect) + 6px : 0px;
     property <length> lift-x: DragUi.x - strip-scroll.absolute-position.x - strip-scroll.content-x - 10px - root.grab-dx;
     property <int> live-gap: DragUi.kind != 3 ? -1
         : root.landing ? root.drop-gap : root.strip-gap(DragUi.from, root.lift-x + root.lift-w / 2);
@@ -105,13 +107,13 @@ export component SpreadStrip inherits Rectangle {
     out property <int> photo-gap: DragUi.kind == 1 && root.over() ? root.gap() : -1;
     // A foto de um quadro arrastada sobre uma miniatura (spec ML, regra 11): a lâmina dela e o ponto
     // em frações da largura, para a janela soltar ali; o destino acende na miniatura.
-    property <length> item: 84px / max(0.01, root.current-aspect) + 16px;
+    property <length> item: root.thumb / max(0.01, root.current-aspect) + 16px;
     property <length> rel-x: DragUi.x - strip-scroll.absolute-position.x - strip-scroll.content-x - 10px;
     property <int> body: DragUi.kind == 2 && root.over() ? floor(root.rel-x / root.item) : -1;
     property <length> in-x: root.rel-x - root.body * root.item - 3px;
     property <length> in-y: DragUi.y - strip-scroll.absolute-position.y - 8px - 3px;
     property <length> thumb-w: root.item - 22px;
-    property <int> over-spread: root.body >= 0 && root.body < root.spreads.length && root.in-x >= 0 && root.in-x <= root.thumb-w && root.in-y >= 0 && root.in-y <= 84px ? root.body : -1;
+    property <int> over-spread: root.body >= 0 && root.body < root.spreads.length && root.in-x >= 0 && root.in-x <= root.thumb-w && root.in-y >= 0 && root.in-y <= root.thumb ? root.body : -1;
     changed over-spread => { RollUi.strip-spread = self.over-spread; }
     changed in-x => { RollUi.strip-fx = self.in-x / max(1px, self.thumb-w); }
     changed in-y => { RollUi.strip-fy = self.in-y / max(1px, self.thumb-w); }
@@ -125,7 +127,7 @@ export component SpreadStrip inherits Rectangle {
         if (root.current-aspect <= 0) {
             return;
         }
-        let item = 84px / root.current-aspect + 6px + 10px;
+        let item = root.thumb / root.current-aspect + 6px + 10px;
         let left = 10px + root.current-index * item;
         let shown = strip-scroll.visible-width;
         if (left + strip-scroll.content-x < 0px || left + item + strip-scroll.content-x > shown) {
@@ -189,8 +191,8 @@ export component SpreadStrip inherits Rectangle {
             for s[i] in root.spreads: VerticalLayout {
                 spacing: 4px;
                 Rectangle {
-                    width: 84px / s.aspect + 6px;
-                    height: 90px;
+                    width: root.thumb / s.aspect + 6px;
+                    height: (root.thumb + 6px);
                     // Reordenar (spec FX, regra 2): as vizinhas correm o tamanho da levantada; no
                     // fim, param sem animar (`snap`), porque a ordem nova já as põe no lugar.
                     property <length> off: DragUi.kind == 3 ? root.strip-shift(DragUi.from, root.live-gap, i) : 0px;
@@ -263,7 +265,8 @@ export component SpreadStrip inherits Rectangle {
                     }
                 }
                 Text {
-                    text: i + 1;
+                    // Só as pontas com página simples têm selo (spec DJ, regra 17).
+                    text: s.badge != "" ? (i + 1) + " · " + s.badge : (i + 1) + "";
                     horizontal-alignment: center;
                     color: i == root.current-index ? Theme.text-strong : Theme.text-2;
                     font-size: Type.small;
@@ -274,8 +277,8 @@ export component SpreadStrip inherits Rectangle {
             VerticalLayout {
                 spacing: 4px;
                 Rectangle {
-                    width: 84px / max(0.01, root.current-aspect) + 6px;
-                    height: 90px;
+                    width: root.thumb / max(0.01, root.current-aspect) + 6px;
+                    height: (root.thumb + 6px);
                     border-radius: Radius.small;
                     border-width: 2px;
                     border-color: root.photo-gap == root.spreads.length ? Theme.text-strong : Theme.press;
@@ -302,10 +305,10 @@ export component SpreadStrip inherits Rectangle {
         }
         // Fotos soltas entre duas lâminas: o marcador no vão da lâmina nova (regra 7).
         if root.photo-gap >= 0 && root.photo-gap < root.spreads.length: Rectangle {
-            x: 10px + root.photo-gap * (84px / max(0.01, root.current-aspect) + 16px) - 7px;
+            x: 10px + root.photo-gap * (root.thumb / max(0.01, root.current-aspect) + 16px) - 7px;
             y: 8px;
             width: 4px;
-            height: 90px;
+            height: (root.thumb + 6px);
             border-radius: Radius.hair;
             background: Theme.text-strong;
         }
@@ -316,13 +319,13 @@ export component SpreadStrip inherits Rectangle {
             property <length> follow-y: DragUi.y - strip-scroll.absolute-position.y - root.grab-dy;
             property <length> land-x: 10px + root.strip-landing(DragUi.from, root.drop-gap);
             x: (root.landing ? self.land-x : self.follow-x) - root.lift-w * 0.04;
-            y: (root.landing ? 8px : self.follow-y) - 90px * 0.04;
+            y: (root.landing ? 8px : self.follow-y) - (root.thumb + 6px) * 0.04;
             animate x, y {
                 duration: root.landing && Motion.on ? Motion.reorder-ms * 1ms : 0ms;
                 easing: cubic-bezier(0.2, 0, 0, 1);
             }
             width: root.lift-w * 1.08;
-            height: 90px * 1.08;
+            height: (root.thumb + 6px) * 1.08;
             border-radius: Radius.small;
             border-width: 2px;
             border-color: Theme.text-strong;

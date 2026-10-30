@@ -67,7 +67,8 @@ fn mv_b14_a_preferencia_fica_em_janela_json() {
     assert_eq!(json["reduzir_movimento"], serde_json::Value::Bool(true));
     // O arquivo antigo abre a faixa Lâminas uma vez (spec FX, regra 11).
     assert_eq!(json["laminas"], serde_json::Value::Bool(true));
-    assert_eq!(json["linha_do_tempo"], serde_json::Value::Bool(true));
+    // Com as duas abertas, fica a aba Lâminas (spec DJ, regra 5).
+    assert_eq!(json["linha_do_tempo"], serde_json::Value::Bool(false));
     // Na próxima vez, vale o que ficou gravado.
     let mut next = Editor::new();
     next.set_strips(StripsStore::load(&file));

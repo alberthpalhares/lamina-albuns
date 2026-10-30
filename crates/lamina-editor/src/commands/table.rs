@@ -108,6 +108,7 @@ impl Command {
                 Menu::View,
                 None,
             ),
+            C::ToggleGutterShadow => ("ver.sombra-dobra", "Sombra da dobra", Menu::View, None),
             C::About => ("ajuda.sobre", "Sobre o Lamina", Menu::Help, None),
             C::CheckUpdates => (
                 "ajuda.verificar-atualizacoes",

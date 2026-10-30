@@ -66,9 +66,9 @@ pub fn rows_height(rows: usize, zoom: u32) -> f32 {
     GRID_GAP + rows as f32 * grid.row_height()
 }
 
-/// A altura padrão do painel: duas linhas no zoom atual (regra 5).
+/// A altura padrão do painel: uma linha no zoom atual (spec PF, regra 5; spec DJ, regra 10).
 pub fn default_height(zoom: u32) -> f32 {
-    rows_height(2, zoom)
+    rows_height(1, zoom)
 }
 
 /// Os limites da altura do painel numa janela de altura `window`, em que `chrome` é o que não é

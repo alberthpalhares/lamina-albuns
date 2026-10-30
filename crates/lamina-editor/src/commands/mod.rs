@@ -91,6 +91,8 @@ pub enum Command {
     MountAlbum,
     /// Movimento sem animação (spec MV, regra 14).
     ToggleReduceMotion,
+    /// A sombra da dobra na lâmina grande (spec DJ, regra 2).
+    ToggleGutterShadow,
     /// Fotos a qualquer momento (spec IM): arquivos ou uma pasta.
     ImportPhotos,
     ImportFolder,

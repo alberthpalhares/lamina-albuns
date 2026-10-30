@@ -109,6 +109,16 @@ pub fn album_rows(project: &Project, unit: &str) -> Vec<(String, String)> {
     rows
 }
 
+/// As linhas do álbum nas seções do painel (spec DJ, regra 15): Álbum e Impressão, nessa ordem; a
+/// seção Lâmina vem da janela (a lâmina atual e os avisos dela).
+#[allow(clippy::type_complexity)]
+pub fn album_sections(
+    rows: Vec<(String, String)>,
+) -> (Vec<(String, String)>, Vec<(String, String)>) {
+    rows.into_iter()
+        .partition(|(title, _)| title != "Perfil de saída")
+}
+
 impl Editor {
     /// O que a aba Detalhes mostra para a seleção de agora.
     pub fn details(&self) -> Details {

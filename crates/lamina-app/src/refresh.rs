@@ -44,6 +44,8 @@ impl App {
         w.set_can_prev(self.editor.available(Command::PreviousSpread));
         w.set_can_next(self.editor.available(Command::NextSpread));
         w.set_guides(self.editor.guides());
+        w.set_gutter_shadow(self.editor.gutter_shadow_shown());
+        w.set_gutter_shadow_on(self.editor.strips().gutter_shadow);
         crate::motion::refresh(&w, self.editor.durations(), self.editor.reduce_motion());
         // O aviso do editor vale também sem álbum: a lista de recentes ilegível aparece na tela
         // inicial (spec TI, regra 9).
@@ -72,6 +74,15 @@ impl App {
         w.set_blank_color(crate::convert::color(project.look.background));
         w.set_can_build_album(self.editor.available(Command::BuildAlbum));
         w.set_counter_warning(session.page_warning().unwrap_or_default().into());
+        w.set_page_meter(session.page_meter().map_or_else(Default::default, |m| {
+            crate::PageMeterData {
+                text: m.text.into(),
+                short: m.short.into(),
+                used: m.used,
+                tick: m.tick.unwrap_or(-1.0),
+                inside: m.inside,
+            }
+        }));
         // "Lâminas · 4 lâminas (8 páginas)": o nome fica no cabeçalho, aqui vai só o resumo.
         let selected = self.editor.selection().len();
         let [spreads, timeline, _] = strip_titles(session)

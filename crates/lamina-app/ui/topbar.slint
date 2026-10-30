@@ -4,7 +4,7 @@
 // vêm do editor (`bar_tip`).
 
 import { LineEdit } from "std-widgets.slint";
-import { Theme, Type } from "theme.slint";
+import { Radius, Space, Theme, Type } from "theme.slint";
 import { Icons } from "icons.slint";
 import { BarButton, IconButton, Tip } from "widgets.slint";
 
@@ -73,7 +73,67 @@ component AlbumName inherits Rectangle {
     }
 }
 
+// Os dados do medidor de páginas, que vêm do editor (spec DJ, regra 13). `tick` negativo = sem
+// mínimo; `text` vazio = sem medidor.
+export struct PageMeterData {
+    text: string,
+    short: string,
+    used: float,
+    tick: float,
+    inside: bool,
+}
+
+// O medidor de páginas: a barra, o tique do mínimo e o texto, que encurta em janela estreita.
+component PageMeter inherits Rectangle {
+    in property <PageMeterData> data;
+    in property <length> room;
+    property <bool> tiny: root.room < 1000px;
+    property <bool> narrow: root.room < 1366px;
+    accessible-role: AccessibleRole.text;
+    accessible-label: root.data.text;
+    width: root.tiny ? 80px : root.narrow ? 120px : 232px;
+    VerticalLayout {
+        alignment: center;
+        spacing: Space.s1;
+        Rectangle {
+            height: 4px;
+            border-radius: Radius.hair;
+            background: Theme.line;
+            Rectangle {
+                x: 0;
+                width: parent.width * root.data.used;
+                border-radius: Radius.hair;
+                background: root.data.inside ? Theme.accent : Theme.warning;
+            }
+            if root.data.tick >= 0: Rectangle {
+                x: parent.width * root.data.tick;
+                y: -3px;
+                width: 1px;
+                height: 10px;
+                background: Theme.text;
+            }
+        }
+        if !root.tiny: Text {
+            text: root.narrow ? root.data.short : root.data.text;
+            color: Theme.text-2;
+            font-size: Type.caption;
+            overflow: elide;
+        }
+    }
+    area := TouchArea { }
+    if root.tiny: Tip {
+        y: parent.height + 4px;
+        text: root.data.text;
+        shown: area.has-hover;
+    }
+}
+
 export component TopBar inherits Rectangle {
+    // O medidor de páginas (spec DJ, regra 13): só em álbum com mínimo ou máximo.
+    in property <PageMeterData> page-meter;
+    // A largura copiada depois do layout: ligar o medidor direto em `width` fecharia um laço.
+    property <length> meter-room: 1920px;
+    changed width => { self.meter-room = self.width; }
     in property <bool> has-project;
     in property <string> project-title;
     // O nome sem o "• " e o campo de renomear aberto (spec NA).
@@ -117,6 +177,7 @@ export component TopBar inherits Rectangle {
         }
         Text { text: root.counter; color: Theme.text-2; vertical-alignment: center; overflow: elide; min-width: 0px; }
         if root.counter-warning != "": Text { text: root.counter-warning; color: Theme.warning; vertical-alignment: center; overflow: elide; min-width: 0px; }
+        if root.has-project && root.page-meter.text != "": PageMeter { data: root.page-meter; room: root.meter-room; }
         Rectangle { horizontal-stretch: 1; }
         if root.has-project: VerticalLayout {
             alignment: center;

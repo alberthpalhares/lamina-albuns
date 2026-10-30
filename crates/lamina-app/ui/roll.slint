@@ -140,9 +140,8 @@ component Columns inherits Rectangle {
     background: Theme.g5;
     Text {
         text: c.index + 1;
-        color: Theme.press;
-        font-size: max(Type.small, root.height * 0.3);
-        font-weight: Type.semibold;
+        color: Theme.text-3;
+        font-size: Type.title;
     }
     Tile { accessible-role: AccessibleRole.none; x: 0; width: min(1, root.k) * root.width; height: root.height; img: c.c0; v: c.v0; }
     Tile { accessible-role: AccessibleRole.none; x: root.k * root.width; width: max(0, min(root.k, 1 - root.k)) * root.width; height: root.height; img: c.c1; v: c.v1; }

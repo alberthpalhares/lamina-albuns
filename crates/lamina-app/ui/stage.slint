@@ -18,6 +18,7 @@ export component Stage inherits Rectangle {
     in property <bool> has-project;
     in property <SpreadData> current;
     in property <bool> guides;
+    in property <bool> gutter-shadow;
     in property <int> selected-frame: -1;
     // O álbum sem lâminas (spec IM): quantas lâminas e quantas fotos há.
     in property <int> spread-count;
@@ -290,6 +291,7 @@ export component Stage inherits Rectangle {
         y: (parent.height - self.height) / 2 + root.top-room / 2 + root.view-pan-y;
         data: root.current;
         guides: root.guides;
+        gutter-shadow: root.gutter-shadow;
         interactive: true;
         selected: root.selected-frame;
         drop-shadow-blur: 16px;

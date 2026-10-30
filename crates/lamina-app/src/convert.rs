@@ -123,6 +123,7 @@ pub fn spread_data(
         .collect();
     let inactive: Vec<BoxData> = view.inactive.iter().copied().map(boxed).collect();
     SpreadData {
+        badge: "".into(),
         aspect: to_f32(a),
         bg: color(view.background),
         bg_right: color(view.background_right),
