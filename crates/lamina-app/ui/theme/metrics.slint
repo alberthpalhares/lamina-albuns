@@ -1,0 +1,39 @@
+// Medidas da interface (regra 6 da spec DF, escala fechada): espaços em múltiplos de 4 px, três
+// cantos, um fio e duas sombras. Valor fora desta escala pede um token novo na spec.
+
+import { Theme } from "theme.slint";
+
+export global Space {
+    out property <length> s1: 4px;
+    out property <length> s2: 8px;
+    out property <length> s3: 12px;
+    out property <length> s4: 16px;
+    out property <length> s5: 24px;
+    out property <length> s6: 32px;
+}
+
+export global Radius {
+    // Trilhos e barrinhas finas.
+    out property <length> hair: 2px;
+    // Controles (botões, campos, miniaturas).
+    out property <length> small: 4px;
+    // Cartões, menus e painéis flutuantes.
+    out property <length> medium: 6px;
+    // Diálogos.
+    out property <length> large: 10px;
+}
+
+export global Line {
+    out property <length> thin: 1px;
+    out property <length> focus: 2px;
+}
+
+// Só menus e diálogos têm sombra (regra 10 da DF: sombra custa no femtovg, ADR 0011).
+export global Elevation {
+    out property <length> menu-blur: 12px;
+    out property <length> menu-y: 4px;
+    out property <color> menu-color: Theme.shadow;
+    out property <length> dialog-blur: 24px;
+    out property <length> dialog-y: 8px;
+    out property <color> dialog-color: Theme.shadow-strong;
+}

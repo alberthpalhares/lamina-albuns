@@ -2,7 +2,7 @@
 // soltar, as camadas do modo organizar e a tela de boas-vindas. Os dados chegam pela janela
 // principal (app.slint); o estado do arrastar mora no global DragUi.
 
-import { Theme } from "theme.slint";
+import { Theme, Fixed, Type } from "theme.slint";
 import { SpreadCanvas, SpreadData, BoxData } from "canvas.slint";
 import { EmptyAlbum } from "importing.slint";
 import { GhostData } from "ghost.slint";
@@ -24,7 +24,7 @@ export component Stage inherits Rectangle {
     in property <int> photo-count;
     // O álbum em branco (spec BR): o formato e o fundo da lâmina vazia e "Montar o álbum…".
     in property <float> blank-aspect: 0.5;
-    in property <color> blank-color: white;
+    in property <color> blank-color: Fixed.paper;
     in property <bool> can-build;
     // Dica embaixo da lâmina: o que dá para fazer com o quadro selecionado.
     in property <string> hint;
@@ -248,8 +248,8 @@ export component Stage inherits Rectangle {
     if root.hint != "": Text {
         y: parent.height - 22px;
         text: root.hint;
-        color: Theme.muted;
-        font-size: 12px;
+        color: Theme.text-2;
+        font-size: Type.small;
     }
     // A lâmina que sai, esmaecendo e deslizando para o lado oposto (spec MV).
     // No deslize do rolo, ela fica no lugar dela e anda junto (spec RL, regra 13).
@@ -293,7 +293,7 @@ export component Stage inherits Rectangle {
         interactive: true;
         selected: root.selected-frame;
         drop-shadow-blur: 16px;
-        drop-shadow-color: #00000080;
+        drop-shadow-color: Theme.shadow;
         frame-down(i, x, y) => {
             DragUi.press-x = x;
             DragUi.press-y = y;
@@ -330,7 +330,7 @@ export component Stage inherits Rectangle {
         width: self.t.w * big.width;
         height: self.t.h * big.width;
         border-width: 3px;
-        border-color: #ffd23f;
+        border-color: Fixed.target;
     }
     if root.has-project && root.spread-count == 0: EmptyAlbum {
         photos: root.photo-count;

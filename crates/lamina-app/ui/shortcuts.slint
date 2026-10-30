@@ -2,7 +2,7 @@
 // lista, a busca e o texto das teclas saem do `lamina-editor` (`shortcuts::sheet`).
 
 import { Button, LineEdit, ScrollView } from "std-widgets.slint";
-import { Theme } from "theme.slint";
+import { Theme, Type, Radius } from "theme.slint";
 import { Panel } from "widgets.slint";
 
 // Uma linha: o que faz e as teclas (o principal e os alternativos) ou, num gesto, como fazer.
@@ -35,14 +35,14 @@ component Keycap inherits Rectangle {
     in property <string> text;
     width: max(24px, label.preferred-width + 12px);
     height: 22px;
-    border-radius: 4px;
+    border-radius: Radius.small;
     border-width: 1px;
-    border-color: #ffffff40;
-    background: #ffffff14;
+    border-color: Theme.overlay;
+    background: Theme.hover;
     label := Text {
         text: root.text;
         color: Theme.text;
-        font-size: 12px;
+        font-size: Type.small;
         horizontal-alignment: center;
         vertical-alignment: center;
     }
@@ -52,7 +52,7 @@ component GroupView inherits VerticalLayout {
     in property <ShortcutGroup> group;
     spacing: 6px;
     padding-bottom: 14px;
-    Text { text: root.group.title; font-size: 15px; font-weight: 700; color: Theme.text; }
+    Text { text: root.group.title; font-size: Type.title; font-weight: Type.semibold; color: Theme.text; }
     for row in root.group.rows: HorizontalLayout {
         spacing: 12px;
         Text {
@@ -64,7 +64,7 @@ component GroupView inherits VerticalLayout {
         }
         if row.gesture: Text {
             text: row.keys[0];
-            color: Theme.muted;
+            color: Theme.text-2;
             wrap: word-wrap;
             horizontal-stretch: 1;
             horizontal-alignment: right;
@@ -75,7 +75,7 @@ component GroupView inherits VerticalLayout {
             alignment: end;
             for key[i] in row.keys: HorizontalLayout {
                 spacing: 4px;
-                if i > 0: Text { text: "ou"; color: Theme.muted; font-size: 12px; vertical-alignment: center; }
+                if i > 0: Text { text: "ou"; color: Theme.text-2; font-size: Type.small; vertical-alignment: center; }
                 Keycap { text: key; }
             }
         }
@@ -84,7 +84,7 @@ component GroupView inherits VerticalLayout {
 
 export component ShortcutsDialog inherits Rectangle {
     callback closed();
-    background: #000000a0;
+    background: Theme.veil;
     // Um clique fora da janela fecha (regra 8).
     TouchArea {
         clicked => {
@@ -109,7 +109,7 @@ export component ShortcutsDialog inherits Rectangle {
             VerticalLayout {
                 padding: 24px;
                 spacing: 12px;
-                Text { text: "Atalhos do teclado e do mouse"; font-size: 20px; font-weight: 700; color: Theme.text; }
+                Text { text: "Atalhos do teclado e do mouse"; font-size: Type.heading; font-weight: Type.semibold; color: Theme.text; }
                 search := LineEdit {
                     placeholder-text: "Buscar: “lâmina”, “salvar” ou “ctrl+z”";
                     text <=> ShortcutsUi.query;
@@ -118,7 +118,7 @@ export component ShortcutsDialog inherits Rectangle {
                 if ShortcutsUi.empty != "": VerticalLayout {
                     spacing: 4px;
                     Text { text: ShortcutsUi.empty; color: Theme.text; wrap: word-wrap; }
-                    Text { text: ShortcutsUi.hint; color: Theme.muted; wrap: word-wrap; }
+                    Text { text: ShortcutsUi.hint; color: Theme.text-2; wrap: word-wrap; }
                 }
                 ScrollView {
                     vertical-stretch: 1;

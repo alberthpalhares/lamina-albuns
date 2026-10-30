@@ -2,9 +2,9 @@
 // de banco (85,6 × 53,98 mm), o monitor da janela e o controle que aumenta ou diminui o retângulo
 // até ele ficar igual a um cartão encostado na tela. Só desenho: o Rust guarda a calibração.
 
-import { Button, Slider } from "std-widgets.slint";
-import { Theme } from "theme.slint";
-import { Shade, Panel } from "widgets.slint";
+import { Slider } from "std-widgets.slint";
+import { Theme, Type } from "theme.slint";
+import { Shade, Panel, DialogButton } from "widgets.slint";
 
 export global CalibrateUi {
     in-out property <bool> show;
@@ -29,15 +29,15 @@ export component CalibrateDialog inherits Shade {
             Text {
                 text: "Calibrar o tamanho real";
                 color: Theme.text;
-                font-size: 16px;
-                font-weight: 700;
+                font-size: Type.title;
+                font-weight: Type.semibold;
             }
             Text {
                 text: "Encoste um cartão de banco (ou de crédito, ou de loja) na tela e ajuste até o retângulo ficar do mesmo tamanho.";
                 color: Theme.text;
                 wrap: word-wrap;
             }
-            Text { text: CalibrateUi.monitor; color: Theme.muted; font-size: 12px; }
+            Text { text: CalibrateUi.monitor; color: Theme.text-2; font-size: Type.small; }
             HorizontalLayout {
                 alignment: center;
                 Rectangle {
@@ -45,8 +45,8 @@ export component CalibrateDialog inherits Shade {
                     height: CalibrateUi.width * 1px * 53.98 / 85.6;
                     border-radius: CalibrateUi.width * 1px * 3.18 / 85.6;
                     border-width: 1px;
-                    border-color: #ffffffb0;
-                    background: #3b6ea5;
+                    border-color: Theme.overlay-strong;
+                    background: Theme.accent-soft;
                 }
             }
             Slider {
@@ -57,15 +57,15 @@ export component CalibrateDialog inherits Shade {
             HorizontalLayout {
                 spacing: 8px;
                 alignment: end;
-                if CalibrateUi.calibrated: Button {
+                if CalibrateUi.calibrated: DialogButton {
                     text: "Voltar à estimativa";
                     clicked => { CalibrateUi.forget(); }
                 }
-                Button {
+                DialogButton {
                     text: "Cancelar";
                     clicked => { CalibrateUi.show = false; }
                 }
-                Button {
+                DialogButton {
                     text: "Guardar";
                     primary: true;
                     clicked => { CalibrateUi.save(CalibrateUi.width); }

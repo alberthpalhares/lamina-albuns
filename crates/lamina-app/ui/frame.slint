@@ -1,10 +1,11 @@
 // A aba Quadro (spec TX, seção 3): medidas do quadro selecionado em mm e, num quadro de texto, o
 // texto e os campos dele. Só desenho: os valores e as edições vêm do editor.
 
-import { Button, CheckBox, LineEdit, ScrollView, TextEdit } from "std-widgets.slint";
+import { LineEdit, ScrollView, TextEdit } from "std-widgets.slint";
 import { FontField } from "font_list.slint";
 import { NumberField } from "number_field.slint";
-import { Theme } from "theme.slint";
+import { Theme, Type } from "theme.slint";
+import { DialogButton, CheckRow } from "widgets.slint";
 import { LookUi, Swatches } from "look.slint";
 
 export global FrameUi {
@@ -46,14 +47,14 @@ export global FrameUi {
 }
 
 component Label inherits Text {
-    color: Theme.muted;
-    font-size: 12px;
+    color: Theme.text-2;
+    font-size: Type.small;
     vertical-alignment: center;
 }
 
 component Error inherits Text {
     color: Theme.warning;
-    font-size: 12px;
+    font-size: Type.small;
     wrap: word-wrap;
 }
 
@@ -63,7 +64,7 @@ component Choice inherits HorizontalLayout {
     in property <int> chosen;
     callback picked(int);
     spacing: 4px;
-    for t[i] in root.labels: Button {
+    for t[i] in root.labels: DialogButton {
         text: t;
         primary: i == root.chosen;
         clicked => { root.picked(i); }
@@ -85,7 +86,7 @@ export component FramePanel inherits ScrollView {
 
         if !FrameUi.has-frame: Text {
             text: "Clique num quadro para ver as medidas dele. T cria um texto.";
-            color: Theme.muted;
+            color: Theme.text-2;
             wrap: word-wrap;
         }
         if FrameUi.has-frame: Label { text: "Posição e tamanho (" + FrameUi.unit + ", a partir do corte)"; }
@@ -135,13 +136,13 @@ export component FramePanel inherits ScrollView {
         }
         if FrameUi.is-text: HorizontalLayout {
             spacing: 8px;
-            CheckBox {
+            CheckRow {
                 text: "Negrito";
                 enabled: FrameUi.can-bold;
                 checked <=> FrameUi.bold;
                 toggled => { FrameUi.bold-toggled(self.checked); root.done(); }
             }
-            CheckBox {
+            CheckRow {
                 text: "Itálico";
                 enabled: FrameUi.can-italic;
                 checked <=> FrameUi.italic;

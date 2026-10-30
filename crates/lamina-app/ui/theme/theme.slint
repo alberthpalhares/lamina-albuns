@@ -1,0 +1,69 @@
+// O tema da janela (spec DF): escolhe a paleta pelo `dark` e expõe as cores por papel. Tema
+// escuro neutro, sem cor forte, para não influenciar a leitura das cores das fotos (spec JP,
+// regra 2). O tema claro já existe aqui; a preferência para escolhê-lo vem na D3.
+
+import { Palettes, Colors } from "palette.slint";
+
+export { Fixed } from "palette.slint";
+
+export global Theme {
+    in-out property <bool> dark: true;
+    // Tamanho do texto da interface, de 0,9 a 1,3 (spec DF, regra DF-B14; a preferência vem na D3).
+    in-out property <float> text-scale: 1.0;
+    property <Colors> c: root.dark ? Palettes.dark : Palettes.light;
+
+    out property <color> g1: c.g1;
+    out property <color> g2: c.g2;
+    out property <color> g3: c.g3;
+    out property <color> g4: c.g4;
+    out property <color> g5: c.g5;
+    out property <color> g6: c.g6;
+    out property <color> g7: c.g7;
+    out property <color> g8: c.g8;
+    out property <color> g9: c.g9;
+    out property <color> g10: c.g10;
+    out property <color> g11: c.g11;
+    out property <color> g12: c.g12;
+
+    // Superfícies: o palco é a mais funda e o painel da direita a mais alta (regra 5 da DF).
+    out property <color> stage: c.stage;
+    out property <color> strip: c.strip;
+    out property <color> panel: c.panel;
+    out property <color> bar: c.bar;
+    out property <color> raised: c.raised;
+    out property <color> field: c.field;
+    out property <color> line: c.line;
+    out property <color> line-strong: c.line-strong;
+
+    out property <color> text: c.text;
+    out property <color> text-2: c.text-2;
+    out property <color> text-3: c.text-3;
+    out property <color> text-strong: c.text-strong;
+    out property <color> text-disabled: c.text-disabled;
+
+    // Um só destaque: o ciano da marca (regra 4 da DF).
+    out property <color> accent: c.accent;
+    out property <color> accent-hover: c.accent-hover;
+    out property <color> accent-soft: c.accent-soft;
+    out property <color> on-accent: c.on-accent;
+    out property <color> focus: c.focus;
+    // Texto que é link: um tom do destaque que passa no contraste sobre todas as superfícies.
+    out property <color> link: c.link;
+
+    out property <color> warning: c.warning;
+    out property <color> warning-soft: c.warning-soft;
+    out property <color> error: c.error;
+    out property <color> error-soft: c.error-soft;
+    out property <color> success: c.success;
+
+    // Realces translúcidos: claros no escuro, escuros no claro.
+    out property <color> hover: c.hover;
+    out property <color> press: c.press;
+    out property <color> overlay: c.overlay;
+    out property <color> overlay-strong: c.overlay-strong;
+    out property <color> shadow: c.shadow;
+    out property <color> shadow-strong: c.shadow-strong;
+    out property <color> veil: c.veil;
+    // Escurecer algo por cima (fotos usadas, lâmina que sai).
+    out property <color> dim: c.dim;
+}

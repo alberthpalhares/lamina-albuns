@@ -3,8 +3,11 @@
 // os diálogos; a barra do projeto, a área da lâmina e as faixas de baixo estão em topbar.slint,
 // stage.slint e bottom.slint, e o estado do arrastar no global DragUi (drag.slint).
 
-import { Button, ScrollView } from "std-widgets.slint";
-import { Theme } from "theme.slint";
+import { Button, ScrollView, Palette } from "std-widgets.slint";
+// A interface inteira em Inter (spec DF, saída 3), do mesmo arquivo do repositório que o lamina-render
+// usa no texto da lâmina (uma fonte só para manter e licenciar).
+import "../../lamina-render/fonts/inter/Inter.ttf";
+import { Theme, Fixed, Type } from "theme.slint";
 import { SpreadData, FrameData, BoxData } from "canvas.slint";
 import { ConfirmDialog, MessageDialog, BusyOverlay, RecoverDialog, RecoverUi } from "dialogs.slint";
 import { PhotoMenuUi, RemoveAskDialog } from "photo_menu.slint";
@@ -45,6 +48,7 @@ import { BottomStrips } from "bottom.slint";
 import { ShortcutsUi, ShortcutsDialog, ShortcutGroup, ShortcutRow } from "shortcuts.slint";
 import { NewsUi, NewsDialog, NewsEntryData } from "news.slint";
 import { RollUi, RollCell, RollButton, RollHitData } from "roll.slint";
+import { Gallery } from "gallery.slint";
 
 export { BuildUi }
 export { CalibrateUi, SpreadData, FrameData, BoxData, LayoutItem, BandUi, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, FontUi, FontRowUi, ModelUi, RecentsUi, ClearUi, RelinkUi, RelinkRowUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, BarRow, ContextUi, ContextRow, PaletteUi, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, ShortcutsUi, RecoverUi, ShortcutGroup, ShortcutRow, NewsUi, NewsEntryData, RollUi, RollCell, RollButton, RollHitData }
@@ -56,8 +60,14 @@ export component AppWindow inherits Window {
     min-height: 600px;
     preferred-width: 1400px;
     preferred-height: 900px;
-    background: Theme.background;
+    background: Theme.stage;
     forward-focus: keys;
+    default-font-family: "Inter";
+    default-font-size: Type.body;
+    // Os widgets padrão acompanham o tema claro ou escuro (spec DF, regra 4).
+    property <bool> dark-theme: Theme.dark;
+    changed dark-theme => { Palette.color-scheme = root.dark-theme ? ColorScheme.dark : ColorScheme.light; }
+    init => { Palette.color-scheme = root.dark-theme ? ColorScheme.dark : ColorScheme.light; }
 
     in property <string> window-title: "Lamina";
     in property <string> project-title;
@@ -73,6 +83,7 @@ export component AppWindow inherits Window {
     callback panel-width-set(length);
     callback panel-width-reset();
     in property <string> counter;
+    in-out property <bool> gallery;
     in property <bool> has-project;
     in property <bool> can-save;
     in property <bool> can-prev;
@@ -154,7 +165,7 @@ export component AppWindow inherits Window {
     in property <bool> has-missing;
     // O álbum em branco e "Montar o álbum…" (spec BR).
     in property <float> blank-aspect: 0.5;
-    in property <color> blank-color: white;
+    in property <color> blank-color: Fixed.paper;
     in property <bool> can-build-album;
     // Fora da faixa de páginas do laboratório (spec PR): ao lado do contador.
     in property <string> counter-warning;
@@ -682,5 +693,12 @@ export component AppWindow inherits Window {
     }
     if root.busy-text != "": BusyOverlay {
         text: root.busy-text;
+    }
+    // Galeria de componentes (spec DF, saída 6), aberta por `LAMINA_GALERIA=1`.
+    if root.gallery: Gallery {
+        close => {
+            root.gallery = false;
+            root.focus-main();
+        }
     }
 }

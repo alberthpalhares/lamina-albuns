@@ -1,8 +1,10 @@
 // Painel de aparência (spec AP): espaço entre fotos, fundo, borda e cantos. Só desenho: os
 // valores e as edições vêm do editor.
 
-import { Button, CheckBox, LineEdit } from "std-widgets.slint";
-import { Theme } from "theme.slint";
+import { Button, LineEdit } from "std-widgets.slint";
+import { Theme, Type, Radius } from "theme.slint";
+import { DialogButton, CheckRow } from "widgets.slint";
+import { Icons } from "icons.slint";
 
 export struct Swatch {
     c: color,
@@ -13,7 +15,7 @@ export component Stepper inherits HorizontalLayout {
     in property <string> value;
     callback step(int);
     spacing: 8px;
-    Button { text: "−"; width: 34px; clicked => { root.step(-1); } }
+    Button { icon: Icons.minus; colorize-icon: true; accessible-label: "Menos"; width: 34px; clicked => { root.step(-1); } }
     Text {
         text: root.value;
         color: Theme.text;
@@ -21,7 +23,7 @@ export component Stepper inherits HorizontalLayout {
         horizontal-alignment: center;
         min-width: 70px;
     }
-    Button { text: "+"; width: 34px; clicked => { root.step(1); } }
+    Button { icon: Icons.plus; colorize-icon: true; accessible-label: "Mais"; width: 34px; clicked => { root.step(1); } }
 }
 
 // 12 cores em duas linhas de 6.
@@ -35,17 +37,21 @@ export component Swatches inherits Rectangle {
         y: floor(i / 6) * 30px;
         width: 26px;
         height: 26px;
-        border-radius: 4px;
+        border-radius: Radius.small;
         background: s.c;
         border-width: s.c == root.chosen ? 2px : 1px;
-        border-color: s.c == root.chosen ? Theme.selected : #ffffff30;
+        border-color: s.c == root.chosen ? Theme.text-strong : Theme.press;
+        accessible-role: button;
+        accessible-label: "Cor " + (i + 1);
+        accessible-checked: s.c == root.chosen;
+        accessible-action-default => { root.pick(i); }
         TouchArea { clicked => { root.pick(i); } }
     }
 }
 
 component Label inherits Text {
-    color: Theme.muted;
-    font-size: 12px;
+    color: Theme.text-2;
+    font-size: Type.small;
 }
 
 // O estado da aba fica num global, como o dos presets (`app.slint` estava grande demais).
@@ -84,15 +90,15 @@ export component LookPanel inherits VerticalLayout {
     Stepper { value: LookUi.gap; step(d) => { LookUi.gap-step(d); root.done(); } }
     if LookUi.manual: Text {
         text: "Esta lâmina está à mão: o espaço entre fotos não muda os quadros dela.";
-        color: Theme.muted;
-        font-size: 12px;
+        color: Theme.text-2;
+        font-size: Type.small;
         wrap: word-wrap;
     }
 
     HorizontalLayout {
         Label { text: "Fundo"; vertical-alignment: center; }
         Rectangle { horizontal-stretch: 1; }
-        CheckBox {
+        CheckRow {
             text: "Por página";
             checked: LookUi.split;
             toggled => { LookUi.split-changed(self.checked); root.done(); }
@@ -122,9 +128,9 @@ export component LookPanel inherits VerticalLayout {
             placeholder-text: "#F5F0E6";
             accepted(t) => { LookUi.background-hex(t); }
         }
-        Button { text: "Usar"; clicked => { LookUi.background-hex(LookUi.hex); } }
+        DialogButton { text: "Usar"; clicked => { LookUi.background-hex(LookUi.hex); } }
     }
-    if LookUi.hex-error != "": Text { text: LookUi.hex-error; color: Theme.warning; font-size: 12px; }
+    if LookUi.hex-error != "": Text { text: LookUi.hex-error; color: Theme.warning; font-size: Type.small; }
 
     if root.frame-style: Label { text: LookUi.only-frame ? "Borda (quadro selecionado)" : "Borda (todas as fotos da lâmina)"; }
     if root.frame-style: Stepper { value: LookUi.border; step(d) => { LookUi.border-step(d); root.done(); } }
@@ -138,5 +144,5 @@ export component LookPanel inherits VerticalLayout {
     if root.frame-style: Stepper { value: LookUi.radius; step(d) => { LookUi.radius-step(d); root.done(); } }
 
     Rectangle { vertical-stretch: 1; }
-    Button { text: "Aplicar a todas as lâminas"; clicked => { LookUi.apply-all(); root.done(); } }
+    DialogButton { text: "Aplicar a todas as lâminas"; clicked => { LookUi.apply-all(); root.done(); } }
 }

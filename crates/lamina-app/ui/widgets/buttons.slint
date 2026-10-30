@@ -1,0 +1,237 @@
+// Botões e dicas (spec DF, saída 5): o botão da barra (principal, comum, fantasma, perigo), a aba
+// de filtro, o botão só de ícone e o balão de dica. Todos com foco por Tab e nome para leitores de
+// tela (regra 8 da DF). O foco fica num FocusScope de largura zero, como nos widgets do Slint: o
+// Tab chega nele, o clique não, e assim o clique não tira o teclado da lâmina.
+
+import { Theme } from "../theme/theme.slint";
+import { Radius, Line } from "../theme/metrics.slint";
+import { Type } from "../theme/type.slint";
+import { Motion } from "../motion.slint";
+
+// Anel de foco: 2 px no token de foco, por fora do controle (quem usa põe 3 px para fora de cada
+// lado: x e y -3px, largura e altura do pai + 6px).
+export component FocusRing inherits Rectangle {
+    in property <bool> shown;
+    in property <length> radius: Radius.small;
+    border-radius: root.radius + 3px;
+    border-width: root.shown ? Line.focus : 0px;
+    border-color: Theme.focus;
+}
+
+// Balão de dica (specs JE e ZR): aparece depois de meio segundo com o mouse parado em cima do
+// botão (`shown`) e some na hora em que ele sai. Quem usa posiciona o balão.
+export component Tip inherits Rectangle {
+    in property <string> text;
+    in property <bool> shown;
+    property <bool> ready;
+    changed shown => {
+        root.ready = false;
+    }
+    Timer {
+        interval: 500ms;
+        running: root.shown && !root.ready;
+        triggered => { root.ready = true; }
+    }
+    visible: root.shown && root.ready;
+    width: label.preferred-width + 16px;
+    height: 24px;
+    border-radius: Radius.small;
+    background: Theme.raised;
+    border-width: Line.thin;
+    border-color: Theme.line;
+    label := Text {
+        text: root.text;
+        color: Theme.text;
+        font-size: Type.small;
+        vertical-alignment: center;
+    }
+}
+
+// Botão de texto. `primary` é o principal da tela (fundo ciano, um só por tela; auditoria da Fase
+// 4, achado 25); `danger` é o que apaga; sem nenhum dos dois, é fantasma (só realce no sobre).
+export component BarButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    in property <bool> primary;
+    in property <bool> danger;
+    // Contorno fino, para botões comuns fora das barras (diálogos).
+    in property <bool> outlined;
+    // Folga de cada lado do texto.
+    in property <length> pad: 12px;
+    // Largura mínima (botões de diálogo do mesmo tamanho).
+    in property <length> least-width;
+    // O mouse em cima, para quem põe um balão de dica no botão (Exportar, spec JE).
+    out property <bool> hovered: touch.has-hover;
+    callback clicked();
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { root.clicked(); }
+    width: max(root.least-width, label.preferred-width + 2 * root.pad);
+    border-radius: Radius.small;
+    border-width: root.outlined && !root.primary ? Line.thin : 0px;
+    border-color: Theme.line-strong;
+    background: !root.enabled ? transparent
+        : root.primary ? (touch.has-hover ? Theme.accent-hover : Theme.accent)
+        : root.danger && touch.has-hover ? Theme.error-soft
+        : touch.pressed ? Theme.press
+        : touch.has-hover ? Theme.hover : transparent;
+    animate background { duration: Motion.on ? 120ms : 0ms; }
+    label := Text {
+        text: root.text;
+        font-size: Type.body;
+        font-weight: root.primary ? Type.semibold : Type.medium;
+        color: !root.enabled ? Theme.text-disabled
+            : root.primary ? Theme.on-accent
+            : root.danger ? Theme.error : Theme.text;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+    focus := FocusScope {
+        x: 0;
+        width: 0;
+        enabled: root.enabled;
+        key-pressed(e) => {
+            if (e.text == Key.Space || e.text == Key.Return) {
+                root.clicked();
+                return accept;
+            }
+            return reject;
+        }
+    }
+    FocusRing { shown: focus.has-focus; x: -3px; y: -3px; width: parent.width + 6px; height: parent.height + 6px; }
+}
+
+// Aba de filtro (Todas, Usadas, Não usadas): sublinhado no destaque quando ativa.
+export component FilterTab inherits BarButton {
+    in property <bool> active;
+    accessible-role: tab;
+    accessible-checked: root.active;
+    Rectangle {
+        y: parent.height - 2px;
+        height: 2px;
+        background: root.active ? Theme.accent : transparent;
+    }
+}
+
+// Botão só de ícone (specs JE e ZR): marcado ou apagado (indisponível), com o nome e o atalho no
+// balão de dica, embaixo dele (regra 8 da DF: ícone sem rótulo sempre tem dica).
+export component IconButton inherits Rectangle {
+    in property <image> icon;
+    in property <string> tip;
+    in property <bool> checked;
+    in property <bool> enabled: true;
+    // Onde o balão fica, para não sair da janela: -1 começa no botão, 0 no meio, 1 termina nele.
+    in property <int> tip-side;
+    // O desenho dentro do botão; os botões pequenos do giro usam 18 px (spec CD).
+    in property <length> icon-size: 20px;
+    callback clicked();
+    accessible-role: button;
+    accessible-label: root.tip;
+    accessible-enabled: root.enabled;
+    accessible-checked: root.checked;
+    accessible-action-default => { root.clicked(); }
+    width: 32px;
+    height: 32px;
+    border-radius: Radius.small;
+    background: root.checked ? Theme.press
+        : (touch.has-hover && root.enabled ? Theme.hover : transparent);
+    animate background { duration: Motion.on ? 120ms : 0ms; }
+    Image {
+        accessible-role: none;
+        width: root.icon-size;
+        height: root.icon-size;
+        source: root.icon;
+        colorize: root.enabled ? (root.checked ? Theme.text-strong : Theme.text) : Theme.text-disabled;
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+    focus := FocusScope {
+        x: 0;
+        width: 0;
+        enabled: root.enabled;
+        key-pressed(e) => {
+            if (e.text == Key.Space || e.text == Key.Return) {
+                root.clicked();
+                return accept;
+            }
+            return reject;
+        }
+    }
+    FocusRing { shown: focus.has-focus; x: -3px; y: -3px; width: parent.width + 6px; height: parent.height + 6px; }
+    if root.tip != "": Tip {
+        x: root.tip-side < 0 ? 0px : root.tip-side > 0 ? parent.width - self.width : (parent.width - self.width) / 2;
+        y: parent.height + 4px;
+        text: root.tip;
+        shown: touch.has-hover;
+    }
+}
+
+// Ícone com texto ao lado ("+ Fotos", "+ Lâmina nova"): o ícone vem do global Icons.
+export component IconTextButton inherits Rectangle {
+    in property <image> icon;
+    in property <string> text;
+    in property <bool> enabled: true;
+    callback clicked();
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { root.clicked(); }
+    width: row.preferred-width + 16px;
+    min-height: 28px;
+    border-radius: Radius.small;
+    background: touch.has-hover && root.enabled ? Theme.hover : transparent;
+    row := HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        spacing: 8px;
+        alignment: center;
+        Image {
+            accessible-role: none;
+            y: (parent.height - self.height) / 2;
+            width: 16px;
+            height: 16px;
+            source: root.icon;
+            colorize: root.enabled ? Theme.text-2 : Theme.text-disabled;
+        }
+        Text {
+            text: root.text;
+            font-size: Type.small;
+            color: root.enabled ? Theme.text : Theme.text-disabled;
+            vertical-alignment: center;
+        }
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+    focus := FocusScope {
+        x: 0;
+        width: 0;
+        enabled: root.enabled;
+        key-pressed(e) => {
+            if (e.text == Key.Space || e.text == Key.Return) {
+                root.clicked();
+                return accept;
+            }
+            return reject;
+        }
+    }
+    FocusRing { shown: focus.has-focus; x: -3px; y: -3px; width: parent.width + 6px; height: parent.height + 6px; }
+}
+
+// Botão dos diálogos: com contorno fino; com `primary`, é o principal em ciano (spec DF,
+// correção 1: os botões padrão do Slint seguem a cor de destaque do sistema).
+export component DialogButton inherits BarButton {
+    outlined: true;
+    pad: 16px;
+    least-width: 80px;
+    min-height: 32px;
+}

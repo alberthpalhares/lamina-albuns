@@ -4,12 +4,15 @@
 // vêm do editor (`bar_tip`).
 
 import { LineEdit } from "std-widgets.slint";
-import { Theme } from "theme.slint";
+import { Theme, Type } from "theme.slint";
+import { Icons } from "icons.slint";
 import { BarButton, IconButton, Tip } from "widgets.slint";
 
 // O nome do álbum que vira campo com clique duplo (spec NA): Enter ou clicar fora confirma, Esc
 // desiste. Só desenho: o editor limpa o nome e decide se muda.
 component AlbumName inherits Rectangle {
+    accessible-role: AccessibleRole.text;
+    accessible-label: root.name;
     in property <string> title;
     in property <string> name;
     in-out property <bool> renaming;
@@ -24,8 +27,8 @@ component AlbumName inherits Rectangle {
         height: parent.height;
         text: root.title;
         color: Theme.text;
-        font-size: 15px;
-        font-weight: 600;
+        font-size: Type.title;
+        font-weight: Type.semibold;
         vertical-alignment: center;
         overflow: elide;
     }
@@ -49,7 +52,7 @@ component AlbumName inherits Rectangle {
             y: (parent.height - self.height) / 2;
             width: parent.width;
             text: root.name;
-            font-size: 14px;
+            font-size: Type.body;
             init => {
                 self.focus();
                 self.select-all();
@@ -100,7 +103,7 @@ export component TopBar inherits Rectangle {
         if root.has-project: VerticalLayout {
             alignment: center;
             IconButton {
-                icon: @image-url("../icons/je/inicio.svg");
+                icon: Icons.home;
                 tip: root.tip-home;
                 tip-side: -1;
                 clicked => { root.command("arquivo.fechar"); }
@@ -112,7 +115,7 @@ export component TopBar inherits Rectangle {
             renaming <=> root.renaming;
             rename(text) => { root.rename(text); }
         }
-        Text { text: root.counter; color: Theme.muted; vertical-alignment: center; overflow: elide; min-width: 0px; }
+        Text { text: root.counter; color: Theme.text-2; vertical-alignment: center; overflow: elide; min-width: 0px; }
         if root.counter-warning != "": Text { text: root.counter-warning; color: Theme.warning; vertical-alignment: center; overflow: elide; min-width: 0px; }
         Rectangle { horizontal-stretch: 1; }
         if root.has-project: VerticalLayout {
@@ -120,7 +123,7 @@ export component TopBar inherits Rectangle {
             // As faixas de baixo (spec FX, regras 7 e 8): o desenho da janela com a área de baixo
             // preenchida quando alguma aparece.
             IconButton {
-                icon: root.strips-open ? @image-url("../icons/je/faixas.svg") : @image-url("../icons/je/faixas-fechadas.svg");
+                icon: root.strips-open ? Icons.strips : Icons.strips-closed;
                 tip: root.tip-photos;
                 tip-side: 1;
                 checked: root.strips-open;
@@ -130,7 +133,7 @@ export component TopBar inherits Rectangle {
         if root.has-project: VerticalLayout {
             alignment: center;
             IconButton {
-                icon: root.panel-open ? @image-url("../icons/je/painel.svg") : @image-url("../icons/je/painel-fechado.svg");
+                icon: root.panel-open ? Icons.panel-right : Icons.panel-right-close;
                 tip: root.tip-panel;
                 tip-side: 1;
                 checked: root.panel-open;
@@ -161,7 +164,7 @@ export component NoticeBar inherits Rectangle {
     in property <bool> has-missing;
     callback command(string);
     height: 30px;
-    background: #4a3f1f;
+    background: Theme.warning-soft;
     HorizontalLayout {
         padding-left: 16px;
         padding-right: 8px;

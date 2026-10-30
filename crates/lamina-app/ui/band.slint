@@ -3,7 +3,8 @@
 // o clique aplica; ☆ e × marcam. Só desenho: os cartões, a opção em uso e o aviso vêm do editor.
 
 import { ScrollView } from "std-widgets.slint";
-import { Theme } from "theme.slint";
+import { Theme, Type, Radius } from "theme.slint";
+import { Icons } from "icons.slint";
 import { SpreadCanvas, SpreadData } from "canvas.slint";
 import { Motion } from "motion.slint";
 
@@ -39,6 +40,10 @@ export global BandUi {
 }
 
 component Tab inherits Rectangle {
+    accessible-role: tab;
+    accessible-label: root.text;
+    accessible-checked: root.active;
+    accessible-action-default => { root.clicked(); }
     in property <string> text;
     in property <bool> active;
     in property <bool> enabled: true;
@@ -46,14 +51,14 @@ component Tab inherits Rectangle {
     width: label.preferred-width;
     label := Text {
         text: root.text;
-        font-size: 12px;
-        color: !root.enabled ? #6b6b6b : root.active ? Theme.selected : Theme.muted;
-        font-weight: root.active ? 700 : 400;
+        font-size: Type.small;
+        color: !root.enabled ? Theme.text-disabled : root.active ? Theme.text-strong : Theme.text-2;
+        font-weight: root.active ? Type.semibold : Type.regular;
     }
     Rectangle {
         y: parent.height - 2px;
         height: 2px;
-        background: root.active ? Theme.selected : transparent;
+        background: root.active ? Theme.text-strong : transparent;
     }
     TouchArea {
         enabled: root.enabled;
@@ -62,14 +67,19 @@ component Tab inherits Rectangle {
 }
 
 component SmallButton inherits Rectangle {
-    in property <string> text;
+    // O nome para leitores de tela (o desenho sozinho não diz nada).
+    in property <string> label;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => { root.clicked(); }
+    in property <image> icon;
     in property <color> glyph-color: Theme.text;
     callback clicked();
     width: 22px;
     height: 22px;
-    border-radius: 11px;
-    background: touch.has-hover ? #00000099 : #00000060;
-    Text { text: root.text; color: root.glyph-color; font-size: 13px; }
+    border-radius: self.height / 2;
+    background: touch.has-hover ? Theme.shadow-strong : Theme.dim;
+    Image { accessible-role: none; source: root.icon; colorize: root.glyph-color; width: 13px; height: 13px; }
     touch := TouchArea { clicked => { root.clicked(); } }
 }
 
@@ -161,7 +171,7 @@ export component LayoutBand inherits Rectangle {
         Rectangle {
             background: Theme.panel;
             drop-shadow-blur: 12px;
-            drop-shadow-color: #00000080;
+            drop-shadow-color: Theme.shadow;
         }
         VerticalLayout {
             padding-top: 6px;
@@ -186,7 +196,7 @@ export component LayoutBand inherits Rectangle {
                 Text {
                     text: BandUi.notice;
                     color: Theme.warning;
-                    font-size: 12px;
+                    font-size: Type.small;
                     vertical-alignment: center;
                     overflow: elide;
                     horizontal-stretch: 1;
@@ -220,10 +230,10 @@ export component LayoutBand inherits Rectangle {
                         clicked => { BandUi.apply(i); root.done(); }
                         changed has-hover => { BandUi.hover(i, self.has-hover); }
                         Rectangle {
-                            border-radius: 4px;
+                            border-radius: Radius.small;
                             border-width: 2px;
-                            border-color: i == BandUi.in-use ? Theme.selected : card.has-hover ? #ffffff70 : transparent;
-                            background: card.has-hover ? #ffffff14 : transparent;
+                            border-color: i == BandUi.in-use ? Theme.text-strong : card.has-hover ? Theme.overlay : transparent;
+                            background: card.has-hover ? Theme.hover : transparent;
                         }
                         VerticalLayout {
                             padding: 4px;
@@ -244,12 +254,14 @@ export component LayoutBand inherits Rectangle {
                                     padding: 4px;
                                     spacing: 4px;
                                     if card.has-hover || item.favorite: SmallButton {
-                                        text: item.favorite ? "★" : "☆";
-                                        glyph-color: item.favorite ? Theme.warning : Theme.text;
+                                        icon: Icons.star;
+                                        label: item.favorite ? "Tirar dos favoritos" : "Favoritar este layout";
+                                        glyph-color: item.favorite ? Theme.warning : Theme.text-3;
                                         clicked => { BandUi.favorite(i); root.done(); }
                                     }
                                     if card.has-hover: SmallButton {
-                                        text: "×";
+                                        icon: Icons.close;
+                                        label: "Rejeitar este layout";
                                         clicked => { BandUi.reject(i); root.done(); }
                                     }
                                 }
@@ -258,13 +270,13 @@ export component LayoutBand inherits Rectangle {
                                 spacing: 4px;
                                 Text {
                                     text: item.title;
-                                    color: i == BandUi.in-use ? Theme.selected : Theme.text;
-                                    font-size: 11px;
-                                    font-weight: i == BandUi.in-use ? 700 : 400;
+                                    color: i == BandUi.in-use ? Theme.text-strong : Theme.text;
+                                    font-size: Type.caption;
+                                    font-weight: i == BandUi.in-use ? Type.semibold : Type.regular;
                                     overflow: elide;
                                     horizontal-stretch: 1;
                                 }
-                                Text { text: item.score; color: Theme.muted; font-size: 11px; }
+                                Text { text: item.score; color: Theme.text-2; font-size: Type.caption; }
                             }
                         }
                     }

@@ -2,9 +2,8 @@
 // texto da escolhida, com "Experimente agora". Só desenho: quais versões aparecem, os textos e a
 // ordem saem do `lamina-editor` (`updates::news`).
 
-import { Button } from "std-widgets.slint";
-import { Theme } from "theme.slint";
-import { Panel } from "widgets.slint";
+import { Theme, Type } from "theme.slint";
+import { Panel, DialogButton } from "widgets.slint";
 
 // Uma linha da lista: a novidade e, na primeira de cada versão, o cabeçalho dela.
 export struct NewsEntryData {
@@ -42,6 +41,9 @@ export global NewsUi {
 
 // Uma linha da lista à esquerda, com a barra da escolhida.
 component EntryRow inherits Rectangle {
+    accessible-role: list-item;
+    accessible-label: root.entry.heading;
+    accessible-action-default => { root.clicked(); }
     in property <NewsEntryData> entry;
     in property <bool> chosen;
     callback clicked();
@@ -56,8 +58,8 @@ component EntryRow inherits Rectangle {
         x: 14px;
         width: parent.width - 14px;
         text: root.entry.label;
-        color: root.chosen ? Theme.text : (touch.has-hover ? #d0d0d0 : Theme.muted);
-        font-size: 15px;
+        color: root.chosen ? Theme.text : (touch.has-hover ? Theme.text : Theme.text-2);
+        font-size: Type.title;
         wrap: word-wrap;
         vertical-alignment: center;
     }
@@ -70,7 +72,7 @@ component EntryRow inherits Rectangle {
 component Picture inherits Rectangle {
     in property <NewsEntryData> entry;
     clip: true;
-    background: #1b1b1b;
+    background: Theme.g2;
     if root.entry.has-image: Image {
         accessible-role: none;
         width: parent.width;
@@ -79,12 +81,12 @@ component Picture inherits Rectangle {
         image-fit: contain;
     }
     if !root.entry.has-image: Rectangle {
-        background: @linear-gradient(135deg, #1f4d78 0%, #2b2b2b 100%);
+        background: @linear-gradient(135deg, Theme.accent-soft 0%, Theme.g5 100%);
         Text {
             text: root.entry.label;
-            color: #ffffff;
-            font-size: 28px;
-            font-weight: 700;
+            color: Theme.text-strong;
+            font-size: Type.display;
+            font-weight: Type.semibold;
             wrap: word-wrap;
             horizontal-alignment: center;
             vertical-alignment: center;
@@ -99,7 +101,7 @@ export component NewsDialog inherits Rectangle {
     // "Experimente agora": a janela fecha e o comando roda.
     callback try-now(string);
     property <NewsEntryData> chosen: NewsUi.entries[NewsUi.selected];
-    background: #000000a0;
+    background: Theme.veil;
     // Um clique fora da janela fecha (regra 6).
     TouchArea {
         clicked => {
@@ -126,13 +128,13 @@ export component NewsDialog inherits Rectangle {
                 // À esquerda: o título e a lista das novidades.
                 Rectangle {
                     width: 330px;
-                    background: #2a2a2a;
+                    background: Theme.g4;
                     VerticalLayout {
                         padding: 28px;
                         padding-right: 20px;
                         spacing: 10px;
-                        Text { text: NewsUi.title; font-size: 24px; font-weight: 700; color: Theme.text; wrap: word-wrap; }
-                        if NewsUi.subtitle != "": Text { text: NewsUi.subtitle; color: Theme.muted; wrap: word-wrap; }
+                        Text { text: NewsUi.title; font-size: Type.display; font-weight: Type.semibold; color: Theme.text; wrap: word-wrap; }
+                        if NewsUi.subtitle != "": Text { text: NewsUi.subtitle; color: Theme.text-2; wrap: word-wrap; }
                         Flickable {
                             vertical-stretch: 1;
                             content-height: list.preferred-height;
@@ -146,16 +148,16 @@ export component NewsDialog inherits Rectangle {
                                         padding-top: i == 0 ? 0px : 14px;
                                         spacing: 8px;
                                         alignment: start;
-                                        Text { text: entry.heading; color: Theme.muted; font-size: 12px; font-weight: 700; vertical-alignment: center; }
+                                        Text { text: entry.heading; color: Theme.text-2; font-size: Type.small; font-weight: Type.semibold; vertical-alignment: center; }
                                         if entry.current: Rectangle {
                                             width: mark.preferred-width + 12px;
                                             height: 18px;
-                                            border-radius: 9px;
-                                            background: #2f7fc1;
-                                            mark := Text { text: "Esta versão"; color: #ffffff; font-size: 11px; vertical-alignment: center; horizontal-alignment: center; }
+                                            border-radius: self.height / 2;
+                                            background: Theme.accent;
+                                            mark := Text { text: "Esta versão"; color: Theme.on-accent; font-size: Type.caption; vertical-alignment: center; horizontal-alignment: center; }
                                         }
                                     }
-                                    if entry.intro != "": Text { text: entry.intro; color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+                                    if entry.intro != "": Text { text: entry.intro; color: Theme.text-2; font-size: Type.small; wrap: word-wrap; }
                                     EntryRow {
                                         entry: entry;
                                         chosen: i == NewsUi.selected;
@@ -166,7 +168,7 @@ export component NewsDialog inherits Rectangle {
                         }
                         if NewsUi.entries.length > 1: HorizontalLayout {
                             alignment: start;
-                            Button { text: "Próxima"; clicked => { NewsUi.next(); } }
+                            DialogButton { text: "Próxima"; clicked => { NewsUi.next(); } }
                         }
                     }
                 }
@@ -184,13 +186,13 @@ export component NewsDialog inherits Rectangle {
                         if NewsUi.empty != "": Text { text: NewsUi.empty; color: Theme.text; wrap: word-wrap; vertical-stretch: 1; }
                         if NewsUi.empty == "": VerticalLayout {
                             spacing: 10px;
-                            Text { text: root.chosen.label; font-size: 20px; font-weight: 700; color: Theme.text; wrap: word-wrap; }
+                            Text { text: root.chosen.label; font-size: Type.heading; font-weight: Type.semibold; color: Theme.text; wrap: word-wrap; }
                             Text { text: root.chosen.text; color: Theme.text; wrap: word-wrap; }
                             if root.chosen.try-it != "": Text { text: "Experimente: " + root.chosen.try-it; color: Theme.warning; wrap: word-wrap; }
                             if root.chosen.command != "": HorizontalLayout {
                                 alignment: start;
                                 padding-top: 6px;
-                                Button {
+                                DialogButton {
                                     text: "Experimente agora";
                                     primary: true;
                                     clicked => {
@@ -203,11 +205,11 @@ export component NewsDialog inherits Rectangle {
                         HorizontalLayout {
                             spacing: 8px;
                             padding-top: 8px;
-                            Text { text: "Achou um problema ou tem uma ideia?"; color: Theme.muted; vertical-alignment: center; }
+                            Text { text: "Achou um problema ou tem uma ideia?"; color: Theme.text-2; vertical-alignment: center; }
                             // O mesmo link da tela inicial (spec SR).
                             Text {
                                 text: "Enviar sugestão ou problema…";
-                                color: link.has-hover ? #8fcaff : #5fb0f0;
+                                color: link.has-hover ? Theme.text-strong : Theme.link;
                                 vertical-alignment: center;
                                 link := TouchArea {
                                     mouse-cursor: pointer;
@@ -215,7 +217,7 @@ export component NewsDialog inherits Rectangle {
                                 }
                             }
                             Rectangle { horizontal-stretch: 1; }
-                            Button {
+                            DialogButton {
                                 text: "Fechar";
                                 clicked => {
                                     NewsUi.show = false;

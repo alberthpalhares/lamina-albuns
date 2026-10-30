@@ -1,9 +1,9 @@
 // Janela Exportar (spec EI): as opções, a pré-impressão com "Ir para a lâmina" e "Ignorar", e
 // a pergunta antes de substituir arquivos.
 
-import { Button, LineEdit, CheckBox, SpinBox, ListView, ComboBox } from "std-widgets.slint";
-import { Theme } from "theme.slint";
-import { Shade, Panel, Field } from "widgets.slint";
+import { LineEdit, SpinBox, ListView, ComboBox } from "std-widgets.slint";
+import { Theme, Type } from "theme.slint";
+import { Shade, Panel, Field, DialogButton, CheckRow } from "widgets.slint";
 
 export component ExportDialog inherits Shade {
     in property <string> folder;
@@ -39,7 +39,7 @@ export component ExportDialog inherits Shade {
         VerticalLayout {
             padding: 24px;
             spacing: 12px;
-            Text { text: "Exportar"; font-size: 20px; font-weight: 700; color: Theme.text; }
+            Text { text: "Exportar"; font-size: Type.heading; font-weight: Type.semibold; color: Theme.text; }
             Field {
                 label: "Pasta";
                 Text {
@@ -49,11 +49,11 @@ export component ExportDialog inherits Shade {
                     vertical-alignment: center;
                     horizontal-stretch: 1;
                 }
-                Button { text: "Escolher…"; clicked => { root.pick-folder(); } }
+                DialogButton { text: "Escolher…"; clicked => { root.pick-folder(); } }
             }
             Field {
                 label: "Lâminas";
-                CheckBox {
+                CheckRow {
                     text: "Todas";
                     checked <=> root.all-spreads;
                     toggled => { root.changed(); }
@@ -86,7 +86,7 @@ export component ExportDialog inherits Shade {
             }
             if root.format == 1: Field {
                 label: "Marcas de corte";
-                CheckBox {
+                CheckRow {
                     text: "Nos quatro cantos";
                     checked <=> root.marks;
                     toggled => { root.changed(); }
@@ -94,7 +94,7 @@ export component ExportDialog inherits Shade {
             }
             Field {
                 label: "Páginas soltas";
-                CheckBox {
+                CheckRow {
                     text: "Um arquivo por página";
                     checked <=> root.pages;
                     toggled => { root.changed(); }
@@ -113,8 +113,8 @@ export component ExportDialog inherits Shade {
             HorizontalLayout {
                 alignment: end;
                 spacing: 8px;
-                Button { text: "Cancelar"; clicked => { root.cancel(); } }
-                Button {
+                DialogButton { text: "Cancelar"; clicked => { root.cancel(); } }
+                DialogButton {
                     text: "Exportar";
                     primary: true;
                     enabled: root.error == "";
@@ -130,13 +130,13 @@ export component ExportDialog inherits Shade {
         VerticalLayout {
             padding: 24px;
             spacing: 12px;
-            Text { text: "Pré-impressão"; font-size: 20px; font-weight: 700; color: Theme.text; }
+            Text { text: "Pré-impressão"; font-size: Type.heading; font-weight: Type.semibold; color: Theme.text; }
             if root.album-warning != "": Text { text: root.album-warning; color: Theme.warning; wrap: word-wrap; }
             Text {
                 text: root.warnings.length == 0
                     ? "Todos os avisos foram ignorados."
                     : "Confira antes de exportar. Os avisos não impedem a exportação.";
-                color: Theme.muted;
+                color: Theme.text-2;
                 wrap: word-wrap;
             }
             ListView {
@@ -149,21 +149,21 @@ export component ExportDialog inherits Shade {
                         Text {
                             text: warning;
                             color: Theme.text;
-                            font-size: 12px;
+                            font-size: Type.small;
                             vertical-alignment: center;
                             wrap: word-wrap;
                             horizontal-stretch: 1;
                         }
-                        Button { text: "Ir para a lâmina"; clicked => { root.go-to(i); } }
-                        Button { text: "Ignorar"; clicked => { root.ignore(i); } }
+                        DialogButton { text: "Ir para a lâmina"; clicked => { root.go-to(i); } }
+                        DialogButton { text: "Ignorar"; clicked => { root.ignore(i); } }
                     }
                 }
             }
             HorizontalLayout {
                 alignment: end;
                 spacing: 8px;
-                Button { text: "Voltar"; clicked => { root.back(); } }
-                Button {
+                DialogButton { text: "Voltar"; clicked => { root.back(); } }
+                DialogButton {
                     text: root.warnings.length == 0 ? "Exportar" : "Exportar mesmo assim";
                     primary: true;
                     clicked => { root.proceed(); }
@@ -178,13 +178,13 @@ export component ExportDialog inherits Shade {
         VerticalLayout {
             padding: 24px;
             spacing: 12px;
-            Text { text: "Substituir os arquivos?"; font-size: 16px; font-weight: 600; color: Theme.text; }
+            Text { text: "Substituir os arquivos?"; font-size: Type.title; font-weight: Type.semibold; color: Theme.text; }
             Text { text: root.replace-text; color: Theme.text; wrap: word-wrap; vertical-stretch: 1; }
             HorizontalLayout {
                 alignment: end;
                 spacing: 8px;
-                Button { text: "Cancelar"; clicked => { root.back(); } }
-                Button { text: "Substituir"; primary: true; clicked => { root.replace(); } }
+                DialogButton { text: "Cancelar"; clicked => { root.back(); } }
+                DialogButton { text: "Substituir"; primary: true; clicked => { root.replace(); } }
             }
         }
     }

@@ -1,8 +1,8 @@
 // Fotos entrando no álbum (spec IM, parte de importar): o aviso "Solte para importar" enquanto
 // arquivos vêm de outro programa e o convite do álbum ainda sem lâminas. Só desenho.
 
-import { Button } from "std-widgets.slint";
-import { Theme } from "theme.slint";
+import { Theme, Fixed, Type } from "theme.slint";
+import { DialogButton } from "widgets.slint";
 import { DragUi } from "drag.slint";
 
 export global ImportUi {
@@ -12,14 +12,14 @@ export global ImportUi {
 
 // A janela inteira avisa; o lugar do soltar não acende (o sistema não informa a posição).
 export component DropOverlay inherits Rectangle {
-    background: #1f3a5acc;
+    background: Theme.accent-soft;
     border-width: 3px;
-    border-color: #4f8fd6;
+    border-color: Theme.accent;
     Text {
         text: "Solte para importar as fotos";
         color: Theme.text;
-        font-size: 22px;
-        font-weight: 600;
+        font-size: Type.heading;
+        font-weight: Type.semibold;
         horizontal-alignment: center;
         vertical-alignment: center;
     }
@@ -29,7 +29,7 @@ export component DropOverlay inherits Rectangle {
 // traços e o destaque quando fotos do painel estão sobre ela.
 component BlankSpread inherits HorizontalLayout {
     in property <float> aspect: 0.5;
-    in property <color> paper: white;
+    in property <color> paper: Fixed.paper;
     in property <length> room-w;
     in property <length> room-h;
     alignment: center;
@@ -42,13 +42,13 @@ component BlankSpread inherits HorizontalLayout {
             && DragUi.y >= self.absolute-position.y && DragUi.y <= self.absolute-position.y + self.height;
         background: root.paper;
         opacity: self.over ? 1 : 0.55;
-        for i in ceil(self.width / 16px): Rectangle { x: i * 16px; y: 0; width: 10px; height: 2px; background: #9a9a9a; }
-        for i in ceil(self.width / 16px): Rectangle { x: i * 16px; y: parent.height - 2px; width: 10px; height: 2px; background: #9a9a9a; }
-        for i in ceil(self.height / 16px): Rectangle { x: 0; y: i * 16px; width: 2px; height: 10px; background: #9a9a9a; }
-        for i in ceil(self.height / 16px): Rectangle { x: parent.width - 2px; y: i * 16px; width: 2px; height: 10px; background: #9a9a9a; }
+        for i in ceil(self.width / 16px): Rectangle { x: i * 16px; y: 0; width: 10px; height: 2px; background: Theme.g11; }
+        for i in ceil(self.width / 16px): Rectangle { x: i * 16px; y: parent.height - 2px; width: 10px; height: 2px; background: Theme.g11; }
+        for i in ceil(self.height / 16px): Rectangle { x: 0; y: i * 16px; width: 2px; height: 10px; background: Theme.g11; }
+        for i in ceil(self.height / 16px): Rectangle { x: parent.width - 2px; y: i * 16px; width: 2px; height: 10px; background: Theme.g11; }
         if self.over: Rectangle {
             border-width: 3px;
-            border-color: #ffd23f;
+            border-color: Fixed.target;
         }
     }
 }
@@ -58,7 +58,7 @@ export component EmptyAlbum inherits VerticalLayout {
     in property <int> photos;
     // O formato (altura / largura da lâmina) e o fundo do álbum; "Montar o álbum…" disponível.
     in property <float> aspect: 0.5;
-    in property <color> paper: white;
+    in property <color> paper: Fixed.paper;
     in property <bool> can-build;
     callback import();
     callback build();
@@ -67,19 +67,19 @@ export component EmptyAlbum inherits VerticalLayout {
     if root.photos == 0: Text {
         text: "Este álbum ainda não tem fotos";
         color: Theme.text;
-        font-size: 18px;
-        font-weight: 600;
+        font-size: Type.heading;
+        font-weight: Type.semibold;
         horizontal-alignment: center;
     }
     if root.photos == 0: Text {
         text: "Arraste fotos ou pastas do Explorador para esta janela, ou use o botão abaixo.";
-        color: Theme.muted;
+        color: Theme.text-2;
         horizontal-alignment: center;
         wrap: word-wrap;
     }
     if root.photos == 0: HorizontalLayout {
         alignment: center;
-        Button { text: "Importar fotos…  (Ctrl+I)"; primary: true; clicked => { root.import(); } }
+        DialogButton { text: "Importar fotos…  (Ctrl+I)"; primary: true; clicked => { root.import(); } }
     }
     // O álbum em branco (spec BR): a lâmina vazia no formato e no fundo do álbum, com contorno
     // pontilhado, que acende enquanto fotos do painel passam sobre ela; e "Montar o álbum…".
@@ -91,18 +91,18 @@ export component EmptyAlbum inherits VerticalLayout {
     }
     if root.photos > 0: Text {
         text: "A primeira lâmina começa aqui. Selecione fotos no painel de baixo e solte nesta área (ou aperte Enter).";
-        color: Theme.muted;
+        color: Theme.text-2;
         horizontal-alignment: center;
         wrap: word-wrap;
     }
     if root.photos > 0: HorizontalLayout {
         alignment: center;
-        Button { text: "Montar o álbum…"; enabled: root.can-build; clicked => { root.build(); } }
+        DialogButton { text: "Montar o álbum…"; enabled: root.can-build; clicked => { root.build(); } }
     }
     if root.photos > 0: Text {
         text: "Monta as " + root.photos + " fotos de uma vez.";
-        color: Theme.muted;
-        font-size: 12px;
+        color: Theme.text-2;
+        font-size: Type.small;
         horizontal-alignment: center;
     }
 }

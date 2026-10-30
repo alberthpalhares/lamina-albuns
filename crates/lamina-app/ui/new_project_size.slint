@@ -2,15 +2,17 @@
 // centralizado, os formatos desenhados como o álbum fechado, a lâmina aberta embaixo, e o
 // Personalizado na horizontal. Só desenho: os textos e as decisões vêm do Rust.
 
-import { Button, CheckBox, ComboBox, LineEdit } from "std-widgets.slint";
+import { ComboBox, LineEdit } from "std-widgets.slint";
 import { NumberField } from "number_field.slint";
-import { Theme } from "theme.slint";
+import { Theme, Fixed, Type, Radius } from "theme.slint";
+import { Icons } from "icons.slint";
+import { DialogButton, CheckRow } from "widgets.slint";
 import { PresetUi } from "spec.slint";
 import { NewProjectUi, FormatCard, DrawData } from "new_project_ui.slint";
 
 component Label inherits Text {
-    color: Theme.muted;
-    font-size: 12px;
+    color: Theme.text-2;
+    font-size: Type.small;
     vertical-alignment: center;
 }
 
@@ -40,16 +42,16 @@ component SpreadDrawing inherits Rectangle {
         y: (parent.height - root.h) / 2;
         width: root.w;
         height: root.h;
-        background: #4a3030;
+        background: Theme.error-soft;
         Rectangle {
             x: root.d.tx * parent.width;
             y: root.d.ty * parent.height;
             width: root.d.tw * parent.width;
             height: root.d.th * parent.height;
-            background: #f2f2f2;
-            Rectangle { x: 0; width: parent.width / 2; background: root.d.starts ? #9a9a9a : transparent; }
-            Rectangle { x: parent.width / 2; width: parent.width / 2; background: root.d.ends ? #9a9a9a : transparent; }
-            Rectangle { x: parent.width / 2 - 0.5px; width: 1px; background: #606060; }
+            background: Fixed.paper;
+            Rectangle { x: 0; width: parent.width / 2; background: root.d.starts ? Fixed.ink.with-alpha(0.4) : transparent; }
+            Rectangle { x: parent.width / 2; width: parent.width / 2; background: root.d.ends ? Fixed.ink.with-alpha(0.4) : transparent; }
+            Rectangle { x: parent.width / 2 - 0.5px; width: 1px; background: Fixed.ink.with-alpha(0.62); }
         }
         Rectangle {
             x: root.d.lx * parent.width;
@@ -57,7 +59,7 @@ component SpreadDrawing inherits Rectangle {
             width: root.d.lw * parent.width;
             height: root.d.lh * parent.height;
             border-width: 1px;
-            border-color: #4f8fd6;
+            border-color: Theme.accent;
         }
         Rectangle {
             x: root.d.rx * parent.width;
@@ -65,7 +67,7 @@ component SpreadDrawing inherits Rectangle {
             width: root.d.rw * parent.width;
             height: root.d.rh * parent.height;
             border-width: 1px;
-            border-color: #4f8fd6;
+            border-color: Theme.accent;
         }
     }
 }
@@ -78,11 +80,11 @@ component FormatButton inherits Rectangle {
     callback clicked();
     width: 148px;
     height: 148px;
-    border-radius: 6px;
+    border-radius: Radius.medium;
     opacity: root.card.enabled ? 1 : 0.35;
-    background: root.chosen ? #3d4a5a : (touch.has-hover && root.card.enabled ? #3a3a3a : #2a2a2a);
+    background: root.chosen ? Theme.accent-soft : (touch.has-hover && root.card.enabled ? Theme.g6 : Theme.g4);
     border-width: root.chosen ? 2px : 0px;
-    border-color: #4f8fd6;
+    border-color: Theme.accent;
     accessible-role: button;
     accessible-label: root.card.label;
     property <length> box: 92px;
@@ -94,18 +96,18 @@ component FormatButton inherits Rectangle {
         y: 14px + (root.box - root.page-h) / 2 + 3px;
         width: root.page-w;
         height: root.page-h;
-        background: #9a9a9a;
-        border-radius: 2px;
+        background: Theme.g11;
+        border-radius: Radius.hair;
     }
     Rectangle {
         x: (parent.width - root.page-w) / 2;
         y: 14px + (root.box - root.page-h) / 2;
         width: root.page-w;
         height: root.page-h;
-        background: #e6e6e6;
-        border-radius: 2px;
+        background: Fixed.paper;
+        border-radius: Radius.hair;
         // A lombada.
-        Rectangle { x: 0; width: 6px; background: #b8b8b8; }
+        Rectangle { x: 0; width: 6px; background: Fixed.ink.with-alpha(0.28); }
     }
     Text { y: parent.height - 28px; width: parent.width; text: root.card.label; color: Theme.text; horizontal-alignment: center; }
     touch := TouchArea {
@@ -119,10 +121,10 @@ component FormatButton inherits Rectangle {
 component BinderPicker inherits Rectangle {
     width: 280px;
     height: 30px;
-    border-radius: 4px;
-    background: #2a2a2a;
+    border-radius: Radius.small;
+    background: Theme.g4;
     border-width: 1px;
-    border-color: touch.has-hover ? #4f8fd6 : #ffffff30;
+    border-color: touch.has-hover ? Theme.accent : Theme.line;
     accessible-role: combobox;
     accessible-label: "Encadernadora: " + NewProjectUi.binder;
     HorizontalLayout {
@@ -133,8 +135,8 @@ component BinderPicker inherits Rectangle {
         Image {
             accessible-role: none;
             width: 12px;
-            source: @image-url("../icons/eg/seta-baixo.svg");
-            colorize: Theme.muted;
+            source: Icons.chevron-down;
+            colorize: Theme.text-2;
         }
     }
     touch := TouchArea {
@@ -151,9 +153,9 @@ component BinderPicker inherits Rectangle {
         close-policy: close-on-click-outside;
         Rectangle {
             background: Theme.panel;
-            border-radius: 6px;
+            border-radius: Radius.medium;
             border-width: 1px;
-            border-color: #ffffff30;
+            border-color: Theme.line;
             VerticalLayout {
                 padding: 6px;
                 spacing: 4px;
@@ -170,12 +172,12 @@ component BinderPicker inherits Rectangle {
                         alignment: start;
                         for row in NewProjectUi.binder-rows: Rectangle {
                             height: 28px;
-                            border-radius: 4px;
-                            background: area.has-hover ? #3a3a3a : (row == NewProjectUi.binder ? #3d4a5a : transparent);
+                            border-radius: Radius.small;
+                            background: area.has-hover ? Theme.g6 : (row == NewProjectUi.binder ? Theme.accent-soft : transparent);
                             Text {
                                 x: 8px;
                                 text: row;
-                                color: row == NewProjectUi.add-binder-text ? Theme.muted : Theme.text;
+                                color: row == NewProjectUi.add-binder-text ? Theme.text-2 : Theme.text;
                                 vertical-alignment: center;
                             }
                             area := TouchArea {
@@ -225,7 +227,7 @@ component ReadySizes inherits VerticalLayout {
     }
     if !NewProjectUi.has-binders: HorizontalLayout {
         alignment: center;
-        Button {
+        DialogButton {
             text: NewProjectUi.add-binder-text;
             clicked => { NewProjectUi.tab = 1; NewProjectUi.advanced-open = true; }
         }
@@ -237,7 +239,7 @@ component Column inherits VerticalLayout {
     in property <string> title;
     spacing: 6px;
     alignment: start;
-    Text { text: root.title; color: Theme.text; font-weight: 600; }
+    Text { text: root.title; color: Theme.text; font-weight: Type.semibold; }
     @children
 }
 
@@ -274,7 +276,7 @@ component CustomSize inherits VerticalLayout {
     }
     HorizontalLayout {
         alignment: center;
-        Button {
+        DialogButton {
             text: NewProjectUi.advanced-open ? "Esconder os ajustes da gráfica" : "Ajustes da gráfica (DPI, páginas, sangria)…";
             clicked => { NewProjectUi.advanced-open = !NewProjectUi.advanced-open; }
         }
@@ -287,8 +289,8 @@ component CustomSize inherits VerticalLayout {
             Field { label: "DPI"; label-width: 100px; text <=> NewProjectUi.dpi; edited => { NewProjectUi.size-changed(); } }
             Field { label: "Páginas mínimas"; label-width: 100px; step: 2; text <=> NewProjectUi.min-pages; edited => { NewProjectUi.size-changed(); } }
             Field { label: "Páginas máximas"; label-width: 100px; step: 2; text <=> NewProjectUi.max-pages; edited => { NewProjectUi.size-changed(); } }
-            CheckBox { text: "Começa com página simples"; checked <=> NewProjectUi.starts; toggled => { NewProjectUi.size-changed(); } }
-            CheckBox { text: "Termina com página simples"; checked <=> NewProjectUi.ends; toggled => { NewProjectUi.size-changed(); } }
+            CheckRow { text: "Começa com página simples"; checked <=> NewProjectUi.starts; toggled => { NewProjectUi.size-changed(); } }
+            CheckRow { text: "Termina com página simples"; checked <=> NewProjectUi.ends; toggled => { NewProjectUi.size-changed(); } }
         }
         Column {
             title: "Sangria (" + root.unit + ")";
@@ -306,8 +308,8 @@ component CustomSize inherits VerticalLayout {
     if NewProjectUi.advanced-open: HorizontalLayout {
         alignment: center;
         spacing: 8px;
-        Button { text: "Igual em todas as bordas"; clicked => { NewProjectUi.same-margins(); } }
-        Button { text: "Salvar como preset…"; enabled: NewProjectUi.error == ""; clicked => { PresetUi.save-as(0); } }
+        DialogButton { text: "Igual em todas as bordas"; clicked => { NewProjectUi.same-margins(); } }
+        DialogButton { text: "Salvar como preset…"; enabled: NewProjectUi.error == ""; clicked => { PresetUi.save-as(0); } }
     }
 }
 
@@ -318,8 +320,8 @@ export component StepOne inherits VerticalLayout {
     HorizontalLayout {
         alignment: center;
         spacing: 8px;
-        Button { text: "Tamanhos prontos"; primary: NewProjectUi.tab == 0; clicked => { NewProjectUi.tab = 0; } }
-        Button { text: "Personalizado"; primary: NewProjectUi.tab == 1; clicked => { NewProjectUi.tab = 1; } }
+        DialogButton { text: "Tamanhos prontos"; primary: NewProjectUi.tab == 0; clicked => { NewProjectUi.tab = 0; } }
+        DialogButton { text: "Personalizado"; primary: NewProjectUi.tab == 1; clicked => { NewProjectUi.tab = 1; } }
     }
     if NewProjectUi.tab == 0: ReadySizes { }
     if NewProjectUi.tab == 1: CustomSize { }
@@ -327,9 +329,9 @@ export component StepOne inherits VerticalLayout {
     SpreadDrawing { d: NewProjectUi.drawing; height: 170px; }
     VerticalLayout {
         spacing: 4px;
-        Text { text: NewProjectUi.label; color: Theme.text; font-weight: 600; horizontal-alignment: center; wrap: word-wrap; }
+        Text { text: NewProjectUi.label; color: Theme.text; font-weight: Type.semibold; horizontal-alignment: center; wrap: word-wrap; }
         Text { text: NewProjectUi.short-summary; color: Theme.text; horizontal-alignment: center; wrap: word-wrap; }
-        Text { text: NewProjectUi.summary; color: Theme.muted; font-size: 11px; horizontal-alignment: center; wrap: word-wrap; }
+        Text { text: NewProjectUi.summary; color: Theme.text-2; font-size: Type.caption; horizontal-alignment: center; wrap: word-wrap; }
         if NewProjectUi.error != "": Text { text: NewProjectUi.error; color: Theme.warning; horizontal-alignment: center; wrap: word-wrap; }
     }
 }

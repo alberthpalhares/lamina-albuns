@@ -1,12 +1,5 @@
-// Tema escuro neutro (spec JP, regra 2): cinzas sem cor forte, para não influenciar a leitura das
-// cores das fotos.
+// Atalho para o tema, que mora em ui/theme/ (spec DF): as telas continuam importando daqui.
 
-export global Theme {
-    out property <color> background: #262626;
-    out property <color> panel: #303030;
-    out property <color> bar: #1f1f1f;
-    out property <color> text: #e6e6e6;
-    out property <color> muted: #a3a3a3;
-    out property <color> selected: #f2f2f2;
-    out property <color> warning: #e3b341;
-}
+export { Theme, Fixed } from "theme/theme.slint";
+export { Space, Radius, Line, Elevation } from "theme/metrics.slint";
+export { Type } from "theme/type.slint";

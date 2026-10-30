@@ -58,8 +58,11 @@ fn rl_b28_toda_imagem_fica_fora_da_arvore_de_acessibilidade() {
                 }
                 let brace = at + word.len() - 1;
                 let head = head_of_block(&text, brace);
+                // `AccessibleRole.none` é o mesmo papel, escrito por extenso onde um componente tem
+                // uma propriedade chamada `none` (o rolo).
                 assert!(
-                    head.contains("accessible-role: none"),
+                    head.contains("accessible-role: none")
+                        || head.contains("accessible-role: AccessibleRole.none"),
                     "{file}: `{word}` sem `accessible-role: none` logo no começo: {}",
                     &text[line_start..brace + 1]
                 );

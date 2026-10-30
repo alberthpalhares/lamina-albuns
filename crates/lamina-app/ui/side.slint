@@ -2,8 +2,9 @@
 // contextual da spec AF (o álbum sem seleção; a foto com uma foto). As outras abas moram em
 // look.slint, frame.slint e history.slint; os layouts ficam na faixa (band.slint, spec FL).
 
-import { Theme } from "theme.slint";
+import { Theme, Type } from "theme.slint";
 import { ScrollView } from "std-widgets.slint";
+import { FocusRing } from "widgets.slint";
 import { PhotoUi, PhotoSection } from "photo.slint";
 
 // Uma linha da aba Detalhes: o título e o valor.
@@ -13,6 +14,10 @@ export struct DetailRow {
 }
 
 component Tab inherits Rectangle {
+    accessible-role: tab;
+    accessible-label: root.text;
+    accessible-checked: root.active;
+    accessible-action-default => { root.clicked(); }
     in property <string> text;
     in property <bool> active;
     callback clicked();
@@ -20,11 +25,23 @@ component Tab inherits Rectangle {
     width: label.preferred-width;
     label := Text {
         text: root.text;
-        font-size: 12px;
-        color: root.active ? Theme.selected : Theme.muted;
-        font-weight: root.active ? 700 : 400;
+        font-size: Type.small;
+        color: root.active ? Theme.text-strong : Theme.text-2;
+        font-weight: root.active ? Type.semibold : Type.regular;
     }
     TouchArea { clicked => { root.clicked(); } }
+    focus := FocusScope {
+        x: 0;
+        width: 0;
+        key-pressed(e) => {
+            if (e.text == Key.Space || e.text == Key.Return) {
+                root.clicked();
+                return accept;
+            }
+            return reject;
+        }
+    }
+    FocusRing { shown: focus.has-focus; x: -3px; y: -3px; width: parent.width + 6px; height: parent.height + 6px; }
 }
 
 // A ordem na tela não é a dos números: 1 = Detalhes (a de partida), 2 = Aparência, 4 = Quadro,
@@ -56,13 +73,13 @@ export component InfoPanel inherits ScrollView {
         width: root.visible-width;
         spacing: 8px;
         if root.kind == 1 && PhotoUi.has-photo: PhotoSection { }
-        if root.kind == 3: Text { text: root.count; color: Theme.text; font-weight: 700; }
+        if root.kind == 3: Text { text: root.count; color: Theme.text; font-weight: Type.semibold; }
         for r in root.rows: VerticalLayout {
             spacing: 2px;
-            Text { text: r.title; color: Theme.muted; font-size: 12px; }
+            Text { text: r.title; color: Theme.text-2; font-size: Type.small; }
             Text { text: r.value; color: Theme.text; wrap: word-wrap; }
         }
-        if root.kind == 0: Text { text: "Lâmina"; color: Theme.muted; font-size: 12px; }
+        if root.kind == 0: Text { text: "Lâmina"; color: Theme.text-2; font-size: Type.small; }
         if root.kind == 0: Text { text: root.spread; color: Theme.text; wrap: word-wrap; }
         Text { text: root.warnings; color: Theme.warning; wrap: word-wrap; }
         if root.kind == 1 && root.frame-warn: Text { text: root.frame; color: Theme.warning; wrap: word-wrap; }

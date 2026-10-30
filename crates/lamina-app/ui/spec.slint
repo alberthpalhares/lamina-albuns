@@ -2,10 +2,10 @@
 // álbum" e pela "Especificação do álbum"), o nome de um preset novo e a lista dos presets do
 // fotógrafo. O estado mora no global `PresetUi`, que o Rust lê e escreve.
 
-import { Button, LineEdit, CheckBox, ComboBox, ListView } from "std-widgets.slint";
+import { LineEdit, ComboBox, ListView } from "std-widgets.slint";
 import { NumberField } from "number_field.slint";
-import { Theme } from "theme.slint";
-import { Shade, Panel, Field } from "widgets.slint";
+import { Theme, Type, Radius } from "theme.slint";
+import { Shade, Panel, Field, DialogButton, CheckRow } from "widgets.slint";
 
 export global PresetUi {
     // Os nomes: os do Lamina, os do fotógrafo e, por último, "Personalizado".
@@ -79,7 +79,7 @@ export component SpecForm inherits VerticalLayout {
             current-index <=> root.preset;
             selected => { root.picked(self.current-index); }
         }
-        Button { text: "Salvar como preset…"; clicked => { root.save-preset(); } }
+        DialogButton { text: "Salvar como preset…"; clicked => { root.save-preset(); } }
     }
     Field {
         label: "Página (largura × altura, cm)";
@@ -107,8 +107,8 @@ export component SpecForm inherits VerticalLayout {
     }
     HorizontalLayout {
         spacing: 16px;
-        CheckBox { text: "Começa com página simples"; checked <=> root.starts-single; toggled => { root.changed(); } }
-        CheckBox { text: "Termina com página simples"; checked <=> root.ends-single; toggled => { root.changed(); } }
+        CheckRow { text: "Começa com página simples"; checked <=> root.starts-single; toggled => { root.changed(); } }
+        CheckRow { text: "Termina com página simples"; checked <=> root.ends-single; toggled => { root.changed(); } }
     }
     Field {
         label: "Páginas (mínimo e máximo)";
@@ -125,7 +125,7 @@ export component SpecDialog inherits Shade {
         VerticalLayout {
             padding: 24px;
             spacing: 10px;
-            Text { text: "Especificação do álbum"; font-size: 20px; font-weight: 700; color: Theme.text; }
+            Text { text: "Especificação do álbum"; font-size: Type.heading; font-weight: Type.semibold; color: Theme.text; }
             SpecForm {
                 presets: PresetUi.presets;
                 preset <=> PresetUi.spec-preset;
@@ -145,15 +145,15 @@ export component SpecDialog inherits Shade {
             }
             Text {
                 text: "As lâminas são refeitas com o mesmo desenho no tamanho novo. Ctrl+Z desfaz.";
-                color: Theme.muted;
+                color: Theme.text-2;
                 wrap: word-wrap;
             }
             Text { text: PresetUi.spec-error; color: Theme.warning; wrap: word-wrap; vertical-stretch: 1; }
             HorizontalLayout {
                 alignment: end;
                 spacing: 8px;
-                Button { text: "Cancelar"; clicked => { PresetUi.show-spec = false; PresetUi.closed(); } }
-                Button {
+                DialogButton { text: "Cancelar"; clicked => { PresetUi.show-spec = false; PresetUi.closed(); } }
+                DialogButton {
                     text: "Aplicar";
                     primary: true;
                     enabled: PresetUi.spec-error == "";
@@ -172,16 +172,16 @@ export component PresetNameDialog inherits Shade {
         VerticalLayout {
             padding: 24px;
             spacing: 12px;
-            Text { text: "Salvar como preset"; font-size: 16px; font-weight: 600; color: Theme.text; }
+            Text { text: "Salvar como preset"; font-size: Type.title; font-weight: Type.semibold; color: Theme.text; }
             LineEdit { text <=> PresetUi.name; placeholder-text: "ex.: Flat 30 × 30"; }
             LineEdit { text <=> PresetUi.lab; placeholder-text: "Encadernadora (opcional)"; }
-            if PresetUi.labs-text != "": Text { text: "Já usados: " + PresetUi.labs-text; color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+            if PresetUi.labs-text != "": Text { text: "Já usados: " + PresetUi.labs-text; color: Theme.text-2; font-size: Type.small; wrap: word-wrap; }
             Text { text: PresetUi.name-message; color: Theme.warning; wrap: word-wrap; vertical-stretch: 1; }
             HorizontalLayout {
                 alignment: end;
                 spacing: 8px;
-                Button { text: "Cancelar"; clicked => { PresetUi.show-name = false; } }
-                Button { text: "Salvar"; primary: true; clicked => { PresetUi.name-save(); } }
+                DialogButton { text: "Cancelar"; clicked => { PresetUi.show-name = false; } }
+                DialogButton { text: "Salvar"; primary: true; clicked => { PresetUi.name-save(); } }
             }
         }
     }
@@ -195,20 +195,20 @@ export component PresetsDialog inherits Shade {
         VerticalLayout {
             padding: 24px;
             spacing: 10px;
-            Text { text: "Meus presets"; font-size: 16px; font-weight: 600; color: Theme.text; }
+            Text { text: "Meus presets"; font-size: Type.title; font-weight: Type.semibold; color: Theme.text; }
             Text {
                 text: PresetUi.user-presets.length == 0
                     ? "Nenhum preset salvo. Use \"Salvar como preset…\" no novo álbum ou na especificação."
                     : "Os presets do Lamina não aparecem aqui: não dá para mudá-los.";
-                color: Theme.muted;
+                color: Theme.text-2;
                 wrap: word-wrap;
             }
             ListView {
                 vertical-stretch: 1;
                 for item[i] in PresetUi.user-presets: Rectangle {
                     height: 28px;
-                    border-radius: 4px;
-                    background: i == PresetUi.list-selected ? #ffffff1f : touch.has-hover ? #ffffff0d : transparent;
+                    border-radius: Radius.small;
+                    background: i == PresetUi.list-selected ? Theme.press : touch.has-hover ? Theme.hover : transparent;
                     Text { x: 8px; text: item; color: Theme.text; vertical-alignment: center; }
                     touch := TouchArea {
                         clicked => {
@@ -221,13 +221,13 @@ export component PresetsDialog inherits Shade {
             HorizontalLayout {
                 spacing: 8px;
                 LineEdit { text <=> PresetUi.list-name; enabled: PresetUi.list-selected >= 0; }
-                Button { text: "Renomear"; enabled: PresetUi.list-selected >= 0; clicked => { PresetUi.list-rename(); } }
-                Button { text: "Apagar"; enabled: PresetUi.list-selected >= 0; clicked => { PresetUi.list-delete(); } }
+                DialogButton { text: "Renomear"; enabled: PresetUi.list-selected >= 0; clicked => { PresetUi.list-rename(); } }
+                DialogButton { text: "Apagar"; enabled: PresetUi.list-selected >= 0; clicked => { PresetUi.list-delete(); } }
             }
             Text { text: PresetUi.list-message; color: Theme.warning; wrap: word-wrap; }
             HorizontalLayout {
                 alignment: end;
-                Button { text: "Fechar"; primary: true; clicked => { PresetUi.show-list = false; PresetUi.closed(); } }
+                DialogButton { text: "Fechar"; primary: true; clicked => { PresetUi.show-list = false; PresetUi.closed(); } }
             }
         }
     }

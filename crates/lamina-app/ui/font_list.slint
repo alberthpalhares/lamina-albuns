@@ -3,7 +3,8 @@
 // as prévias vêm do editor.
 
 import { LineEdit, ListView } from "std-widgets.slint";
-import { Theme } from "theme.slint";
+import { Theme, Radius, Type } from "theme.slint";
+import { Icons } from "icons.slint";
 
 export struct FontRowUi {
     // 0 título de uma parte, 1 fonte, 2 aviso ("Procurando…", "Nenhuma fonte com …").
@@ -44,9 +45,9 @@ export component FontField inherits Rectangle {
     accessible-label: "Fonte";
     accessible-value: root.label;
     height: 28px;
-    border-radius: 4px;
+    border-radius: Radius.small;
     border-width: 1px;
-    border-color: touch.has-hover ? Theme.text : #ffffff40;
+    border-color: touch.has-hover ? Theme.text : Theme.overlay;
     HorizontalLayout {
         padding-left: 8px;
         padding-right: 8px;
@@ -64,8 +65,8 @@ export component FontField inherits Rectangle {
             width: 12px;
             height: 12px;
             y: (parent.height - self.height) / 2;
-            source: @image-url("../icons/eg/seta-baixo.svg");
-            colorize: Theme.muted;
+            source: Icons.chevron-down;
+            colorize: Theme.text-2;
         }
     }
     touch := TouchArea {
@@ -108,11 +109,11 @@ export component FontField inherits Rectangle {
 
         Rectangle {
             background: Theme.panel;
-            border-radius: 6px;
+            border-radius: Radius.medium;
             border-width: 1px;
-            border-color: #ffffff30;
+            border-color: Theme.line;
             drop-shadow-blur: 12px;
-            drop-shadow-color: #00000090;
+            drop-shadow-color: Theme.shadow-strong;
             VerticalLayout {
                 padding: 6px;
                 spacing: 6px;
@@ -157,17 +158,20 @@ export component FontField inherits Rectangle {
                         // A prévia só aparece numa fonte que está aqui e já tem a imagem.
                         property <bool> drawn: row.kind == 1 && row.has-preview && row.missing == false;
                         height: FontList.row;
-                        background: row.kind == 1 && (i == FontUi.picked || area.has-hover) ? #ffffff18 : transparent;
-                        border-radius: 4px;
+                        background: row.kind == 1 && (i == FontUi.picked || area.has-hover) ? Theme.hover : transparent;
+                        border-radius: Radius.small;
                         HorizontalLayout {
                             padding-left: row.kind == 0 ? 4px : 8px;
                             padding-right: 8px;
                             spacing: 6px;
-                            Text {
+                            Image {
+                                accessible-role: none;
+                                y: (parent.height - self.height) / 2;
                                 width: 12px;
-                                text: row.current ? "✓" : "";
-                                color: Theme.text;
-                                vertical-alignment: center;
+                                height: 12px;
+                                source: Icons.check;
+                                colorize: Theme.text;
+                                opacity: row.current ? 1 : 0;
                             }
                             if drawn: Image {
                                 // O nome da linha vai no rótulo da linha, não na imagem.
@@ -180,9 +184,9 @@ export component FontField inherits Rectangle {
                             }
                             if drawn == false: Text {
                                 text: row.label;
-                                color: row.kind == 1 ? (row.missing ? Theme.warning : Theme.text) : Theme.muted;
-                                font-size: row.kind == 0 ? 11px : 13px;
-                                font-weight: row.kind == 0 ? 600 : 400;
+                                color: row.kind == 1 ? (row.missing ? Theme.warning : Theme.text) : Theme.text-2;
+                                font-size: row.kind == 0 ? Type.caption : Type.body;
+                                font-weight: row.kind == 0 ? Type.semibold : Type.regular;
                                 font-italic: row.kind == 2;
                                 vertical-alignment: center;
                                 overflow: elide;

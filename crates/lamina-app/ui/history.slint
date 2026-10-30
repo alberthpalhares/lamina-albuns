@@ -2,7 +2,7 @@
 // apagados e o marcador "salvo". Clique leva o álbum àquele passo.
 
 import { ListView } from "std-widgets.slint";
-import { Theme } from "theme.slint";
+import { Theme, Type, Radius } from "theme.slint";
 
 export struct HistoryItem {
     label: string,
@@ -19,25 +19,25 @@ export component HistoryPanel inherits VerticalLayout {
 
     Text {
         text: "Clique num passo para voltar a ele. Os apagados ainda podem ser refeitos.";
-        color: Theme.muted;
-        font-size: 12px;
+        color: Theme.text-2;
+        font-size: Type.small;
         wrap: word-wrap;
     }
     ListView {
         vertical-stretch: 1;
         for item[i] in root.items: Rectangle {
             height: 30px;
-            border-radius: 4px;
-            background: i == root.position ? #ffffff1f : touch.has-hover ? #ffffff0d : transparent;
+            border-radius: Radius.small;
+            background: i == root.position ? Theme.press : touch.has-hover ? Theme.hover : transparent;
             HorizontalLayout {
                 padding-left: 8px;
                 padding-right: 8px;
                 spacing: 6px;
                 Text {
                     text: item.label;
-                    color: item.undone ? #6b6b6b : i == root.position ? Theme.selected : Theme.text;
-                    font-weight: i == root.position ? 700 : 400;
-                    font-size: 12px;
+                    color: item.undone ? Theme.text-disabled : i == root.position ? Theme.text-strong : Theme.text;
+                    font-weight: i == root.position ? Type.semibold : Type.regular;
+                    font-size: Type.small;
                     vertical-alignment: center;
                     overflow: elide;
                     horizontal-stretch: 1;
@@ -45,7 +45,7 @@ export component HistoryPanel inherits VerticalLayout {
                 if item.saved: Text {
                     text: "salvo";
                     color: Theme.warning;
-                    font-size: 11px;
+                    font-size: Type.caption;
                     vertical-alignment: center;
                 }
             }

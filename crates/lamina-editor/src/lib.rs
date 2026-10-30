@@ -102,6 +102,7 @@ pub mod spreads;
 pub mod strips;
 pub mod suggestions;
 pub mod text;
+pub mod text_scale;
 pub mod thumbs;
 pub mod updates;
 pub mod view;

@@ -1,7 +1,8 @@
 // O menu de contexto da lâmina (spec EG, regra 13). Só desenho: o editor monta os itens a partir
 // do registro de comandos e o Rust preenche o `ContextUi`.
 
-import { Theme } from "theme.slint";
+import { Theme, Radius } from "theme.slint";
+import { Icons } from "icons.slint";
 
 // Uma linha do menu: 0 = comando, 1 = submenu (abre e fecha no lugar), 2 = separador.
 export struct ContextRow {
@@ -38,27 +39,27 @@ export component ContextMenu inherits Rectangle {
         width: 250px;
         height: list.preferred-height;
         background: Theme.panel;
-        border-radius: 6px;
+        border-radius: Radius.medium;
         border-width: 1px;
-        border-color: #ffffff30;
+        border-color: Theme.line;
         drop-shadow-blur: 12px;
-        drop-shadow-color: #00000080;
+        drop-shadow-color: Theme.shadow;
         list := VerticalLayout {
             padding: 4px;
             for r[i] in ContextUi.rows: Rectangle {
                 height: r.kind == 2 ? 9px : 26px;
-                border-radius: 4px;
-                background: r.kind != 2 && touch.has-hover && (r.enabled || r.kind == 1) ? #ffffff18 : transparent;
+                border-radius: Radius.small;
+                background: r.kind != 2 && touch.has-hover && (r.enabled || r.kind == 1) ? Theme.hover : transparent;
                 if r.kind == 2: Rectangle {
                     y: 4px;
                     height: 1px;
-                    background: #ffffff25;
+                    background: Theme.line;
                 }
                 if r.kind != 2: Text {
                     x: r.indent ? 26px : 10px;
                     height: parent.height;
                     text: r.label;
-                    color: r.enabled || r.kind == 1 ? Theme.text : Theme.muted;
+                    color: r.enabled || r.kind == 1 ? Theme.text : Theme.text-2;
                     vertical-alignment: center;
                 }
                 if r.kind == 1: Image {
@@ -67,8 +68,8 @@ export component ContextMenu inherits Rectangle {
                     y: (parent.height - 14px) / 2;
                     width: 14px;
                     height: 14px;
-                    source: @image-url("../icons/eg/seta.svg");
-                    colorize: Theme.muted;
+                    source: Icons.chevron-right;
+                    colorize: Theme.text-2;
                     transform-rotation: r.open ? 90deg : 0deg;
                 }
                 touch := TouchArea {

@@ -1,9 +1,9 @@
 // Modelos do fotógrafo (spec MD): o nome ao salvar a lâmina como modelo e a lista "Meus modelos"
 // (renomear, apagar). Só desenho: as decisões são do editor.
 
-import { Button, LineEdit, ListView } from "std-widgets.slint";
-import { Theme } from "theme.slint";
-import { Shade, Panel } from "widgets.slint";
+import { LineEdit, ListView } from "std-widgets.slint";
+import { Theme, Type, Radius } from "theme.slint";
+import { Shade, Panel, DialogButton } from "widgets.slint";
 
 export global ModelUi {
     in-out property <bool> show-name;
@@ -28,7 +28,7 @@ export component ModelNameDialog inherits Shade {
         VerticalLayout {
             padding: 24px;
             spacing: 12px;
-            Text { text: "Salvar como modelo"; font-size: 16px; font-weight: 600; color: Theme.text; }
+            Text { text: "Salvar como modelo"; font-size: Type.title; font-weight: Type.semibold; color: Theme.text; }
             LineEdit {
                 text <=> ModelUi.name;
                 placeholder-text: "ex.: Abertura com título";
@@ -38,8 +38,8 @@ export component ModelNameDialog inherits Shade {
             HorizontalLayout {
                 alignment: end;
                 spacing: 8px;
-                Button { text: "Cancelar"; clicked => { ModelUi.show-name = false; ModelUi.closed(); } }
-                Button { text: "Salvar"; primary: true; clicked => { ModelUi.name-save(); } }
+                DialogButton { text: "Cancelar"; clicked => { ModelUi.show-name = false; ModelUi.closed(); } }
+                DialogButton { text: "Salvar"; primary: true; clicked => { ModelUi.name-save(); } }
             }
         }
     }
@@ -53,20 +53,20 @@ export component ModelsDialog inherits Shade {
         VerticalLayout {
             padding: 24px;
             spacing: 10px;
-            Text { text: "Meus modelos"; font-size: 16px; font-weight: 600; color: Theme.text; }
+            Text { text: "Meus modelos"; font-size: Type.title; font-weight: Type.semibold; color: Theme.text; }
             Text {
                 text: ModelUi.models.length == 0
                     ? "Nenhum modelo salvo. Monte uma lâmina e use Lâmina → Salvar como modelo…"
                     : "Os modelos aparecem no painel de layouts quando as fotos casam com eles.";
-                color: Theme.muted;
+                color: Theme.text-2;
                 wrap: word-wrap;
             }
             ListView {
                 vertical-stretch: 1;
                 for item[i] in ModelUi.models: Rectangle {
                     height: 28px;
-                    border-radius: 4px;
-                    background: i == ModelUi.list-selected ? #ffffff1f : touch.has-hover ? #ffffff0d : transparent;
+                    border-radius: Radius.small;
+                    background: i == ModelUi.list-selected ? Theme.press : touch.has-hover ? Theme.hover : transparent;
                     Text { x: 8px; text: item; color: Theme.text; vertical-alignment: center; }
                     touch := TouchArea {
                         clicked => {
@@ -79,13 +79,13 @@ export component ModelsDialog inherits Shade {
             HorizontalLayout {
                 spacing: 8px;
                 LineEdit { text <=> ModelUi.list-name; enabled: ModelUi.list-selected >= 0; }
-                Button { text: "Renomear"; enabled: ModelUi.list-selected >= 0; clicked => { ModelUi.list-rename(); } }
-                Button { text: "Apagar"; enabled: ModelUi.list-selected >= 0; clicked => { ModelUi.list-delete(); } }
+                DialogButton { text: "Renomear"; enabled: ModelUi.list-selected >= 0; clicked => { ModelUi.list-rename(); } }
+                DialogButton { text: "Apagar"; enabled: ModelUi.list-selected >= 0; clicked => { ModelUi.list-delete(); } }
             }
             Text { text: ModelUi.list-message; color: Theme.warning; wrap: word-wrap; }
             HorizontalLayout {
                 alignment: end;
-                Button { text: "Fechar"; primary: true; clicked => { ModelUi.show-list = false; ModelUi.closed(); } }
+                DialogButton { text: "Fechar"; primary: true; clicked => { ModelUi.show-list = false; ModelUi.closed(); } }
             }
         }
     }

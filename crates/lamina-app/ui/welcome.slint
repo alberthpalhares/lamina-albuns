@@ -2,9 +2,9 @@
 // que não há álbum aberto. Sem recentes, é a boas-vindas da PC sem mudança. Cada botão chama um
 // comando do registro; as decisões (ordem, busca, quais sumiram) ficam no Rust.
 
-import { Button, LineEdit, ScrollView } from "std-widgets.slint";
-import { Theme } from "theme.slint";
-import { Shade, Panel } from "widgets.slint";
+import { LineEdit, ScrollView } from "std-widgets.slint";
+import { Theme, Type, Radius } from "theme.slint";
+import { Shade, Panel, DialogButton } from "widgets.slint";
 
 export struct RecentCard {
     index: int,
@@ -50,29 +50,32 @@ component BlankAlbum inherits Rectangle {
     Rectangle {
         width: 152px;
         height: 80px;
-        background: #2c2c2c;
+        background: Theme.g5;
         border-width: 1px;
-        border-color: #4d4d4d;
-        border-radius: 2px;
+        border-color: Theme.g7;
+        border-radius: Radius.hair;
         // A dobra entre as duas páginas, interrompida no meio para não cortar o nome.
-        Rectangle { x: (parent.width - 1px) / 2; y: 0; width: 1px; height: 16px; background: #4d4d4d; }
-        Rectangle { x: (parent.width - 1px) / 2; y: parent.height - 16px; width: 1px; height: 16px; background: #4d4d4d; }
+        Rectangle { x: (parent.width - 1px) / 2; y: 0; width: 1px; height: 16px; background: Theme.g7; }
+        Rectangle { x: (parent.width - 1px) / 2; y: parent.height - 16px; width: 1px; height: 16px; background: Theme.g7; }
         VerticalLayout {
             padding: 8px;
             alignment: center;
             spacing: 2px;
-            Text { text: root.name; color: Theme.text; font-size: 12px; font-weight: 600; horizontal-alignment: center; overflow: elide; }
-            if root.blank: Text { text: "Álbum em branco"; color: Theme.muted; font-size: 11px; horizontal-alignment: center; }
+            Text { text: root.name; color: Theme.text; font-size: Type.small; font-weight: Type.semibold; horizontal-alignment: center; overflow: elide; }
+            if root.blank: Text { text: "Álbum em branco"; color: Theme.text-2; font-size: Type.caption; horizontal-alignment: center; }
         }
     }
 }
 
 component Card inherits Rectangle {
+    accessible-role: button;
+    accessible-label: root.data.name;
+    accessible-action-default => { RecentsUi.open(root.data.index); }
     in property <RecentCard> data;
     width: 200px;
     height: 210px;
-    border-radius: 6px;
-    background: open.has-hover && !root.data.missing ? #3a3a3a : Theme.panel;
+    border-radius: Radius.medium;
+    background: open.has-hover && !root.data.missing ? Theme.g6 : Theme.panel;
     open := TouchArea {
         enabled: !root.data.missing;
         mouse-cursor: root.data.missing ? default : pointer;
@@ -83,20 +86,20 @@ component Card inherits Rectangle {
         spacing: 4px;
         Rectangle {
             height: 112px;
-            background: #1f1f1f;
-            border-radius: 3px;
+            background: Theme.g3;
+            border-radius: Radius.small;
             opacity: root.data.missing ? 0.35 : 1;
             if root.data.has-thumb: Image { accessible-role: none; source: root.data.thumb; image-fit: contain; width: parent.width; height: parent.height; }
             if !root.data.has-thumb: BlankAlbum { name: root.data.name; blank: root.data.blank; }
         }
         HorizontalLayout {
             spacing: 4px;
-            Text { text: root.data.name; color: root.data.missing ? Theme.muted : Theme.text; font-weight: 600; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
+            Text { text: root.data.name; color: root.data.missing ? Theme.text-2 : Theme.text; font-weight: Type.semibold; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
             Rectangle {
                 width: 22px;
                 height: 22px;
-                border-radius: 3px;
-                background: pin.has-hover ? #ffffff1a : transparent;
+                border-radius: Radius.small;
+                background: pin.has-hover ? Theme.hover : transparent;
                 // O alfinete: cheio quando fixado.
                 Path {
                     width: 14px;
@@ -104,21 +107,21 @@ component Card inherits Rectangle {
                     viewbox-width: 16;
                     viewbox-height: 16;
                     commands: "M 5 1 L 11 1 L 10 6 L 13 9 L 3 9 L 6 6 Z M 8 9 L 8 15";
-                    stroke: root.data.pinned ? Theme.selected : Theme.muted;
+                    stroke: root.data.pinned ? Theme.text-strong : Theme.text-2;
                     stroke-width: 1.5px;
-                    fill: root.data.pinned ? Theme.selected : transparent;
+                    fill: root.data.pinned ? Theme.text-strong : transparent;
                     opacity: root.data.pinned || pin.has-hover ? 1 : 0.5;
                 }
                 pin := TouchArea { clicked => { RecentsUi.pin(root.data.index); } }
             }
         }
-        if !root.data.missing: Text { text: root.data.when; color: Theme.muted; font-size: 12px; }
-        if !root.data.missing: Text { text: root.data.counts; color: Theme.muted; font-size: 12px; }
-        if root.data.missing: Text { text: "Não encontrado"; color: Theme.warning; font-size: 12px; }
+        if !root.data.missing: Text { text: root.data.when; color: Theme.text-2; font-size: Type.small; }
+        if !root.data.missing: Text { text: root.data.counts; color: Theme.text-2; font-size: Type.small; }
+        if root.data.missing: Text { text: "Não encontrado"; color: Theme.warning; font-size: Type.small; }
         if root.data.missing: HorizontalLayout {
             spacing: 6px;
-            Button { text: "Procurar…"; clicked => { RecentsUi.browse(root.data.index); } }
-            Button { text: "Tirar da lista"; clicked => { RecentsUi.forget(root.data.index); } }
+            DialogButton { text: "Procurar…"; clicked => { RecentsUi.browse(root.data.index); } }
+            DialogButton { text: "Tirar da lista"; clicked => { RecentsUi.forget(root.data.index); } }
         }
     }
 }
@@ -137,9 +140,9 @@ component CardGrid inherits Rectangle {
 }
 
 component Section inherits Text {
-    color: Theme.muted;
-    font-size: 12px;
-    font-weight: 600;
+    color: Theme.text-2;
+    font-size: Type.small;
+    font-weight: Type.semibold;
 }
 
 export component WelcomeScreen inherits VerticalLayout {
@@ -148,24 +151,24 @@ export component WelcomeScreen inherits VerticalLayout {
     spacing: 16px;
     padding-top: RecentsUi.has-recents ? 24px : 0px;
     Image { accessible-role: none; source: @image-url("../icons/lamina-logo-escuro.svg"); height: 64px; image-fit: contain; }
-    Text { text: "Diagramação de álbuns de fotos"; color: Theme.muted; horizontal-alignment: center; }
+    Text { text: "Diagramação de álbuns de fotos"; color: Theme.text-2; horizontal-alignment: center; }
     if !RecentsUi.has-recents: HorizontalLayout {
         alignment: center;
-        Button { text: "Experimentar com o álbum de exemplo"; primary: true; clicked => { root.command("arquivo.exemplo"); } }
+        DialogButton { text: "Experimentar com o álbum de exemplo"; primary: true; clicked => { root.command("arquivo.exemplo"); } }
     }
     if !RecentsUi.has-recents: HorizontalLayout {
         alignment: center;
         spacing: 12px;
-        Button { text: "Novo álbum com minhas fotos…"; clicked => { root.command("arquivo.novo"); } }
-        Button { text: "Abrir um álbum…"; clicked => { root.command("arquivo.abrir"); } }
+        DialogButton { text: "Novo álbum com minhas fotos…"; clicked => { root.command("arquivo.novo"); } }
+        DialogButton { text: "Abrir um álbum…"; clicked => { root.command("arquivo.abrir"); } }
     }
     // Com recentes, o novo álbum passa a principal e o exemplo fica ao lado (TI-B14).
     if RecentsUi.has-recents: HorizontalLayout {
         alignment: center;
         spacing: 12px;
-        Button { text: "Novo álbum com minhas fotos…"; primary: true; clicked => { root.command("arquivo.novo"); } }
-        Button { text: "Experimentar com o álbum de exemplo"; clicked => { root.command("arquivo.exemplo"); } }
-        Button { text: "Abrir um álbum…"; clicked => { root.command("arquivo.abrir"); } }
+        DialogButton { text: "Novo álbum com minhas fotos…"; primary: true; clicked => { root.command("arquivo.novo"); } }
+        DialogButton { text: "Experimentar com o álbum de exemplo"; clicked => { root.command("arquivo.exemplo"); } }
+        DialogButton { text: "Abrir um álbum…"; clicked => { root.command("arquivo.abrir"); } }
     }
     if RecentsUi.has-recents: HorizontalLayout {
         alignment: center;
@@ -201,8 +204,8 @@ export component WelcomeScreen inherits VerticalLayout {
         padding-bottom: RecentsUi.has-recents ? 12px : 0px;
         Text {
             text: "Enviar sugestão ou problema";
-            color: link.has-hover ? #8fcaff : #5fb0f0;
-            font-size: 12px;
+            color: link.has-hover ? Theme.text-strong : Theme.link;
+            font-size: Type.small;
             link := TouchArea {
                 mouse-cursor: pointer;
                 clicked => { root.command("ajuda.enviar-sugestao"); }
@@ -220,13 +223,13 @@ export component ClearRecentsDialog inherits Shade {
         VerticalLayout {
             padding: 24px;
             spacing: 12px;
-            Text { text: "Limpar os álbuns recentes?"; font-size: 18px; font-weight: 700; color: Theme.text; }
-            Text { text: "Os fixados ficam na lista. Os arquivos dos álbuns não são apagados."; color: Theme.muted; wrap: word-wrap; }
+            Text { text: "Limpar os álbuns recentes?"; font-size: Type.heading; font-weight: Type.semibold; color: Theme.text; }
+            Text { text: "Os fixados ficam na lista. Os arquivos dos álbuns não são apagados."; color: Theme.text-2; wrap: word-wrap; }
             HorizontalLayout {
                 alignment: end;
                 spacing: 8px;
-                Button { text: "Cancelar"; clicked => { RecentsUi.show-clear = false; root.closed(); } }
-                Button { text: "Limpar"; primary: true; clicked => { RecentsUi.show-clear = false; RecentsUi.clear-confirmed(); root.closed(); } }
+                DialogButton { text: "Cancelar"; clicked => { RecentsUi.show-clear = false; root.closed(); } }
+                DialogButton { text: "Limpar"; primary: true; clicked => { RecentsUi.show-clear = false; RecentsUi.clear-confirmed(); root.closed(); } }
             }
         }
     }

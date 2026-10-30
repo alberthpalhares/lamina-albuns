@@ -3,11 +3,11 @@
 // seletor de endireitar, brilho ou contraste volta ao neutro (AF, regra 14). Só desenho: o editor
 // decide e o Rust preenche o `PhotoUi`.
 
-import { Button, CheckBox, LineEdit } from "std-widgets.slint";
+import { LineEdit } from "std-widgets.slint";
 import { NumberField } from "number_field.slint";
-import { Theme } from "theme.slint";
+import { Theme, Fixed, Type } from "theme.slint";
 import { LookUi, Stepper, Swatches } from "look.slint";
-import { IconButton, NeutralSlider } from "widgets.slint";
+import { IconButton, NeutralSlider, DialogButton, CheckRow } from "widgets.slint";
 
 export global PhotoUi {
     in property <bool> has-photo;
@@ -68,15 +68,15 @@ export global PhotoUi {
 }
 
 component Label inherits Text {
-    color: Theme.muted;
-    font-size: 12px;
+    color: Theme.text-2;
+    font-size: Type.small;
 }
 
 export component PhotoSection inherits VerticalLayout {
     spacing: 6px;
-    Text { text: "Foto"; color: Theme.text; font-weight: 700; }
-    if PhotoUi.size != "": Text { text: PhotoUi.size; color: Theme.muted; font-size: 12px; }
-    if PhotoUi.note != "": Text { text: PhotoUi.note; color: Theme.muted; font-size: 11px; wrap: word-wrap; }
+    Text { text: "Foto"; color: Theme.text; font-weight: Type.semibold; }
+    if PhotoUi.size != "": Text { text: PhotoUi.size; color: Theme.text-2; font-size: Type.small; }
+    if PhotoUi.note != "": Text { text: PhotoUi.note; color: Theme.text-2; font-size: Type.caption; wrap: word-wrap; }
     // O giro de −180° a 180° (spec CD, regra 2), com os botões de 90°.
     Label { text: PhotoUi.can-turn ? "Girar" : "Girar (selecione um quadro só)"; }
     NeutralSlider {
@@ -176,8 +176,8 @@ export component PhotoSection inherits VerticalLayout {
         minimum: -100;
         maximum: 100;
         gradient: true;
-        track-from: #4a90e2;
-        track-to: #f5c542;
+        track-from: Fixed.cold;
+        track-to: Fixed.warm;
         value <=> PhotoUi.temperature;
         changed(v) => { PhotoUi.temperature-moved(v); }
         released => { PhotoUi.released(); }
@@ -188,19 +188,19 @@ export component PhotoSection inherits VerticalLayout {
         minimum: -100;
         maximum: 100;
         gradient: true;
-        track-from: #4caf50;
-        track-to: #d84fc4;
+        track-from: Fixed.green;
+        track-to: Fixed.magenta;
         value <=> PhotoUi.tint;
         changed(v) => { PhotoUi.tint-moved(v); }
         released => { PhotoUi.released(); }
         reset => { PhotoUi.tint-reset(); }
     }
-    CheckBox {
+    CheckRow {
         text: "Preto e branco";
         checked <=> PhotoUi.bw;
         toggled => { PhotoUi.bw-toggled(self.checked); }
     }
-    if PhotoUi.style-note != "": Text { text: PhotoUi.style-note; color: Theme.muted; font-size: 11px; wrap: word-wrap; }
+    if PhotoUi.style-note != "": Text { text: PhotoUi.style-note; color: Theme.text-2; font-size: Type.caption; wrap: word-wrap; }
     Label { text: "Opacidade  " + round(PhotoUi.opacity) + "%"; }
     NeutralSlider {
         minimum: 0;
@@ -220,6 +220,6 @@ export component PhotoSection inherits VerticalLayout {
     }
     Label { text: "Cantos"; }
     Stepper { value: PhotoUi.radius; step(d) => { PhotoUi.radius-step(d); } }
-    Button { text: "Restaurar a foto"; clicked => { PhotoUi.restore(); } }
-    if PhotoUi.error != "": Text { text: PhotoUi.error; color: #e57373; wrap: word-wrap; }
+    DialogButton { text: "Restaurar a foto"; clicked => { PhotoUi.restore(); } }
+    if PhotoUi.error != "": Text { text: PhotoUi.error; color: Theme.error; wrap: word-wrap; }
 }
