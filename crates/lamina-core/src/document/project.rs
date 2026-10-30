@@ -50,6 +50,52 @@ pub struct Project {
 }
 
 impl Project {
+    /// Iguais em tudo, menos nas preferências de exportação (spec LV, regra 1): "tem alteração?"
+    /// não precisa copiar o álbum para trocar só esse campo. Lista todos os campos de propósito:
+    /// um campo novo não compila enquanto não entrar aqui.
+    pub fn same_except_export(&self, other: &Project) -> bool {
+        let Project {
+            schema_version,
+            name,
+            spec,
+            gap,
+            photos,
+            spreads,
+            page_limits,
+            export: _,
+            mounting,
+            look,
+            next_id,
+        } = self;
+        *schema_version == other.schema_version
+            && *next_id == other.next_id
+            && *gap == other.gap
+            && name == &other.name
+            && spec == &other.spec
+            && page_limits == &other.page_limits
+            && mounting == &other.mounting
+            && look == &other.look
+            && spreads == &other.spreads
+            && photos == &other.photos
+    }
+
+    /// As lâminas que mudaram entre `before` e este projeto, se só as lâminas mudaram; `None`
+    /// quando a mudança pode valer para o álbum todo (outra especificação, outras fotos, lâminas
+    /// a mais ou a menos). A pré-impressão usa isso para conferir só o que mudou (spec LV, regra 2).
+    pub fn spreads_changed_since(&self, before: &Project) -> Option<Vec<usize>> {
+        if self.spreads.len() != before.spreads.len()
+            || self.spec != before.spec
+            || self.gap != before.gap
+            || self.look != before.look
+            || self.photos != before.photos
+        {
+            return None;
+        }
+        let pairs = self.spreads.iter().zip(&before.spreads);
+        let changed = pairs.enumerate().filter(|(_, (a, b))| a != b);
+        Some(changed.map(|(i, _)| i).collect())
+    }
+
     pub fn new(name: impl Into<String>, spec: AlbumSpec) -> Self {
         Project {
             schema_version: CURRENT_SCHEMA_VERSION,
@@ -130,9 +176,12 @@ impl Project {
     }
 
     pub fn photo(&self, id: PhotoId) -> Result<&Photo, CoreError> {
-        self.photos
-            .iter()
-            .find(|p| p.id == id)
+        // As fotos entram em ordem de identificador: a busca binária resolve quase sempre, e um
+        // arquivo editado à mão, fora de ordem, cai na busca item a item (spec LV).
+        let found = self.photos.binary_search_by_key(&id, |p| p.id).ok();
+        found
+            .and_then(|i| self.photos.get(i))
+            .or_else(|| self.photos.iter().find(|p| p.id == id))
             .ok_or(CoreError::UnknownPhoto(id))
     }
 

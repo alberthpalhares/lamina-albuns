@@ -2,6 +2,7 @@
 //! alterações não salvas, as fotos ausentes e os avisos de pré-impressão.
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use lamina_core::{ExportPrefs, History, PhotoId, Project};
 use lamina_export::{Warning, preflight, read_project, save_project};
@@ -23,8 +24,9 @@ const MISSING_NAMES: usize = 5;
 pub struct Session {
     history: History<Project>,
     file: Option<PathBuf>,
-    /// O projeto como está no disco; `None` = nunca salvo.
-    saved: Option<Project>,
+    /// O projeto como está no disco; `None` = nunca salvo. Compartilhado com o histórico quando é
+    /// o mesmo passo (spec LV, regra 1).
+    saved: Option<Arc<Project>>,
     current: usize,
     missing: Vec<PhotoId>,
     /// A janela "Algumas fotos mudaram de lugar" já abriu nesta abertura (spec RF, regra 2).
@@ -60,9 +62,10 @@ impl Session {
         let missing = missing_of(&project);
         let export = project.export;
         let warnings = warnings_of(&project);
+        let history = History::new(project);
         Session {
-            saved: saved.then(|| project.clone()),
-            history: History::new(project),
+            saved: saved.then(|| history.present_shared()),
+            history,
             file,
             current: 0,
             missing,
@@ -80,12 +83,24 @@ impl Session {
         self.history.present()
     }
 
+    /// O projeto compartilhado, para guardar sem copiar o álbum (spec LV, regra 1).
+    pub fn project_shared(&self) -> Arc<Project> {
+        self.history.present_shared()
+    }
+
     pub fn file(&self) -> Option<&Path> {
         self.file.as_deref()
     }
 
     pub fn is_dirty(&self) -> bool {
-        self.saved.as_ref() != Some(&self.for_disk())
+        // Mesmo passo do histórico: basta olhar as preferências. Passo diferente: compara sem copiar,
+        // porque editar e voltar à mão também volta a "sem alteração".
+        let Some(saved) = &self.saved else {
+            return true;
+        };
+        saved.export != self.export
+            || !(Arc::ptr_eq(saved, &self.history.present_shared())
+                || saved.same_except_export(self.project()))
     }
 
     /// O álbum recuperado de uma cópia de segurança (spec CS, regra 5): o projeto da cópia, o
@@ -98,7 +113,7 @@ impl Session {
         spread: usize,
     ) -> Self {
         let mut session = Session::with(project, file, false);
-        session.saved = on_disk;
+        session.saved = on_disk.map(Arc::new);
         session.opened = true;
         session.go_to(spread);
         session
@@ -217,7 +232,11 @@ impl Session {
         let name = file_name(&file);
         let disk = self.for_disk();
         let saved = save_project(&disk, folder, &name)?;
-        self.saved = Some(disk);
+        self.saved = Some(if disk.export == self.project().export {
+            self.history.present_shared()
+        } else {
+            Arc::new(disk)
+        });
         self.file = Some(saved.clone());
         Ok(saved)
     }

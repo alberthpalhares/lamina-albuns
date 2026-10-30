@@ -65,26 +65,62 @@ pub fn render_spread_with(
     paint_background(&mut pixmap, project, spread, fill, scene.scale);
     // Cada foto é lida e reduzida em paralelo; o desenho segue a ordem dos quadros, e o erro
     // devolvido é o do primeiro quadro com problema.
-    let tiles: Vec<Result<Option<Tile>, RenderError>> =
-        spread.frames.par_iter().map(|f| tile(&scene, f)).collect();
-    for tile in tiles {
-        if let Some(tile) = tile? {
-            if styled(tile.frame) {
-                draw_styled(
-                    &mut pixmap,
-                    tile.frame,
-                    &tile.bled,
-                    scene.scale,
-                    tile.at,
-                    &tile.rgba,
-                );
-            } else {
-                paste(&mut pixmap, &tile);
+    for group in frame_groups(project, &spread.frames, target) {
+        let tiles: Vec<Result<Option<Tile>, RenderError>> =
+            group.par_iter().map(|f| tile(&scene, f)).collect();
+        for tile in tiles {
+            if let Some(tile) = tile? {
+                if styled(tile.frame) {
+                    draw_styled(
+                        &mut pixmap,
+                        tile.frame,
+                        &tile.bled,
+                        scene.scale,
+                        tile.at,
+                        &tile.rgba,
+                    );
+                } else {
+                    paste(&mut pixmap, &tile);
+                }
             }
         }
     }
     crate::text::draw_texts(&mut pixmap, project, spread, scene.scale);
     RgbaImage::from_raw(width, height, pixmap.take()).ok_or(RenderError::Canvas { width, height })
+}
+
+/// Quantos bytes de originais uma lâmina de impressão abre ao mesmo tempo (spec LV, regra 13): dá
+/// 1 foto de 24 MP ou 2 de 12 MP. A imagem final é a mesma, em qualquer divisão.
+const ORIGINALS_AT_ONCE: u64 = 100 * 1024 * 1024;
+
+/// Os quadros em grupos, cada um lido em paralelo e colado antes do próximo: na impressão, a soma
+/// dos originais de um grupo cabe no orçamento (ao menos um quadro por grupo). Na prévia, que lê
+/// cópias pequenas, um grupo só.
+fn frame_groups<'a>(
+    project: &Project,
+    frames: &'a [Frame],
+    target: RenderTarget,
+) -> Vec<&'a [Frame]> {
+    if !matches!(target, RenderTarget::Print) {
+        return vec![frames];
+    }
+    let bytes = |frame: &Frame| match &frame.content {
+        FrameContent::Photo { photo, .. } => project
+            .photo(*photo)
+            .map_or(0, |p| u64::from(p.width_px) * u64::from(p.height_px) * 4),
+        _ => 0,
+    };
+    let (mut groups, mut start, mut sum) = (Vec::new(), 0, 0);
+    for (i, frame) in frames.iter().enumerate() {
+        let size = bytes(frame);
+        if i > start && sum + size > ORIGINALS_AT_ONCE {
+            groups.push(&frames[start..i]);
+            (start, sum) = (i, 0);
+        }
+        sum += size;
+    }
+    groups.push(&frames[start..]);
+    groups
 }
 
 fn canvas_size(project: &Project, target: RenderTarget) -> Result<(u32, u32), RenderError> {

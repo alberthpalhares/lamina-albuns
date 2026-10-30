@@ -54,28 +54,57 @@ pub fn color_tables(adjust: &PhotoAdjust) -> [[u8; 256]; 3] {
 /// Aplica a cor e o tom de `adjust` nos pixels RGBA (o alfa fica). Sem cor nem tom, não mexe em
 /// nada.
 pub fn apply_tone(rgba: &mut [u8], adjust: &PhotoAdjust) {
-    if adjust.has_color() {
-        let [r, g, b] = color_tables(adjust);
-        for px in rgba.as_chunks_mut::<4>().0 {
-            *px = [
-                r[usize::from(px[0])],
-                g[usize::from(px[1])],
-                b[usize::from(px[2])],
-                px[3],
-            ];
+    let (color, tone) = (adjust.has_color(), adjust.has_tone());
+    if adjust.bw {
+        if color {
+            let tables = color_tables(adjust);
+            apply_tables(rgba, &tables);
         }
-    }
-    if !adjust.has_tone() {
-        return;
-    }
-    let table = tone_table(adjust);
-    for px in rgba.as_chunks_mut::<4>().0 {
-        if adjust.bw {
-            let g = gray(px[0], px[1], px[2]);
+        let table = tone_table(adjust);
+        for px in rgba.as_chunks_mut::<4>().0 {
+            let g = table[usize::from(gray(px[0], px[1], px[2]))];
             *px = [g, g, g, px[3]];
         }
-        for ch in &mut px[..3] {
-            *ch = table[usize::from(*ch)];
+    } else if color || tone {
+        // Sem preto e branco, a cor e o tom viram uma tabela por canal e uma passada só (spec LV,
+        // regra 8): cada canal só depende dele mesmo, então o resultado é o mesmo das duas passadas.
+        let mut tables = if color {
+            color_tables(adjust)
+        } else {
+            [IDENTITY; 3]
+        };
+        if tone {
+            let table = tone_table(adjust);
+            for level in tables.iter_mut().flatten() {
+                *level = table[usize::from(*level)];
+            }
         }
+        apply_tables(rgba, &tables);
+    }
+}
+
+/// Cada nível fica como está.
+const IDENTITY: [u8; 256] = {
+    let mut table = [0u8; 256];
+    let mut v = 0;
+    while v < 256 {
+        // De 0 a 255: cabe em u8.
+        #[allow(clippy::cast_possible_truncation)]
+        {
+            table[v] = v as u8;
+        }
+        v += 1;
+    }
+    table
+};
+
+fn apply_tables(rgba: &mut [u8], [r, g, b]: &[[u8; 256]; 3]) {
+    for px in rgba.as_chunks_mut::<4>().0 {
+        *px = [
+            r[usize::from(px[0])],
+            g[usize::from(px[1])],
+            b[usize::from(px[2])],
+            px[3],
+        ];
     }
 }

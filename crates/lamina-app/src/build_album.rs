@@ -80,7 +80,7 @@ fn start(app: &mut App) {
     if plan.check(session.project(), spreads).is_err() {
         return;
     }
-    let project = session.project().clone();
+    let project = session.project_shared();
     let options = app.editor.build_options(reuse_of(ui.get_reuse()));
     let photos = plan.unused.len();
     ui.set_show(false);

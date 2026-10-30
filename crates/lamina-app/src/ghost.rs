@@ -11,7 +11,7 @@ use crate::state::App;
 /// quadro da lâmina atual (`from` = quadro).
 pub fn make(app: &mut App, kind: i32, from: i32) -> Option<GhostData> {
     let from = usize::try_from(from).ok()?;
-    let project = app.session()?.project().clone();
+    let project = app.session()?.project_shared();
     let index = app.session()?.current();
     let ghost = match kind {
         1 => {

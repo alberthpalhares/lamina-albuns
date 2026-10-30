@@ -35,12 +35,27 @@ pub fn decode_in(
     let icc = decoder.icc_profile().ok().flatten();
     let mut image = DynamicImage::from_decoder(decoder).map_err(MediaError::image(path))?;
     if icc.is_some() || space != ColorSpace::Srgb {
-        image = DynamicImage::ImageRgba8(convert(image.into_rgba8(), icc.as_deref(), space));
+        image = DynamicImage::ImageRgba8(convert(to_rgba(image), icc.as_deref(), space));
     }
     if let Some(orientation) = Orientation::from_exif(exif_orientation) {
         image.apply_orientation(orientation);
     }
     Ok(image)
+}
+
+/// A imagem em RGBA. Fotos e cópias do cache são JPEG em RGB; a conversão direta leva uma fração
+/// do tempo da genérica do `image` (medido: 23 ms por imagem de tela; spec LV, regra 3).
+pub fn to_rgba(image: DynamicImage) -> RgbaImage {
+    let DynamicImage::ImageRgb8(rgb) = image else {
+        return image.into_rgba8();
+    };
+    let (width, height) = rgb.dimensions();
+    let mut out = vec![255_u8; rgb.as_raw().len() / 3 * 4];
+    let (dst, src) = (out.as_chunks_mut::<4>().0, rgb.as_raw().as_chunks::<3>().0);
+    for (d, s) in dst.iter_mut().zip(src) {
+        d[..3].copy_from_slice(s);
+    }
+    RgbaImage::from_raw(width, height, out).unwrap_or_default()
 }
 
 /// Lê a orientação do próprio arquivo e devolve os pixels em pé, em RGBA, em sRGB.
@@ -51,7 +66,7 @@ pub fn load_oriented(path: &Path) -> Result<RgbaImage, MediaError> {
 /// Como [`load_oriented`], no espaço de cor da saída (spec CT, regra 2).
 pub fn load_oriented_in(path: &Path, space: ColorSpace) -> Result<RgbaImage, MediaError> {
     let orientation = read_metadata(path)?.exif_orientation;
-    Ok(decode_in(path, orientation, space)?.into_rgba8())
+    Ok(to_rgba(decode_in(path, orientation, space)?))
 }
 
 #[cfg(test)]

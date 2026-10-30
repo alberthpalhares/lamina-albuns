@@ -2,6 +2,7 @@
 //! desfazer e refazer levam a lâmina atual até a lâmina que mudou (spec TL, regra 9).
 
 use lamina_core::Project;
+use lamina_export::preflight;
 
 use super::{Session, missing_of, warnings_of};
 
@@ -20,8 +21,9 @@ impl Session {
         } else {
             format!("{prefix}{label} · lâmina {}", self.current + 1)
         };
+        let before = self.project_shared();
         self.history.try_apply(label, change)?;
-        self.warnings = warnings_of(self.history.present());
+        self.update_warnings(&before);
         self.merge = None;
         Ok(())
     }
@@ -35,8 +37,9 @@ impl Session {
         change: impl FnOnce(&mut Project) -> Result<(), E>,
     ) -> Result<(), E> {
         if self.merge.as_deref() == Some(key) && self.history.can_undo() {
+            let before = self.project_shared();
             self.history.try_amend(change)?;
-            self.warnings = warnings_of(self.history.present());
+            self.update_warnings(&before);
             return Ok(());
         }
         self.edit(label, change)?;
@@ -65,7 +68,7 @@ impl Session {
 
     /// Desfaz a última edição; devolve o rótulo dela.
     pub fn undo(&mut self) -> Option<String> {
-        let before = self.project().clone();
+        let before = self.project_shared();
         let label = self.history.undo()?.to_owned();
         self.after_step(&before);
         Some(label)
@@ -73,7 +76,7 @@ impl Session {
 
     /// Refaz a edição desfeita; devolve o rótulo dela.
     pub fn redo(&mut self) -> Option<String> {
-        let before = self.project().clone();
+        let before = self.project_shared();
         let label = self.history.redo()?.to_owned();
         self.after_step(&before);
         Some(label)
@@ -86,10 +89,30 @@ impl Session {
             .find(|&i| now.spreads.get(i) != before.spreads.get(i));
         let last = now.spreads.len().saturating_sub(1);
         self.current = changed.unwrap_or(self.current).min(last);
-        self.warnings = warnings_of(now);
-        // Desfazer "Reencontrar fotos" volta aos caminhos antigos (spec EI).
-        if now.photos != before.photos {
+        // Desfazer "Reencontrar fotos" volta aos caminhos antigos (spec EI). Desfazer um ajuste de
+        // brilho não muda caminho nenhum: não olha o disco (spec LV, regra 5).
+        let paths = now.photos.iter().map(|p| &p.path);
+        if !paths.eq(before.photos.iter().map(|p| &p.path)) {
             self.missing = missing_of(now);
         }
+        self.update_warnings(before);
+    }
+
+    /// Refaz os avisos de pré-impressão: só das lâminas que mudaram quando dá (digitar num texto
+    /// não desenha de novo os textos do álbum inteiro; spec LV, regra 2).
+    fn update_warnings(&mut self, before: &Project) {
+        let now = self.history.present();
+        let Some(changed) = now.spreads_changed_since(before) else {
+            self.warnings = warnings_of(now);
+            return;
+        };
+        if changed.is_empty() {
+            return;
+        }
+        self.warnings
+            .retain(|warning| !changed.contains(&(warning.spread - 1)));
+        self.warnings.extend(preflight(now, &changed));
+        // `sort_by_key` é estável: os avisos de cada lâmina continuam na ordem dos quadros.
+        self.warnings.sort_by_key(|warning| warning.spread);
     }
 }

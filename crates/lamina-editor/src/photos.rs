@@ -55,10 +55,7 @@ fn usage(project: &Project) -> HashMap<PhotoId, (usize, usize)> {
 pub fn photo_list(project: &Project, filter: Filter) -> Vec<PhotoItem> {
     let usage = usage(project);
     let mut photos: Vec<_> = project.photos.iter().collect();
-    photos.sort_by(|a, b| {
-        let key = |p: &&lamina_core::Photo| (p.taken_at.is_none(), p.taken_at, p.path.clone());
-        key(a).cmp(&key(b))
-    });
+    photos.sort_by_key(|&p| (p.taken_at.is_none(), p.taken_at, &p.path));
     photos
         .into_iter()
         .map(|p| {
@@ -76,6 +73,24 @@ pub fn photo_list(project: &Project, filter: Filter) -> Vec<PhotoItem> {
             Filter::Unused => item.uses == 0,
         })
         .collect()
+}
+
+/// A lista de fotos sairia igual nos dois projetos: as mesmas fotos, cada uma nas mesmas lâminas.
+/// Mexer só num quadro não refaz a lista (spec LV, regra 6).
+pub fn same_photo_list(a: &Project, b: &Project) -> bool {
+    fn uses(project: &Project) -> impl Iterator<Item = (usize, PhotoId)> + '_ {
+        let frames = project.spreads.iter().enumerate();
+        frames.flat_map(|(index, spread)| {
+            spread
+                .frames
+                .iter()
+                .filter_map(move |frame| match &frame.content {
+                    FrameContent::Photo { photo, .. } => Some((index, *photo)),
+                    _ => None,
+                })
+        })
+    }
+    a.photos == b.photos && uses(a).eq(uses(b))
 }
 
 /// Quantas fotos diferentes aparecem em algum quadro.

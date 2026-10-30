@@ -11,8 +11,8 @@ use lamina_core::{Photo, PhotoId};
 
 use lamina_core::ColorSpace;
 
-use crate::thumbnail::THUMB_SIZE;
-use crate::{load_oriented, load_oriented_in};
+use crate::thumbnail::{SCREEN_SIZE, THUMB_SIZE};
+use crate::{load_oriented, load_oriented_in, to_rgba};
 
 /// Resultado de uma fonte de fotos: a imagem compartilhada, ou o motivo em texto.
 pub type Loaded = Result<Arc<RgbaImage>, String>;
@@ -36,11 +36,26 @@ pub fn original_source_in(space: ColorSpace) -> impl Fn(&Photo, (u32, u32)) -> L
 pub fn thumbnail_source(
     thumbs: HashMap<PhotoId, PathBuf>,
 ) -> impl Fn(&Photo, (u32, u32)) -> Loaded + Sync {
+    cached_source(thumbs, HashMap::new())
+}
+
+/// Como [`thumbnail_source`], tentando a imagem de tela antes do original quando a miniatura não
+/// basta: um recorte fechado não abre a foto inteira (spec LV, regra 11).
+pub fn cached_source(
+    thumbs: HashMap<PhotoId, PathBuf>,
+    screens: HashMap<PhotoId, PathBuf>,
+) -> impl Fn(&Photo, (u32, u32)) -> Loaded + Sync {
     move |photo: &Photo, needed: (u32, u32)| {
-        if needed.0.max(needed.1) <= THUMB_SIZE
-            && let Some(Ok(thumb)) = thumbs.get(&photo.id).map(image::open)
-        {
-            return Ok(Arc::new(thumb.into_rgba8()));
+        let side = needed.0.max(needed.1);
+        let copy = if side <= THUMB_SIZE {
+            thumbs.get(&photo.id)
+        } else if side <= SCREEN_SIZE {
+            screens.get(&photo.id)
+        } else {
+            None
+        };
+        if let Some(Ok(image)) = copy.map(image::open) {
+            return Ok(Arc::new(to_rgba(image)));
         }
         load_oriented(&photo.path)
             .map(Arc::new)

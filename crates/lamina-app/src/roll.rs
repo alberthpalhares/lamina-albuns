@@ -78,6 +78,7 @@ impl RollState {
 
     /// Outro álbum: uma época nova, sem animação (RL-B22).
     pub fn new_album(&mut self) {
+        self.worker.forget_images();
         self.revisions.clear();
         self.plan.new_album();
         self.store.clear();
@@ -122,7 +123,7 @@ pub fn edited(app: &mut App, rows: &[(SpreadId, StripRow)]) {
     let count_changed = app.roll.warned.len() != rows.len();
     app.roll.warned = rows.iter().map(|(_, r)| r.warned).collect();
     if !changed.is_empty() || count_changed || app.roll.project.is_none() {
-        app.roll.project = Some(Arc::new(project.clone()));
+        app.roll.project = Some(session.project_shared());
         app.roll.missing = Arc::new(session.missing().to_vec());
         app.roll.edited_at = app.clock.now();
         crate::mailbox::later(QUIET + Duration::from_millis(20), quiet);

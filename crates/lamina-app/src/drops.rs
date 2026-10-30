@@ -209,7 +209,7 @@ pub fn move_spread(app: &mut App, from: usize, gap: usize) {
 /// A timeline: as fotos de cada lâmina e um corte entre uma lâmina e a outra (regra 8), só as
 /// posições que mudaram (spec MV, regra 3).
 pub fn refresh_timeline(app: &mut App) {
-    let Some(project) = app.session().map(|s| s.project().clone()) else {
+    let Some(project) = app.session().map(|s| s.project_shared()) else {
         return;
     };
     let thumbs = app.thumbs(&project);

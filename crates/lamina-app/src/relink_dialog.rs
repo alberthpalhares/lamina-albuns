@@ -130,7 +130,7 @@ fn search(app: &mut App, from: MissingFolder, to: PathBuf) {
     let Some(session) = app.session() else {
         return;
     };
-    let (project, missing) = (session.project().clone(), session.missing().to_vec());
+    let (project, missing) = (session.project_shared(), session.missing().to_vec());
     let file = session.file().map(Path::to_path_buf);
     if let Some(w) = app.window.upgrade() {
         w.global::<RelinkUi>().set_status("".into());
@@ -208,7 +208,7 @@ fn find_out(app: &App) {
     let Some(session) = app.session() else {
         return;
     };
-    let (project, missing) = (session.project().clone(), session.missing().to_vec());
+    let (project, missing) = (session.project_shared(), session.missing().to_vec());
     let file = session.file().map(Path::to_path_buf);
     let tx = app.tx.clone();
     std::thread::spawn(move || {
@@ -258,7 +258,7 @@ pub fn locate_photo(app: &mut App, id: PhotoId) {
         let (Some(picked), Some(session)) = (picked, app.session()) else {
             return;
         };
-        let (project, missing) = (session.project().clone(), session.missing().to_vec());
+        let (project, missing) = (session.project_shared(), session.missing().to_vec());
         let file = session.file().map(Path::to_path_buf);
         let path = picked.path().to_path_buf();
         let tx = app.tx.clone();

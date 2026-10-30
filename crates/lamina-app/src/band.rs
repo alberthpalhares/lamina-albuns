@@ -34,7 +34,7 @@ pub fn refresh(app: &mut App) {
     let Some(session) = app.editor.session().filter(|_| band.open) else {
         return;
     };
-    let (project, index) = (session.project().clone(), session.current());
+    let (project, index) = (session.project_shared(), session.current());
     let missing = session.missing().to_vec();
     let panel = app.editor.panel(Part::Spread);
     ui.set_has_reordered(app.editor.has_reordered());

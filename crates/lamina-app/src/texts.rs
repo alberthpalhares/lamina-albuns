@@ -3,9 +3,9 @@
 //! atualização da janela.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
 
 use lamina_core::TextBox;
+use lamina_core::byte_cache::ByteCache;
 use lamina_editor::text_image;
 use slint::{Image, Rgba8Pixel, SharedPixelBuffer};
 
@@ -13,17 +13,23 @@ use slint::{Image, Rgba8Pixel, SharedPixelBuffer};
 /// densidade. Miniaturas usam [`SMALL`].
 pub const BIG: f64 = 2400.0;
 pub const SMALL: f64 = 320.0;
-/// Quantas imagens ficam guardadas antes de recomeçar.
-const KEEP: usize = 400;
+/// Quantos bytes de imagens ficam guardados: cada tecla desenha um texto novo, e uma lâmina
+/// inteira de texto a 2400 px tem uns 10 MB (spec LV, regra 4).
+const KEEP_BYTES: usize = 96 * 1024 * 1024;
 
 thread_local! {
-    static CACHE: RefCell<HashMap<String, Image>> = RefCell::new(HashMap::new());
+    static CACHE: RefCell<ByteCache<String, Image>> = RefCell::new(ByteCache::new(KEEP_BYTES));
+}
+
+/// Outro álbum: as imagens do anterior vão embora.
+pub fn clear() {
+    CACHE.with(|c| c.borrow_mut().clear());
 }
 
 /// O texto desenhado num quadro de `size_mm`, com `px` pixels.
 pub fn picture(text: &TextBox, size_mm: (f64, f64), px: (u32, u32)) -> Option<Image> {
     let key = format!("{text:?}|{size_mm:?}|{px:?}");
-    if let Some(img) = CACHE.with(|c| c.borrow().get(&key).cloned()) {
+    if let Some(img) = CACHE.with(|c| c.borrow_mut().get(&key)) {
         return Some(img);
     }
     let rgba = text_image(text, size_mm, px)?;
@@ -33,13 +39,8 @@ pub fn picture(text: &TextBox, size_mm: (f64, f64), px: (u32, u32)) -> Option<Im
         rgba.height(),
     );
     let img = Image::from_rgba8_premultiplied(buffer);
-    CACHE.with(|c| {
-        let mut c = c.borrow_mut();
-        if c.len() >= KEEP {
-            c.clear();
-        }
-        c.insert(key, img.clone());
-    });
+    let bytes = rgba.as_raw().len();
+    CACHE.with(|c| c.borrow_mut().insert(key, img.clone(), bytes));
     Some(img)
 }
 

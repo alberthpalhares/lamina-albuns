@@ -44,9 +44,10 @@ impl Session {
     pub fn history_list(&self) -> HistoryList {
         let h = &self.history;
         let saved = |step: usize| {
-            self.saved
-                .as_ref()
-                .is_some_and(|s| h.state_at(step) == Some(s))
+            self.saved.as_ref().is_some_and(|s| {
+                h.state_at(step)
+                    .is_some_and(|at| at.export == s.export && at.same_except_export(s))
+            })
         };
         let start = if h.trimmed() {
             "Início do histórico guardado"
@@ -73,7 +74,7 @@ impl Session {
     /// Vai ao passo `step` (0 = o começo); a lâmina atual vai para a lâmina do passo, ou para a
     /// que mudou quando o passo não cita uma (regra 2).
     pub fn go_to_step(&mut self, step: usize) -> bool {
-        let before = self.project().clone();
+        let before = self.project_shared();
         if !self.history.go_to(step) {
             return false;
         }

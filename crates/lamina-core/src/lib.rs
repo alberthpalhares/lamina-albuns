@@ -13,6 +13,7 @@
 //! Convenção: identificadores em inglês, documentação em português.
 //! O glossário em `docs/glossario.md` faz a ponte (ex.: lâmina = `Spread`, quadro = `Frame`).
 
+pub mod byte_cache;
 pub mod color;
 pub mod document;
 pub mod geometry;

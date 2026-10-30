@@ -89,7 +89,7 @@ use lamina_editor::{
     Cache, Editor, Install, MODELS_FILE, ModelsStore, PREFS_FILE, PRESETS_FILE, PrefsStore,
     PresetsStore, RECENTS_FILE, RecentsStore, STRIPS_FILE, StripsStore, config_dir,
 };
-use slint::{CloseRequestResponse, ComponentHandle, Timer, TimerMode};
+use slint::{CloseRequestResponse, ComponentHandle, Timer};
 
 use crate::state::{App, Pending};
 
@@ -323,15 +323,10 @@ fn main() -> anyhow::Result<()> {
         });
     }
 
-    // As mensagens acordam a janela na hora; o temporizador só pega as que chegaram com o estado
-    // ocupado.
+    // As mensagens acordam a janela na hora, sem conferência repetida (spec LV, regra 7). Esta
+    // única pega as que chegaram antes de a caixa estar ligada.
     mailbox::install(rx, &app);
-    let poll = Timer::default();
-    poll.start(
-        TimerMode::Repeated,
-        Duration::from_millis(250),
-        mailbox::drain,
-    );
+    Timer::single_shot(Duration::ZERO, mailbox::drain);
     // Os arquivos que o sistema entrega, com o Lamina aberto ou abrindo (spec MA).
     let _listener = opened::listen(&app, opening);
     window.invoke_focus_main();
