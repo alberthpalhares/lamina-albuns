@@ -46,11 +46,8 @@ pub fn find_preset<'a>(presets: &'a [Preset], name: &str) -> Option<&'a Preset> 
 /// (`ultimo_tamanho`) viram o nome de agora (ET-B12). `None` quando o nome já é o de agora.
 pub fn renamed(name: &str, binder: Option<&str>) -> Option<(String, Option<String>)> {
     if let Some(rest) = name.strip_prefix("ProAlbuns ") {
-        // A ProAlbuns escrevia altura x largura; o 20x20 dela saiu e volta como o do Lamina.
+        // A ProAlbuns escrevia altura x largura.
         let (h, w) = rest.split_once('x')?;
-        if h == w {
-            return Some((format!("{w}x{h}cm"), None));
-        }
         return Some((format!("{w}x{h}cm"), binder.map(str::to_owned)));
     }
     let rest = ["Quadrado ", "Horizontal ", "Vertical "]

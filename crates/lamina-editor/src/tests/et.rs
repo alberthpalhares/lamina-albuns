@@ -108,9 +108,19 @@ fn et_b4_filtrar_por_laboratorio() {
             (Format::Portrait, 0)
         ]
     );
-    // Com "Todos", nada fica de fora; um laboratório que sumiu volta para "Todos".
-    let total: usize = size_choices(&all, None).iter().map(|(_, s)| s.len()).sum();
-    assert_eq!(total, all.len());
+    // Sem encadernadora, só os tamanhos padrão (decisão do dono de 2026-10-29); uma encadernadora
+    // que sumiu volta para eles.
+    let standard: Vec<Preset> = size_choices(&all, None)
+        .into_iter()
+        .flat_map(|(_, s)| s)
+        .collect();
+    assert_eq!(standard.len(), 15);
+    assert!(standard.iter().all(|p| p.binder.is_none()));
+    let proalbuns: usize = size_choices(&all, Some("ProAlbuns"))
+        .iter()
+        .map(|(_, s)| s.len())
+        .sum();
+    assert_eq!(proalbuns, 14);
     assert_eq!(binder_or_all(&all, Some("Lab B")), None);
     assert_eq!(
         binder_or_all(&all, Some(" Lab A ")),
@@ -241,7 +251,7 @@ fn et_b10_o_nome_e_a_medida() {
         .filter(|p| p.binder.as_deref() == Some("ProAlbuns"))
         .map(|p| p.name)
         .collect();
-    assert_eq!(proalbuns, ["20x15cm", "15x20cm", "25x20cm", "20x25cm"]);
+    assert_eq!(proalbuns.len(), 14, "os preenchidos da tabela da ProAlbuns");
 }
 
 #[test]
@@ -262,7 +272,7 @@ fn et_b11_encadernadoras_em_ordem_com_busca() {
         binder_list(&all, "ALBU"),
         ["álbuns Beta", "ProAlbuns", ADD_BINDER]
     );
-    assert_eq!(ALL_BINDERS, "Todas as encadernadoras");
+    assert_eq!(ALL_BINDERS, "Tamanhos padrão");
     assert_eq!(ADD_BINDER, "Adicionar a minha encadernadora…");
 }
 
@@ -281,10 +291,9 @@ fn et_b12_o_ultimo_tamanho_com_o_nome_antigo() {
         old("ProAlbuns 15x20", Some("ProAlbuns")),
         Some(("20x15cm".to_owned(), Some("ProAlbuns".to_owned())))
     );
-    // O 20x20 da ProAlbuns saiu e volta como o do Lamina.
     assert_eq!(
         old("ProAlbuns 20x20", Some("ProAlbuns")),
-        Some(("20x20cm".to_owned(), None))
+        Some(("20x20cm".to_owned(), Some("ProAlbuns".to_owned())))
     );
     assert_eq!(old("30x30cm", None), Some(("30x30cm".to_owned(), None)));
 }

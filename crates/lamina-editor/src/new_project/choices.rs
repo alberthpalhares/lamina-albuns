@@ -10,8 +10,9 @@ use crate::Preset;
 use crate::album::SpecFields;
 use crate::font_picker::fold;
 
-/// O primeiro item do filtro (regra 4).
-pub const ALL_BINDERS: &str = "Todas as encadernadoras";
+/// O primeiro item do filtro: os tamanhos do Lamina, sem encadernadora (regra 4; decisão do dono
+/// de 2026-10-29: os de uma encadernadora só aparecem com ela escolhida).
+pub const ALL_BINDERS: &str = "Tamanhos padrão";
 /// O convite do fim da lista de encadernadoras (regra 5).
 pub const ADD_BINDER: &str = "Adicionar a minha encadernadora…";
 
@@ -39,8 +40,8 @@ pub fn binders(presets: &[Preset]) -> Vec<String> {
     found
 }
 
-/// A lista que a janela mostra: "Todas as encadernadoras", as que batem com a busca (sem ligar
-/// para maiúsculas e acentos) e o convite no fim (ET-B11). Com a busca, "Todas" sai.
+/// A lista que a janela mostra: "Tamanhos padrão", as encadernadoras que batem com a busca (sem
+/// ligar para maiúsculas e acentos) e o convite no fim (ET-B11). Com a busca, "Tamanhos padrão" sai.
 pub fn binder_list(presets: &[Preset], search: &str) -> Vec<String> {
     let wanted = fold(search.trim());
     let mut list = Vec::new();
@@ -56,17 +57,18 @@ pub fn binder_list(presets: &[Preset], search: &str) -> Vec<String> {
     list
 }
 
-/// O filtro que vale: uma encadernadora que não existe mais volta para "Todas" (seção 6).
+/// O filtro que vale: uma encadernadora que não existe mais volta para os tamanhos padrão (seção 6).
 pub fn binder_or_all(presets: &[Preset], binder: Option<&str>) -> Option<String> {
     clean_binder(binder).filter(|l| binders(presets).contains(l))
 }
 
-/// Os tamanhos de cada formato com o filtro; um formato sem tamanho fica apagado (regra 4).
+/// Os tamanhos de cada formato com o filtro; um formato sem tamanho fica apagado (regra 4). Sem
+/// encadernadora, só os tamanhos sem encadernadora; com ela, só os dela.
 pub fn size_choices(presets: &[Preset], binder: Option<&str>) -> Vec<(Format, Vec<Preset>)> {
     let binder = binder_or_all(presets, binder);
     let kept: Vec<Preset> = presets
         .iter()
-        .filter(|p| binder.is_none() || clean_binder(p.binder.as_deref()) == binder)
+        .filter(|p| clean_binder(p.binder.as_deref()) == binder)
         .cloned()
         .collect();
     formats(&kept)

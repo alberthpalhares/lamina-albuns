@@ -40,39 +40,44 @@ fn np_b1_presets_separados_por_formato() {
             (f, s)
         })
         .collect();
+    // Os do Lamina, os da ProAlbuns (tabela de 2026-10-29) e o do fotógrafo, em ordem.
+    let square = [15.0, 20.0, 25.0, 30.0].map(|s| (s, s));
+    let mut squares = square.to_vec();
+    squares.extend(square);
+    let mut landscape = vec![
+        (21.0, 15.0),
+        (25.0, 20.0),
+        (30.0, 20.0),
+        (30.0, 25.0),
+        (35.0, 30.0),
+        (40.0, 30.0),
+        (45.0, 30.0),
+    ];
+    landscape.extend([
+        (20.0, 15.0),
+        (25.0, 20.0),
+        (30.0, 20.0),
+        (30.0, 25.0),
+        (35.0, 30.0),
+        (40.0, 30.0),
+        (45.0, 30.0),
+        (35.0, 25.0),
+    ]);
+    let portrait = vec![
+        (15.0, 21.0),
+        (20.0, 25.0),
+        (20.0, 30.0),
+        (25.0, 30.0),
+        (15.0, 20.0),
+        (20.0, 25.0),
+        (25.0, 30.0),
+    ];
     assert_eq!(
         sizes,
         [
-            (
-                Format::Square,
-                vec![(15.0, 15.0), (20.0, 20.0), (25.0, 25.0), (30.0, 30.0)]
-            ),
-            (
-                Format::Landscape,
-                vec![
-                    (21.0, 15.0),
-                    (25.0, 20.0),
-                    (30.0, 20.0),
-                    (30.0, 25.0),
-                    (35.0, 30.0),
-                    (40.0, 30.0),
-                    (45.0, 30.0),
-                    (20.0, 15.0),
-                    (25.0, 20.0),
-                    (35.0, 25.0)
-                ]
-            ),
-            (
-                Format::Portrait,
-                vec![
-                    (15.0, 21.0),
-                    (20.0, 25.0),
-                    (20.0, 30.0),
-                    (25.0, 30.0),
-                    (15.0, 20.0),
-                    (20.0, 25.0)
-                ]
-            ),
+            (Format::Square, squares),
+            (Format::Landscape, landscape),
+            (Format::Portrait, portrait),
         ]
     );
     assert_eq!(Format::Landscape.label(), "Horizontal");

@@ -76,9 +76,10 @@ Esta versão traz as fontes do computador nos textos, reencontra as fotos que mu
 - **Botões de girar menores.** Girar 90°, ajustar 0,1° e voltar a 0° viraram ícones pequenos, numa
   linha só ao lado do ângulo, cada um com o balão do que faz. Experimente: selecione uma foto e
   passe o mouse nos ícones de girar.
-- **Tamanhos da ProAlbuns.** Os álbuns 20x15cm, 15x20cm, 25x20cm e 20x25cm da ProAlbuns entraram
-  entre os tamanhos prontos, com a sangria que a encadernadora pede. Experimente: crie um álbum
-  novo, escolha a encadernadora ProAlbuns e um tamanho.
+- **Tamanhos da ProAlbuns.** Os 14 álbuns da tabela da ProAlbuns entraram, dos quadrados de
+  15x15cm a 30x30cm aos horizontais de até 45x30cm, com a sangria que ela pede. Eles aparecem com a
+  encadernadora ProAlbuns escolhida; em "Tamanhos padrão" ficam os do Lamina. Experimente: crie um
+  álbum novo e escolha a encadernadora ProAlbuns.
 - **Controle por IA mais certeiro.** A IA monta a primeira lâmina de um álbum em branco, dá nome ao
   álbum novo e troca o nome dele, mostra quanto cada sugestão de layout preenche, e explica por que
   uma importação ficou vazia. Experimente: peça à IA para criar um álbum com um nome.

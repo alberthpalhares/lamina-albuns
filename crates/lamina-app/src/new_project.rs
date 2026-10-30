@@ -69,6 +69,10 @@ pub fn start(app: &mut App) {
         .as_ref()
         .map_or(strips.format, |p| Format::of(&p.fields));
     if let Some(preset) = &chosen {
+        // A lista abre na encadernadora do tamanho marcado (ET, regra 4).
+        if let Some(binder) = &preset.binder {
+            ui.set_binder(binder.into());
+        }
         choose_preset(app, preset);
     }
     show_format(app, format_index(format));
@@ -102,13 +106,19 @@ pub fn open_spec(app: &mut App) {
     if let Some(preset) = &same {
         size.choose(preset);
     }
+    let binder = same.as_ref().and_then(|p| p.binder.clone());
     let (min, max) = limits_text(project.page_limits);
     app.new_export = session.export_prefs();
     let wizard = NewProject::new(size);
     let ui = w.global::<NewProjectUi>();
     ui.set_mode(1);
     ui.set_tab(if same.is_some() { 0 } else { 1 });
-    ui.set_binder(lamina_editor::new_project::ALL_BINDERS.into());
+    ui.set_binder(
+        binder
+            .as_deref()
+            .unwrap_or(lamina_editor::new_project::ALL_BINDERS)
+            .into(),
+    );
     ui.set_binder_search("".into());
     ui.set_advanced_open(false);
     ui.set_unit(unit_index(wizard.size.unit));

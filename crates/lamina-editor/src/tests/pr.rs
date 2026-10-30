@@ -72,24 +72,34 @@ fn pr_b1_presets_do_lamina() {
 #[test]
 fn pr_b12_presets_da_proalbuns() {
     let binder: Vec<Preset> = builtin_presets()[15..].to_vec();
-    let names: Vec<&str> = binder.iter().map(|p| p.name.as_str()).collect();
-    assert_eq!(names, ["20x15cm", "15x20cm", "25x20cm", "20x25cm"]);
-    // O arquivo da lâmina aberta, com a sangria, no tamanho que a ProAlbuns pediu (cm).
-    let files: Vec<(f64, f64)> = binder
-        .iter()
-        .map(|p| {
-            let canvas = p.fields.to_spec().unwrap().canvas_rect();
-            (canvas.height.get() / 10.0, canvas.width.get() / 10.0)
-        })
-        .collect();
-    // O 20x20 saiu (correção do dono de 2026-10-29).
-    let asked = [(15.2, 40.0), (20.3, 30.0), (20.3, 50.0), (25.4, 40.0)];
-    for ((h, w), (ah, aw)) in files.iter().zip(asked) {
-        assert!((h - ah).abs() < 1e-9 && (w - aw).abs() < 1e-9, "{h} × {w}");
-    }
-    assert_eq!(files.len(), asked.len());
-    for preset in &binder {
+    // A tabela que o dono da ProAlbuns mandou: o nome e os pixels da lâmina aberta a 300 DPI.
+    let table = [
+        ("15x15cm", 3543, 1795),
+        ("20x20cm", 4724, 2398),
+        ("25x25cm", 5906, 3000),
+        ("30x30cm", 7087, 3602),
+        ("20x15cm", 4724, 1795),
+        ("25x20cm", 5906, 2398),
+        ("30x20cm", 7087, 2398),
+        ("30x25cm", 7087, 3000),
+        ("35x30cm", 8268, 3602),
+        ("40x30cm", 9449, 3602),
+        ("45x30cm", 10630, 3602),
+        ("15x20cm", 3543, 2398),
+        ("20x25cm", 4724, 3000),
+        ("25x30cm", 5906, 3602),
+    ];
+    assert_eq!(binder.len(), table.len());
+    let px = |mm: f64| (mm / 25.4 * 300.0).round();
+    for (preset, (name, w, h)) in binder.iter().zip(table) {
+        assert_eq!(preset.name, name);
         assert_eq!(preset.binder.as_deref(), Some("ProAlbuns"));
+        let canvas = preset.fields.to_spec().unwrap().canvas_rect();
+        assert_eq!(
+            (px(canvas.width.get()), px(canvas.height.get())),
+            (f64::from(w), f64::from(h)),
+            "{name}"
+        );
         let bleed = preset.fields.bleed();
         assert_eq!(bleed.outer.get(), 0.0, "sem sangria nas laterais");
         assert_eq!(bleed.inner.get(), 0.0, "nem na lombada");
