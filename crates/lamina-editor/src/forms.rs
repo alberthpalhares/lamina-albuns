@@ -126,7 +126,7 @@ impl Editor {
             "Delete tira a foto · C ou duplo clique recorta · arraste para outro quadro para trocar"
         } else if self.session().is_some() {
             // Sem nada selecionado, o caminho das tarefas mais comuns (auditoria da Fase 4, 5 e 18).
-            "Arraste uma foto da faixa de baixo para um quadro · ← → trocam o layout · T cria um texto"
+            "Arraste uma foto da faixa de baixo para um quadro · ↑ ↓ trocam o layout · T cria um texto"
         } else {
             ""
         }

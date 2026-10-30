@@ -26,6 +26,7 @@ mod error;
 mod export;
 mod frames;
 mod layout;
+mod leave;
 mod listing;
 mod look;
 mod lookup;
@@ -46,9 +47,9 @@ mod values;
 pub use album::SPREADS_NEED_BUILD;
 pub use calls::{
     ApplyLayout, BuildAlbumCall, BuildSpread, ColorArg, ExportCall, FormatArg, FrameArg,
-    ListPhotos, MovePhoto, MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, PartArg, PhotoFilter,
-    PlacePhoto, Position, RunCommand, SaveAlbum, SpreadArg, Steps, SuggestLayouts, SwapPhotos,
-    ViewPhotos, ViewSpread,
+    LeaveAlbum, ListPhotos, MovePhoto, MoveSpread, NewAlbumCall, NoArgs, OpenAlbum, OrderArg,
+    PartArg, PhotoFilter, PlacePhoto, Position, RenameAlbum, RunCommand, SaveAlbum, SpreadArg,
+    Steps, SuggestLayouts, SwapPhotos, ViewPhotos, ViewSpread,
 };
 pub use catalog::{ToolCall, ToolInfo, tools};
 pub use error::ToolError;
@@ -93,7 +94,8 @@ pub struct Agent {
 #[derive(Debug)]
 struct Listed {
     spread: Spread,
-    count: usize,
+    /// A posição no painel de cada opção mostrada, na ordem da lista que a IA viu.
+    picks: Vec<usize>,
 }
 
 impl Agent {
@@ -144,6 +146,7 @@ impl Agent {
             ToolCall::OpenAlbum(a) => self.open_album(editor, &a),
             ToolCall::NewAlbum(a) => self.new_album(editor, &a, progress),
             ToolCall::SaveAlbum(a) => self.save_album(editor, &a),
+            ToolCall::RenameAlbum(a) => album::rename_album(editor, &a.nome),
             ToolCall::Summary(_) => self.summary(editor),
             ToolCall::ViewSpread(a) => self.view_spread(editor, &a),
             ToolCall::ListPhotos(a) => listing::list_photos(editor, a.filtro),
@@ -156,6 +159,7 @@ impl Agent {
             ToolCall::SwapPhotos(a) => self.swap(editor, &a),
             ToolCall::MovePhoto(a) => self.move_photo(editor, &a),
             ToolCall::ClearFrame(a) => self.clear(editor, &a),
+            ToolCall::LeaveAlbum(a) => self.leave_album(editor, &a),
             ToolCall::BuildSpread(a) => self.build_spread(editor, &a),
             ToolCall::BuildAlbum(a) => self.build_album(editor, &a, progress),
             ToolCall::NewSpread(a) => self.new_spread(editor, a.posicao),

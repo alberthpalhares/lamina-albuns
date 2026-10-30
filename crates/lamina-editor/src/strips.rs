@@ -52,7 +52,7 @@ pub enum Strip {
 }
 
 /// Quais faixas estão abertas (`true`) ou recolhidas.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Strips {
     /// A versão do estado da janela (spec JE). Arquivo sem o campo vale 0 (de antes da JE).
@@ -72,6 +72,10 @@ pub struct Strips {
     pub unit: crate::new_project::Unit,
     #[serde(rename = "ultimo_formato")]
     pub format: crate::new_project::Format,
+    /// O tamanho (nome do preset e laboratório) do último álbum criado, marcado na próxima vez
+    /// (spec ET, regra 1). Sem o campo, o primeiro tamanho do formato.
+    #[serde(rename = "ultimo_tamanho", skip_serializing_if = "Option::is_none")]
+    pub last_size: Option<(String, Option<String>)>,
     /// "Reduzir movimento" (spec MV, regra 14): também é estado da janela. Arquivo antigo sem o
     /// campo vale desligado.
     #[serde(rename = "reduzir_movimento")]
@@ -104,6 +108,7 @@ impl Default for Strips {
             panel: true,
             unit: crate::new_project::Unit::default(),
             format: crate::new_project::Format::Square,
+            last_size: None,
             reduce_motion: false,
             photos_zoom: crate::photo_grid::ZOOM_DEFAULT,
             photos_height: None,
@@ -141,7 +146,7 @@ impl Strips {
         self
     }
 
-    pub fn is_open(self, strip: Strip) -> bool {
+    pub fn is_open(&self, strip: Strip) -> bool {
         match strip {
             Strip::Spreads => self.spreads,
             Strip::Timeline => self.timeline,
@@ -283,7 +288,7 @@ pub fn strip_titles(session: &Session) -> [String; 3] {
             plural(spreads, "lâmina"),
             plural(pages, "página")
         ),
-        "Sequência · arraste um corte para passar fotos entre lâminas".to_owned(),
+        "Sequência · arraste uma foto ou um corte para mudar as fotos de lâmina".to_owned(),
         photos_title(session, 0),
     ]
 }

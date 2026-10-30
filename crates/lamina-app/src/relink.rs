@@ -1,11 +1,10 @@
-//! Reencontrar fotos (spec EI, regras 5 a 7): sozinho ao abrir e por uma pasta escolhida, sempre
-//! fora da linha da janela.
+//! Reencontrar fotos (spec EI, regras 5 a 7): sozinho ao abrir, fora da linha da janela, e o
+//! resultado de toda procura. A janela das pastas ausentes mora em `relink_dialog` (spec RF).
 
 use std::path::PathBuf;
 
 use lamina_editor::{
-    Found, HumanMessage, RELINK_LATER, guarded, not_found_message, relinked_message, search_folder,
-    search_near,
+    Found, HumanMessage, RELINK_LATER, guarded, not_found_message, relinked_message, search_near,
 };
 
 use crate::files::show_error;
@@ -31,48 +30,6 @@ pub fn near(app: &App) {
                 file,
                 found,
                 folder: None,
-            },
-            Err(problem) => Msg::Failed(problem),
-        });
-    });
-}
-
-/// "Procurar fotos ausentes…": a pasta escolhida e as subpastas, com andamento.
-pub fn find(app: &mut App) {
-    if app.session().is_none() {
-        return;
-    }
-    let answer = crate::dialogs::dialog(app, "Procurar fotos ausentes em").pick_folder();
-    crate::dialogs::then(answer, |app, folder| {
-        if let Some(folder) = folder {
-            search(app, folder.path().to_path_buf());
-        }
-    });
-}
-
-/// Procura na pasta escolhida, em segundo plano.
-fn search(app: &mut App, folder: std::path::PathBuf) {
-    let Some(session) = app.session() else {
-        return;
-    };
-    let project = session.project().clone();
-    let missing = session.missing().to_vec();
-    let file = session.file().map(std::path::Path::to_path_buf);
-    if let Some(w) = app.window.upgrade() {
-        w.set_busy_text("Procurando as fotos…".into());
-    }
-    app.editor.set_busy(true);
-    let tx = app.tx.clone();
-    std::thread::spawn(move || {
-        let progress = |done: usize, total: usize| {
-            let _ = tx.send(Msg::Searching(done, total));
-        };
-        let found = guarded(|| search_folder(&project, &missing, &folder, &progress));
-        let _ = tx.send(match found {
-            Ok(found) => Msg::Relinked {
-                file,
-                found,
-                folder: Some(folder),
             },
             Err(problem) => Msg::Failed(problem),
         });
@@ -124,6 +81,7 @@ fn relinked(app: &mut App, file: Option<PathBuf>, found: &[Found], folder: Optio
                     app.notice = RELINK_LATER.to_owned();
                     app.refresh_current();
                 }
+                crate::relink_dialog::after_open(app);
                 return;
             }
         }
@@ -135,11 +93,19 @@ fn relinked(app: &mut App, file: Option<PathBuf>, found: &[Found], folder: Optio
         app.project_changed();
         app.notice = relinked_message(changed, still).unwrap_or_default();
         app.refresh_current();
-    } else if let Some(folder) = folder {
-        let message = not_found_message(before, &folder);
-        show_error(
-            app,
-            &HumanMessage::new("Nenhuma foto ausente foi encontrada.", message, ""),
-        );
+    }
+    match folder {
+        // A janela das pastas ausentes mostra o resultado dentro dela (spec RF, seção 6).
+        Some(folder) if crate::relink_dialog::searched(app, changed, &folder) => {}
+        Some(folder) if changed == 0 => {
+            let message = not_found_message(before, &folder);
+            show_error(
+                app,
+                &HumanMessage::new("Nenhuma foto ausente foi encontrada.", message, ""),
+            );
+        }
+        Some(_) => {}
+        // Depois da procura de sempre ao abrir (spec RF, regra 2).
+        None => crate::relink_dialog::after_open(app),
     }
 }

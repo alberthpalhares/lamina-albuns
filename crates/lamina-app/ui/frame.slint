@@ -1,7 +1,9 @@
 // A aba Quadro (spec TX, seção 3): medidas do quadro selecionado em mm e, num quadro de texto, o
 // texto e os campos dele. Só desenho: os valores e as edições vêm do editor.
 
-import { Button, CheckBox, ComboBox, LineEdit, ScrollView, TextEdit } from "std-widgets.slint";
+import { Button, CheckBox, LineEdit, ScrollView, TextEdit } from "std-widgets.slint";
+import { FontField } from "font_list.slint";
+import { NumberField } from "number_field.slint";
 import { Theme } from "theme.slint";
 import { LookUi, Swatches } from "look.slint";
 
@@ -16,8 +18,9 @@ export global FrameUi {
     in property <string> unit: "mm";
     in property <string> rect-error;
     in-out property <string> text;
-    in property <[string]> fonts;
-    in-out property <int> font: -1;
+    // O nome da fonte, com "(não está neste computador)" quando falta (spec FS, regra 5).
+    in property <string> font-label;
+    in property <bool> font-missing;
     in-out property <string> size;
     in property <string> size-error;
     in-out property <bool> bold;
@@ -33,7 +36,6 @@ export global FrameUi {
     in property <int> focus-count;
     callback rect-accepted();
     callback text-edited(string);
-    callback font-picked(int);
     callback size-accepted(string);
     callback bold-toggled(bool);
     callback italic-toggled(bool);
@@ -91,15 +93,15 @@ export component FramePanel inherits ScrollView {
             spacing: 6px;
             Row {
                 Label { text: "X"; }
-                LineEdit { width: 84px; text <=> FrameUi.x; accepted => { FrameUi.rect-accepted(); } }
+                NumberField { step-accepts: true; width: 84px; text <=> FrameUi.x; accepted => { FrameUi.rect-accepted(); } }
                 Label { text: "Y"; }
-                LineEdit { width: 84px; text <=> FrameUi.y; accepted => { FrameUi.rect-accepted(); } }
+                NumberField { step-accepts: true; width: 84px; text <=> FrameUi.y; accepted => { FrameUi.rect-accepted(); } }
             }
             Row {
                 Label { text: "Larg."; }
-                LineEdit { width: 84px; text <=> FrameUi.w; accepted => { FrameUi.rect-accepted(); } }
+                NumberField { step-accepts: true; width: 84px; text <=> FrameUi.w; accepted => { FrameUi.rect-accepted(); } }
                 Label { text: "Alt."; }
-                LineEdit { width: 84px; text <=> FrameUi.h; accepted => { FrameUi.rect-accepted(); } }
+                NumberField { step-accepts: true; width: 84px; text <=> FrameUi.h; accepted => { FrameUi.rect-accepted(); } }
             }
         }
         if FrameUi.rect-error != "": Error { text: FrameUi.rect-error; }
@@ -114,15 +116,17 @@ export component FramePanel inherits ScrollView {
             init => { if (FrameUi.is-text && FrameUi.focus-count > 0) { self.focus(); } }
         }
         if FrameUi.is-text: Label { text: "Fonte"; }
-        if FrameUi.is-text: ComboBox {
-            model: FrameUi.fonts;
-            current-index <=> FrameUi.font;
-            selected => { FrameUi.font-picked(self.current-index); root.done(); }
+        if FrameUi.is-text: FontField {
+            label: FrameUi.font-label;
+            missing: FrameUi.font-missing;
+            done => { root.done(); }
         }
         if FrameUi.is-text: HorizontalLayout {
             spacing: 8px;
             Label { text: "Tamanho (pt)"; }
-            LineEdit {
+            NumberField {
+                step-accepts: true;
+                minimum: 1;
                 width: 64px;
                 text <=> FrameUi.size;
                 accepted(t) => { FrameUi.size-accepted(t); }
@@ -165,7 +169,11 @@ export component FramePanel inherits ScrollView {
         if FrameUi.is-text: HorizontalLayout {
             spacing: 8px;
             Label { text: "Entrelinha"; }
-            LineEdit {
+            NumberField {
+                step-accepts: true;
+                step: 0.1;
+                minimum: 0.5;
+                maximum: 3;
                 width: 64px;
                 text <=> FrameUi.spacing;
                 accepted(t) => { FrameUi.spacing-accepted(t); }

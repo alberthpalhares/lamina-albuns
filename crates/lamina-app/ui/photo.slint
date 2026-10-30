@@ -4,9 +4,10 @@
 // decide e o Rust preenche o `PhotoUi`.
 
 import { Button, CheckBox, LineEdit } from "std-widgets.slint";
+import { NumberField } from "number_field.slint";
 import { Theme } from "theme.slint";
 import { LookUi, Stepper, Swatches } from "look.slint";
-import { NeutralSlider } from "widgets.slint";
+import { IconButton, NeutralSlider } from "widgets.slint";
 
 export global PhotoUi {
     in property <bool> has-photo;
@@ -87,28 +88,54 @@ export component PhotoSection inherits VerticalLayout {
         released => { PhotoUi.released(); }
         reset => { PhotoUi.angle-reset(); }
     }
+    // Os passos do giro em ícones pequenos, numa linha só (spec CD, correção de 2026-10-28).
     HorizontalLayout {
-        spacing: 4px;
-        LineEdit {
+        spacing: 2px;
+        alignment: start;
+        NumberField {
+            step-accepts: true;
+            minimum: -180;
+            maximum: 180;
             enabled: PhotoUi.can-turn;
             width: 64px;
             text <=> PhotoUi.angle;
             accepted => { PhotoUi.angle-accepted(); }
         }
-        Button { text: "−90°"; enabled: PhotoUi.can-turn; clicked => { PhotoUi.quarter(-1); } }
-        Button { text: "+90°"; enabled: PhotoUi.can-turn; clicked => { PhotoUi.quarter(1); } }
-    }
-    HorizontalLayout {
-        spacing: 4px;
-        Button { text: "−0,1"; enabled: PhotoUi.can-turn; clicked => { PhotoUi.angle-step(-1); } }
-        Button { text: "+0,1"; enabled: PhotoUi.can-turn; clicked => { PhotoUi.angle-step(1); } }
-        Button { text: "0°"; enabled: PhotoUi.can-turn; clicked => { PhotoUi.angle-zero(); } }
+        Rectangle { width: 4px; }
+        IconButton {
+            width: 26px; height: 26px; icon-size: 18px; tip-side: -1;
+            icon: @image-url("../icons/cd/girar-esquerda.svg"); tip: "Girar 90° para a esquerda";
+            enabled: PhotoUi.can-turn; clicked => { PhotoUi.quarter(-1); }
+        }
+        IconButton {
+            width: 26px; height: 26px; icon-size: 18px; tip-side: -1;
+            icon: @image-url("../icons/cd/girar-direita.svg"); tip: "Girar 90° para a direita";
+            enabled: PhotoUi.can-turn; clicked => { PhotoUi.quarter(1); }
+        }
+        IconButton {
+            width: 26px; height: 26px; icon-size: 18px;
+            icon: @image-url("../icons/cd/fino-esquerda.svg"); tip: "−0,1°";
+            enabled: PhotoUi.can-turn; clicked => { PhotoUi.angle-step(-1); }
+        }
+        IconButton {
+            width: 26px; height: 26px; icon-size: 18px;
+            icon: @image-url("../icons/cd/fino-direita.svg"); tip: "+0,1°";
+            enabled: PhotoUi.can-turn; clicked => { PhotoUi.angle-step(1); }
+        }
+        IconButton {
+            width: 26px; height: 26px; icon-size: 18px; tip-side: 1;
+            icon: @image-url("../icons/cd/zerar.svg"); tip: "Voltar a 0°";
+            enabled: PhotoUi.can-turn; clicked => { PhotoUi.angle-zero(); }
+        }
     }
     // A escala pelo controle (spec CD, regra 1): proporcional ao logaritmo, de 100% a 800%.
     HorizontalLayout {
         spacing: 6px;
         Label { text: "Escala (%)"; vertical-alignment: center; }
-        LineEdit {
+        NumberField {
+            step-accepts: true;
+            minimum: 100;
+            maximum: 800;
             enabled: PhotoUi.can-turn;
             width: 70px;
             text <=> PhotoUi.scale;

@@ -11,20 +11,18 @@ const NOTHING: &str = "Diga o preset ou as medidas: largura_cm, altura_cm, dpi, 
                        paginas_min ou paginas_max.";
 
 impl Agent {
-    /// O preset de nome `name` (sem diferença de maiúsculas), do Lamina ou do fotógrafo.
+    /// O preset de nome `name` (sem diferença de maiúsculas), do Lamina ou do fotógrafo; um nome
+    /// repetido entre encadernadoras se acha pelo nome completo, "25x20cm (ProAlbuns)" (PR-B13).
     pub(super) fn preset(&self, name: &str) -> Result<&Preset, ToolError> {
-        self.presets
-            .iter()
-            .find(|p| p.name.eq_ignore_ascii_case(name.trim()))
-            .ok_or_else(|| ToolError::NoPreset {
-                name: name.to_owned(),
-                known: self
-                    .presets
-                    .iter()
-                    .map(|p| p.name.as_str())
-                    .collect::<Vec<_>>()
-                    .join(", "),
-            })
+        crate::preset_names::find_preset(&self.presets, name).ok_or_else(|| ToolError::NoPreset {
+            name: name.to_owned(),
+            known: self
+                .presets
+                .iter()
+                .map(Preset::full_name)
+                .collect::<Vec<_>>()
+                .join(", "),
+        })
     }
 
     pub(super) fn respec(

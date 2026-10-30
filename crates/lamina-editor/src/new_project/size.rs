@@ -32,8 +32,9 @@ pub struct SizeForm {
     pub unit: Unit,
     /// A largura digitada é a da lâmina aberta (o dobro da página)?
     pub open_spread: bool,
-    /// O preset escolhido por último e se algum campo mudou depois dele (regra 2).
-    from: Option<String>,
+    /// O preset escolhido por último (nome e laboratório) e se algum campo mudou depois dele
+    /// (regra 2).
+    from: Option<(String, Option<String>)>,
     edited: bool,
 }
 
@@ -49,17 +50,22 @@ impl SizeForm {
     /// Escolher um tamanho preenche o Personalizado com os valores dele (regra 2).
     pub fn choose(&mut self, preset: &Preset) {
         self.fields = preset.fields.clone();
-        self.from = Some(preset.name.clone());
+        self.from = Some((preset.name.clone(), preset.binder.clone()));
         self.edited = false;
     }
 
-    /// "Quadrado 30 × 30", "Personalizado (a partir de Quadrado 30 × 30)" ou "Personalizado".
+    /// "30x30cm", "Personalizado (a partir de 30x30cm)" ou "Personalizado".
     pub fn label(&self) -> String {
         match (&self.from, self.edited) {
-            (Some(name), false) => name.clone(),
-            (Some(name), true) => format!("Personalizado (a partir de {name})"),
+            (Some((name, _)), false) => name.clone(),
+            (Some((name, _)), true) => format!("Personalizado (a partir de {name})"),
             (None, _) => "Personalizado".to_owned(),
         }
+    }
+
+    /// O preset escolhido, se nenhum campo mudou depois dele (spec ET, regras 1 e 2).
+    pub fn chosen(&self) -> Option<&(String, Option<String>)> {
+        self.from.as_ref().filter(|_| !self.edited)
     }
 
     /// Troca a unidade: os números da tela mudam, a medida não (regra 3).

@@ -68,11 +68,14 @@ impl Editor {
         true
     }
 
-    /// Solta: grava o gesto como uma edição (regra 10). Sem movimento, nada muda.
+    /// Solta: grava o gesto como uma edição (regra 10). Sem movimento, nada muda. Soltar num
+    /// texto mostra o campo dele na aba Quadro, sem tirar o teclado da lâmina (correção TX de
+    /// 2026-10-28); pedir só no soltar, porque mudar a tela no meio do gesto solta o mouse.
     pub fn frame_release(&mut self) -> bool {
         let Some(g) = self.gesture.take() else {
             return false;
         };
+        self.show_text(super::TextFocus::Tab);
         if g.now == g.start {
             return false;
         }

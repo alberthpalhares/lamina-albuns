@@ -47,18 +47,23 @@ pub mod commands;
 pub mod editor;
 pub mod edits;
 pub mod edits_cross;
+pub mod empty_import;
 pub mod error_log;
 pub mod example;
 mod export_form;
 pub mod exporting;
 pub mod feedback;
+pub mod font_picker;
 pub mod forms;
 pub mod frame_form;
 pub mod group;
 pub mod hand;
+mod hand_click;
 pub mod human;
 pub mod importing;
 pub mod keys;
+pub mod lab_presets;
+pub mod leaving;
 mod look_form;
 pub mod magnets;
 pub mod marks;
@@ -66,20 +71,29 @@ pub mod models;
 pub mod motion;
 pub mod naming;
 pub mod new_project;
+pub mod number_step;
 pub mod organize_bar;
 pub mod palette_tips;
 pub mod panel_width;
 pub mod photo_grid;
 pub mod photos;
 pub mod prefs_store;
+pub mod preset_names;
 pub mod presets;
 pub mod received;
 pub mod recents;
 pub mod relink;
+pub mod relink_discover;
+pub mod relink_folders;
+pub mod relink_moved;
+pub mod relink_text;
+pub mod removing;
 pub mod respec;
+pub mod reveal;
 pub mod roll_image;
 pub mod rulers;
 pub mod screens;
+pub mod sequence;
 pub mod session;
 pub mod shortcuts;
 pub mod sliders;
@@ -125,11 +139,14 @@ pub use recents::{RECENTS_FILE, Recent, RecentsStore};
 pub use relink::{
     Found, RELINK_LATER, not_found_message, relinked_message, search_folder, search_near,
 };
+pub use relink_discover::{Discovery, discover};
+pub use relink_folders::{MissingFolder, disconnected, missing_folders};
+pub use relink_moved::{Located, locate, search_moved};
 pub use roll_image::{ImageSize, RollPainter, RollSource, SpreadImage, render_spread_image};
 pub use screens::{
     Arrival, ScreenPlan, load_original, load_screen, load_thumb, load_thumb_sized, prepare_images,
 };
-pub use session::{HistoryList, HistoryStep, Session};
+pub use session::{HistoryList, HistoryStep, Session, missing_among, photo_paths, still_missing};
 pub use snap::{Grip, SnapLine};
 pub use strips::{
     Install, STRIPS_FILE, STRIPS_UNREADABLE, STRIPS_VERSION, Strip, Strips, StripsStore,
@@ -143,5 +160,5 @@ pub use text::{
 pub use thumbs::{THUMBS_KEPT, ThumbList, ThumbOrders, ThumbPlan};
 pub use updates::{UPDATES_FILE, Updates, UpdatesStore};
 pub use view::{
-    Area, FrameKind, FrameView, PxRect, SpreadView, frame_at, photo_extent, spread_view,
+    Area, FrameKind, FrameView, PxRect, SpreadView, frame_at, layers, photo_extent, spread_view,
 };

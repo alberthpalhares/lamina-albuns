@@ -43,6 +43,7 @@ impl Command {
                 Menu::File,
                 Some(S::ctrl('w')),
             ),
+            C::Quit => ("arquivo.sair", "Sair", Menu::File, Some(S::ctrl('q'))),
             C::ClearRecents => (
                 "arquivo.limpar-recentes",
                 "Limpar recentes não fixados…",
@@ -51,7 +52,13 @@ impl Command {
             ),
             C::FindMissing => (
                 "arquivo.procurar-fotos",
-                "Procurar fotos ausentes…",
+                "Reencontrar fotos…",
+                Menu::File,
+                None,
+            ),
+            C::LocatePhoto => (
+                "arquivo.localizar-foto",
+                "Localizar esta foto…",
                 Menu::File,
                 None,
             ),

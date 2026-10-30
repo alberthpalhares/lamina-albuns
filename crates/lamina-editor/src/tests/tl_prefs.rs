@@ -161,14 +161,13 @@ fn tl_b12_registro_de_comandos() {
         .collect();
     let unique: std::collections::HashSet<_> = shortcuts.iter().collect();
     assert_eq!(unique.len(), shortcuts.len(), "atalhos repetidos");
+    // ↓ e ↑ trocam o layout; ← e → mudam de lâmina; Shift+↑ não faz nada (2026-10-28).
     let key = |k| Command::from_shortcut(Shortcut::key(k));
-    assert_eq!(key(Key::Right), Some(Command::NextLayout));
-    assert_eq!(key(Key::Left), Some(Command::PreviousLayout));
-    assert_eq!(key(Key::Down), Some(Command::NextLeft));
-    assert_eq!(
-        Command::from_shortcut(Shortcut::shift(Key::Up)),
-        Some(Command::PreviousRight)
-    );
+    assert_eq!(key(Key::Down), Some(Command::NextLayout));
+    assert_eq!(key(Key::Up), Some(Command::PreviousLayout));
+    assert_eq!(key(Key::Right), Some(Command::NextSpread));
+    assert_eq!(key(Key::Left), Some(Command::PreviousSpread));
+    assert_eq!(Command::from_shortcut(Shortcut::shift(Key::Up)), None);
     assert_eq!(
         Command::from_shortcut(Shortcut::ctrl('z')),
         Some(Command::Undo)
@@ -180,7 +179,7 @@ fn tl_b12_registro_de_comandos() {
     let editor = Editor::new();
     for command in [
         Command::NextLayout,
-        Command::NextLeft,
+        Command::PreviousLayout,
         Command::Mirror,
         Command::Favorite,
         Command::Undo,

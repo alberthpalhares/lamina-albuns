@@ -1,6 +1,7 @@
-//! Presets (spec PR): especificações prontas, com a faixa de páginas e o que o laboratório pede na
-//! exportação. Os do Lamina vêm do programa (tamanhos comuns, sem nome de laboratório: regra 6 do
-//! AGENTS); os do fotógrafo ficam em `presets.json`, na pasta de configuração.
+//! Presets (spec PR): especificações prontas, com a faixa de páginas e o que a encadernadora pede na
+//! exportação. Os do Lamina vêm do programa (tamanhos comuns e, desde 2026-10-29, os que uma
+//! encadernadora nos passou, em `lab_presets`); os do fotógrafo ficam em `presets.json`, na pasta de
+//! configuração.
 
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
@@ -13,9 +14,9 @@ use crate::human::Human as _;
 
 /// Arquivo dos presets do fotógrafo, ao lado das preferências de layout.
 pub const PRESETS_FILE: &str = "presets.json";
-/// Versão do formato do arquivo: a 2 guarda a sangria e a zona segura por borda (spec NP); a 1,
-/// lida como margens iguais nas bordas, não tinha esses campos.
-const VERSION: u32 = 2;
+/// Versão do formato do arquivo: a 3 guarda o laboratório (spec ET, regra 8); a 2, a sangria e a
+/// zona segura por borda (spec NP); a 1, lida como margens iguais nas bordas, não tinha esses campos.
+const VERSION: u32 = 3;
 
 /// Uma especificação pronta.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -28,32 +29,50 @@ pub struct Preset {
     pub limits: PageLimits,
     #[serde(rename = "exportacao", default)]
     pub export: ExportPrefs,
+    /// A encadernadora do preset, só um rótulo para filtrar (spec ET); sem ela, um tamanho comum.
+    /// No disco continua `laboratorio`, para a beta 6 ler o arquivo (correção de 2026-10-29).
+    #[serde(
+        rename = "laboratorio",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub binder: Option<String>,
+    /// O tipo de álbum da encadernadora, quando ela tem tipos com regras diferentes. Previsto
+    /// nos dados, ainda sem tela (spec ET, correção de 2026-10-29).
+    #[serde(rename = "tipo", default, skip_serializing_if = "Option::is_none")]
+    pub album_type: Option<String>,
 }
 
 /// Os presets do Lamina (regra 1): os tamanhos padrão de mercado de cada formato, largura ×
-/// altura da página (decisão do dono, 2026-10-19), todos a 300 DPI, 3 mm de sangria, 10 mm de
-/// zona segura, 20 a 80 páginas, JPEG em sRGB.
+/// altura da página (decisão do dono, 2026-10-19), com o nome igual à medida ("30x30cm"), todos a 300 DPI, 3 mm de sangria, 10 mm de
+/// zona segura, 20 a 80 páginas, JPEG em sRGB. Depois deles, os de laboratório.
 pub fn builtin_presets() -> Vec<Preset> {
+    let mut all = common_presets();
+    all.extend(crate::lab_presets::proalbuns_presets());
+    all
+}
+
+fn common_presets() -> Vec<Preset> {
     [
-        ("Quadrado 15 × 15", 15.0, 15.0),
-        ("Quadrado 20 × 20", 20.0, 20.0),
-        ("Quadrado 25 × 25", 25.0, 25.0),
-        ("Quadrado 30 × 30", 30.0, 30.0),
-        ("Horizontal 21 × 15", 21.0, 15.0),
-        ("Horizontal 25 × 20", 25.0, 20.0),
-        ("Horizontal 30 × 20", 30.0, 20.0),
-        ("Horizontal 30 × 25", 30.0, 25.0),
-        ("Horizontal 35 × 30", 35.0, 30.0),
-        ("Horizontal 40 × 30", 40.0, 30.0),
-        ("Horizontal 45 × 30", 45.0, 30.0),
-        ("Vertical 15 × 21", 15.0, 21.0),
-        ("Vertical 20 × 25", 20.0, 25.0),
-        ("Vertical 20 × 30", 20.0, 30.0),
-        ("Vertical 25 × 30", 25.0, 30.0),
+        (15.0, 15.0),
+        (20.0, 20.0),
+        (25.0, 25.0),
+        (30.0, 30.0),
+        (21.0, 15.0),
+        (25.0, 20.0),
+        (30.0, 20.0),
+        (30.0, 25.0),
+        (35.0, 30.0),
+        (40.0, 30.0),
+        (45.0, 30.0),
+        (15.0, 21.0),
+        (20.0, 25.0),
+        (20.0, 30.0),
+        (25.0, 30.0),
     ]
     .into_iter()
-    .map(|(name, width_cm, height_cm)| Preset {
-        name: name.to_owned(),
+    .map(|(width_cm, height_cm)| Preset {
+        name: crate::preset_names::size_name(width_cm, height_cm),
         fields: SpecFields {
             width_cm,
             height_cm,
@@ -64,6 +83,8 @@ pub fn builtin_presets() -> Vec<Preset> {
             max: Some(80),
         },
         export: ExportPrefs::default(),
+        binder: None,
+        album_type: None,
     })
     .collect()
 }
@@ -135,21 +156,31 @@ impl PresetsStore {
         &self.user
     }
 
-    /// O preset de nome `name`, do Lamina ou do fotógrafo.
+    /// O preset de nome `name`, do Lamina ou do fotógrafo: pelo nome completo, "25x20cm
+    /// (ProAlbuns)", ou pelo nome sozinho (PR-B13).
     pub fn find(&self, name: &str) -> Option<Preset> {
-        self.all().into_iter().find(|p| p.name == name)
+        crate::preset_names::find_preset(&self.all(), name).cloned()
     }
 
-    /// Já existe um preset do fotógrafo com esse nome (para perguntar antes de substituir)?
-    pub fn exists(&self, name: &str) -> bool {
-        self.user.iter().any(|p| p.name == name.trim())
+    /// Já existe um preset do fotógrafo com esse nome na encadernadora (para perguntar antes de
+    /// substituir)? O mesmo nome em encadernadoras diferentes são dois presets (spec ET, seção 6).
+    pub fn exists(&self, name: &str, binder: Option<&str>) -> bool {
+        let binder = crate::new_project::clean_binder(binder);
+        self.user
+            .iter()
+            .any(|p| p.name == name.trim() && p.binder == binder)
     }
 
     /// Salva (ou substitui) o preset e grava o arquivo (regra 2).
     pub fn save(&mut self, mut preset: Preset) -> Result<(), PresetError> {
         preset.name = preset.name.trim().to_owned();
+        preset.binder = crate::new_project::clean_binder(preset.binder.as_deref());
         check(&preset)?;
-        match self.user.iter_mut().find(|p| p.name == preset.name) {
+        match self
+            .user
+            .iter_mut()
+            .find(|p| p.name == preset.name && p.binder == preset.binder)
+        {
             Some(existing) => *existing = preset,
             None => self.user.push(preset),
         }
@@ -173,7 +204,7 @@ impl PresetsStore {
         };
         preset.name = new.trim().to_owned();
         check(&preset)?;
-        if self.exists(&preset.name) && preset.name != old {
+        if self.exists(&preset.name, preset.binder.as_deref()) && preset.name != old {
             return Err(PresetError::Exists(preset.name));
         }
         // Renomear deixa o preset no mesmo lugar da lista (auditoria do Marco 3, D5).
@@ -200,7 +231,11 @@ fn check(preset: &Preset) -> Result<(), PresetError> {
     if preset.name.is_empty() {
         return Err(PresetError::EmptyName);
     }
-    if builtin_presets().iter().any(|p| p.name == preset.name) {
+    // O mesmo nome de um preset do Lamina só vale com outra encadernadora (como os da ProAlbuns).
+    if builtin_presets()
+        .iter()
+        .any(|p| p.name == preset.name && p.binder == preset.binder)
+    {
         return Err(PresetError::Builtin);
     }
     if let (Some(min), Some(max)) = (preset.limits.min, preset.limits.max)

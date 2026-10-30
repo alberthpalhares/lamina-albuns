@@ -15,11 +15,11 @@ ajustar as fotos e mandar para a gráfica.
 [![Licença](https://img.shields.io/badge/licen%C3%A7a-Apache--2.0-2A2D31)](LICENSE)
 [![Verificação](https://github.com/alberthpalhares/lamina-app/actions/workflows/ci.yml/badge.svg)](https://github.com/alberthpalhares/lamina-app/actions/workflows/ci.yml)
 
-[![Baixar para Windows](https://img.shields.io/badge/Baixar_para-Windows_10_e_11-0095B6?style=for-the-badge)](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.6/Lamina-win-beta-Setup.exe)
-[![Baixar para Mac](https://img.shields.io/badge/Baixar_para-Mac_Intel_e_Apple-0095B6?style=for-the-badge)](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.6/Lamina-osx-beta-Setup.pkg)
-[![Baixar para Linux](https://img.shields.io/badge/Baixar_para-Linux-0095B6?style=for-the-badge)](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.6/Lamina-linux-beta.AppImage)
+[![Baixar para Windows](https://img.shields.io/badge/Baixar_para-Windows_10_e_11-0095B6?style=for-the-badge)](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.7/Lamina-win-beta-Setup.exe)
+[![Baixar para Mac](https://img.shields.io/badge/Baixar_para-Mac_Intel_e_Apple-0095B6?style=for-the-badge)](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.7/Lamina-osx-beta-Setup.pkg)
+[![Baixar para Linux](https://img.shields.io/badge/Baixar_para-Linux-0095B6?style=for-the-badge)](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.7/Lamina-linux-beta.AppImage)
 
-<sub>Versão 0.1.0-beta.6 · [como instalar sem susto](#instalar) · [site](https://alberthpalhares.github.io/lamina-app/) · [todas as versões](https://github.com/alberthpalhares/lamina-app/releases)</sub>
+<sub>Versão 0.1.0-beta.7 · [como instalar sem susto](#instalar) · [site](https://alberthpalhares.github.io/lamina-app/) · [todas as versões](https://github.com/alberthpalhares/lamina-app/releases)</sub>
 
 <img src="site/midia/diagramar.webp" alt="O Lamina com o álbum de exemplo: as lâminas passam e o layout de cada uma troca pelas setas" width="900">
 
@@ -51,8 +51,8 @@ ajustar as fotos e mandar para a gráfica.
     <td width="33%" valign="top">
       <img src="crates/lamina-app/dist/novidades/faixa-de-layouts.png" alt="" width="100%"><br>
       <b>Layouts feitos para as suas fotos.</b> Cada layout é calculado pela proporção de cada
-      foto, sem biblioteca fixa de modelos e sem cortar foto sem necessidade. As setas trocam de
-      layout; <kbd>L</kbd> mostra todos de uma vez.
+      foto, sem biblioteca fixa de modelos e sem cortar foto sem necessidade. <kbd>↑</kbd> e
+      <kbd>↓</kbd> trocam de layout; <kbd>L</kbd> mostra todos de uma vez.
     </td>
     <td width="33%" valign="top">
       <img src="crates/lamina-app/dist/novidades/rolo.png" alt="" width="100%"><br>
@@ -131,7 +131,7 @@ antivírus continua examinando tudo normalmente.
 
 **Plano B — pelo navegador (com o aviso).**
 
-1. Baixe o [`Setup.exe`](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.6/Lamina-win-beta-Setup.exe).
+1. Baixe o [`Setup.exe`](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.7/Lamina-win-beta-Setup.exe).
 2. Se o navegador segurar o arquivo: no **Edge**, clique nos três pontinhos ao lado do download →
    **Manter** → **Mostrar mais** → **Manter mesmo assim**; no **Chrome**, clique em **Manter**.
 3. Abra o arquivo. Na janela azul **"O Windows protegeu o computador"**, clique em
@@ -160,7 +160,7 @@ O Lamina vai para a pasta **Aplicativos** e passa a abrir os arquivos `.lamina` 
 
 **Plano B — pelo instalador (com o aviso).**
 
-1. Baixe o [`Setup.pkg`](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.6/Lamina-osx-beta-Setup.pkg) e abra.
+1. Baixe o [`Setup.pkg`](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.7/Lamina-osx-beta-Setup.pkg) e abra.
 2. Se o Mac disser que **não pode verificar o desenvolvedor**, clique em **OK** (ou **Concluído**).
 3. Abra **Ajustes do Sistema** → **Privacidade e Segurança**, role até o fim e, ao lado da
    mensagem sobre o Lamina, clique em **Abrir mesmo assim**. Confirme com a senha do Mac.
@@ -189,7 +189,7 @@ curl -fsSL https://raw.githubusercontent.com/alberthpalhares/lamina-app/main/cra
 
 O Lamina fica em `~/.local/bin/Lamina.AppImage`; abra uma vez por ele para o atalho entrar no menu.
 
-**Plano B — pelo navegador.** Baixe o [`.AppImage`](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.6/Lamina-linux-beta.AppImage), clique com o botão direito →
+**Plano B — pelo navegador.** Baixe o [`.AppImage`](https://github.com/alberthpalhares/lamina-app/releases/download/v0.1.0-beta.7/Lamina-linux-beta.AppImage), clique com o botão direito →
 Propriedades → **Permitir executar como programa** (ou `chmod +x Lamina-linux*.AppImage`) e abra.
 
 **Se nada abrir:** instale o FUSE 2 — `sudo apt install libfuse2` (no Ubuntu 24.04 ou mais novo,
@@ -246,8 +246,8 @@ livres, para você ver tudo funcionando. Depois, **Novo álbum com minhas fotos�
 
 **Diagramação**
 - Montagem automática do álbum inteiro, com relatório de cada escolha.
-- Layouts pela proporção de cada foto; setas trocam, <kbd>E</kbd> espelha, <kbd>F</kbd> favorita,
-  <kbd>X</kbd> rejeita.
+- Layouts pela proporção de cada foto; <kbd>↑</kbd> e <kbd>↓</kbd> trocam, <kbd>←</kbd> e
+  <kbd>→</kbd> passam de lâmina, <kbd>E</kbd> espelha, <kbd>F</kbd> favorita, <kbd>X</kbd> rejeita.
 - Rolo de lâminas, fotos arrastadas de uma lâmina para outra, lâminas reordenadas arrastando.
 - Álbum que começa em branco, modelos de lâmina e tamanhos próprios.
 - Texto com 6 fontes embutidas, igual na tela e na impressão.

@@ -43,13 +43,10 @@ fn ia_b22_modelo_e_especificacao() {
         window.session().unwrap().project().spreads[1]
     );
 
-    lab.ok(
-        "trocar_especificacao",
-        json!({ "preset": "Quadrado 25 × 25" }),
-    );
+    lab.ok("trocar_especificacao", json!({ "preset": "25x25cm" }));
     let preset = builtin_presets()
         .into_iter()
-        .find(|p| p.name == "Quadrado 25 × 25")
+        .find(|p| p.name == "25x25cm")
         .unwrap();
     window
         .respec(preset.fields.to_spec().unwrap(), preset.limits)
@@ -162,7 +159,7 @@ fn ia_b23_reencontrar_fotos() {
     assert_eq!(reply.text, "3 fotos reencontradas.");
     assert!(lab.editor.session().unwrap().missing().is_empty());
     assert_eq!(lab.labels(), ["IA: Reencontrar fotos · 3 fotos"]);
-    // Arquivo → Procurar fotos ausentes… na mesma pasta.
+    // Arquivo → Reencontrar fotos… na mesma pasta.
     let mut window = Session::open(&file).unwrap();
     let missing = window.missing().to_vec();
     let found = search_folder(window.project(), &missing, &moved, &|_, _| {});

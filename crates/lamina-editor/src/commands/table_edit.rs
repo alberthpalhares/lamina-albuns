@@ -41,37 +41,13 @@ impl Command {
                 "layout.proximo",
                 "Próximo layout",
                 Menu::Layout,
-                k(Key::Right),
+                k(Key::Down),
             ),
             C::PreviousLayout => (
                 "layout.anterior",
                 "Layout anterior",
                 Menu::Layout,
-                k(Key::Left),
-            ),
-            C::NextLeft => (
-                "layout.esquerda-proximo",
-                "Próximo layout da página esquerda",
-                Menu::Layout,
-                k(Key::Down),
-            ),
-            C::PreviousLeft => (
-                "layout.esquerda-anterior",
-                "Layout anterior da página esquerda",
-                Menu::Layout,
                 k(Key::Up),
-            ),
-            C::NextRight => (
-                "layout.direita-proximo",
-                "Próximo layout da página direita",
-                Menu::Layout,
-                shift(Key::Down),
-            ),
-            C::PreviousRight => (
-                "layout.direita-anterior",
-                "Layout anterior da página direita",
-                Menu::Layout,
-                shift(Key::Up),
             ),
             C::Mirror => (
                 "layout.espelhar",
@@ -103,6 +79,12 @@ impl Command {
                 Menu::Edit,
                 k(Key::Delete),
             ),
+            C::RemoveFromAlbum => (
+                "editar.remover-do-album",
+                "Remover fotografia do álbum",
+                Menu::Edit,
+                None,
+            ),
             C::Deselect => ("editar.desmarcar", "Desmarcar", Menu::Edit, k(Key::Escape)),
             C::BuildFromSelection => (
                 "layout.montar",
@@ -127,6 +109,18 @@ impl Command {
                 "Apagar lâmina",
                 Menu::Spread,
                 Some(S::ctrl_key(Key::Delete)),
+            ),
+            C::ClearAllPhotos => (
+                "lamina.tirar-todas-as-fotos",
+                "Tirar as fotos de todas as lâminas…",
+                Menu::Spread,
+                None,
+            ),
+            C::DeleteAllSpreads => (
+                "lamina.apagar-todas",
+                "Apagar todas as lâminas…",
+                Menu::Spread,
+                None,
             ),
             C::MoveSpreadLeft => (
                 "lamina.mover-esquerda",
@@ -170,6 +164,7 @@ impl Command {
                 Menu::Spread,
                 k(Key::Char('t')),
             ),
+            C::EditText => ("lamina.editar-texto", "Editar texto", Menu::Spread, None),
             C::NewPhotoFrame => (
                 "lamina.novo-quadro",
                 "Novo quadro de foto",

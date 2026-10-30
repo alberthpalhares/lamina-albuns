@@ -1,5 +1,5 @@
 //! Cenários da spec `texto-e-quadros` (TX) que moram no renderizador: B2, B4, B13 (só as fontes
-//! embutidas), B15 e B16. Os outros ficam no editor e na exportação.
+//! embutidas, quando nenhuma do computador é usada), B15 e B16. Os outros ficam no editor e na exportação.
 
 use std::time::{Duration, Instant};
 
@@ -83,6 +83,7 @@ fn tx_b15_caractere_que_a_fonte_nao_tem() {
     let check = check_text(&t, (100.0, 30.0));
     assert_eq!(check.missing, ['🙂']);
     assert!(!check.unknown_font);
+    let _fonts = crate::testing::TestFonts::none();
     assert!(check_text(&text("Lobster", "Lobster", 12.0), (50.0, 20.0)).unknown_font);
 }
 

@@ -1,9 +1,12 @@
-//! Texto nas lâminas (spec TX): fontes embutidas, linhas calculadas uma vez e desenho em
-//! qualquer escala.
+//! Texto nas lâminas (spec TX): fontes embutidas e do computador (spec FS), linhas calculadas uma
+//! vez e desenho em qualquer escala.
 
 mod draw;
 mod fonts;
+mod installed;
 mod layout;
+pub(crate) mod source;
+pub mod testing;
 
 use image::RgbaImage;
 use lamina_core::TextBox;
@@ -11,10 +14,50 @@ use skrifa::{FontRef, MetadataProvider};
 use tiny_skia::Pixmap;
 
 pub use fonts::{FAMILIES, Family, family, known_families};
+pub use installed::{
+    FontReads, InstalledFont, installed_name, installed_names, installed_names_ready,
+    request_installed_names,
+};
 pub use layout::text_lines;
+pub use source::{Face, FontSource};
 
-use fonts::family_or_default;
+use fonts::{drawn_or_default, resolve};
 use layout::{lay_out, pt};
+
+/// O que uma família tem (spec FS, regra 3): sem o arquivo, a caixa fica apagada.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FontStyles {
+    pub bold: bool,
+    pub italic: bool,
+}
+
+/// Negrito e itálico da família de um nome; `None` quando ela não está neste computador nem é
+/// embutida. Uma embutida responde sem tocar nas fontes do computador.
+pub fn font_styles(name: &str) -> Option<FontStyles> {
+    resolve(name).map(|d| FontStyles {
+        bold: d.bold(),
+        italic: d.italic(),
+    })
+}
+
+/// O nome de uma família escrito nela mesma, numa imagem de `px` pixels (a prévia da lista, spec
+/// FS, regra 11). `None` quando a família não está aqui ou não desenha nada.
+pub fn font_preview(name: &str, px: (u32, u32)) -> Option<RgbaImage> {
+    let drawn = resolve(name)?;
+    let text = TextBox {
+        text: name.to_owned(),
+        font: drawn.name().to_owned(),
+        // Uma linha de 7 mm de altura: o tamanho vem da altura da imagem.
+        size_pt: 12.0,
+        align: lamina_core::TextAlign::Left,
+        valign: lamina_core::TextVAlign::Middle,
+        ..TextBox::new(lamina_core::Rgb::BLACK)
+    };
+    let height_mm = 7.0;
+    let width_mm = height_mm * f64::from(px.0) / f64::from(px.1.max(1));
+    let img = text_image(&text, (width_mm, height_mm), px)?;
+    img.pixels().any(|p| p[3] > 0).then_some(img)
+}
 
 /// O que a pré-impressão precisa saber de um texto (spec TX, seção 4).
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -23,7 +66,7 @@ pub struct TextCheck {
     pub overflow: bool,
     /// Caracteres que a fonte não tem, na ordem em que aparecem, sem repetir.
     pub missing: Vec<char>,
-    /// A fonte do projeto não existe nesta versão (o texto sai na padrão).
+    /// A fonte do projeto não é embutida nem está neste computador (o texto sai na padrão).
     pub unknown_font: bool,
 }
 
@@ -32,9 +75,12 @@ pub fn check_text(text: &TextBox, size_mm: (f64, f64)) -> TextCheck {
     if text.is_blank() {
         return TextCheck::default();
     }
-    let drawn = family_or_default(&text.font);
+    let found = resolve(&text.font);
+    let unknown_font = found.is_none();
+    let drawn = found.unwrap_or_else(|| drawn_or_default(lamina_core::DEFAULT_FONT));
     let mut missing = Vec::new();
-    if let Ok(face) = FontRef::new(drawn.face(text.italic && drawn.italic)) {
+    let (bytes, index) = drawn.face(text.italic && drawn.italic());
+    if let Ok(face) = FontRef::from_index(bytes, index) {
         let map = face.charmap();
         for c in text.text.chars().filter(|c| !c.is_whitespace()) {
             if map.map(c).is_none() && !missing.contains(&c) {
@@ -45,7 +91,7 @@ pub fn check_text(text: &TextBox, size_mm: (f64, f64)) -> TextCheck {
     TextCheck {
         overflow: lay_out(text, size_mm).overflow,
         missing,
-        unknown_font: family(&text.font).is_none(),
+        unknown_font,
     }
 }
 

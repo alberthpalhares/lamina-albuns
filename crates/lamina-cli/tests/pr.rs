@@ -14,24 +14,13 @@ fn pr_b10_presets_pela_linha_de_comando() {
     assert!(list.status.success(), "{}", text(&list.stderr));
     let out = text(&list.stdout);
     for name in [
-        "Quadrado 15 × 15",
-        "Quadrado 20 × 20",
-        "Quadrado 25 × 25",
-        "Quadrado 30 × 30",
-        "Horizontal 21 × 15",
-        "Horizontal 25 × 20",
-        "Horizontal 30 × 20",
-        "Horizontal 30 × 25",
-        "Horizontal 35 × 30",
-        "Horizontal 40 × 30",
-        "Horizontal 45 × 30",
-        "Vertical 15 × 21",
-        "Vertical 20 × 25",
-        "Vertical 20 × 30",
-        "Vertical 25 × 30",
+        "15x15cm", "20x20cm", "25x25cm", "30x30cm", "21x15cm", "25x20cm", "30x20cm", "30x25cm",
+        "35x30cm", "40x30cm", "45x30cm", "15x21cm", "20x25cm", "20x30cm", "25x30cm",
     ] {
         assert!(out.contains(name), "{name}: {out}");
     }
+    // Um nome repetido entre encadernadoras aparece com a encadernadora (PR-B13).
+    assert!(out.contains("25x20cm (ProAlbuns)"), "{out}");
 
     let cache = base.path("cache");
     let build = base.lamina(&[
@@ -46,7 +35,7 @@ fn pr_b10_presets_pela_linha_de_comando() {
         "--dpi",
         "72",
         "--preset",
-        "Vertical 20 × 30",
+        "20x30cm",
         "--cache",
         cache.to_str().unwrap(),
     ]);

@@ -7,6 +7,7 @@ use lamina_layout::{LayoutCandidate, design_key};
 use super::tl_common::{H, V, built, editor_at, spec};
 use crate::commands::Mode;
 use crate::motion::{Place, Slots};
+use crate::suggestions::selection;
 use crate::text::option_title;
 use crate::view::{Area, FrameView, PxRect, spread_view};
 use crate::{Command, Editor, Key, List, Part, Shortcut};
@@ -311,7 +312,21 @@ fn fl_b7_setas_com_a_faixa_aberta() {
     assert!(editor.run(Command::NextLayout));
     assert_eq!(editor.panel(Part::Spread).in_use, Some(3));
     assert!(editor.band().open);
+    // ← e → mudam de lâmina com a faixa aberta, e a faixa mostra as opções da lâmina nova.
+    assert!(editor.hover_option(Some(5)));
     assert!(editor.run(Command::NextSpread));
-    assert!(!editor.band().open, "o Page Down fecha a faixa");
+    assert!(editor.band().open, "a faixa continua aberta");
+    assert_eq!(editor.band().hover, None, "a prévia é limpa");
     assert_eq!(editor.session().unwrap().current(), 2);
+    let panel = editor.panel(Part::Spread);
+    let sel = selection(editor.session().unwrap().project(), 2, Part::Spread).unwrap();
+    assert_eq!(
+        panel.selection.unwrap().photos,
+        sel.photos,
+        "as fotos da lâmina 3"
+    );
+    assert!(editor.run(Command::PreviousSpread));
+    assert!(editor.band().open);
+    assert_eq!(editor.session().unwrap().current(), 1);
+    assert_eq!(editor.panel(Part::Spread).in_use, Some(3), "a troca ficou");
 }

@@ -5,7 +5,7 @@ use lamina_core::{
     FrameContent, LINE_SPACING, Mm, PageSide, Project, Rect, Rgb, TEXT_SIZE_PT, TextAlign, TextBox,
     TextVAlign,
 };
-use lamina_render::family;
+use lamina_render::font_styles;
 use serde_json::json;
 
 use super::values::{color, font, within};
@@ -31,8 +31,8 @@ fn changes(a: &EditText, now: &TextBox) -> Result<Vec<TextChange>, ToolError> {
     let font_name = match &a.fonte {
         Some(f) => {
             let f = font(f)?;
-            out.push(TextChange::Font(f.to_owned()));
-            f.to_owned()
+            out.push(TextChange::Font(f.clone()));
+            f
         }
         None => now.font.clone(),
     };
@@ -65,7 +65,7 @@ fn changes(a: &EditText, now: &TextBox) -> Result<Vec<TextChange>, ToolError> {
 
 /// Negrito e itálico só onde a fonte tem (na janela, a caixa fica desligada).
 fn styles(a: &EditText, font_name: &str, out: &mut Vec<TextChange>) -> Result<(), ToolError> {
-    let fam = family(font_name);
+    let fam = font_styles(font_name);
     let refuse = |style| ToolError::NoStyle {
         font: font_name.to_owned(),
         style,

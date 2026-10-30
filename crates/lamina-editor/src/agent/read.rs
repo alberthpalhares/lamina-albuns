@@ -45,7 +45,7 @@ impl Agent {
             "passos_no_historico": s.history_list().position,
             "alteracoes_nao_salvas": s.is_dirty(),
             "imagens": if self.images { "ligadas" } else { "desligadas" },
-            "presets": self.presets.iter().map(|p| p.name.clone()).collect::<Vec<_>>(),
+            "presets": self.presets.iter().map(crate::Preset::full_name).collect::<Vec<_>>(),
             "pastas_permitidas": self.roots.list(),
         });
         let dirty = if s.is_dirty() {

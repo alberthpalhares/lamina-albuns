@@ -1,0 +1,40 @@
+// O menu de botão direito da grade de fotos e a pergunta antes de tirar fotos usadas em lâminas
+// (spec TF, regras 1 e 4). Os textos e as decisões vêm do Rust (`src/photo_menu.rs`).
+
+import { Button } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Shade, Panel } from "widgets.slint";
+
+export global PhotoMenuUi {
+    // "Remover fotografia do álbum" ou "Remover 3 fotografias do álbum"; "Mostrar no Explorador"
+    // ou no Finder.
+    in property <string> remove-text: "Remover fotografia do álbum";
+    in property <string> reveal-text: "Mostrar no Explorador";
+    // O botão da pergunta, pela grade e pelo quadro.
+    in property <string> confirm-text: "Remover do álbum";
+    in-out property <bool> show-ask;
+    in property <string> question;
+    callback remove();
+    callback reveal();
+    callback confirm();
+}
+
+export component RemoveAskDialog inherits Shade {
+    callback closed();
+    Panel {
+        width: 480px;
+        height: 170px;
+        VerticalLayout {
+            padding: 24px;
+            spacing: 16px;
+            Text { text: PhotoMenuUi.remove-text + "?"; font-size: 16px; font-weight: 600; color: Theme.text; }
+            Text { text: PhotoMenuUi.question; color: Theme.muted; wrap: word-wrap; }
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Button { text: "Cancelar"; clicked => { PhotoMenuUi.show-ask = false; root.closed(); } }
+                Button { text: PhotoMenuUi.confirm-text; primary: true; clicked => { PhotoMenuUi.confirm(); root.closed(); } }
+            }
+        }
+    }
+}

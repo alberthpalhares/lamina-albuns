@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use lamina_core::{PhotoId, Project, Rgb};
 use lamina_editor::motion::PhotoRow;
-use lamina_editor::{Area, FrameKind, PxRect, photo_extent, spread_view};
+use lamina_editor::{Area, FrameKind, PxRect, layers, photo_extent, spread_view};
 use slint::{Color, Image, ModelRc, VecModel};
 
 use crate::texts::{picture, pixels};
@@ -55,6 +55,7 @@ pub fn spread_data(
     let Some(view) = spread_view(project, index, area, missing) else {
         return SpreadData::default();
     };
+    let layer = layers(&view.frames);
     let frames: Vec<FrameData> = view
         .frames
         .iter()
@@ -68,7 +69,7 @@ pub fn spread_data(
                 pw: to_f32(whole.width),
                 ph: to_f32(whole.height),
                 index: i32::try_from(i).unwrap_or(-1),
-                z: to_f32(i as f64),
+                z: to_f32(layer[i] as f64),
                 live: true,
                 x: to_f32(f.rect.x),
                 y: to_f32(f.rect.y),
@@ -157,6 +158,7 @@ pub fn photo_data(row: &PhotoRow, aspect: f32, image: Option<Image>) -> PhotoDat
         selected: row.picked,
         aspect,
         dim: row.dim,
+        missing: row.missing,
     }
 }
 

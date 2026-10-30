@@ -33,6 +33,7 @@ impl Editor {
                     | Command::OpenLogs
                     | Command::ShowShortcuts
                     | Command::ShowNews
+                    | Command::Quit
             ) || (command == Command::ClearRecents && self.recents.has_unpinned());
         };
         // Atalhos por modo (spec EG, regra 2) e os comandos do modo organizar.
@@ -50,20 +51,24 @@ impl Editor {
         match command {
             Command::NewAlbum | Command::Open | Command::Save | Command::SaveAs => true,
             Command::OpenExample | Command::CloseAlbum | Command::RenameAlbum => true,
+            Command::Quit => true,
             Command::ClearRecents => self.recents.has_unpinned(),
             Command::Export | Command::Specification | Command::Presets => true,
             Command::MountAlbum | Command::ImportPhotos | Command::ImportFolder => true,
             Command::FindMissing => !s.missing().is_empty(),
+            Command::LocatePhoto => self
+                .selected_frame()
+                .and_then(|f| self.missing_photo_at(f))
+                .is_some(),
             Command::About | Command::ToggleReordered => true,
             Command::Undo => s.can_undo(),
             Command::Redo => s.can_redo(),
-            Command::NextLayout | Command::PreviousLayout => self.can_step(Part::Spread),
-            Command::NextLeft | Command::PreviousLeft => self.can_step(Part::Left),
-            Command::NextRight | Command::PreviousRight => self.can_step(Part::Right),
+            Command::NextLayout | Command::PreviousLayout => self.can_step(),
             Command::Mirror => self.can_mirror(),
             Command::Favorite | Command::Reject => self.panel(Part::Spread).in_use.is_some(),
             Command::ClearFrame if self.organizing() => !self.selected_frames().is_empty(),
             Command::ClearFrame => self.selected_content().is_some(),
+            Command::RemoveFromAlbum => !self.selected_frame_photos().is_empty(),
             Command::NewText | Command::NewPhotoFrame | Command::Models => true,
             Command::CheckUpdates | Command::ToggleAutoUpdates | Command::ToggleBeta => true,
             Command::SendFeedback | Command::OpenLogs => true,
@@ -86,6 +91,8 @@ impl Editor {
             }
             Command::NewSpread => true,
             Command::DeleteSpread => s.spread_count() > 1,
+            Command::ClearAllPhotos => self.clear_counts().0 > 0,
+            Command::DeleteAllSpreads => s.spread_count() > 0,
             Command::MoveSpreadLeft => s.current() > 0,
             Command::MoveSpreadRight => s.current() < last,
             Command::CropMode => self.can_clear(),
@@ -136,6 +143,7 @@ impl Editor {
             | Command::TogglePanel
             | Command::ToggleReduceMotion
             | Command::AdjustPhoto
+            | Command::EditText
             | Command::ToggleLayoutBand
             | Command::Loupe
             | Command::ActualSize
@@ -203,17 +211,18 @@ impl Editor {
             }
             Command::Undo => self.session.as_mut().and_then(Session::undo).is_some(),
             Command::Redo => self.session.as_mut().and_then(Session::redo).is_some(),
-            Command::NextLayout => self.step(Part::Spread, true),
-            Command::PreviousLayout => self.step(Part::Spread, false),
-            Command::NextLeft => self.step(Part::Left, true),
-            Command::PreviousLeft => self.step(Part::Left, false),
-            Command::NextRight => self.step(Part::Right, true),
-            Command::PreviousRight => self.step(Part::Right, false),
+            Command::NextLayout => self.step(true),
+            Command::PreviousLayout => self.step(false),
             Command::Mirror => self.mirror(),
             Command::Favorite => self.favorite(),
             Command::Reject => self.reject(),
             Command::ClearFrame if self.organizing() => self.delete_group(),
             Command::ClearFrame => self.delete_selected(),
+            // Pela IA e pelo atalho de comando, sem a pergunta; a janela pergunta antes (TF-B11).
+            Command::RemoveFromAlbum => {
+                let photos = self.selected_frame_photos();
+                self.remove_from_album(&photos)
+            }
             Command::CopyFrames => self.copy_frames(),
             Command::PasteFrames => self.paste_frames(),
             Command::DuplicateFrames => self.duplicate_frames(),
@@ -234,6 +243,8 @@ impl Editor {
             Command::NewSpreadFromSelection => self.new_spread_from_selection(),
             Command::NewSpread => self.new_spread(),
             Command::DeleteSpread => self.delete_current(),
+            Command::ClearAllPhotos => self.clear_all_photos(),
+            Command::DeleteAllSpreads => self.delete_all_spreads(),
             Command::MoveSpreadLeft => self.move_by(-1),
             Command::MoveSpreadRight => self.move_by(1),
             // Os de diálogo chegam aqui pela janela: desmarcam o quadro e não mudam nada.

@@ -3,6 +3,8 @@
 
 use std::convert::Infallible;
 
+use lamina_core::PhotoId;
+
 use super::{Session, missing_of};
 use crate::relink::Found;
 
@@ -30,12 +32,44 @@ impl Session {
                     photo.path.clone_from(&f.path);
                     photo.width_px = f.width;
                     photo.height_px = f.height;
+                    if let Some(print) = &f.fingerprint {
+                        photo.fingerprint = Some(print.clone());
+                    }
                 }
             }
             Ok(())
         });
         self.missing = missing_of(self.project());
         n
+    }
+
+    /// A janela "Algumas fotos mudaram de lugar" abre uma vez por abertura, e só quando ainda
+    /// faltam fotos depois da procura de sempre (spec RF, regra 2). `true` = abrir agora.
+    pub fn take_relink_prompt(&mut self) -> bool {
+        if self.missing.is_empty() || self.relink_asked {
+            return false;
+        }
+        self.relink_asked = true;
+        true
+    }
+
+    /// O resultado de conferir de novo (spec RF, regras 6 e 10): as fotos que faltam agora, das que
+    /// o álbum tem. Não é uma edição. Uma foto que sumiu agora libera a janela de novo (regra 12).
+    /// `true` = a lista mudou (alguma voltou ou sumiu).
+    pub fn checked_missing(&mut self, now: &[PhotoId]) -> bool {
+        let now: Vec<PhotoId> = self
+            .project()
+            .photos
+            .iter()
+            .map(|p| p.id)
+            .filter(|id| now.contains(id))
+            .collect();
+        if now.iter().any(|id| !self.missing.contains(id)) {
+            self.relink_asked = false;
+        }
+        let changed = now != self.missing;
+        self.missing = now;
+        changed
     }
 
     /// A procura ao abrir chega depois, em segundo plano: se o fotógrafo já desfez algo, aplicar

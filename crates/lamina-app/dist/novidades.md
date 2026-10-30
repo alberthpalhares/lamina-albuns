@@ -13,6 +13,76 @@ botão "Experimente agora": `<!-- imagem: atalhos.png; comando: ajuda.atalhos --
 
 ## [Não lançado]
 
+## [0.1.0-beta.7] - 2026-10-29
+
+Esta versão traz as fontes do computador nos textos, reencontra as fotos que mudaram de lugar, tira fotos do álbum pela grade, simplifica a escolha do tamanho, deixa editar os textos que já estão na lâmina e leva fotos de uma lâmina para outra pela Sequência.
+
+- **As fontes do computador nos textos.** O campo Fonte da aba Quadro abre uma lista com busca: em
+  cima, as 6 fontes do Lamina; embaixo, todas as fontes instaladas no seu computador, cada nome
+  escrito na própria fonte. O texto sai na fonte escolhida na tela e na exportação. Se o álbum for
+  aberto num computador que não tem a fonte, o texto aparece em Inter, com aviso. Experimente:
+  selecione um texto, clique em Fonte e digite parte do nome de uma fonte.
+  <!-- imagem: fontes-do-computador.png -->
+- **As fotos que mudaram de lugar são reencontradas.** Se você levou a pasta de fotos para um SSD
+  externo ou outra pasta, o Lamina avisa ao abrir o álbum qual pasta sumiu. Clique em "Mostrar
+  onde está…", aponte a pasta nova uma vez, e as fotos voltam sozinhas, mesmo com milhares. Com o
+  disco desconectado, ele avisa; conecte o disco e clique em "Tentar de novo". Se você renomear ou
+  mover a pasta com o álbum aberto, o Lamina percebe em segundos, diz o que aconteceu e traz as
+  fotos com um clique em "Usar o lugar novo". Experimente: com o álbum aberto, renomeie a pasta
+  das fotos no Explorador e volte para o Lamina.
+  <!-- imagem: reencontrar-fotos.png; comando: arquivo.procurar-fotos -->
+- **Fotos de uma lâmina para outra pela Sequência.** Na faixa Sequência, arraste uma foto para
+  outra lâmina ou para outra posição: uma linha azul mostra onde ela vai entrar, e as lâminas que
+  mudam são refeitas sozinhas. Esc desiste. Experimente: arraste uma foto da lâmina 1 para depois
+  do corte da lâmina 2.
+  <!-- imagem: fotos-na-sequencia.png -->
+- **As setas ↑ e ↓ trocam o layout, e ← e → passam de lâmina.** As setas para cima e para baixo
+  trocam o layout da lâmina inteira; as setas para os lados vão para a próxima lâmina e para a
+  anterior, como o Page Down e o Page Up, também com a faixa de layouts aberta. A troca do layout
+  de uma página só saiu do teclado e do menu Layout. No modo organizar, as setas continuam movendo
+  os quadros. Experimente: aperte ↓ para trocar o layout e → para ir à próxima lâmina.
+- **Tirar uma foto refaz o layout.** Com Delete, a foto sai junto com o quadro, e a página ganha a
+  melhor arrumação para as fotos que ficaram, sem buraco vazio. Experimente: selecione uma foto
+  numa lâmina com três e aperte Delete.
+  <!-- imagem: tirar-foto-refaz.png -->
+- **Remover fotografias do álbum e achar o arquivo.** Clique com o botão direito numa foto da
+  faixa Fotografias ou da lâmina: "Remover fotografia do álbum" tira a foto do álbum, e na faixa
+  "Mostrar no Explorador" (no Mac, "Mostrar no Finder") abre a pasta com o arquivo já selecionado.
+  Com a grade em foco, Delete faz o mesmo. Se a foto estiver numa lâmina, o Lamina pergunta antes e refaz a lâmina. O arquivo nunca é apagado do computador,
+  e Ctrl+Z desfaz tudo. Experimente: clique com o botão direito numa foto da faixa Fotografias.
+- **Escolher o tamanho do álbum ficou mais simples.** No álbum novo, o tamanho do último álbum já
+  vem marcado. Os três formatos aparecem como o álbum fechado e, embaixo, a lâmina aberta do
+  tamanho escolhido, com um resumo de uma linha (tamanho, páginas, DPI e sangria). Os nomes são a
+  medida, como 30x30cm e 20x15cm. Dá para escolher a encadernadora numa lista com busca, e o
+  Personalizado ficou na horizontal, com os números da gráfica em "Ajustes da gráfica". Experimente:
+  crie um álbum novo.
+  <!-- comando: arquivo.novo -->
+- **Editar os textos que já estão na lâmina.** Um clique num texto mostra o campo dele na aba
+  Quadro, mesmo com o painel escondido, e o texto fica sempre por cima das fotos. "Editar texto"
+  também está no menu Lâmina e no botão direito. Experimente: clique num texto do álbum de exemplo
+  e escreva.
+  <!-- comando: lamina.editar-texto -->
+- **Limpar as lâminas de uma vez.** No menu Lâmina, "Tirar as fotos de todas as lâminas…" deixa os
+  quadros vazios para diagramar de novo, e "Apagar todas as lâminas…" deixa o álbum sem lâminas;
+  as fotos continuam importadas, e Ctrl+Z desfaz. Experimente: abra o menu Lâmina.
+- **Sair pelo menu Arquivo.** Arquivo → Sair (Ctrl+Q; no Mac, Cmd+Q) fecha o Lamina, perguntando
+  antes se quer salvar. Experimente: abra o menu Arquivo.
+- **Setas nos campos de número.** Em qualquer campo de número (medidas, DPI, páginas, posição do
+  quadro, fonte, ângulo, escala), ↑ e ↓ sobem e descem o valor, e com Shift andam de dez em dez.
+  Experimente: selecione uma foto, clique no ângulo e aperte ↑.
+- **O painel da direita na altura toda.** O painel desce até o fim da janela, e as faixas de baixo
+  ficam ao lado dele. Experimente: abra um álbum e veja o painel da direita.
+- **Botões de girar menores.** Girar 90°, ajustar 0,1° e voltar a 0° viraram ícones pequenos, numa
+  linha só ao lado do ângulo, cada um com o balão do que faz. Experimente: selecione uma foto e
+  passe o mouse nos ícones de girar.
+- **Tamanhos da ProAlbuns.** Os 14 álbuns da tabela da ProAlbuns entraram, dos quadrados de
+  15x15cm a 30x30cm aos horizontais de até 45x30cm, com a sangria que ela pede. Eles aparecem com a
+  encadernadora ProAlbuns escolhida; em "Tamanhos padrão" ficam os do Lamina. Experimente: crie um
+  álbum novo e escolha a encadernadora ProAlbuns.
+- **Controle por IA mais certeiro.** A IA monta a primeira lâmina de um álbum em branco, dá nome ao
+  álbum novo e troca o nome dele, mostra quanto cada sugestão de layout preenche, e explica por que
+  uma importação ficou vazia. Experimente: peça à IA para criar um álbum com um nome.
+
 ## [0.1.0-beta.6] - 2026-10-28
 
 Esta versão corrige o Lamina que fechava sozinho, guarda uma cópia de segurança do trabalho e traz temperatura e matiz, controles deslizantes, lâminas que mudam de lugar arrastando e uma barra única no modo organizar.

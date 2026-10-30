@@ -1,0 +1,335 @@
+// A etapa 1 do Novo projeto, o tamanho (specs NP e ET; correções do dono de 2026-10-29): tudo
+// centralizado, os formatos desenhados como o álbum fechado, a lâmina aberta embaixo, e o
+// Personalizado na horizontal. Só desenho: os textos e as decisões vêm do Rust.
+
+import { Button, CheckBox, ComboBox, LineEdit } from "std-widgets.slint";
+import { NumberField } from "number_field.slint";
+import { Theme } from "theme.slint";
+import { PresetUi } from "spec.slint";
+import { NewProjectUi, FormatCard, DrawData } from "new_project_ui.slint";
+
+component Label inherits Text {
+    color: Theme.muted;
+    font-size: 12px;
+    vertical-alignment: center;
+}
+
+// Um campo de número com rótulo: o rótulo do tamanho do texto (ou de `label-width`, para alinhar
+// uma coluna) e o campo estreito.
+component Field inherits HorizontalLayout {
+    in property <string> label;
+    in property <length> label-width: 0px;
+    in-out property <string> text;
+    // O passo das setas ↑ e ↓ (spec NU): 1 nas medidas e no DPI, 2 nas páginas.
+    in property <float> step: 1;
+    callback edited();
+    spacing: 8px;
+    alignment: start;
+    Label { text: root.label; min-width: root.label-width; }
+    NumberField { text <=> root.text; width: 72px; step: root.step; minimum: 0; edited => { root.edited(); } }
+}
+
+// A lâmina aberta em escala: a sangria (faixa escura), o corte, a zona segura e a dobra; a página
+// vazia nas pontas com página simples.
+component SpreadDrawing inherits Rectangle {
+    in property <DrawData> d;
+    property <length> w: min(self.width, self.height * max(0.1, root.d.aspect));
+    property <length> h: root.w / max(0.1, root.d.aspect);
+    canvas := Rectangle {
+        x: (parent.width - root.w) / 2;
+        y: (parent.height - root.h) / 2;
+        width: root.w;
+        height: root.h;
+        background: #4a3030;
+        Rectangle {
+            x: root.d.tx * parent.width;
+            y: root.d.ty * parent.height;
+            width: root.d.tw * parent.width;
+            height: root.d.th * parent.height;
+            background: #f2f2f2;
+            Rectangle { x: 0; width: parent.width / 2; background: root.d.starts ? #9a9a9a : transparent; }
+            Rectangle { x: parent.width / 2; width: parent.width / 2; background: root.d.ends ? #9a9a9a : transparent; }
+            Rectangle { x: parent.width / 2 - 0.5px; width: 1px; background: #606060; }
+        }
+        Rectangle {
+            x: root.d.lx * parent.width;
+            y: root.d.ly * parent.height;
+            width: root.d.lw * parent.width;
+            height: root.d.lh * parent.height;
+            border-width: 1px;
+            border-color: #4f8fd6;
+        }
+        Rectangle {
+            x: root.d.rx * parent.width;
+            y: root.d.ry * parent.height;
+            width: root.d.rw * parent.width;
+            height: root.d.rh * parent.height;
+            border-width: 1px;
+            border-color: #4f8fd6;
+        }
+    }
+}
+
+// Um cartão de formato: o álbum fechado, uma página só na proporção, com a lombada à esquerda e a
+// sombra das páginas. Apagado quando a encadernadora do filtro não tem esse formato (regra 4).
+component FormatButton inherits Rectangle {
+    in property <FormatCard> card;
+    in property <bool> chosen;
+    callback clicked();
+    width: 148px;
+    height: 148px;
+    border-radius: 6px;
+    opacity: root.card.enabled ? 1 : 0.35;
+    background: root.chosen ? #3d4a5a : (touch.has-hover && root.card.enabled ? #3a3a3a : #2a2a2a);
+    border-width: root.chosen ? 2px : 0px;
+    border-color: #4f8fd6;
+    accessible-role: button;
+    accessible-label: root.card.label;
+    property <length> box: 92px;
+    property <length> page-w: root.card.aspect >= 1 ? root.box : root.box * root.card.aspect;
+    property <length> page-h: root.card.aspect >= 1 ? root.box / root.card.aspect : root.box;
+    // As páginas por baixo da capa, um pouco para a direita e para baixo.
+    Rectangle {
+        x: (parent.width - root.page-w) / 2 + 3px;
+        y: 14px + (root.box - root.page-h) / 2 + 3px;
+        width: root.page-w;
+        height: root.page-h;
+        background: #9a9a9a;
+        border-radius: 2px;
+    }
+    Rectangle {
+        x: (parent.width - root.page-w) / 2;
+        y: 14px + (root.box - root.page-h) / 2;
+        width: root.page-w;
+        height: root.page-h;
+        background: #e6e6e6;
+        border-radius: 2px;
+        // A lombada.
+        Rectangle { x: 0; width: 6px; background: #b8b8b8; }
+    }
+    Text { y: parent.height - 28px; width: parent.width; text: root.card.label; color: Theme.text; horizontal-alignment: center; }
+    touch := TouchArea {
+        enabled: root.card.enabled;
+        clicked => { root.clicked(); }
+    }
+}
+
+// A encadernadora: o campo mostra a escolhida e abre a lista com busca, em ordem alfabética
+// (ET-B11). Os nomes e a ordem vêm do editor (`binder_list`).
+component BinderPicker inherits Rectangle {
+    width: 280px;
+    height: 30px;
+    border-radius: 4px;
+    background: #2a2a2a;
+    border-width: 1px;
+    border-color: touch.has-hover ? #4f8fd6 : #ffffff30;
+    accessible-role: combobox;
+    accessible-label: "Encadernadora: " + NewProjectUi.binder;
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 6px;
+        Text { text: NewProjectUi.binder; color: Theme.text; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
+        Image {
+            accessible-role: none;
+            width: 12px;
+            source: @image-url("../icons/eg/seta-baixo.svg");
+            colorize: Theme.muted;
+        }
+    }
+    touch := TouchArea {
+        clicked => {
+            NewProjectUi.binder-search = "";
+            NewProjectUi.search-binders("");
+            popup.show();
+        }
+    }
+    popup := PopupWindow {
+        y: root.height + 2px;
+        width: root.width;
+        height: min(300px, 50px + NewProjectUi.binder-rows.length * 30px);
+        close-policy: close-on-click-outside;
+        Rectangle {
+            background: Theme.panel;
+            border-radius: 6px;
+            border-width: 1px;
+            border-color: #ffffff30;
+            VerticalLayout {
+                padding: 6px;
+                spacing: 4px;
+                search := LineEdit {
+                    placeholder-text: "Buscar encadernadora";
+                    accessible-label: "Buscar encadernadora";
+                    text <=> NewProjectUi.binder-search;
+                    edited(t) => { NewProjectUi.search-binders(t); }
+                    init => { self.focus(); }
+                }
+                Flickable {
+                    vertical-stretch: 1;
+                    VerticalLayout {
+                        alignment: start;
+                        for row in NewProjectUi.binder-rows: Rectangle {
+                            height: 28px;
+                            border-radius: 4px;
+                            background: area.has-hover ? #3a3a3a : (row == NewProjectUi.binder ? #3d4a5a : transparent);
+                            Text {
+                                x: 8px;
+                                text: row;
+                                color: row == NewProjectUi.add-binder-text ? Theme.muted : Theme.text;
+                                vertical-alignment: center;
+                            }
+                            area := TouchArea {
+                                clicked => {
+                                    NewProjectUi.pick-binder(row);
+                                    popup.close();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Tamanhos prontos (spec ET): a encadernadora, os três formatos e o tamanho, tudo centralizado.
+component ReadySizes inherits VerticalLayout {
+    spacing: 16px;
+    alignment: start;
+    if NewProjectUi.has-binders: HorizontalLayout {
+        alignment: center;
+        spacing: 8px;
+        Label { text: "Encadernadora"; }
+        BinderPicker { }
+    }
+    HorizontalLayout {
+        alignment: center;
+        spacing: 16px;
+        for card[i] in NewProjectUi.formats: FormatButton {
+            card: card;
+            chosen: NewProjectUi.format == i;
+            clicked => { NewProjectUi.pick-format(i); }
+        }
+    }
+    HorizontalLayout {
+        alignment: center;
+        spacing: 8px;
+        Label { text: "Tamanho"; }
+        ComboBox {
+            width: 220px;
+            model: NewProjectUi.sizes;
+            current-index: NewProjectUi.size;
+            selected => { NewProjectUi.pick-size(self.current-index); }
+        }
+        if NewProjectUi.size < 0: Label { text: "medidas personalizadas"; }
+    }
+    if !NewProjectUi.has-binders: HorizontalLayout {
+        alignment: center;
+        Button {
+            text: NewProjectUi.add-binder-text;
+            clicked => { NewProjectUi.tab = 1; NewProjectUi.advanced-open = true; }
+        }
+    }
+}
+
+// Uma coluna dos ajustes da gráfica, com o título em cima.
+component Column inherits VerticalLayout {
+    in property <string> title;
+    spacing: 6px;
+    alignment: start;
+    Text { text: root.title; color: Theme.text; font-weight: 600; }
+    @children
+}
+
+// Personalizado (spec ET, regra 6), na horizontal: as medidas numa linha; aberto, os ajustes da
+// gráfica em colunas lado a lado.
+component CustomSize inherits VerticalLayout {
+    spacing: 14px;
+    alignment: start;
+    // A unidade dos campos e o passo das setas na sangria e na zona segura: 1 mm, 0,1 cm, 0,05 pol.
+    property <string> unit: NewProjectUi.unit == 0 ? "mm" : NewProjectUi.unit == 1 ? "cm" : "pol";
+    property <float> margin-step: NewProjectUi.unit == 0 ? 1 : NewProjectUi.unit == 1 ? 0.1 : 0.05;
+    HorizontalLayout {
+        alignment: center;
+        spacing: 8px;
+        Label { text: "Unidade"; }
+        ComboBox {
+            width: 80px;
+            model: ["mm", "cm", "pol"];
+            current-index <=> NewProjectUi.unit;
+            selected => { NewProjectUi.unit-changed(self.current-index); }
+        }
+        Rectangle { width: 12px; }
+        Label { text: "Medidas de"; }
+        ComboBox {
+            width: 140px;
+            model: ["uma página", "lâmina aberta"];
+            current-index: NewProjectUi.open-spread ? 1 : 0;
+            selected => { NewProjectUi.open-spread = self.current-index == 1; NewProjectUi.unit-changed(NewProjectUi.unit); }
+        }
+        Rectangle { width: 12px; }
+        Field { label: "Largura"; text <=> NewProjectUi.width; edited => { NewProjectUi.size-changed(); } }
+        Rectangle { width: 4px; }
+        Field { label: "Altura"; text <=> NewProjectUi.height; edited => { NewProjectUi.size-changed(); } }
+    }
+    HorizontalLayout {
+        alignment: center;
+        Button {
+            text: NewProjectUi.advanced-open ? "Esconder os ajustes da gráfica" : "Ajustes da gráfica (DPI, páginas, sangria)…";
+            clicked => { NewProjectUi.advanced-open = !NewProjectUi.advanced-open; }
+        }
+    }
+    if NewProjectUi.advanced-open: HorizontalLayout {
+        alignment: center;
+        spacing: 40px;
+        Column {
+            title: "DPI e páginas";
+            Field { label: "DPI"; label-width: 100px; text <=> NewProjectUi.dpi; edited => { NewProjectUi.size-changed(); } }
+            Field { label: "Páginas mínimas"; label-width: 100px; step: 2; text <=> NewProjectUi.min-pages; edited => { NewProjectUi.size-changed(); } }
+            Field { label: "Páginas máximas"; label-width: 100px; step: 2; text <=> NewProjectUi.max-pages; edited => { NewProjectUi.size-changed(); } }
+            CheckBox { text: "Começa com página simples"; checked <=> NewProjectUi.starts; toggled => { NewProjectUi.size-changed(); } }
+            CheckBox { text: "Termina com página simples"; checked <=> NewProjectUi.ends; toggled => { NewProjectUi.size-changed(); } }
+        }
+        Column {
+            title: "Sangria (" + root.unit + ")";
+            Field { label: "Externa"; label-width: 80px; step: root.margin-step; text <=> NewProjectUi.bleed-outer; edited => { NewProjectUi.size-changed(); } }
+            Field { label: "Cima e baixo"; label-width: 80px; step: root.margin-step; text <=> NewProjectUi.bleed-top; edited => { NewProjectUi.size-changed(); } }
+            Field { label: "Lombada"; label-width: 80px; step: root.margin-step; text <=> NewProjectUi.bleed-spine; edited => { NewProjectUi.size-changed(); } }
+        }
+        Column {
+            title: "Zona segura (" + root.unit + ")";
+            Field { label: "Externa"; label-width: 80px; step: root.margin-step; text <=> NewProjectUi.safe-outer; edited => { NewProjectUi.size-changed(); } }
+            Field { label: "Cima e baixo"; label-width: 80px; step: root.margin-step; text <=> NewProjectUi.safe-top; edited => { NewProjectUi.size-changed(); } }
+            Field { label: "Lombada"; label-width: 80px; step: root.margin-step; text <=> NewProjectUi.safe-spine; edited => { NewProjectUi.size-changed(); } }
+        }
+    }
+    if NewProjectUi.advanced-open: HorizontalLayout {
+        alignment: center;
+        spacing: 8px;
+        Button { text: "Igual em todas as bordas"; clicked => { NewProjectUi.same-margins(); } }
+        Button { text: "Salvar como preset…"; enabled: NewProjectUi.error == ""; clicked => { PresetUi.save-as(0); } }
+    }
+}
+
+// A etapa 1: as abas no alto, a escolha no meio e, embaixo, a lâmina aberta do tamanho escolhido
+// com o resumo (spec ET, regra 3, correção de 2026-10-29).
+export component StepOne inherits VerticalLayout {
+    spacing: 18px;
+    HorizontalLayout {
+        alignment: center;
+        spacing: 8px;
+        Button { text: "Tamanhos prontos"; primary: NewProjectUi.tab == 0; clicked => { NewProjectUi.tab = 0; } }
+        Button { text: "Personalizado"; primary: NewProjectUi.tab == 1; clicked => { NewProjectUi.tab = 1; } }
+    }
+    if NewProjectUi.tab == 0: ReadySizes { }
+    if NewProjectUi.tab == 1: CustomSize { }
+    Rectangle { vertical-stretch: 1; min-height: 4px; }
+    SpreadDrawing { d: NewProjectUi.drawing; height: 170px; }
+    VerticalLayout {
+        spacing: 4px;
+        Text { text: NewProjectUi.label; color: Theme.text; font-weight: 600; horizontal-alignment: center; wrap: word-wrap; }
+        Text { text: NewProjectUi.short-summary; color: Theme.text; horizontal-alignment: center; wrap: word-wrap; }
+        Text { text: NewProjectUi.summary; color: Theme.muted; font-size: 11px; horizontal-alignment: center; wrap: word-wrap; }
+        if NewProjectUi.error != "": Text { text: NewProjectUi.error; color: Theme.warning; horizontal-alignment: center; wrap: word-wrap; }
+    }
+}

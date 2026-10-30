@@ -51,8 +51,8 @@ ajustar as fotos e mandar para a gráfica.
     <td width="33%" valign="top">
       <img src="crates/lamina-app/dist/novidades/faixa-de-layouts.png" alt="" width="100%"><br>
       <b>Layouts feitos para as suas fotos.</b> Cada layout é calculado pela proporção de cada
-      foto, sem biblioteca fixa de modelos e sem cortar foto sem necessidade. As setas trocam de
-      layout; <kbd>L</kbd> mostra todos de uma vez.
+      foto, sem biblioteca fixa de modelos e sem cortar foto sem necessidade. <kbd>↑</kbd> e
+      <kbd>↓</kbd> trocam de layout; <kbd>L</kbd> mostra todos de uma vez.
     </td>
     <td width="33%" valign="top">
       <img src="crates/lamina-app/dist/novidades/rolo.png" alt="" width="100%"><br>
@@ -246,8 +246,8 @@ livres, para você ver tudo funcionando. Depois, **Novo álbum com minhas fotos�
 
 **Diagramação**
 - Montagem automática do álbum inteiro, com relatório de cada escolha.
-- Layouts pela proporção de cada foto; setas trocam, <kbd>E</kbd> espelha, <kbd>F</kbd> favorita,
-  <kbd>X</kbd> rejeita.
+- Layouts pela proporção de cada foto; <kbd>↑</kbd> e <kbd>↓</kbd> trocam, <kbd>←</kbd> e
+  <kbd>→</kbd> passam de lâmina, <kbd>E</kbd> espelha, <kbd>F</kbd> favorita, <kbd>X</kbd> rejeita.
 - Rolo de lâminas, fotos arrastadas de uma lâmina para outra, lâminas reordenadas arrastando.
 - Álbum que começa em branco, modelos de lâmina e tamanhos próprios.
 - Texto com 6 fontes embutidas, igual na tela e na impressão.

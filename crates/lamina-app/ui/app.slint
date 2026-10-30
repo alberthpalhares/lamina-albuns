@@ -7,12 +7,17 @@ import { Button, ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { SpreadData, FrameData, BoxData } from "canvas.slint";
 import { ConfirmDialog, MessageDialog, BusyOverlay, RecoverDialog, RecoverUi } from "dialogs.slint";
+import { PhotoMenuUi, RemoveAskDialog } from "photo_menu.slint";
+export { PhotoMenuUi }
+import { NumberStep } from "number_field.slint";
+export { NumberStep }
 import { NewProjectDialog, NewProjectUi, FormatCard, DrawData } from "new_project.slint";
 import { ImportUi, DropOverlay } from "importing.slint";
 import { BuildUi, BuildAlbumDialog } from "build_album.slint";
 import { BandUi, LayoutBand, LayoutItem } from "band.slint";
 import { LookUi, Swatch } from "look.slint";
 import { FrameUi } from "frame.slint";
+import { FontUi, FontRowUi } from "font_list.slint";
 import { AboutDialog } from "about.slint";
 import { CalibrateUi, CalibrateDialog } from "calibrate.slint";
 import { ModelNameDialog, ModelsDialog, ModelUi } from "models.slint";
@@ -31,6 +36,8 @@ import { DetailRow } from "side.slint";
 import { OrganizeUi, LassoBox, MarkData, TickData, BarRow } from "organize.slint";
 import { Motion } from "motion.slint";
 import { ClearRecentsDialog, RecentsUi, RecentCard, RecentItem } from "welcome.slint";
+import { ClearAllDialog, ClearUi } from "clear_all.slint";
+import { RelinkDialog, RelinkUi, RelinkRowUi } from "relink.slint";
 import { DragUi } from "drag.slint";
 import { TopBar, NoticeBar } from "topbar.slint";
 import { Stage } from "stage.slint";
@@ -40,7 +47,7 @@ import { NewsUi, NewsDialog, NewsEntryData } from "news.slint";
 import { RollUi, RollCell, RollButton, RollHitData } from "roll.slint";
 
 export { BuildUi }
-export { CalibrateUi, SpreadData, FrameData, BoxData, LayoutItem, BandUi, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, ModelUi, RecentsUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, BarRow, ContextUi, ContextRow, PaletteUi, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, ShortcutsUi, RecoverUi, ShortcutGroup, ShortcutRow, NewsUi, NewsEntryData, RollUi, RollCell, RollButton, RollHitData }
+export { CalibrateUi, SpreadData, FrameData, BoxData, LayoutItem, BandUi, Swatch, HistoryItem, PhotoData, TimelineItem, PresetUi, LookUi, FrameUi, FontUi, FontRowUi, ModelUi, RecentsUi, ClearUi, RelinkUi, RelinkRowUi, RecentCard, RecentItem, Motion, GhostData, OrganizeUi, MarkData, TickData, BarRow, ContextUi, ContextRow, PaletteUi, PhotoUi, DetailRow, NewProjectUi, FormatCard, DrawData, ImportUi, ShortcutsUi, RecoverUi, ShortcutGroup, ShortcutRow, NewsUi, NewsEntryData, RollUi, RollCell, RollButton, RollHitData }
 
 export component AppWindow inherits Window {
     title: root.window-title;
@@ -253,6 +260,8 @@ export component AppWindow inherits Window {
     callback lasso-done <=> stage.lasso-done;
     callback move-spread <=> bottom.move-spread;
     callback cut-moved <=> bottom.cut-moved;
+    pure callback seq-marker <=> bottom.seq-marker;
+    callback seq-drop <=> bottom.seq-drop;
 
     public function focus-main() {
         keys.focus();
@@ -289,11 +298,14 @@ export component AppWindow inherits Window {
             MenuItem { title: "Renomear álbum…"; enabled: root.has-project; activated => { root.command("arquivo.renomear"); } }
             MenuSeparator { }
             MenuItem { title: "Exportar…  (Ctrl+E)"; enabled: root.has-project; activated => { root.command("arquivo.exportar"); } }
-            MenuItem { title: "Procurar fotos ausentes…"; enabled: root.has-missing; activated => { root.command("arquivo.procurar-fotos"); } }
+            MenuItem { title: "Reencontrar fotos…"; enabled: root.has-missing; activated => { root.command("arquivo.procurar-fotos"); } }
             MenuSeparator { }
             MenuItem { title: "Especificação do álbum…"; enabled: root.has-project; activated => { root.command("arquivo.especificacao"); } }
             MenuItem { title: "Montagem do álbum…"; enabled: root.has-project; activated => { root.command("arquivo.montagem"); } }
             MenuItem { title: "Presets…"; activated => { root.command("arquivo.presets"); } }
+            MenuSeparator { }
+            // Como o X da janela (spec SA).
+            MenuItem { title: "Sair  (Ctrl+Q)"; activated => { root.command("arquivo.sair"); } }
         }
         Menu {
             title: "Editar";
@@ -314,11 +326,15 @@ export component AppWindow inherits Window {
             MenuItem { title: "Última lâmina  (End)"; enabled: root.has-project; activated => { root.command("lamina.ultima"); } }
             MenuSeparator { }
             MenuItem { title: "Novo texto  (T)"; enabled: root.has-project; activated => { root.command("lamina.novo-texto"); } }
+            MenuItem { title: "Editar texto"; enabled: root.has-project; activated => { root.command("lamina.editar-texto"); } }
             MenuItem { title: "Novo quadro de foto"; enabled: root.has-project; activated => { root.command("lamina.novo-quadro"); } }
             MenuItem { title: "Trazer para a frente"; enabled: root.has-project; activated => { root.command("lamina.frente"); } }
             MenuItem { title: "Enviar para trás"; enabled: root.has-project; activated => { root.command("lamina.tras"); } }
             MenuSeparator { }
             MenuItem { title: "Montar o álbum…"; enabled: root.has-project; activated => { root.command("lamina.montar-album"); } }
+            // Limpar as lâminas (spec LL): cada um pergunta antes.
+            MenuItem { title: "Tirar as fotos de todas as lâminas…"; enabled: root.has-project; activated => { root.command("lamina.tirar-todas-as-fotos"); } }
+            MenuItem { title: "Apagar todas as lâminas…"; enabled: root.has-project; activated => { root.command("lamina.apagar-todas"); } }
             MenuSeparator { }
             MenuItem { title: "Organizar lâmina  (O)"; enabled: root.has-project; activated => { root.command("lamina.organizar"); } }
             Menu {
@@ -347,12 +363,8 @@ export component AppWindow inherits Window {
         }
         Menu {
             title: "Layout";
-            MenuItem { title: "Próximo layout  (→)"; enabled: root.has-project; activated => { root.command("layout.proximo"); } }
-            MenuItem { title: "Layout anterior  (←)"; enabled: root.has-project; activated => { root.command("layout.anterior"); } }
-            MenuItem { title: "Próximo da página esquerda  (↓)"; enabled: root.has-project; activated => { root.command("layout.esquerda-proximo"); } }
-            MenuItem { title: "Anterior da página esquerda  (↑)"; enabled: root.has-project; activated => { root.command("layout.esquerda-anterior"); } }
-            MenuItem { title: "Próximo da página direita  (Shift+↓)"; enabled: root.has-project; activated => { root.command("layout.direita-proximo"); } }
-            MenuItem { title: "Anterior da página direita  (Shift+↑)"; enabled: root.has-project; activated => { root.command("layout.direita-anterior"); } }
+            MenuItem { title: "Próximo layout  (↓)"; enabled: root.has-project; activated => { root.command("layout.proximo"); } }
+            MenuItem { title: "Layout anterior  (↑)"; enabled: root.has-project; activated => { root.command("layout.anterior"); } }
             MenuSeparator { }
             MenuItem { title: "Espelhar lâmina  (E)"; enabled: root.has-project; activated => { root.command("layout.espelhar"); } }
             MenuItem { title: "Favoritar layout  (F)"; enabled: root.has-project; activated => { root.command("layout.favoritar"); } }
@@ -396,7 +408,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(event) => {
-            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || CalibrateUi.show || ShortcutsUi.show || NewsUi.show || BuildUi.show || RecoverUi.show || root.busy-text != "") {
+            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || ClearUi.show || RelinkUi.show || PhotoMenuUi.show-ask || CalibrateUi.show || ShortcutsUi.show || NewsUi.show || BuildUi.show || RecoverUi.show || root.busy-text != "") {
                 return reject;
             }
             // No modo organizar, Espaço segurado é a mão (spec EG, seção 3).
@@ -404,8 +416,9 @@ export component AppWindow inherits Window {
                 OrganizeUi.hand = true;
                 return accept;
             }
-            // Esc com uma lâmina levantada na faixa: ela volta ao lugar (spec FX, regra 5).
-            if (DragUi.kind == 3 && event.text == Key.Escape) {
+            // Esc com uma lâmina levantada na faixa: ela volta ao lugar (spec FX, regra 5); com uma
+            // foto levantada na Sequência, desiste (spec SQ).
+            if ((DragUi.kind == 3 || DragUi.kind == 5) && event.text == Key.Escape) {
                 DragUi.cancel = true;
                 return accept;
             }
@@ -454,31 +467,68 @@ export component AppWindow inherits Window {
 
             HorizontalLayout {
                 vertical-stretch: 1;
-                // Lâmina atual.
-                stage := Stage {
+                // A lâmina e as faixas de baixo numa coluna; o painel da direita ao lado, na altura
+                // toda (correção do dono de 2026-10-29, spec FX).
+                VerticalLayout {
                     horizontal-stretch: 1;
-                    has-project: root.has-project;
-                    current: root.current;
-                    guides: root.guides;
-                    selected-frame: root.selected-frame;
-                    spread-count: root.spreads.length;
-                    photo-count: root.photos.length;
-                    blank-aspect: root.blank-aspect;
-                    blank-color: root.blank-color;
-                    can-build: root.can-build-album;
-                    hint: root.hint;
-                    crop-frame: root.crop-frame;
-                    has-preview: root.has-preview;
-                    preview: root.preview;
-                    preview-img: root.preview-img;
-                    crop-grid-thirds: root.crop-grid-thirds;
-                    crop-grid-fine: root.crop-grid-fine;
-                    hover-fx <=> root.hover-fx;
-                    ghost: root.ghost;
-                    leaving: root.leaving;
-                    has-leaving: root.has-leaving;
-                    command(name) => { root.command(name); }
-                    focus-main => { root.focus-main(); }
+                    // Lâmina atual.
+                    stage := Stage {
+                        horizontal-stretch: 1;
+                        vertical-stretch: 1;
+                        has-project: root.has-project;
+                        current: root.current;
+                        guides: root.guides;
+                        selected-frame: root.selected-frame;
+                        spread-count: root.spreads.length;
+                        photo-count: root.photos.length;
+                        blank-aspect: root.blank-aspect;
+                        blank-color: root.blank-color;
+                        can-build: root.can-build-album;
+                        hint: root.hint;
+                        crop-frame: root.crop-frame;
+                        has-preview: root.has-preview;
+                        preview: root.preview;
+                        preview-img: root.preview-img;
+                        crop-grid-thirds: root.crop-grid-thirds;
+                        crop-grid-fine: root.crop-grid-fine;
+                        hover-fx <=> root.hover-fx;
+                        ghost: root.ghost;
+                        leaving: root.leaving;
+                        has-leaving: root.has-leaving;
+                        command(name) => { root.command(name); }
+                        focus-main => { root.focus-main(); }
+                    }
+                    bottom := BottomStrips {
+                        has-project: root.has-project;
+                        strip-spreads: root.strip-spreads;
+                        strip-timeline: root.strip-timeline;
+                        strip-photos: root.strip-photos;
+                        spreads-open: root.spreads-open;
+                        timeline-open: root.timeline-open;
+                        photos-open: root.photos-open;
+                        spreads: root.spreads;
+                        current-index: root.current-index;
+                        current-aspect: root.current.aspect;
+                        timeline: root.timeline;
+                        photos: root.photos;
+                        selected-photo: root.selected-photo;
+                        filter: root.filter;
+                        can-build: root.can-build-album;
+                        photo-zoom <=> root.photo-zoom;
+                        photo-columns: root.photo-columns;
+                        photo-scroll <=> root.photo-scroll;
+                        photo-shown: root.photo-shown;
+                        room: root.height;
+                        above: top.height + (root.update-bar != "" ? 30px : 0px) + (root.notice != "" ? 30px : 0px);
+                        command(name) => { root.command(name); }
+                        header-clicked(i) => { root.strip-header-clicked(i); }
+                        focus-main => { root.focus-main(); }
+                        // Fora da faixa de lâminas, a foto cai na lâmina grande (num quadro ou nela).
+                        photos-dropped => {
+                            stage.land();
+                            root.drop-photo(DragUi.from, stage.frac-x(), stage.frac-y());
+                        }
+                    }
                 }
 
                 // A borda do painel, que muda a largura dele (spec FX, regra 13).
@@ -505,37 +555,6 @@ export component AppWindow inherits Window {
                     info-photo: root.info-photo;
                     history-go(i) => { root.history-go(i); }
                     done => { root.focus-main(); }
-                }
-            }
-            bottom := BottomStrips {
-                has-project: root.has-project;
-                strip-spreads: root.strip-spreads;
-                strip-timeline: root.strip-timeline;
-                strip-photos: root.strip-photos;
-                spreads-open: root.spreads-open;
-                timeline-open: root.timeline-open;
-                photos-open: root.photos-open;
-                spreads: root.spreads;
-                current-index: root.current-index;
-                current-aspect: root.current.aspect;
-                timeline: root.timeline;
-                photos: root.photos;
-                selected-photo: root.selected-photo;
-                filter: root.filter;
-                can-build: root.can-build-album;
-                photo-zoom <=> root.photo-zoom;
-                photo-columns: root.photo-columns;
-                photo-scroll <=> root.photo-scroll;
-                photo-shown: root.photo-shown;
-                room: root.height;
-                above: top.height + (root.update-bar != "" ? 30px : 0px) + (root.notice != "" ? 30px : 0px);
-                command(name) => { root.command(name); }
-                header-clicked(i) => { root.strip-header-clicked(i); }
-                focus-main => { root.focus-main(); }
-                // Fora da faixa de lâminas, a foto cai na lâmina grande (num quadro ou nela).
-                photos-dropped => {
-                    stage.land();
-                    root.drop-photo(DragUi.from, stage.frac-x(), stage.frac-y());
                 }
             }
         }
@@ -633,6 +652,15 @@ export component AppWindow inherits Window {
     if BuildUi.show: BuildAlbumDialog { }
     if CalibrateUi.show: CalibrateDialog { }
     if RecentsUi.show-clear: ClearRecentsDialog {
+        closed => { root.focus-main(); }
+    }
+    if ClearUi.show: ClearAllDialog {
+        closed => { root.focus-main(); }
+    }
+    if RelinkUi.show: RelinkDialog {
+        closed => { root.focus-main(); }
+    }
+    if PhotoMenuUi.show-ask: RemoveAskDialog {
         closed => { root.focus-main(); }
     }
     // Por cima de tudo na abertura, até das novidades (spec CS, regra 4).

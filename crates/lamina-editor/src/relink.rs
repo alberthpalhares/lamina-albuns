@@ -17,6 +17,9 @@ pub struct Found {
     pub path: PathBuf,
     pub width: u32,
     pub height: u32,
+    /// A impressão digital nova, quando o fotógrafo aceitou um arquivo de outro conteúdo (spec RF,
+    /// regra 4); `None` = a mesma de antes.
+    pub fingerprint: Option<String>,
 }
 
 /// Ao abrir (regra 5): cada foto ausente é procurada (a) pelo mesmo nome na pasta do projeto e
@@ -46,7 +49,7 @@ pub fn search_near(
         .collect()
 }
 
-/// "Procurar fotos ausentes…" (regra 6): todas as fotos da pasta e das subpastas, com qualquer
+/// "Reencontrar fotos…" (regra 6): todas as fotos da pasta e das subpastas, com qualquer
 /// nome, comparadas pela impressão digital. `progress` recebe (lidas, total).
 pub fn search_folder(
     project: &Project,
@@ -88,7 +91,7 @@ pub fn relinked_message(found: usize, still_missing: usize) -> Option<String> {
 
 /// A procura ao abrir achou fotos, mas não aplicou para não apagar o "refazer".
 pub const RELINK_LATER: &str = "Algumas fotos ausentes foram achadas perto do projeto: use \
-     Arquivo → Procurar fotos ausentes… para reencontrá-las.";
+     Arquivo → Reencontrar fotos… para reencontrá-las.";
 
 /// "Nenhuma das 3 fotos ausentes foi encontrada em <pasta>." (spec EI, seção 6).
 pub fn not_found_message(missing: usize, folder: &Path) -> String {
@@ -116,7 +119,7 @@ fn wanted(project: &Project, missing: &[PhotoId]) -> Vec<(PhotoId, String, Strin
 }
 
 /// As fotos da pasta e das subpastas pelo nome do arquivo, cada lista em ordem de caminho.
-fn index_by_name(folder: &Path) -> HashMap<String, Vec<PathBuf>> {
+pub(crate) fn index_by_name(folder: &Path) -> HashMap<String, Vec<PathBuf>> {
     let mut index: HashMap<String, Vec<PathBuf>> = HashMap::new();
     for path in list_photos(folder).unwrap_or_default() {
         if let Some(name) = path.file_name() {
@@ -138,5 +141,6 @@ fn check(id: PhotoId, path: &Path, fp: &str) -> Option<Found> {
         path: path.to_path_buf(),
         width: meta.width,
         height: meta.height,
+        fingerprint: None,
     })
 }

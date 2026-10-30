@@ -1,11 +1,13 @@
-//! Sugestões, trocar pelo clique e pelas setas, uma página só e reordenadas (TL-B1 a B5).
+//! Sugestões, trocar pelo clique e pelas setas, uma página só (pela IA), reordenadas e as setas
+//! de 2026-10-28 (TL-B1 a B5, B14 a B16).
 
 use lamina_core::{FrameContent, Orientation};
 use lamina_layout::{Family, LayoutOptions, layout_options};
 
 use super::tl_common::{H, V, built, editor_at, frames, page, spec, three_spreads};
+use crate::commands::{Menu, Mode};
 use crate::suggestions::{Unavailable, selection};
-use crate::{Command, Part};
+use crate::{Command, Editor, Key, Part, Shortcut};
 
 #[test]
 fn tl_b1_sugestoes_da_lamina_atual() {
@@ -72,7 +74,7 @@ fn tl_b2_trocar_pelo_clique() {
 fn tl_b3_setas_na_lamina_inteira() {
     let mut editor = editor_at(three_spreads(), 1);
     assert!(editor.apply_option(Part::Spread, 0));
-    let at = |e: &crate::Editor| e.panel(Part::Spread).in_use;
+    let at = |e: &Editor| e.panel(Part::Spread).in_use;
     assert!(editor.run(Command::NextLayout));
     assert_eq!(at(&editor), Some(1));
     assert!(editor.run(Command::NextLayout));
@@ -82,11 +84,11 @@ fn tl_b3_setas_na_lamina_inteira() {
     assert!(editor.apply_option(Part::Spread, 0));
     assert!(editor.run(Command::PreviousLayout));
     let last = editor.panel(Part::Spread).options.len() - 1;
-    assert_eq!(at(&editor), Some(last), "da 1ª, o ← vai para a última");
+    assert_eq!(at(&editor), Some(last), "da 1ª, o ↑ vai para a última");
 }
 
 #[test]
-fn tl_b4_uma_pagina_so() {
+fn tl_b4_uma_pagina_so_pela_ia() {
     let mut editor = editor_at(built(spec(30.0, 30.0), &[H, H, H, V], 1), 0);
     // Uma opção com 2 fotos em cada página e nada sobre a lombada.
     let panel = editor.panel(Part::Spread);
@@ -98,15 +100,24 @@ fn tl_b4_uma_pagina_so() {
         _ => false,
     });
     assert!(editor.apply_option(Part::Spread, two_two.unwrap()));
+    // A opção seguinte à em uso de uma página, como a ferramenta `aplicar_layout` faz.
+    let other = |e: &Editor, part| {
+        let panel = e.panel(part);
+        panel.in_use.map_or(0, |p| (p + 1) % panel.options.len())
+    };
 
     let right = page(&editor, false);
     let left = page(&editor, true);
-    assert!(editor.run(Command::NextLeft));
-    assert_eq!(page(&editor, false), right, "↓ não mexe na direita");
-    assert_ne!(page(&editor, true), left, "↓ muda a esquerda");
+    assert!(editor.apply_option(Part::Left, other(&editor, Part::Left)));
+    assert_eq!(
+        page(&editor, false),
+        right,
+        "a esquerda não mexe na direita"
+    );
+    assert_ne!(page(&editor, true), left, "a esquerda muda");
     let left = page(&editor, true);
-    assert!(editor.run(Command::NextRight));
-    assert_eq!(page(&editor, true), left, "Shift+↓ não mexe na esquerda");
+    assert!(editor.apply_option(Part::Right, other(&editor, Part::Right)));
+    assert_eq!(page(&editor, true), left, "a direita não mexe na esquerda");
     assert_ne!(page(&editor, false), right);
 
     // Com uma foto sobre a lombada, só a lâmina inteira troca.
@@ -121,7 +132,7 @@ fn tl_b4_uma_pagina_so() {
         })
         .unwrap();
     assert!(editor.apply_option(Part::Spread, across));
-    assert!(!editor.available(Command::NextLeft) && !editor.available(Command::NextRight));
+    assert!(!editor.apply_option(Part::Left, 0) && !editor.apply_option(Part::Right, 0));
     let reason = editor.panel(Part::Left).unavailable.unwrap();
     assert_eq!(reason, Unavailable::CrossesSpine);
     assert_eq!(
@@ -176,4 +187,80 @@ fn tl_b5_opcao_reordenada() {
             "quadro da orientação certa"
         );
     }
+}
+
+#[test]
+fn tl_b14_setas_de_cima_e_de_baixo_trocam_o_layout() {
+    let key = |k| Command::from_shortcut(Shortcut::key(k));
+    assert_eq!(key(Key::Down), Some(Command::NextLayout));
+    assert_eq!(key(Key::Up), Some(Command::PreviousLayout));
+    let mut editor = editor_at(three_spreads(), 1);
+    assert!(editor.apply_option(Part::Spread, 0));
+    let at = |e: &Editor| e.panel(Part::Spread).in_use;
+    assert!(editor.run(key(Key::Down).unwrap()));
+    assert_eq!(at(&editor), Some(1), "↓ vai para a opção seguinte");
+    assert!(editor.run(key(Key::Up).unwrap()));
+    assert_eq!(at(&editor), Some(0), "↑ volta");
+    assert_eq!(editor.session().unwrap().current(), 1, "na mesma lâmina");
+}
+
+#[test]
+fn tl_b15_setas_dos_lados_mudam_de_lamina() {
+    let normal = |s| Command::from_shortcut_in(s, Mode::Normal);
+    let organize = |s| Command::from_shortcut_in(s, Mode::Organize);
+    let key = Shortcut::key;
+    assert_eq!(normal(key(Key::Right)), Some(Command::NextSpread));
+    assert_eq!(normal(key(Key::Left)), Some(Command::PreviousSpread));
+    assert_eq!(normal(key(Key::PageDown)), Some(Command::NextSpread));
+    assert_eq!(normal(key(Key::PageUp)), Some(Command::PreviousSpread));
+    // No modo organizar as setas continuam movendo a seleção, e o Page Down muda de lâmina.
+    assert_eq!(organize(key(Key::Right)), Some(Command::NudgeRight));
+    assert_eq!(organize(key(Key::Left)), Some(Command::NudgeLeft));
+    assert_eq!(organize(key(Key::PageDown)), Some(Command::NextSpread));
+    // Ctrl+setas continuam movendo a lâmina de lugar.
+    assert_eq!(
+        normal(Shortcut::ctrl_key(Key::Right)),
+        Some(Command::MoveSpreadRight)
+    );
+
+    let mut editor = editor_at(three_spreads(), 1);
+    let s = editor.session().unwrap();
+    let (before, dirty) = (s.project().clone(), s.is_dirty());
+    assert!(editor.run(normal(key(Key::Right)).unwrap()));
+    assert_eq!(
+        editor.session().unwrap().current(),
+        2,
+        "→ vai para a próxima"
+    );
+    assert!(editor.run(normal(key(Key::Left)).unwrap()));
+    assert!(editor.run(normal(key(Key::Left)).unwrap()));
+    let s = editor.session().unwrap();
+    assert_eq!(s.current(), 0, "← volta duas");
+    assert_eq!(*s.project(), before, "nenhum layout mudou");
+    assert_eq!(s.is_dirty(), dirty, "navegar não altera o álbum");
+}
+
+#[test]
+fn tl_b16_sem_troca_de_uma_pagina_so_pelo_teclado() {
+    for k in [Key::Down, Key::Up] {
+        assert_eq!(
+            Command::from_shortcut(Shortcut::shift(k)),
+            None,
+            "Shift+{k:?}"
+        );
+    }
+    for name in [
+        "layout.esquerda-proximo",
+        "layout.esquerda-anterior",
+        "layout.direita-proximo",
+        "layout.direita-anterior",
+    ] {
+        assert_eq!(Command::from_name(name), None, "{name}");
+    }
+    let layout: Vec<&str> = Command::ALL
+        .into_iter()
+        .filter(|c| c.menu() == Menu::Layout)
+        .map(Command::label)
+        .collect();
+    assert!(layout.iter().all(|l| !l.contains("página")), "{layout:?}");
 }

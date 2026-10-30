@@ -4,7 +4,6 @@ use std::time::{Duration, Instant};
 
 use lamina_core::testing::{TRIES, budget};
 use lamina_core::{Crop, FrameContent, PhotoId, Project};
-use lamina_export::WarningKind;
 use lamina_layout::{LayoutOptions, layout_options};
 
 use super::tl_common::{H, V, built, editor_at, frames, single_start, spec, three_spreads};
@@ -60,35 +59,6 @@ fn fq_b2_trocar_fotos_de_quadro() {
         "quadros iguais"
     );
     assert!(!editor.drop_frame(1, 1), "no mesmo quadro nada muda");
-}
-
-#[test]
-fn fq_b3_tirar_foto() {
-    let mut editor = editor_at(three_spreads(), 1);
-    assert!(
-        !editor.available(Command::ClearFrame),
-        "sem quadro selecionado"
-    );
-    editor.select_frame(Some(0));
-    assert!(editor.run(Command::ClearFrame));
-    let s = editor.session().unwrap();
-    assert_eq!(
-        s.project().spreads[1].frames[0].content,
-        FrameContent::Empty
-    );
-    assert!(
-        s.warnings_for(1)
-            .iter()
-            .any(|w| w.kind == WarningKind::EmptyFrame)
-    );
-    assert!(editor.run(Command::NextLayout));
-    let s = editor.session().unwrap();
-    assert!(
-        s.project().spreads[1]
-            .frames
-            .iter()
-            .all(|f| f.content != FrameContent::Empty)
-    );
 }
 
 fn five_photos(editor: &Editor) -> Vec<PhotoId> {

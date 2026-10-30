@@ -16,6 +16,15 @@ pub(super) enum PanelNeed {
     Organize,
 }
 
+/// Como a aba Quadro abre para o texto selecionado: só a aba (um clique no texto) ou a aba com o
+/// cursor no campo (T, duplo clique, "Editar texto", a ferramenta Texto). Correção TX de
+/// 2026-10-28.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TextFocus {
+    Tab,
+    Cursor,
+}
+
 impl Editor {
     /// O painel da direita aparece: a escolha guardada ou um pedido em curso (regra 5). Um pedido
     /// que acabou (o quadro desmarcado ou trocado, outra lâmina, fora do modo, o álbum fechado)
@@ -60,6 +69,27 @@ impl Editor {
             self.panel_need
                 .set(Some(PanelNeed::Frame { spread, frame }));
         }
+    }
+
+    /// Leva ao campo do texto selecionado: sai do modo organizar (lá não há campo) com o texto
+    /// ainda selecionado, pede o painel e a aba Quadro. `false` = não há texto selecionado.
+    pub(super) fn show_text(&mut self, focus: TextFocus) -> bool {
+        if self.selected_text().is_none() {
+            return false;
+        }
+        if self.organizing() {
+            let frame = self.selected_frame;
+            self.set_organizing(false);
+            self.selected_frame = frame;
+        }
+        self.ask_panel_for_selected();
+        self.text_focus = Some(focus);
+        true
+    }
+
+    /// A janela abre a aba Quadro (e põe o cursor no texto)? Ler limpa o pedido.
+    pub fn take_text_focus(&mut self) -> Option<TextFocus> {
+        self.text_focus.take()
     }
 
     /// Entrar no modo organizar pede o painel; sair encerra o pedido.

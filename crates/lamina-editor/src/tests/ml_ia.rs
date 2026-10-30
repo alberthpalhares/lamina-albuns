@@ -11,7 +11,7 @@ use crate::agent::ToolError;
 use crate::editor::CrossTarget;
 use crate::edits::spread_photos;
 use crate::motion::Tier;
-use crate::{Command, Editor, ImageSize, RollSource, export_project, render_spread_image};
+use crate::{Editor, ImageSize, RollSource, export_project, render_spread_image};
 
 fn photo_at(p: &Project, spread: usize, frame: usize) -> Option<u64> {
     match &p.spreads[spread].frames[frame].content {
@@ -53,8 +53,14 @@ fn ml_b12_ia_troca_fotos_entre_laminas() {
 fn ml_b13_ia_move_uma_foto_e_grava_o_mesmo_arquivo_que_a_janela() {
     let base = Base::with_photos(30, (600, 400));
     let (mut lab, file) = Lab::opened(&base, false);
-    // Esvazia o quadro 2 da lâmina 5, para o mover encher.
-    lab.ok("tirar_foto", json!({ "lamina": 5, "quadro": 2 }));
+    // Esvazia o quadro 2 da lâmina 5, para o mover encher (tirar_foto agora leva o quadro junto,
+    // spec FQ, regra 3).
+    let cleared = lab
+        .editor
+        .session_mut()
+        .unwrap()
+        .edit("Esvaziar", |p| crate::edits::clear_frame(p, 4, 1));
+    cleared.unwrap();
     let a = photo_at(lab.project(), 2, 1);
     lab.ok(
         "mover_foto",
@@ -117,9 +123,11 @@ fn ml_b13_ia_move_uma_foto_e_grava_o_mesmo_arquivo_que_a_janela() {
     // A mesma sequência pela janela (o editor).
     let mut editor = Editor::new();
     editor.adopt(album_project(&base));
-    assert!(editor.go_to_spread(4));
-    editor.select_frame(Some(1));
-    assert!(editor.run(Command::from_name("editar.tirar-foto").unwrap()));
+    let cleared = editor
+        .session_mut()
+        .unwrap()
+        .edit("Esvaziar", |p| crate::edits::clear_frame(p, 4, 1));
+    cleared.unwrap();
     assert!(editor.go_to_spread(2));
     assert!(editor.move_photo(
         1,

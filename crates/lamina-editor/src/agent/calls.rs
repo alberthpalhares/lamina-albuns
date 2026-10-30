@@ -27,7 +27,9 @@ pub struct NewAlbumCall {
     pub pasta_fotos: String,
     /// Onde gravar o álbum novo (arquivo .lamina).
     pub salvar_em: String,
-    /// Nome de um preset, como "Quadrado 30 × 30" (lista em resumo_do_album). Sem preset, a
+    /// Nome do álbum (o que aparece no topo da janela). Sem ele, o nome do arquivo salvar_em.
+    pub nome: Option<String>,
+    /// Nome de um preset, como "30x30cm" ou "25x20cm (ProAlbuns)" (lista em resumo_do_album). Sem preset, a
     /// especificação padrão do Novo álbum.
     pub preset: Option<String>,
     /// Número de lâminas; só vale com montar: true. Sem ele, a sugestão do Lamina (cerca de 4
@@ -40,6 +42,13 @@ pub struct NewAlbumCall {
     /// Criar mesmo que o álbum atual tenha alterações não salvas (elas se perdem).
     #[serde(default)]
     pub descartar: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RenameAlbum {
+    /// O nome novo do álbum (até 120 letras). O arquivo .lamina não muda de nome.
+    pub nome: String,
 }
 
 #[derive(Debug, Clone, Default, Deserialize, JsonSchema)]
@@ -113,6 +122,20 @@ pub struct SuggestLayouts {
     /// Mandar a prévia das 6 primeiras opções.
     #[serde(default)]
     pub imagens: bool,
+    /// nota (padrão: a ordem da janela) ou preenchimento (da maior área ocupada para a menor).
+    #[serde(default)]
+    pub ordem: OrderArg,
+    /// Tolerância de corte, em %: só as opções em que nenhuma foto perde mais do que isso.
+    pub corte_maximo: Option<f64>,
+}
+
+/// A ordem das opções em sugerir_layouts.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum OrderArg {
+    #[default]
+    Nota,
+    Preenchimento,
 }
 
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
@@ -178,6 +201,14 @@ pub struct BuildSpread {
     pub fotos: Vec<u64>,
     /// Posição da lâmina nova (padrão: no fim).
     pub posicao: Option<usize>,
+}
+
+/// Fotos que saem do álbum (spec TF, regra 8).
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct LeaveAlbum {
+    /// Números das fotos (como em listar_fotos) que saem do álbum e das lâminas.
+    pub fotos: Vec<u64>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize, JsonSchema)]

@@ -52,7 +52,7 @@ fn eg_b20_menu_de_contexto() {
     let has = |c: Command| all.iter().any(|(x, _, _)| *x == c);
     for c in [
         Command::CropMode,
-        Command::ClearFrame,
+        Command::RemoveFromAlbum,
         Command::CopyFrames,
         Command::PasteFrames,
         Command::DuplicateFrames,
@@ -73,7 +73,12 @@ fn eg_b20_menu_de_contexto() {
         })
         .collect();
     assert_eq!(titles, ["Alinhar", "Igualar", "Distribuir"]);
-    assert!(all.iter().any(|(_, l, _)| l == "Tirar foto"));
+    // Com foto nos quadros, o item tira as fotos do álbum (spec TF-B11).
+    assert!(
+        all.iter()
+            .any(|(_, l, _)| l == "Remover 2 fotografias do álbum")
+    );
+    assert!(!all.iter().any(|(_, l, _)| l == "Tirar foto"));
 
     // Num quadro de fora, só ele fica selecionado.
     editor.context_menu(Some(2));

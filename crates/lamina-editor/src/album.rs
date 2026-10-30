@@ -193,7 +193,10 @@ pub fn import_project(
         progress(Step::Importing { done, total });
     })?;
     if report.entries.is_empty() {
-        return Err(EditorError::NoPhotos(folder.display().to_string()));
+        let others = crate::empty_import::other_files(folder);
+        return Err(crate::empty_import::nothing_imported(
+            folder, &report, others,
+        ));
     }
     let name = name.map_or_else(|| folder_name(folder), |n| n.trim().to_owned());
     Ok(Imported {
@@ -313,8 +316,12 @@ fn import_dropped(
         progress(Step::Importing { done, total });
     })?;
     if report.entries.is_empty() {
-        let first = new.files.first().map(|p| p.display().to_string());
-        return Err(EditorError::NoPhotos(first.unwrap_or_default()));
+        let first = new.files.first().cloned().unwrap_or_default();
+        return Err(crate::empty_import::nothing_imported(
+            &first,
+            &report,
+            report.not_photos,
+        ));
     }
     let name = new.name.as_deref().map_or_else(
         || {

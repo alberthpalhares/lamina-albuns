@@ -247,6 +247,8 @@ pub fn connect(window: &AppWindow, app: &Shared) {
                 .filter_map(|i| shown.get(i).copied())
                 .collect();
             app.editor.lasso_photos(&picked, add);
+            app.grid_focus = true;
+            crate::photo_menu::refresh(app);
             true
         };
         let show = |app: &mut App| {

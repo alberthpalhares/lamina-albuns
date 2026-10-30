@@ -379,7 +379,11 @@ fn op_b13_ia_com_opacidade() {
     assert_eq!((now[photos[0]], now[photos[2]]), (50, 50), "só o quadro 2");
 
     let empty = photos[2] + 1;
-    lab.ok("tirar_foto", json!({ "lamina": lamina, "quadro": empty }));
+    // Tirar foto agora leva o quadro junto (spec FQ, regra 3): o quadro vazio vem da edição.
+    let cleared = lab.editor.session_mut().unwrap().edit("Esvaziar", |p| {
+        crate::edits::clear_frame(p, lamina - 1, photos[2])
+    });
+    cleared.unwrap();
     let before = lab.project().clone();
     let steps = lab.labels().len();
     let refusals = [

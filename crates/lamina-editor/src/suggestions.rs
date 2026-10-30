@@ -72,11 +72,11 @@ impl std::fmt::Display for Unavailable {
     }
 }
 
-fn crosses_spine(r: &RelRect) -> bool {
+pub(crate) fn crosses_spine(r: &RelRect) -> bool {
     r.x() < 0.5 - SPINE_EPS && r.x() + r.width() > 0.5 + SPINE_EPS
 }
 
-fn on_part(r: &RelRect, part: Part) -> bool {
+pub(crate) fn on_part(r: &RelRect, part: Part) -> bool {
     match part {
         Part::Spread => true,
         Part::Left => r.x() + r.width() <= 0.5 + SPINE_EPS,

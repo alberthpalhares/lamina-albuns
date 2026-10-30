@@ -9,7 +9,6 @@ use super::ia_common::{Lab, album_project, read, unused};
 use crate::agent::ToolError;
 use crate::{
     Editor, ExportOptions, NewAlbum, Session, builtin_presets, create_album, export_project,
-    folder_name,
 };
 
 #[test]
@@ -101,7 +100,7 @@ fn ia_b14_novo_album_igual_ao_da_janela() {
     let args = json!({
         "pasta_fotos": base.path("fotos"),
         "salvar_em": target,
-        "preset": "Quadrado 30 × 30",
+        "preset": "30x30cm",
         "laminas": 8,
         "montar": true,
     });
@@ -109,12 +108,13 @@ fn ia_b14_novo_album_igual_ao_da_janela() {
 
     let preset = builtin_presets()
         .into_iter()
-        .find(|p| p.name == "Quadrado 30 × 30")
+        .find(|p| p.name == "30x30cm")
         .unwrap();
     let window = Editor::new();
     let folder = base.path("fotos");
     let new = NewAlbum {
-        name: Some(folder_name(&folder)),
+        // O nome do arquivo pedido, não o da pasta das fotos (IA-B26).
+        name: Some("album".into()),
         folder,
         spec: preset.fields.to_spec().unwrap(),
         spreads: Some(8),

@@ -20,6 +20,8 @@ pub fn connect(window: &AppWindow, app: &Shared) {
             if let Ok(index) = usize::try_from(i) {
                 app.editor.click_photo(&shown, index, ctrl, shift);
             }
+            app.grid_focus = true;
+            crate::photo_menu::refresh(app);
             true
         };
         let show = |app: &mut App| {
@@ -38,9 +40,13 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     window.on_photo_double_clicked(move |index| {
         let mut app = a.borrow_mut();
-        if let Some(id) = app.photo_at(index)
-            && app.editor.go_to_photo(id)
-        {
+        let Some(id) = app.photo_at(index) else {
+            return;
+        };
+        // Uma foto ausente: "Localizar esta foto…" (spec RF, regra 8).
+        if app.session().is_some_and(|s| s.missing().contains(&id)) {
+            crate::relink_dialog::locate_photo(&mut app, id);
+        } else if app.editor.go_to_photo(id) {
             app.refresh_current();
         }
     });

@@ -1,0 +1,201 @@
+// O campo Fonte da aba Quadro e a lista que ele abre (spec FS): busca, as partes "Lamina" e
+// "Neste computador" e o nome de cada fonte escrito nela mesma. Só desenho: as linhas, a busca e
+// as prévias vêm do editor.
+
+import { LineEdit, ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+
+export struct FontRowUi {
+    // 0 título de uma parte, 1 fonte, 2 aviso ("Procurando…", "Nenhuma fonte com …").
+    kind: int,
+    label: string,
+    name: string,
+    current: bool,
+    missing: bool,
+    preview: image,
+    has-preview: bool,
+}
+
+export global FontUi {
+    in property <[FontRowUi]> rows;
+    // A linha marcada pelas setas (Enter escolhe).
+    in-out property <int> picked: -1;
+    in-out property <string> query;
+    callback opened();
+    callback search(string);
+    callback closed();
+    // As linhas na tela: a primeira e quantas (as prévias só são feitas para elas).
+    callback visible(int, int);
+    callback chosen(string);
+    // A próxima linha de fonte a partir de `from`, para cima (-1) ou para baixo (1).
+    pure callback step(int, int) -> int;
+}
+
+// A altura de uma linha da lista.
+global FontList {
+    out property <length> row: 30px;
+}
+
+export component FontField inherits Rectangle {
+    in property <string> label;
+    in property <bool> missing;
+    callback done();
+    accessible-role: combobox;
+    accessible-label: "Fonte";
+    accessible-value: root.label;
+    height: 28px;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: touch.has-hover ? Theme.text : #ffffff40;
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        spacing: 6px;
+        Text {
+            text: root.label;
+            color: root.missing ? Theme.warning : Theme.text;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+        }
+        // A seta é um desenho nosso: a fonte da janela não tem o "▾".
+        Image {
+            accessible-role: none;
+            width: 12px;
+            height: 12px;
+            y: (parent.height - self.height) / 2;
+            source: @image-url("../icons/eg/seta-baixo.svg");
+            colorize: Theme.muted;
+        }
+    }
+    touch := TouchArea {
+        clicked => {
+            FontUi.query = "";
+            FontUi.opened();
+            popup.show();
+        }
+    }
+
+    function choose(i: int) {
+        if (i >= 0 && i < FontUi.rows.length && FontUi.rows[i].kind == 1) {
+            FontUi.chosen(FontUi.rows[i].name);
+            popup.close();
+            FontUi.closed();
+            root.done();
+        }
+    }
+
+    popup := PopupWindow {
+        y: root.height + 2px;
+        width: max(root.width, 280px);
+        height: 380px;
+        // Sem `is-open`: no Slint 1.18.1, ler essa propriedade derruba o compilador (const
+        // propagation). Por isso o fechar pelo clique fora não avisa; as prévias saem ao escolher,
+        // no Esc e na próxima vez que a lista abre.
+        close-policy: close-on-click-outside;
+
+        function report() {
+            FontUi.visible(floor(-list.content-y / FontList.row), ceil(list.visible-height / FontList.row) + 1);
+        }
+
+        function bring(i: int) {
+            if (i * FontList.row < -list.content-y) {
+                list.content-y = -i * FontList.row;
+            } else if ((i + 1) * FontList.row > -list.content-y + list.visible-height) {
+                list.content-y = list.visible-height - (i + 1) * FontList.row;
+            }
+        }
+
+        Rectangle {
+            background: Theme.panel;
+            border-radius: 6px;
+            border-width: 1px;
+            border-color: #ffffff30;
+            drop-shadow-blur: 12px;
+            drop-shadow-color: #00000090;
+            VerticalLayout {
+                padding: 6px;
+                spacing: 6px;
+                FocusScope {
+                    height: search.preferred-height;
+                    capture-key-pressed(event) => {
+                        if (event.text == Key.DownArrow || event.text == Key.UpArrow) {
+                            FontUi.picked = FontUi.step(FontUi.picked, event.text == Key.DownArrow ? 1 : -1);
+                            popup.bring(FontUi.picked);
+                            return accept;
+                        }
+                        if (event.text == Key.Escape) {
+                            popup.close();
+                            FontUi.closed();
+                            return accept;
+                        }
+                        reject
+                    }
+                    search := LineEdit {
+                        width: 100%;
+                        placeholder-text: "Buscar fonte";
+                        accessible-label: "Buscar fonte";
+                        text <=> FontUi.query;
+                        edited(t) => {
+                            FontUi.search(t);
+                            list.content-y = 0;
+                            popup.report();
+                        }
+                        accepted => { root.choose(FontUi.picked); }
+                        init => {
+                            self.focus();
+                            popup.bring(max(FontUi.picked, 0));
+                            popup.report();
+                        }
+                    }
+                }
+                list := ListView {
+                    changed content-y => { popup.report(); }
+                    for row[i] in FontUi.rows: Rectangle {
+                        accessible-role: list-item;
+                        accessible-label: row.label;
+                        // A prévia só aparece numa fonte que está aqui e já tem a imagem.
+                        property <bool> drawn: row.kind == 1 && row.has-preview && row.missing == false;
+                        height: FontList.row;
+                        background: row.kind == 1 && (i == FontUi.picked || area.has-hover) ? #ffffff18 : transparent;
+                        border-radius: 4px;
+                        HorizontalLayout {
+                            padding-left: row.kind == 0 ? 4px : 8px;
+                            padding-right: 8px;
+                            spacing: 6px;
+                            Text {
+                                width: 12px;
+                                text: row.current ? "✓" : "";
+                                color: Theme.text;
+                                vertical-alignment: center;
+                            }
+                            if drawn: Image {
+                                // O nome da linha vai no rótulo da linha, não na imagem.
+                                accessible-role: none;
+                                source: row.preview;
+                                colorize: Theme.text;
+                                image-fit: contain;
+                                horizontal-alignment: left;
+                                horizontal-stretch: 1;
+                            }
+                            if drawn == false: Text {
+                                text: row.label;
+                                color: row.kind == 1 ? (row.missing ? Theme.warning : Theme.text) : Theme.muted;
+                                font-size: row.kind == 0 ? 11px : 13px;
+                                font-weight: row.kind == 0 ? 600 : 400;
+                                font-italic: row.kind == 2;
+                                vertical-alignment: center;
+                                overflow: elide;
+                                horizontal-stretch: 1;
+                            }
+                        }
+                        area := TouchArea {
+                            enabled: row.kind == 1;
+                            clicked => { root.choose(i); }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

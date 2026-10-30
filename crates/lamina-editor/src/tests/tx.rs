@@ -233,7 +233,7 @@ fn tx_b8_alt_setas() {
     assert_eq!(undo_label(&editor), "Novo texto", "uma edição só");
     assert!(
         !editor.nudge_key(Shortcut::key(Key::Right)),
-        "→ sem Alt é do layout"
+        "→ sem Alt muda de lâmina"
     );
 }
 
@@ -322,15 +322,17 @@ fn tx_b11_delete_e_novo_quadro_de_foto() {
     let mut editor = editor_at(three_spreads(), 0);
     let n = current(&editor).0.spreads[0].frames.len();
     editor.select_frame(Some(0));
-    assert!(editor.run(Command::ClearFrame));
-    assert_eq!(
-        current(&editor).0.spreads[0].frames[0].content,
-        FrameContent::Empty
-    );
+    // O 1º Delete tira a foto com o quadro e refaz o layout (spec FQ, regra 3).
     assert!(editor.run(Command::ClearFrame));
     let (p, _) = current(&editor);
     assert_eq!(p.spreads[0].frames.len(), n - 1);
-    assert!(p.spreads[0].manual);
+    assert!(
+        p.spreads[0]
+            .frames
+            .iter()
+            .all(|f| f.content != FrameContent::Empty)
+    );
+    assert!(!p.spreads[0].manual);
     assert!(editor.run(Command::NewPhotoFrame));
     let frame = editor.selected_frame().unwrap();
     let (p, _) = current(&editor);
@@ -340,6 +342,11 @@ fn tx_b11_delete_e_novo_quadro_de_foto() {
         rect_of(&editor, frame).width.get(),
         page.width.get() / 3.0
     ));
+    // Delete no quadro vazio apaga o quadro, e a lâmina fica à mão.
+    assert!(editor.run(Command::ClearFrame));
+    let (p, _) = current(&editor);
+    assert_eq!(p.spreads[0].frames.len(), n - 1);
+    assert!(p.spreads[0].manual);
     // Delete num texto apaga o texto.
     editor.new_text(None);
     assert!(editor.run(Command::ClearFrame));
@@ -368,6 +375,7 @@ fn tx_b12_ordem_dos_quadros() {
 
 #[test]
 fn tx_b14_fonte_que_nao_existe_fica_guardada() {
+    let _fonts = lamina_render::testing::TestFonts::none();
     let mut editor = empty_spread();
     editor.new_text(None);
     editor.change_text(TextChange::Font("Lobster".into()));

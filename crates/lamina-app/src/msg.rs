@@ -31,6 +31,22 @@ pub enum Msg {
         found: Vec<Found>,
         folder: Option<PathBuf>,
     },
+    /// "Tentar de novo" e a volta para a janela (spec RF, regra 6): as fotos que ainda faltam nos
+    /// mesmos caminhos do projeto `file`.
+    Rechecked {
+        file: Option<PathBuf>,
+        still: Vec<lamina_core::PhotoId>,
+    },
+    /// O que aconteceu com as fotos que sumiram com o álbum aberto (spec RF, regra 11).
+    Discovered {
+        file: Option<PathBuf>,
+        found: Vec<lamina_editor::Discovery>,
+    },
+    /// "Localizar esta foto…" (spec RF, regra 4) no projeto `file`.
+    Located {
+        file: Option<PathBuf>,
+        result: Result<lamina_editor::Located, HumanMessage>,
+    },
     /// A resposta de uma checagem ou download da atualização (spec DS).
     Update(lamina_editor::updates::Outcome),
     /// Uma tarefa em segundo plano entrou em pânico (spec EH, regra 6): a janela se libera.

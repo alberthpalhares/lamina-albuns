@@ -105,6 +105,24 @@ impl Editor {
             session.go_to(current.min(session.spread_count().saturating_sub(1)));
         }
         self.note_session();
+        self.warn_missing_fonts();
+    }
+
+    /// O aviso das fontes que o álbum usa e este computador não tem (spec FS, regra 5).
+    fn warn_missing_fonts(&mut self) {
+        let Some(session) = &self.session else {
+            return;
+        };
+        let missing = crate::font_picker::missing_fonts(session.project());
+        if let Some(message) = crate::font_picker::missing_fonts_notice(&missing) {
+            self.notice = Some(match self.notice.take() {
+                Some(before) => format!(
+                    "{before}
+{message}"
+                ),
+                None => message,
+            });
+        }
     }
 
     /// Põe a sessão no topo da lista, com nome, contagens e a lâmina atual, e grava.

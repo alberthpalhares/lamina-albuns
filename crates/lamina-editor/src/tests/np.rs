@@ -21,6 +21,8 @@ fn preset(name: &str, width_cm: f64, height_cm: f64) -> Preset {
         },
         limits: lamina_core::PageLimits::default(),
         export: lamina_core::ExportPrefs::default(),
+        binder: None,
+        album_type: None,
     }
 }
 
@@ -38,30 +40,44 @@ fn np_b1_presets_separados_por_formato() {
             (f, s)
         })
         .collect();
+    // Os do Lamina, os da ProAlbuns (tabela de 2026-10-29) e o do fotógrafo, em ordem.
+    let square = [15.0, 20.0, 25.0, 30.0].map(|s| (s, s));
+    let mut squares = square.to_vec();
+    squares.extend(square);
+    let mut landscape = vec![
+        (21.0, 15.0),
+        (25.0, 20.0),
+        (30.0, 20.0),
+        (30.0, 25.0),
+        (35.0, 30.0),
+        (40.0, 30.0),
+        (45.0, 30.0),
+    ];
+    landscape.extend([
+        (20.0, 15.0),
+        (25.0, 20.0),
+        (30.0, 20.0),
+        (30.0, 25.0),
+        (35.0, 30.0),
+        (40.0, 30.0),
+        (45.0, 30.0),
+        (35.0, 25.0),
+    ]);
+    let portrait = vec![
+        (15.0, 21.0),
+        (20.0, 25.0),
+        (20.0, 30.0),
+        (25.0, 30.0),
+        (15.0, 20.0),
+        (20.0, 25.0),
+        (25.0, 30.0),
+    ];
     assert_eq!(
         sizes,
         [
-            (
-                Format::Square,
-                vec![(15.0, 15.0), (20.0, 20.0), (25.0, 25.0), (30.0, 30.0)]
-            ),
-            (
-                Format::Landscape,
-                vec![
-                    (21.0, 15.0),
-                    (25.0, 20.0),
-                    (30.0, 20.0),
-                    (30.0, 25.0),
-                    (35.0, 30.0),
-                    (40.0, 30.0),
-                    (45.0, 30.0),
-                    (35.0, 25.0)
-                ]
-            ),
-            (
-                Format::Portrait,
-                vec![(15.0, 21.0), (20.0, 25.0), (20.0, 30.0), (25.0, 30.0)]
-            ),
+            (Format::Square, squares),
+            (Format::Landscape, landscape),
+            (Format::Portrait, portrait),
         ]
     );
     assert_eq!(Format::Landscape.label(), "Horizontal");
@@ -71,11 +87,11 @@ fn np_b1_presets_separados_por_formato() {
 fn np_b2_tamanho_escolhido_preenche_o_personalizado() {
     let square = builtin_presets()
         .into_iter()
-        .find(|p| p.name == "Quadrado 30 × 30")
+        .find(|p| p.name == "30x30cm")
         .unwrap();
     let mut form = SizeForm::default();
     form.choose(&square);
-    assert_eq!(form.label(), "Quadrado 30 × 30");
+    assert_eq!(form.label(), "30x30cm");
     form.set(SizeField::Dpi, "350").unwrap();
     assert_eq!(
         form.fields,
@@ -84,7 +100,7 @@ fn np_b2_tamanho_escolhido_preenche_o_personalizado() {
             ..square.fields.clone()
         }
     );
-    assert_eq!(form.label(), "Personalizado (a partir de Quadrado 30 × 30)");
+    assert_eq!(form.label(), "Personalizado (a partir de 30x30cm)");
     assert_eq!(SizeForm::default().label(), "Personalizado");
 }
 
@@ -222,7 +238,8 @@ fn np_b16_presets_com_margens_por_borda() {
     new.fields = fields;
     store.save(new).unwrap();
     let text = std::fs::read_to_string(&file).unwrap();
-    assert!(text.contains("\"versao\": 2"), "{text}");
+    // A versão 3 (spec ET) só acrescentou o laboratório; as margens por borda continuam.
+    assert!(text.contains("\"versao\": 3"), "{text}");
     assert!(text.contains("\"sangria_cima_baixo_mm\": 5.0"), "{text}");
     let again = PresetsStore::load(&file);
     let saved = again.find("Novo").unwrap();

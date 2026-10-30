@@ -213,6 +213,23 @@ pub fn frame_at(project: &Project, index: usize, x: f64, y: f64) -> Option<usize
         .or_else(|| (0..n).rev().find(|&i| hit(&view.frames[i])))
 }
 
+/// A camada de cada quadro na tela: os de foto na ordem da lista e os textos por cima de todos,
+/// como na impressão e no [`frame_at`] (spec TX, regra 5). Sem isso, depois de trocar o layout
+/// as fotos novas cobriam os textos e pegavam o clique (correção TX de 2026-10-28).
+pub fn layers(frames: &[FrameView]) -> Vec<usize> {
+    let text = |f: &FrameView| matches!(f.kind, FrameKind::Text { .. });
+    let mut photo = 0;
+    let mut above = frames.iter().filter(|f| !text(f)).count();
+    frames
+        .iter()
+        .map(|f| {
+            let next = if text(f) { &mut above } else { &mut photo };
+            *next += 1;
+            *next - 1
+        })
+        .collect()
+}
+
 /// A foto inteira do quadro, na escala e na posição em que o recorte a coloca: a prévia do
 /// recorte (spec RC, regra 6). A parte dela dentro do quadro coincide com a foto mostrada.
 pub fn photo_extent(frame: &FrameView) -> Option<PxRect> {

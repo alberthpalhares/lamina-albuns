@@ -155,6 +155,9 @@ pub struct PhotoRow {
     pub picked: bool,
     /// Já usada, na aba Todas: aparece esmaecida (spec PF, regra 11).
     pub dim: bool,
+    /// O arquivo não está onde estava: a marca âmbar (spec RF, regra 8). Quem monta as linhas
+    /// sabe quais faltam (a sessão); aqui começa desligada.
+    pub missing: bool,
 }
 
 /// As linhas do painel de fotos da aba `filter`, pela foto.
@@ -171,6 +174,7 @@ pub fn photo_rows(
                 item: item.clone(),
                 picked: picked.contains(&item.id),
                 dim: filter == Filter::All && item.uses > 0,
+                missing: false,
             };
             (item.id, row)
         })

@@ -148,6 +148,12 @@ pub fn connect(window: &AppWindow, app: &Shared) {
         {
             crate::waits::resized(&mut app);
         }
+        // De volta à janela: o disco pode ter sido conectado (spec RF, regra 6).
+        if let winit::event::WindowEvent::Focused(true) = event
+            && let Ok(app) = a.try_borrow()
+        {
+            crate::relink_dialog::recheck(&app);
+        }
         match event {
             winit::event::WindowEvent::HoveredFile(_) => show(true),
             winit::event::WindowEvent::HoveredFileCancelled => show(false),

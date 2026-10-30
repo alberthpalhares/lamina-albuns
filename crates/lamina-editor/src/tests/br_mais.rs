@@ -159,7 +159,7 @@ fn br_b15_a_ia_comeca_em_branco_e_monta_quando_pede() {
     let roots = vec![base.path("fotos"), base.path("ia")];
     let mut lab = Lab::new(&base, roots, true);
     let target = base.path("ia").join("album.lamina");
-    let quadrado = "Quadrado 30 × 30";
+    let quadrado = "30x30cm";
     let args =
         json!({ "pasta_fotos": base.path("fotos"), "salvar_em": target, "preset": quadrado });
     lab.ok("novo_album", args);
@@ -170,7 +170,8 @@ fn br_b15_a_ia_comeca_em_branco_e_monta_quando_pede() {
         .unwrap();
     let folder = base.path("fotos");
     let window = crate::NewAlbum {
-        name: Some(crate::folder_name(&folder)),
+        // O nome que a janela recebe: o do arquivo pedido (relato do teste pelo MCP, IA-B26).
+        name: Some("album".into()),
         folder,
         spec: preset.fields.to_spec().unwrap(),
         limits: preset.limits,

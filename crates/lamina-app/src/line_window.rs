@@ -96,10 +96,12 @@ fn same(a: &TimelineItem, b: &TimelineItem) -> bool {
         cut,
         spread,
         x,
+        row,
     } = a;
     let empty = |i: &slint::Image| i.size().width == 0;
     *cut == b.cut
         && *spread == b.spread
+        && *row == b.row
         && x.to_bits() == b.x.to_bits()
         && (*img == b.img || (empty(img) && empty(&b.img)))
 }
@@ -110,6 +112,7 @@ fn empty_slot() -> TimelineItem {
         cut: true,
         spread: -1,
         x: -1000.0,
+        row: -1,
         ..TimelineItem::default()
     }
 }
