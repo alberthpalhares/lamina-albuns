@@ -1,9 +1,9 @@
 // Janelas sobre a janela principal: pergunta antes de sair, erro e andamento. O novo álbum fica em
 // `new_project.slint`.
 
-import { Button, TextEdit } from "std-widgets.slint";
-import { Theme } from "theme.slint";
-import { Shade, Panel } from "widgets.slint";
+import { TextEdit } from "std-widgets.slint";
+import { Theme, Type } from "theme.slint";
+import { Shade, Panel, DialogButton } from "widgets.slint";
 
 export component ConfirmDialog inherits Shade {
     in property <string> name;
@@ -16,18 +16,18 @@ export component ConfirmDialog inherits Shade {
             spacing: 16px;
             Text {
                 text: "Salvar as alterações em \"" + root.name + "\"?";
-                font-size: 16px;
-                font-weight: 600;
+                font-size: Type.title;
+                font-weight: Type.semibold;
                 color: Theme.text;
                 wrap: word-wrap;
             }
-            Text { text: "Sem salvar, as alterações do álbum se perdem. Os arquivos já exportados continuam na pasta."; color: Theme.muted; wrap: word-wrap; }
+            Text { text: "Sem salvar, as alterações do álbum se perdem. Os arquivos já exportados continuam na pasta."; color: Theme.text-2; wrap: word-wrap; }
             HorizontalLayout {
                 alignment: end;
                 spacing: 8px;
-                Button { text: "Cancelar"; clicked => { root.answer(2); } }
-                Button { text: "Não salvar"; clicked => { root.answer(1); } }
-                Button { text: "Salvar"; primary: true; clicked => { root.answer(0); } }
+                DialogButton { text: "Cancelar"; clicked => { root.answer(2); } }
+                DialogButton { text: "Não salvar"; clicked => { root.answer(1); } }
+                DialogButton { text: "Salvar"; primary: true; clicked => { root.answer(0); } }
             }
         }
     }
@@ -50,19 +50,19 @@ export component MessageDialog inherits Shade {
         VerticalLayout {
             padding: 24px;
             spacing: 12px;
-            Text { text: root.title; font-size: 16px; font-weight: 600; color: Theme.text; wrap: word-wrap; }
+            Text { text: root.title; font-size: Type.title; font-weight: Type.semibold; color: Theme.text; wrap: word-wrap; }
             Text { text: root.message; color: Theme.text; wrap: word-wrap; vertical-stretch: root.expanded ? 0 : 1; }
             if root.expanded: TextEdit { text: root.details; read-only: true; wrap: word-wrap; vertical-stretch: 1; }
             HorizontalLayout {
                 spacing: 8px;
-                if root.details != "": Button {
+                if root.details != "": DialogButton {
                     text: root.expanded ? "Esconder detalhes" : "Mostrar detalhes";
                     clicked => { root.expanded = !root.expanded; }
                 }
                 Rectangle { horizontal-stretch: 1; }
-                if root.details != "": Button { text: "Enviar problema…"; clicked => { root.send-problem(); } }
-                if root.folder != "": Button { text: "Abrir a pasta"; clicked => { root.open-folder(); } }
-                Button { text: "OK"; primary: true; clicked => { root.close(); } }
+                if root.details != "": DialogButton { text: "Enviar problema…"; clicked => { root.send-problem(); } }
+                if root.folder != "": DialogButton { text: "Abrir a pasta"; clicked => { root.open-folder(); } }
+                DialogButton { text: "OK"; primary: true; clicked => { root.close(); } }
             }
         }
     }
@@ -76,7 +76,7 @@ export component BusyOverlay inherits Shade {
         Text {
             text: root.text;
             color: Theme.text;
-            font-size: 15px;
+            font-size: Type.title;
         }
     }
 }
@@ -97,13 +97,13 @@ export component RecoverDialog inherits Shade {
         VerticalLayout {
             padding: 24px;
             spacing: 12px;
-            Text { text: RecoverUi.question; font-size: 16px; font-weight: 600; color: Theme.text; wrap: word-wrap; }
-            Text { text: "Recuperar abre o álbum como estava, ainda sem salvar. Descartar apaga a cópia; o arquivo do álbum fica como foi salvo pela última vez."; color: Theme.muted; wrap: word-wrap; }
+            Text { text: RecoverUi.question; font-size: Type.title; font-weight: Type.semibold; color: Theme.text; wrap: word-wrap; }
+            Text { text: "Recuperar abre o álbum como estava, ainda sem salvar. Descartar apaga a cópia; o arquivo do álbum fica como foi salvo pela última vez."; color: Theme.text-2; wrap: word-wrap; }
             HorizontalLayout {
                 alignment: end;
                 spacing: 8px;
-                Button { text: "Descartar"; clicked => { RecoverUi.discard(); } }
-                Button { text: "Recuperar"; primary: true; clicked => { RecoverUi.recover(); } }
+                DialogButton { text: "Descartar"; clicked => { RecoverUi.discard(); } }
+                DialogButton { text: "Recuperar"; primary: true; clicked => { RecoverUi.recover(); } }
             }
         }
     }

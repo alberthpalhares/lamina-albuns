@@ -1,13 +1,14 @@
 // O modo organizar a lâmina (spec EG): o título da lâmina em destaque, os quadros selecionados, o
 // laço e o painel do modo. Só desenho: o editor decide e o Rust preenche o `OrganizeUi`.
 
-import { Button, CheckBox, LineEdit, ScrollView } from "std-widgets.slint";
+import { LineEdit, ScrollView } from "std-widgets.slint";
 import { NumberField } from "number_field.slint";
-import { Theme } from "theme.slint";
+import { Theme, Fixed, Type, Radius } from "theme.slint";
+import { Icons } from "icons.slint";
 import { BoxData } from "canvas.slint";
 import { LookPanel } from "look.slint";
 import { PhotoUi, PhotoSection } from "photo.slint";
-import { IconButton, NeutralSlider, Tip } from "widgets.slint";
+import { IconButton, NeutralSlider, Tip, DialogButton, CheckRow } from "widgets.slint";
 import { PaletteUi, Icon } from "palette.slint";
 
 // Uma marca do ímã de mesmo tamanho ou de espaçamento igual: a linha e o texto, em frações da
@@ -121,8 +122,8 @@ component MenuRows inherits VerticalLayout {
     for r in root.rows: Rectangle {
         height: 28px;
         min-width: 210px;
-        border-radius: 4px;
-        background: row-touch.has-hover && r.enabled ? #ffffff1f : transparent;
+        border-radius: Radius.small;
+        background: row-touch.has-hover && r.enabled ? Theme.press : transparent;
         HorizontalLayout {
             padding-left: 8px;
             padding-right: 10px;
@@ -135,11 +136,14 @@ component MenuRows inherits VerticalLayout {
                     width: 18px;
                     height: 18px;
                     source: r.icon;
-                    colorize: r.enabled ? Theme.text : #6a6a6a;
+                    colorize: r.enabled ? Theme.text : Theme.text-disabled;
                 }
             }
-            Text { text: r.label; color: r.enabled ? Theme.text : #6a6a6a; vertical-alignment: center; }
+            Text { text: r.label; color: r.enabled ? Theme.text : Theme.text-disabled; vertical-alignment: center; }
         }
+        accessible-role: button;
+        accessible-label: r.label;
+        accessible-enabled: r.enabled;
         row-touch := TouchArea {
             enabled: r.enabled;
             clicked => {
@@ -152,20 +156,23 @@ component MenuRows inherits VerticalLayout {
 
 // Alinhar ▾, Igualar ▾, Distribuir ▾ (spec BO, regras 1 e 2): apagado diz o porquê na dica.
 component MenuButton inherits Rectangle {
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-enabled: root.enabled;
     in property <string> text;
     in property <string> tip;
     in property <bool> enabled;
     in property <[BarRow]> rows;
     width: label.preferred-width + 34px;
     height: 28px;
-    border-radius: 5px;
-    background: touch.has-hover && root.enabled ? #ffffff1f : transparent;
+    border-radius: Radius.small;
+    background: touch.has-hover && root.enabled ? Theme.press : transparent;
     // A seta é um desenho nosso: a fonte da janela não tem o "▾" (aparecia um quadradinho).
     label := Text {
         x: 9px;
         height: parent.height;
         text: root.text;
-        color: root.enabled ? white : #8a9aaa;
+        color: root.enabled ? Theme.text-strong : Theme.text-disabled;
         vertical-alignment: center;
     }
     Image {
@@ -174,8 +181,8 @@ component MenuButton inherits Rectangle {
         y: (parent.height - self.height) / 2;
         width: 12px;
         height: 12px;
-        source: @image-url("../icons/eg/seta-baixo.svg");
-        colorize: root.enabled ? white : #8a9aaa;
+        source: Icons.chevron-down;
+        colorize: root.enabled ? Theme.text-strong : Theme.text-disabled;
     }
     touch := TouchArea {
         clicked => {
@@ -187,12 +194,12 @@ component MenuButton inherits Rectangle {
     popup := PopupWindow {
         y: parent.height + 2px;
         Rectangle {
-            background: #262a2e;
-            border-radius: 6px;
+            background: Theme.raised;
+            border-radius: Radius.medium;
             border-width: 1px;
-            border-color: #ffffff30;
+            border-color: Theme.line;
             drop-shadow-blur: 12px;
-            drop-shadow-color: #00000090;
+            drop-shadow-color: Theme.shadow-strong;
             MenuRows { rows: root.rows; picked => { popup.close(); } }
         }
     }
@@ -206,7 +213,7 @@ component MenuButton inherits Rectangle {
 
 // X, Y, L, A e o cadeado de "Manter proporção" (spec BO, regra 1, item 5).
 component BarFields inherits HorizontalLayout {
-    in property <color> ink: white;
+    in property <color> ink: Theme.text-strong;
     spacing: 4px;
     alignment: start;
     Text { text: "X"; color: root.ink; vertical-alignment: center; }
@@ -218,7 +225,7 @@ component BarFields inherits HorizontalLayout {
     Text { text: "A"; color: root.ink; vertical-alignment: center; }
     NumberField { step-accepts: true; width: 58px; text <=> OrganizeUi.gh; accepted => { OrganizeUi.field-accepted(3); } }
     Icon {
-        icon: OrganizeUi.keep ? @image-url("../icons/eg/cadeado.svg") : @image-url("../icons/eg/cadeado-aberto.svg");
+        icon: OrganizeUi.keep ? Icons.lock : Icons.lock-open;
         label: OrganizeUi.keep ? "Manter proporção (ligado)" : "Manter proporção (desligado)";
         on: OrganizeUi.keep;
         clicked => { OrganizeUi.keep = !OrganizeUi.keep; }
@@ -228,14 +235,14 @@ component BarFields inherits HorizontalLayout {
 component Separator inherits Rectangle {
     width: 1px;
     height: 20px;
-    background: #ffffff30;
+    background: Theme.line;
 }
 
 // A barra única do modo organizar (spec BO), em cima da área da lâmina: Voltar, as ferramentas, o
 // zoom, os menus, os campos e os botões de painel. O que não cabe vai para o ⋯ (regra 3).
 export component OrganizeBar inherits Rectangle {
     height: 34px;
-    background: #1f3b57;
+    background: Theme.bar;
     init => { OrganizeUi.bar-width(self.width); }
     changed width => { OrganizeUi.bar-width(self.width); }
     property <bool> shows-fields: OrganizeUi.bar-fields && OrganizeUi.can-fields;
@@ -247,7 +254,7 @@ export component OrganizeBar inherits Rectangle {
         // Voltar no lugar de Concluir (spec ZR, regra 12): a tela anima a saída.
         VerticalLayout {
             alignment: center;
-            Button {
+            DialogButton {
                 text: "Voltar";
                 clicked => { OrganizeUi.done(); }
             }
@@ -256,18 +263,18 @@ export component OrganizeBar inherits Rectangle {
         HorizontalLayout {
             spacing: 2px;
             alignment: start;
-            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/eg/selecionar.svg"); tip: 0; on: PaletteUi.tool == 0; clicked => { PaletteUi.pick-tool(0); } } }
-            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/eg/quadro.svg"); tip: 1; on: PaletteUi.tool == 1; clicked => { PaletteUi.pick-tool(1); } } }
-            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/eg/texto.svg"); tip: 2; on: PaletteUi.tool == 2; clicked => { PaletteUi.pick-tool(2); } } }
-            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/eg/mao.svg"); tip: 3; on: PaletteUi.tool == 3; clicked => { PaletteUi.pick-tool(3); } } }
-            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/zr/lupa.svg"); tip: 4; on: PaletteUi.tool == 4; clicked => { PaletteUi.pick-tool(4); } } }
+            VerticalLayout { alignment: center; Icon { icon: Icons.pointer; tip: 0; on: PaletteUi.tool == 0; clicked => { PaletteUi.pick-tool(0); } } }
+            VerticalLayout { alignment: center; Icon { icon: Icons.frame; tip: 1; on: PaletteUi.tool == 1; clicked => { PaletteUi.pick-tool(1); } } }
+            VerticalLayout { alignment: center; Icon { icon: Icons.text; tip: 2; on: PaletteUi.tool == 2; clicked => { PaletteUi.pick-tool(2); } } }
+            VerticalLayout { alignment: center; Icon { icon: Icons.hand; tip: 3; on: PaletteUi.tool == 3; clicked => { PaletteUi.pick-tool(3); } } }
+            VerticalLayout { alignment: center; Icon { icon: Icons.zoom; tip: 4; on: PaletteUi.tool == 4; clicked => { PaletteUi.pick-tool(4); } } }
         }
         VerticalLayout { alignment: center; Separator { } }
         // O zoom da lâmina (spec CD, regra 3): −, o controle, + e o valor.
         HorizontalLayout {
             spacing: 2px;
             alignment: start;
-            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/eg/menos.svg"); tip: 5; clicked => { PaletteUi.command("organizar.menos-zoom"); } } }
+            VerticalLayout { alignment: center; Icon { icon: Icons.minus; tip: 5; clicked => { PaletteUi.command("organizar.menos-zoom"); } } }
             VerticalLayout {
                 alignment: center;
                 NeutralSlider {
@@ -280,19 +287,19 @@ export component OrganizeBar inherits Rectangle {
                     reset => { PaletteUi.command("organizar.ajustar"); }
                 }
             }
-            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/eg/mais.svg"); tip: 6; clicked => { PaletteUi.command("organizar.mais-zoom"); } } }
+            VerticalLayout { alignment: center; Icon { icon: Icons.plus; tip: 6; clicked => { PaletteUi.command("organizar.mais-zoom"); } } }
             Text {
                 width: 56px;
                 text: PaletteUi.zoom;
-                color: white;
+                color: Theme.text-strong;
                 horizontal-alignment: center;
                 vertical-alignment: center;
             }
         }
         if OrganizeUi.bar-fit: HorizontalLayout {
             spacing: 2px;
-            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/zr/ajustar.svg"); tip: 8; clicked => { PaletteUi.command("organizar.ajustar"); } } }
-            VerticalLayout { alignment: center; Icon { icon: @image-url("../icons/zr/um-para-um.svg"); tip: 7; clicked => { PaletteUi.command("organizar.tamanho-real"); } } }
+            VerticalLayout { alignment: center; Icon { icon: Icons.fit; tip: 8; clicked => { PaletteUi.command("organizar.ajustar"); } } }
+            VerticalLayout { alignment: center; Icon { icon: Icons.actual-size; tip: 7; clicked => { PaletteUi.command("organizar.tamanho-real"); } } }
         }
         if OrganizeUi.bar-menus: HorizontalLayout {
             spacing: 2px;
@@ -313,9 +320,9 @@ export component OrganizeBar inherits Rectangle {
             more := Rectangle {
                 width: 30px;
                 height: 28px;
-                border-radius: 5px;
-                background: more-touch.has-hover ? #ffffff1f : transparent;
-                Text { text: "⋯"; color: white; font-size: 16px; horizontal-alignment: center; vertical-alignment: center; }
+                border-radius: Radius.small;
+                background: more-touch.has-hover ? Theme.press : transparent;
+                Image { accessible-role: none; width: 18px; height: 18px; source: Icons.more; colorize: Theme.text-strong; }
                 more-touch := TouchArea { clicked => { more-popup.show(); } }
                 more-popup := PopupWindow {
                     x: parent.width - 260px;
@@ -323,20 +330,20 @@ export component OrganizeBar inherits Rectangle {
                     close-policy: close-on-click-outside;
                     Rectangle {
                         width: 260px;
-                        background: #262a2e;
-                        border-radius: 6px;
+                        background: Theme.raised;
+                        border-radius: Radius.medium;
                         border-width: 1px;
-                        border-color: #ffffff30;
+                        border-color: Theme.line;
                         drop-shadow-blur: 12px;
-                        drop-shadow-color: #00000090;
+                        drop-shadow-color: Theme.shadow-strong;
                         VerticalLayout {
                             padding: 6px;
                             spacing: 4px;
                             if !OrganizeUi.bar-fit: HorizontalLayout {
                                 spacing: 2px;
                                 alignment: start;
-                                Icon { icon: @image-url("../icons/zr/ajustar.svg"); tip: 8; clicked => { PaletteUi.command("organizar.ajustar"); } }
-                                Icon { icon: @image-url("../icons/zr/um-para-um.svg"); tip: 7; clicked => { PaletteUi.command("organizar.tamanho-real"); } }
+                                Icon { icon: Icons.fit; tip: 8; clicked => { PaletteUi.command("organizar.ajustar"); } }
+                                Icon { icon: Icons.actual-size; tip: 7; clicked => { PaletteUi.command("organizar.tamanho-real"); } }
                             }
                             if !OrganizeUi.bar-menus: MenuRows { rows: OrganizeUi.align-rows; picked => { more-popup.close(); } }
                             if !OrganizeUi.bar-menus: MenuRows { rows: OrganizeUi.equal-rows; picked => { more-popup.close(); } }
@@ -356,7 +363,7 @@ export component OrganizeBar inherits Rectangle {
                                     NumberField { step-accepts: true; text <=> OrganizeUi.gh; accepted => { OrganizeUi.field-accepted(3); } }
                                 }
                             }
-                            if !OrganizeUi.bar-fields && OrganizeUi.can-fields: CheckBox { text: "Manter proporção"; checked <=> OrganizeUi.keep; }
+                            if !OrganizeUi.bar-fields && OrganizeUi.can-fields: CheckRow { text: "Manter proporção"; checked <=> OrganizeUi.keep; }
                         }
                     }
                 }
@@ -365,7 +372,7 @@ export component OrganizeBar inherits Rectangle {
         VerticalLayout {
             alignment: center;
             IconButton {
-                icon: @image-url("../icons/zr/faixa.svg");
+                icon: Icons.strips;
                 tip: OrganizeUi.tip-spreads;
                 tip-side: 1;
                 checked: OrganizeUi.spreads-open;
@@ -375,7 +382,7 @@ export component OrganizeBar inherits Rectangle {
         VerticalLayout {
             alignment: center;
             IconButton {
-                icon: @image-url("../icons/zr/painel.svg");
+                icon: Icons.panel-right;
                 tip: OrganizeUi.tip-panel;
                 tip-side: 1;
                 checked: OrganizeUi.panel-open;
@@ -397,20 +404,20 @@ export component OrganizeRulers inherits Rectangle {
         y: 0;
         width: root.width - root.size;
         height: root.size;
-        background: #1b1b1b;
+        background: Theme.g2;
         clip: true;
         for t in OrganizeUi.ticks-x: Rectangle {
             x: root.lx + t.at * root.unit - top.x;
             y: t.major ? 0px : root.size * 0.6;
             width: 1px;
             height: t.major ? root.size : root.size * 0.4;
-            background: #8a8a8a;
+            background: Theme.g10;
             if t.label != "": Text {
                 x: 3px;
                 y: 0px;
                 text: t.label;
-                color: #bdbdbd;
-                font-size: 9px;
+                color: Theme.text-2;
+                font-size: Type.micro;
             }
         }
     }
@@ -419,20 +426,20 @@ export component OrganizeRulers inherits Rectangle {
         y: root.size;
         width: root.size;
         height: root.height - root.size;
-        background: #1b1b1b;
+        background: Theme.g2;
         clip: true;
         for t in OrganizeUi.ticks-y: Rectangle {
             x: t.major ? 0px : root.size * 0.6;
             y: root.ly + t.at * root.unit - side.y;
             width: t.major ? root.size : root.size * 0.4;
             height: 1px;
-            background: #8a8a8a;
+            background: Theme.g10;
             if t.label != "": Text {
                 x: 1px;
                 y: 2px;
                 text: t.label;
-                color: #bdbdbd;
-                font-size: 9px;
+                color: Theme.text-2;
+                font-size: Type.micro;
             }
         }
     }
@@ -441,7 +448,7 @@ export component OrganizeRulers inherits Rectangle {
         height: root.size;
         x: 0;
         y: 0;
-        background: #1b1b1b;
+        background: Theme.g2;
     }
 }
 
@@ -493,13 +500,14 @@ export component OrganizeTools inherits TouchArea {
         }
     }
     // O sinal da lupa ao lado da cruz (o Slint não tem o ponteiro de lupa; desenho nosso).
-    if root.loupe && root.has-hover: Text {
+    if root.loupe && root.has-hover: Image {
+        accessible-role: none;
         x: root.mouse-x + 10px;
         y: root.mouse-y + 8px;
-        text: root.alt ? "−" : "+";
-        color: white;
-        font-size: 14px;
-        font-weight: 700;
+        width: 14px;
+        height: 14px;
+        source: root.alt ? Icons.minus : Icons.plus;
+        colorize: Theme.text-strong;
     }
     if root.pressed && !root.panning && !root.loupe: Rectangle {
         x: min(root.px, root.mouse-x);
@@ -507,8 +515,8 @@ export component OrganizeTools inherits TouchArea {
         width: abs(root.mouse-x - root.px);
         height: abs(root.mouse-y - root.py);
         border-width: 1px;
-        border-color: #4fc3f7;
-        background: #4fc3f722;
+        border-color: Theme.accent;
+        background: Theme.accent-soft;
     }
 }
 
@@ -521,7 +529,7 @@ export component OrganizeMarks inherits Rectangle {
         width: b.w * root.unit;
         height: b.h * root.unit;
         border-width: 3px;
-        border-color: #4fc3f7;
+        border-color: Theme.accent;
     }
     if OrganizeUi.has-group: Rectangle {
         x: OrganizeUi.group.x * root.unit - 3px;
@@ -529,7 +537,7 @@ export component OrganizeMarks inherits Rectangle {
         width: OrganizeUi.group.w * root.unit + 6px;
         height: OrganizeUi.group.h * root.unit + 6px;
         border-width: 1px;
-        border-color: #ffffffb0;
+        border-color: Theme.overlay-strong;
     }
     for m in OrganizeUi.marks: Rectangle {
         Rectangle {
@@ -537,21 +545,21 @@ export component OrganizeMarks inherits Rectangle {
             y: m.line.y * root.unit;
             width: max(1px, m.line.w * root.unit);
             height: max(1px, m.line.h * root.unit);
-            background: #ff4fd8;
+            background: Fixed.guide;
         }
         Rectangle {
             x: m.tx * root.unit;
             y: m.ty * root.unit - self.height / 2;
             width: label.preferred-width + 8px;
             height: label.preferred-height + 4px;
-            background: #000000b0;
-            border-radius: 3px;
+            background: Theme.shadow-strong;
+            border-radius: Radius.small;
             label := Text {
                 x: 4px;
                 y: 2px;
                 text: m.text;
-                color: #ff4fd8;
-                font-size: 11px;
+                color: Fixed.guide;
+                font-size: Type.caption;
             }
         }
     }
@@ -563,9 +571,9 @@ export component LassoBox inherits Rectangle {
     y: min(OrganizeUi.lasso-y0, OrganizeUi.lasso-y1);
     width: abs(OrganizeUi.lasso-x1 - OrganizeUi.lasso-x0);
     height: abs(OrganizeUi.lasso-y1 - OrganizeUi.lasso-y0);
-    background: #4fc3f722;
+    background: Theme.accent-soft;
     border-width: 1px;
-    border-color: #4fc3f7;
+    border-color: Theme.accent;
 }
 
 // O painel da direita no modo (EG-B23): a seleção, a foto, fundo e espaço da lâmina. Os campos de
@@ -575,13 +583,13 @@ export component OrganizePanel inherits ScrollView {
     VerticalLayout {
     width: root.visible-width;
     spacing: 8px;
-    Text { text: "Organizar"; color: Theme.text; font-weight: 700; }
+    Text { text: "Organizar"; color: Theme.text; font-weight: Type.semibold; }
     Text {
         text: OrganizeUi.count == "" ? "Clique num quadro; Ctrl+clique soma; arraste no vazio para o laço." : OrganizeUi.count;
-        color: Theme.muted;
+        color: Theme.text-2;
         wrap: word-wrap;
     }
-    if OrganizeUi.field-error != "": Text { text: OrganizeUi.field-error; color: #e57373; wrap: word-wrap; }
+    if OrganizeUi.field-error != "": Text { text: OrganizeUi.field-error; color: Theme.error; wrap: word-wrap; }
     if PhotoUi.has-photo: PhotoSection { }
     LookPanel {
         frame-style: !PhotoUi.has-photo;

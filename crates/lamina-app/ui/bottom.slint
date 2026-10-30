@@ -5,7 +5,9 @@
 
 import { Slider } from "std-widgets.slint";
 import { SpreadData } from "canvas.slint";
-import { BarButton, FilterTab } from "widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { BarButton, FilterTab, IconTextButton } from "widgets.slint";
 import { OrganizeUi } from "organize.slint";
 import { StripHeader, StripTheme } from "strip_header.slint";
 import { SpreadStrip } from "spread_strip.slint";
@@ -22,7 +24,7 @@ component GridDivider inherits Rectangle {
     callback released();
     callback reset();
     height: 6px;
-    background: touch.has-hover || PhotoGridUi.resizing ? #4a4a4a : StripTheme.line;
+    background: touch.has-hover || PhotoGridUi.resizing ? Theme.g7 : StripTheme.line;
     property <length> start-h;
     property <length> press-y;
     touch := TouchArea {
@@ -189,7 +191,7 @@ export component BottomStrips inherits VerticalLayout {
                     value <=> root.photo-zoom;
                     changed(v) => { root.photo-zoom-to(round(v / 8) * 8); }
                 }
-                BarButton { text: "+ Fotos"; clicked => { root.command("arquivo.importar"); } }
+                IconTextButton { icon: Icons.plus; text: "Fotos"; clicked => { root.command("arquivo.importar"); } }
                 BarButton { text: "Montar o álbum…"; enabled: root.can-build; clicked => { root.command("lamina.montar-album"); } }
             }
             if root.photos-open: PhotoGrid {

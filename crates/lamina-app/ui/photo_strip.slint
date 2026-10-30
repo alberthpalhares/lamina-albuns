@@ -4,7 +4,8 @@
 // seleção); arrastar no vão faz o laço; Ctrl+roda é o zoom. As contas são do editor
 // (`lamina_editor::photo_grid`), pelo Rust; aqui, o desenho e o gesto.
 
-import { Theme } from "theme.slint";
+import { Theme, Type, Radius } from "theme.slint";
+import { Icons } from "icons.slint";
 import { Motion } from "motion.slint";
 import { StripTheme } from "strip_header.slint";
 import { DragUi } from "drag.slint";
@@ -48,12 +49,12 @@ component PhotoTile inherits Rectangle {
     callback wheel(length, bool, length, length);
     callback focus-main();
     height: root.tile + (root.named ? 18px : 0px);
-    border-radius: 4px;
+    border-radius: Radius.small;
     // Para o leitor de tela, a peça é um item só, com o nome da foto: a miniatura, o nome e o
     // selo por dentro ficam fora da árvore (spec RL, regra 30).
     accessible-role: list-item;
     accessible-label: root.data.uses > 0 ? root.data.name + ", usada " + root.data.uses + "×" : root.data.name;
-    background: root.lit ? #4fc3f740 : root.current ? #ffffff1f : transparent;
+    background: root.lit ? Theme.accent-soft : root.current ? Theme.press : transparent;
 
     property <bool> arrived: root.data.img.width > 0;
     property <float> faded: root.data.dim ? 0.45 : 1;
@@ -64,7 +65,7 @@ component PhotoTile inherits Rectangle {
         y: (root.tile - root.ph) / 2;
         width: root.pw;
         height: root.ph;
-        background: #3a3a3a;
+        background: Theme.g6;
         opacity: root.arrived ? 0 : root.faded;
     }
     Image {
@@ -85,8 +86,8 @@ component PhotoTile inherits Rectangle {
         width: root.tile - 36px;
         height: 18px;
         text: root.data.name;
-        color: Theme.muted;
-        font-size: 11px;
+        color: Theme.text-2;
+        font-size: Type.caption;
         vertical-alignment: center;
         overflow: elide;
     }
@@ -95,14 +96,14 @@ component PhotoTile inherits Rectangle {
         y: 4px;
         width: 18px;
         height: 18px;
-        border-radius: 9px;
+        border-radius: self.height / 2;
         background: Theme.warning;
         Text {
             accessible-role: none;
             text: "!";
-            color: #1a1a1a;
-            font-size: 12px;
-            font-weight: 700;
+            color: Theme.g1;
+            font-size: Type.small;
+            font-weight: Type.semibold;
         }
     }
     // O selo de usos: na linha do nome; sem nome, sobre o canto da miniatura.
@@ -111,19 +112,19 @@ component PhotoTile inherits Rectangle {
         y: root.named ? root.tile + 1px : 2px;
         width: badge.preferred-width + 8px;
         height: 16px;
-        border-radius: 3px;
-        background: root.named ? transparent : #000000a0;
+        border-radius: Radius.small;
+        background: root.named ? transparent : Theme.shadow-strong;
         badge := Text {
             accessible-role: none;
             text: "×" + root.data.uses;
             color: Theme.text;
-            font-size: 11px;
+            font-size: Type.caption;
         }
     }
     if root.lit: Rectangle {
-        border-radius: 4px;
+        border-radius: Radius.small;
         border-width: 2px;
-        border-color: #4fc3f7;
+        border-color: Theme.accent;
     }
     menu := ContextMenuArea {
         Menu {
@@ -364,14 +365,14 @@ export component PhotoGrid inherits Rectangle {
         y: min(root.ly0 - root.scroll, root.lpy);
         width: abs(root.lx1 - root.lx0);
         height: abs(root.lpy + root.scroll - root.ly0);
-        background: #4fc3f726;
+        background: Theme.accent-soft;
         border-width: 1px;
-        border-color: #4fc3f7;
+        border-color: Theme.accent;
     }
 
     if root.photos.length == 0: Text {
         text: "Nenhuma foto ainda. Use + Fotos ou arraste fotos do Explorador.";
-        color: Theme.muted;
+        color: Theme.text-2;
         horizontal-alignment: center;
         vertical-alignment: center;
     }

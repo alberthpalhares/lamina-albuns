@@ -250,6 +250,8 @@ fn main() -> anyhow::Result<()> {
         .with_winit_window_attributes_hook(move |a| a.with_maximized(true).with_active(!unfocused))
         .select()?;
     let window = AppWindow::new()?;
+    // `LAMINA_GALERIA=1`: abre a galeria de componentes por cima da janela (spec DF, saída 6).
+    window.set_gallery(std::env::var("LAMINA_GALERIA").is_ok_and(|v| v == "1"));
     let (tx, rx) = mailbox::Mailbox::new();
     let prefs = PrefsStore::load(&config_dir().join(PREFS_FILE));
     let mut editor = Editor::with_prefs(prefs);

@@ -1,7 +1,7 @@
 //! Compila as telas `ui/*.slint` (ADR 0002) e, no Windows, põe o ícone e o nome no executável.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let config = slint_build::CompilerConfiguration::new().with_style("fluent-dark".into());
+    let config = slint_build::CompilerConfiguration::new().with_style("fluent".into());
     slint_build::compile_with_config("ui/app.slint", config)?;
     news_images()?;
     windows_icon()?;

@@ -4,6 +4,7 @@
 // baixo à esquerda, esquerda). As contas são do editor.
 
 import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
 
 export struct Grip {
     gx: float,
@@ -58,16 +59,16 @@ export component Handles inherits Rectangle {
         width: root.fw;
         height: root.fh;
         border-width: 2px;
-        border-color: Theme.selected;
+        border-color: Theme.text-strong;
     }
     for g[i] in root.grips: Knob {
         x: root.fx + g.gx * root.fw - 5px;
         y: root.fy + g.gy * root.fh - 5px;
         width: 10px;
         height: 10px;
-        background: white;
+        background: Theme.text-strong;
         border-width: 1px;
-        border-color: Theme.selected;
+        border-color: Theme.text-strong;
         grip: i + 1;
         cursor: root.cursors[i];
         grab(n, x, y) => { root.grab(n, x, y); }
@@ -80,13 +81,19 @@ export component Handles inherits Rectangle {
         y: root.fy >= 26px ? root.fy - 24px : root.fy + 6px;
         width: 18px;
         height: 18px;
-        border-radius: 9px;
-        background: Theme.selected;
+        border-radius: self.height / 2;
+        background: Theme.text-strong;
         grip: 0;
         cursor: MouseCursor.move;
         grab(n, x, y) => { root.grab(n, x, y); }
         drag(x, y, alt, shift) => { root.drag(x, y, alt, shift); }
         release => { root.release(); }
-        Text { text: "✥"; color: white; font-size: 12px; }
+        Image {
+            accessible-role: none;
+            width: 12px;
+            height: 12px;
+            source: Icons.move;
+            colorize: Theme.g1;
+        }
     }
 }

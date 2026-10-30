@@ -3,7 +3,8 @@
 // pronta, feita fora da linha da janela e entregue em colunas (uma coluna sobe por quadro). As
 // contas e as decisões vêm do Rust (lamina-editor, motion/roll*.rs); aqui só se desenha.
 
-import { Theme } from "theme.slint";
+import { Theme, Fixed, Type, Radius } from "theme.slint";
+import { Icons } from "icons.slint";
 import { Motion } from "motion.slint";
 import { DragUi } from "drag.slint";
 import { Tip } from "widgets.slint";
@@ -114,7 +115,7 @@ export global RollUi {
 
 // Uma coluna da imagem pronta: o `source` só troca quando a versão muda (ADR 0011, decisão 4).
 component Tile inherits Image {
-    accessible-role: none;
+    accessible-role: AccessibleRole.none;
     in property <image> img;
     in property <int> v;
     property <int> shown-v: -1;
@@ -136,37 +137,41 @@ component Tile inherits Image {
 component Columns inherits Rectangle {
     in property <RollCell> c;
     property <float> k: 350.0 / max(1.0, c.iw);
-    background: #2b2b2b;
+    background: Theme.g5;
     Text {
         text: c.index + 1;
-        color: #ffffff2e;
-        font-size: max(12px, root.height * 0.3);
-        font-weight: 700;
+        color: Theme.press;
+        font-size: max(Type.small, root.height * 0.3);
+        font-weight: Type.semibold;
     }
-    Tile { accessible-role: none; x: 0; width: min(1, root.k) * root.width; height: root.height; img: c.c0; v: c.v0; }
-    Tile { accessible-role: none; x: root.k * root.width; width: max(0, min(root.k, 1 - root.k)) * root.width; height: root.height; img: c.c1; v: c.v1; }
-    Tile { accessible-role: none; x: 2 * root.k * root.width; width: max(0, min(root.k, 1 - 2 * root.k)) * root.width; height: root.height; img: c.c2; v: c.v2; }
-    Tile { accessible-role: none; x: 3 * root.k * root.width; width: max(0, min(root.k, 1 - 3 * root.k)) * root.width; height: root.height; img: c.c3; v: c.v3; }
-    Tile { accessible-role: none; x: 4 * root.k * root.width; width: max(0, min(root.k, 1 - 4 * root.k)) * root.width; height: root.height; img: c.c4; v: c.v4; }
-    Tile { accessible-role: none; x: 5 * root.k * root.width; width: max(0, min(root.k, 1 - 5 * root.k)) * root.width; height: root.height; img: c.c5; v: c.v5; }
+    Tile { accessible-role: AccessibleRole.none; x: 0; width: min(1, root.k) * root.width; height: root.height; img: c.c0; v: c.v0; }
+    Tile { accessible-role: AccessibleRole.none; x: root.k * root.width; width: max(0, min(root.k, 1 - root.k)) * root.width; height: root.height; img: c.c1; v: c.v1; }
+    Tile { accessible-role: AccessibleRole.none; x: 2 * root.k * root.width; width: max(0, min(root.k, 1 - 2 * root.k)) * root.width; height: root.height; img: c.c2; v: c.v2; }
+    Tile { accessible-role: AccessibleRole.none; x: 3 * root.k * root.width; width: max(0, min(root.k, 1 - 3 * root.k)) * root.width; height: root.height; img: c.c3; v: c.v3; }
+    Tile { accessible-role: AccessibleRole.none; x: 4 * root.k * root.width; width: max(0, min(root.k, 1 - 4 * root.k)) * root.width; height: root.height; img: c.c4; v: c.v4; }
+    Tile { accessible-role: AccessibleRole.none; x: 5 * root.k * root.width; width: max(0, min(root.k, 1 - 5 * root.k)) * root.width; height: root.height; img: c.c5; v: c.v5; }
 }
 
 // Um botão de ícone da barra, com a dica embaixo.
 component RollIcon inherits Rectangle {
+    accessible-role: button;
+    accessible-label: root.tip;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { root.clicked(); }
     in property <image> icon;
     in property <string> tip;
     in property <bool> enabled: true;
     callback clicked();
     width: 24px;
     height: 24px;
-    border-radius: 4px;
-    background: touch.has-hover && root.enabled ? #ffffff26 : transparent;
+    border-radius: Radius.small;
+    background: touch.has-hover && root.enabled ? Theme.press : transparent;
     Image {
-        accessible-role: none;
+        accessible-role: AccessibleRole.none;
         width: 16px;
         height: 16px;
         source: root.icon;
-        colorize: root.enabled ? Theme.text : #6b6b6b;
+        colorize: root.enabled ? Theme.text : Theme.text-disabled;
     }
     touch := TouchArea {
         enabled: root.enabled;
@@ -191,8 +196,8 @@ component SpreadBar inherits Rectangle {
     out property <bool> touched: touch.has-hover || grip.has-hover || grip.pressed;
     callback press-grip(length, length);
     height: 24px;
-    border-radius: 4px;
-    background: #1b1b1bE6;
+    border-radius: Radius.small;
+    background: Theme.bar;
     // A barra inteira percebe o mouse, também por cima dos botões e da alça: com a área ao lado
     // deles, o ponteiro num botão "saía" da barra e ela sumia antes do clique (beta.5).
     touch := TouchArea {
@@ -203,7 +208,7 @@ component SpreadBar inherits Rectangle {
             Text {
                 text: root.index >= 0 && root.index < RollUi.badges.length ? RollUi.badges[root.index] : "";
                 color: Theme.text;
-                font-size: 12px;
+                font-size: Type.small;
                 vertical-alignment: center;
                 horizontal-stretch: 1;
                 overflow: elide;
@@ -212,10 +217,10 @@ component SpreadBar inherits Rectangle {
             for b in RollUi.buttons: RollIcon {
                 visible: b.name != "ver.faixa-layouts" || b.enabled;
                 width: self.visible ? 24px : 0px;
-                icon: b.name == "lamina.organizar" ? @image-url("../icons/rolo/lapis.svg")
-                    : b.name == "ver.faixa-layouts" ? @image-url("../icons/rolo/layouts.svg")
-                    : b.name == "layout.espelhar" ? @image-url("../icons/rolo/espelhar.svg")
-                    : @image-url("../icons/eg/texto.svg");
+                icon: b.name == "lamina.organizar" ? Icons.pencil
+                    : b.name == "ver.faixa-layouts" ? Icons.layouts
+                    : b.name == "layout.espelhar" ? Icons.mirror
+                    : Icons.text;
                 tip: b.tip;
                 enabled: b.enabled;
                 clicked => { RollUi.bar(root.index, b.name); }
@@ -223,11 +228,11 @@ component SpreadBar inherits Rectangle {
             Rectangle {
                 width: 24px;
                 Image {
-                    accessible-role: none;
+                    accessible-role: AccessibleRole.none;
                     width: 16px;
                     height: 16px;
-                    source: @image-url("../icons/eg/alca.svg");
-                    colorize: grip.has-hover || grip.pressed ? Theme.selected : Theme.muted;
+                    source: Icons.grip;
+                    colorize: grip.has-hover || grip.pressed ? Theme.text-strong : Theme.text-2;
                 }
                 grip := TouchArea {
                     mouse-cursor: grab;
@@ -371,14 +376,14 @@ export component SpreadRoll inherits Rectangle {
             y: 8px;
             width: 18px;
             height: 18px;
-            border-radius: 9px;
+            border-radius: self.height / 2;
             background: Theme.warning;
-            Text { text: "!"; color: black; font-size: 12px; font-weight: 700; }
+            Text { text: "!"; color: Theme.g1; font-size: Type.small; font-weight: Type.semibold; }
         }
         // A vizinha sob uma foto arrastada acende inteira (a foto entraria nela).
         if root.hit.kind == 2 && root.hit.index == c.index: Rectangle {
             border-width: 3px;
-            border-color: #ffd23f;
+            border-color: Fixed.target;
         }
         touch := TouchArea {
             enabled: c.index != RollUi.current;
@@ -402,16 +407,24 @@ export component SpreadRoll inherits Rectangle {
         y: root.y0;
         width: RollUi.width;
         height: root.cell-h;
-        border-radius: 6px;
+        border-radius: Radius.medium;
         border-width: 2px;
-        border-color: root.hit.kind == 4 ? Theme.selected : #ffffff30;
-        background: root.hit.kind == 4 ? #ffffff18 : transparent;
-        Text {
-            text: "+ Lâmina nova\nsolte fotos aqui";
-            color: Theme.muted;
-            font-size: 16px;
-            horizontal-alignment: center;
-            vertical-alignment: center;
+        border-color: root.hit.kind == 4 ? Theme.text-strong : Theme.press;
+        background: root.hit.kind == 4 ? Theme.hover : transparent;
+        VerticalLayout {
+            alignment: center;
+            spacing: 4px;
+            HorizontalLayout {
+                alignment: center;
+                Image { accessible-role: AccessibleRole.none; source: Icons.plus; colorize: Theme.text-2; width: 16px; height: 16px; }
+            }
+            Text {
+                text: "Lâmina nova\nsolte fotos aqui";
+                color: Theme.text-2;
+                font-size: Type.title;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
         }
     }
 
@@ -422,8 +435,8 @@ export component SpreadRoll inherits Rectangle {
         width: RollUi.width + 4px;
         height: root.live-h + 4px;
         border-width: 2px;
-        border-color: Theme.selected;
-        border-radius: 2px;
+        border-color: Theme.text-strong;
+        border-radius: Radius.hair;
     }
 
     // O vão de uma lâmina nova (fotos) ou de onde a lâmina arrastada vai ficar (alça).
@@ -432,8 +445,8 @@ export component SpreadRoll inherits Rectangle {
         y: root.y0;
         width: 4px;
         height: root.cell-h;
-        border-radius: 2px;
-        background: Theme.selected;
+        border-radius: Radius.hair;
+        background: Theme.text-strong;
     }
 
     // A barra da lâmina sob o mouse, 24 px acima dela.
@@ -466,14 +479,14 @@ export component SpreadRoll inherits Rectangle {
         y: root.y0 + root.cell-h / 2 - 16px;
         width: pill-text.preferred-width + 24px;
         height: 32px;
-        border-radius: 16px;
-        background: pill-touch.has-hover ? #4a4a4a : #3a3a3a;
+        border-radius: self.height / 2;
+        background: pill-touch.has-hover ? Theme.g7 : Theme.raised;
         drop-shadow-blur: 8px;
-        drop-shadow-color: #00000080;
+        drop-shadow-color: Theme.shadow;
         pill-text := Text {
             text: RollUi.pill;
             color: Theme.text;
-            font-size: 13px;
+            font-size: Type.body;
         }
         pill-touch := TouchArea {
             clicked => { RollUi.pill-clicked(); }
@@ -488,7 +501,7 @@ export component SpreadRoll inherits Rectangle {
         width: self.visible ? 160px : 0px;
         height: 160px * RollUi.aspect;
         drop-shadow-blur: 10px;
-        drop-shadow-color: #00000080;
+        drop-shadow-color: Theme.shadow;
         if self.visible: Columns {
             c: c;
         }

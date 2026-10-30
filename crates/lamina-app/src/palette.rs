@@ -56,20 +56,22 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     });
 }
 
-/// O desenho de cada comando dos menus, embutido no programa.
+/// O desenho de cada comando dos menus, do Lucide (spec DF, regra 7), embutido no programa.
 fn icon_svg(command: Command) -> &'static [u8] {
     match command {
-        Command::AlignLeft => include_bytes!("../icons/eg/alinhar-esquerda.svg"),
-        Command::AlignCenter => include_bytes!("../icons/eg/alinhar-centro.svg"),
-        Command::AlignRight => include_bytes!("../icons/eg/alinhar-direita.svg"),
-        Command::AlignTop => include_bytes!("../icons/eg/alinhar-topo.svg"),
-        Command::AlignMiddle => include_bytes!("../icons/eg/alinhar-meio.svg"),
-        Command::AlignBottom => include_bytes!("../icons/eg/alinhar-base.svg"),
-        Command::EqualWidth => include_bytes!("../icons/eg/igualar-largura.svg"),
-        Command::EqualHeight => include_bytes!("../icons/eg/igualar-altura.svg"),
-        Command::EqualSize => include_bytes!("../icons/eg/igualar-tamanho.svg"),
-        Command::DistributeAcross => include_bytes!("../icons/eg/distribuir-horizontal.svg"),
-        _ => include_bytes!("../icons/eg/distribuir-vertical.svg"),
+        Command::AlignLeft => include_bytes!("../icons/lucide/align-start-vertical.svg"),
+        Command::AlignCenter => include_bytes!("../icons/lucide/align-center-vertical.svg"),
+        Command::AlignRight => include_bytes!("../icons/lucide/align-end-vertical.svg"),
+        Command::AlignTop => include_bytes!("../icons/lucide/align-start-horizontal.svg"),
+        Command::AlignMiddle => include_bytes!("../icons/lucide/align-center-horizontal.svg"),
+        Command::AlignBottom => include_bytes!("../icons/lucide/align-end-horizontal.svg"),
+        Command::EqualWidth => include_bytes!("../icons/lucide/stretch-horizontal.svg"),
+        Command::EqualHeight => include_bytes!("../icons/lucide/stretch-vertical.svg"),
+        Command::EqualSize => include_bytes!("../icons/lucide/scaling.svg"),
+        Command::DistributeAcross => {
+            include_bytes!("../icons/lucide/align-horizontal-distribute-center.svg")
+        }
+        _ => include_bytes!("../icons/lucide/align-vertical-distribute-center.svg"),
     }
 }
 
@@ -78,7 +80,7 @@ fn rows(app: &App, menu: BarMenu) -> Vec<BarRow> {
     menu.commands()
         .iter()
         .map(|c| BarRow {
-            // Um SVG nosso, embutido: se não ler, a linha fica só com o nome.
+            // Um SVG embutido: se não ler, a linha fica só com o nome.
             icon: slint::Image::load_from_svg_data(icon_svg(*c)).unwrap_or_default(),
             label: c.label().into(),
             command: c.name().into(),

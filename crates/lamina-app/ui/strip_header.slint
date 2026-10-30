@@ -2,21 +2,28 @@
 // cabeçalho (nome e resumo), um fundo próprio e pode ser recolhida. Aqui ficam as cores das
 // faixas e o cabeçalho; cada faixa mora no seu arquivo.
 
-import { Theme } from "theme.slint";
+import { Theme, Type } from "theme.slint";
+import { Icons } from "icons.slint";
+import { FocusRing } from "widgets.slint";
 
-// Fundos das faixas: a de lâminas a mais clara, a de fotos a mais escura (spec PN, seção 4).
+// As faixas têm um fundo só, o token de faixa (spec DF, regra 5; correção 8): palco < faixa < painel.
 export global StripTheme {
-    out property <color> header: #1a1a1a;
-    out property <color> header-hover: #242424;
-    out property <color> line: #3a3a3a;
-    out property <color> spreads: #343434;
-    out property <color> timeline: #2a2a2a;
-    out property <color> photos: #202020;
+    out property <color> header: Theme.bar;
+    out property <color> header-hover: Theme.strip;
+    out property <color> line: Theme.line;
+    out property <color> spreads: Theme.strip;
+    out property <color> timeline: Theme.strip;
+    out property <color> photos: Theme.strip;
 }
 
 // Cabeçalho: seta, nome em negrito e resumo. Clique recolhe ou abre; o que vier dentro (as abas
 // do navegador) fica à direita.
 export component StripHeader inherits Rectangle {
+    accessible-role: button;
+    accessible-label: root.name;
+    accessible-expandable: true;
+    accessible-expanded: root.open;
+    accessible-action-default => { root.toggled(); }
     in property <string> name;
     in property <string> summary;
     in property <bool> open;
@@ -24,6 +31,18 @@ export component StripHeader inherits Rectangle {
     height: 26px;
     background: touch.has-hover ? StripTheme.header-hover : StripTheme.header;
     touch := TouchArea { clicked => { root.toggled(); } }
+    focus := FocusScope {
+        x: 0;
+        width: 0;
+        key-pressed(e) => {
+            if (e.text == Key.Space || e.text == Key.Return) {
+                root.toggled();
+                return accept;
+            }
+            return reject;
+        }
+    }
+    FocusRing { shown: focus.has-focus; x: -3px; y: -3px; width: parent.width + 6px; height: parent.height + 6px; }
     Rectangle { y: 0; height: 1px; background: StripTheme.line; }
     HorizontalLayout {
         padding-left: 10px;
@@ -36,16 +55,16 @@ export component StripHeader inherits Rectangle {
                 accessible-role: none;
                 width: 12px;
                 height: 12px;
-                source: @image-url("../icons/eg/seta-baixo.svg");
-                colorize: Theme.muted;
+                source: Icons.chevron-down;
+                colorize: Theme.text-2;
                 transform-rotation: root.open ? 0deg : -90deg;
             }
         }
-        Text { text: root.name; color: Theme.text; font-size: 12px; font-weight: 700; vertical-alignment: center; }
+        Text { text: root.name; color: Theme.text; font-size: Type.small; font-weight: Type.semibold; vertical-alignment: center; }
         Text {
             text: root.summary;
-            color: Theme.muted;
-            font-size: 12px;
+            color: Theme.text-2;
+            font-size: Type.small;
             vertical-alignment: center;
             overflow: elide;
             horizontal-stretch: 1;

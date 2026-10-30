@@ -7,6 +7,7 @@
 //! - `asserts`: nenhuma assertiva frouxa (`is_err()` sem conferir o erro) nos testes.
 //! - `erros`: nenhum erro chega à janela sem a frase de fotógrafo (spec EH).
 //! - `sala-limpa`: nada da marca ou dos arquivos do software de referência no produto.
+//! - `cores`, `contraste`, `icones`: o sistema visual da interface (spec DF).
 //! - `espelho [--trazer] <pasta>`: copia só o código para o clone do público (`lamina-app`).
 //! - `esquema`: grava o JSON Schema do formato do projeto em `docs/formato/` (spec EI).
 //! - `portao <termos>`: lista o que foi alocado para a fase que está abrindo.
@@ -17,6 +18,8 @@
 //! - `mcpb <windows|macos> <binário> <pasta>`: a pasta do pacote do Claude Desktop (spec IA).
 
 mod asserts;
+mod contraste;
+mod cores;
 mod docs;
 mod erros;
 mod espelho;
@@ -26,6 +29,9 @@ mod exemplo_album;
 mod fases;
 mod fontes;
 mod fotos;
+mod icones;
+#[cfg(test)]
+mod interface;
 mod layers;
 mod mcpb;
 mod portao;
@@ -52,6 +58,9 @@ fn main() -> ExitCode {
         "asserts" => asserts::run(),
         "erros" => erros::run(),
         "docs" => docs::run(),
+        "cores" => cores::run(),
+        "contraste" => contraste::run(),
+        "icones" => icones::run(),
         "esquema" => esquema::run(),
         "espelho" => espelho::run(&std::env::args().skip(2).collect::<Vec<_>>()),
         "portao" => portao::run(&std::env::args().skip(2).collect::<Vec<_>>()),
@@ -61,7 +70,7 @@ fn main() -> ExitCode {
         "mcpb" => mcpb::run(&std::env::args().skip(2).collect::<Vec<_>>()),
         _ => {
             eprintln!(
-                "uso: cargo xtask <verify | layers | size | specs | asserts | erros | sala-limpa | esquema | portao | fotos | exemplo | versao | mcpb>"
+                "uso: cargo xtask <verify | layers | size | specs | asserts | erros | sala-limpa | cores | contraste | icones | esquema | portao | fotos | exemplo | versao | mcpb>"
             );
             false
         }
@@ -106,12 +115,15 @@ fn verify() -> bool {
     if !step("testes de velocidade", speed::run) {
         return false;
     }
-    let checks: [Check; 6] = [
+    let checks: [Check; 9] = [
         ("camadas", layers::run),
         ("specs", specs::run),
         ("assertivas", asserts::run),
         ("erros", erros::run),
         ("sala limpa", sala_limpa::run),
+        ("cores", cores::run),
+        ("contraste", contraste::run),
+        ("ícones e acessibilidade", icones::run),
         ("documentos", docs::run),
     ];
     for (name, check) in checks {

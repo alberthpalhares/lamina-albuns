@@ -1,0 +1,139 @@
+// Controles (spec DF, saída 5): o título de seção recolhível, a linha rótulo/valor, a caixa de
+// marcar com o destaque da marca e o controle deslizante com valor neutro.
+
+import { Theme, Fixed } from "../theme/theme.slint";
+import { Radius, Line, Space } from "../theme/metrics.slint";
+import { Type } from "../theme/type.slint";
+import { Icons } from "../icons.slint";
+import { FocusRing } from "buttons.slint";
+
+// Título de seção do painel: caixa-alta pequena, sublinhado fino e a seta de recolher (direção
+// "Lado A, lado B", docs/design/direcao.md).
+export component SectionTitle inherits Rectangle {
+    in property <string> text;
+    in property <bool> collapsible;
+    in-out property <bool> open: true;
+    // O título é texto; quando recolhe, o toque por cima é o botão (o papel tem de ser constante).
+    accessible-role: AccessibleRole.text;
+    accessible-label: root.text;
+    height: 28px;
+    HorizontalLayout {
+        spacing: Space.s2;
+        VerticalLayout {
+            alignment: center;
+            Text {
+                text: root.text;
+                color: Theme.text-2;
+                font-size: Type.caption;
+                font-weight: Type.semibold;
+                letter-spacing: Type.caps-spacing;
+            }
+            Rectangle {
+                height: 1px;
+                background: Theme.text-3;
+            }
+        }
+        Rectangle { }
+        if root.collapsible: Image {
+            accessible-role: none;
+            y: (parent.height - self.height) / 2;
+            width: 16px;
+            height: 16px;
+            source: root.open ? Icons.chevron-down : Icons.chevron-right;
+            colorize: Theme.text-2;
+        }
+    }
+    if root.collapsible: TouchArea {
+        accessible-role: button;
+        accessible-label: root.text;
+        accessible-expandable: true;
+        accessible-expanded: root.open;
+        accessible-action-default => { root.open = !root.open; }
+        clicked => { root.open = !root.open; }
+    }
+}
+
+// Linha do painel: rótulo à esquerda, valor tabular à direita.
+export component ValueRow inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> value;
+    in property <bool> warning;
+    spacing: Space.s3;
+    Text {
+        text: root.label;
+        color: Theme.text-2;
+        font-size: Type.body;
+        vertical-alignment: center;
+    }
+    Text {
+        text: root.value;
+        color: root.warning ? Theme.warning : Theme.text;
+        font-size: Type.body;
+        horizontal-alignment: right;
+        vertical-alignment: center;
+        wrap: word-wrap;
+    }
+}
+
+// Caixa de marcar com o ciano da marca (os widgets padrão do Slint seguem a cor de destaque do
+// sistema, que o programa não pode trocar; spec DF, correção 1).
+export component CheckRow inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    in-out property <bool> checked;
+    callback toggled();
+    accessible-role: checkbox;
+    accessible-label: root.text;
+    accessible-enabled: root.enabled;
+    accessible-checkable: true;
+    accessible-checked: root.checked;
+    accessible-action-default => { root.flip(); }
+    function flip() {
+        root.checked = !root.checked;
+        root.toggled();
+    }
+    min-height: 24px;
+    width: row.preferred-width;
+    row := HorizontalLayout {
+        spacing: Space.s2;
+        box := Rectangle {
+            y: (parent.height - self.height) / 2;
+            width: 16px;
+            height: 16px;
+            border-radius: Radius.small;
+            border-width: root.checked ? 0px : Line.thin;
+            border-color: root.enabled ? Theme.line-strong : Theme.text-disabled;
+            background: root.checked ? (root.enabled ? Theme.accent : Theme.text-disabled) : Theme.field;
+            if root.checked: Image {
+                accessible-role: none;
+                width: 12px;
+                height: 12px;
+                source: Icons.check;
+                colorize: Theme.on-accent;
+            }
+            FocusRing { shown: focus.has-focus; x: -3px; y: -3px; width: parent.width + 6px; height: parent.height + 6px; }
+        }
+        Text {
+            text: root.text;
+            color: root.enabled ? Theme.text : Theme.text-disabled;
+            font-size: Type.body;
+            vertical-alignment: center;
+        }
+    }
+    TouchArea {
+        enabled: root.enabled;
+        clicked => { root.flip(); }
+    }
+    focus := FocusScope {
+        x: 0;
+        width: 0;
+        enabled: root.enabled;
+        key-pressed(e) => {
+            if (e.text == Key.Space) {
+                root.flip();
+                return accept;
+            }
+            return reject;
+        }
+    }
+}

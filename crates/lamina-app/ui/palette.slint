@@ -3,7 +3,7 @@
 // flutuante e a destacada saíram. Só desenho: o Rust preenche o `PaletteUi` e roda os comandos do
 // registro.
 
-import { Theme } from "theme.slint";
+import { Theme, Radius } from "theme.slint";
 import { Tip } from "widgets.slint";
 
 export global PaletteUi {
@@ -23,6 +23,11 @@ export global PaletteUi {
 // Um botão de ícone: marcado (ferramenta atual) ou apagado (indisponível). `tip` é a posição da
 // dica em `PaletteUi.tips`, que já diz " (indisponível)"; sem posição, vale `label`.
 export component Icon inherits Rectangle {
+    accessible-role: button;
+    accessible-label: root.label != "" ? root.label : root.said;
+    accessible-enabled: root.enabled;
+    accessible-checked: root.on;
+    accessible-action-default => { root.clicked(); }
     in property <image> icon;
     in property <int> tip: -1;
     in property <string> label;
@@ -32,8 +37,8 @@ export component Icon inherits Rectangle {
     callback clicked();
     width: 30px;
     height: 30px;
-    border-radius: 5px;
-    background: root.on ? #4fc3f7 : touch.has-hover && root.enabled ? #ffffff1f : transparent;
+    border-radius: Radius.small;
+    background: root.on ? Theme.accent : touch.has-hover && root.enabled ? Theme.press : transparent;
     Image {
         accessible-role: none;
         x: 5px;
@@ -41,7 +46,7 @@ export component Icon inherits Rectangle {
         width: 20px;
         height: 20px;
         source: root.icon;
-        colorize: root.on ? #102030 : root.enabled ? Theme.text : #6a6a6a;
+        colorize: root.on ? Theme.on-accent : root.enabled ? Theme.text : Theme.text-disabled;
     }
     touch := TouchArea {
         clicked => {

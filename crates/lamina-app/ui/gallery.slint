@@ -1,0 +1,181 @@
+// Galeria de componentes (spec DF, saída 6): `LAMINA_GALERIA=1` abre por cima da janela todos os
+// componentes em todos os estados, com um botão para trocar entre o tema escuro e o claro. É o que
+// o dono confere e o que as capturas comparam.
+
+import { LineEdit } from "std-widgets.slint";
+import { Theme, Fixed, Space, Radius, Type } from "theme.slint";
+import { Icons } from "icons.slint";
+import { BarButton, FilterTab, IconButton, IconTextButton, Panel, Card, Toast, EmptyState, ProgressRow, SectionTitle, ValueRow, CheckRow, NeutralSlider } from "widgets.slint";
+
+component Swatch inherits VerticalLayout {
+    in property <color> color;
+    in property <string> name;
+    spacing: Space.s1;
+    width: 72px;
+    Rectangle {
+        height: 32px;
+        border-radius: Radius.small;
+        border-width: 1px;
+        border-color: Theme.line;
+        background: root.color;
+    }
+    Text { text: root.name; color: Theme.text-2; font-size: Type.caption; }
+}
+
+component Group inherits VerticalLayout {
+    in property <string> title;
+    spacing: Space.s2;
+    SectionTitle { text: root.title; }
+    @children
+}
+
+export component Gallery inherits Rectangle {
+    callback close();
+    background: Theme.stage;
+    TouchArea { }
+    VerticalLayout {
+        padding: Space.s5;
+        spacing: Space.s4;
+        HorizontalLayout {
+            spacing: Space.s3;
+            Text {
+                text: "Galeria de componentes";
+                color: Theme.text-strong;
+                font-size: Type.display;
+                font-weight: Type.semibold;
+                vertical-alignment: center;
+            }
+            Rectangle { }
+            BarButton {
+                text: Theme.dark ? "Ver no tema claro" : "Ver no tema escuro";
+                outlined: true;
+                clicked => { Theme.dark = !Theme.dark; }
+            }
+            BarButton {
+                text: "Fechar";
+                clicked => { root.close(); }
+            }
+        }
+        HorizontalLayout {
+            spacing: Space.s5;
+            alignment: start;
+            VerticalLayout {
+                spacing: Space.s4;
+                alignment: start;
+                Group {
+                    title: "SUPERFÍCIES";
+                    HorizontalLayout {
+                        spacing: Space.s2;
+                        Swatch { color: Theme.stage; name: "palco"; }
+                        Swatch { color: Theme.strip; name: "faixa"; }
+                        Swatch { color: Theme.panel; name: "painel"; }
+                        Swatch { color: Theme.bar; name: "barra"; }
+                        Swatch { color: Theme.raised; name: "elevado"; }
+                        Swatch { color: Theme.field; name: "campo"; }
+                    }
+                }
+                Group {
+                    title: "TEXTO E ESTADOS";
+                    HorizontalLayout {
+                        spacing: Space.s2;
+                        Swatch { color: Theme.text; name: "texto"; }
+                        Swatch { color: Theme.text-2; name: "texto 2"; }
+                        Swatch { color: Theme.text-3; name: "texto 3"; }
+                        Swatch { color: Theme.accent; name: "destaque"; }
+                        Swatch { color: Theme.warning; name: "aviso"; }
+                        Swatch { color: Theme.error; name: "erro"; }
+                        Swatch { color: Theme.success; name: "certo"; }
+                    }
+                }
+                Group {
+                    title: "LETRAS (INTER)";
+                    Text { text: "Álbum de exemplo"; color: Theme.text-strong; font-size: Type.display; font-weight: Type.semibold; }
+                    Text { text: "Exportar o álbum"; color: Theme.text; font-size: Type.heading; font-weight: Type.semibold; }
+                    Text { text: "6 lâminas · 12 páginas · 16 de 16 fotos usadas"; color: Theme.text; font-size: Type.title; }
+                    Text { text: "Arraste uma foto para um quadro · ← → trocam o layout"; color: Theme.text-2; font-size: Type.body; }
+                    Text { text: "Layout 2 de 8 · 30 × 30 cm"; color: Theme.text-3; font-size: Type.small; }
+                }
+                Group {
+                    title: "BOTÕES";
+                    HorizontalLayout {
+                        spacing: Space.s2;
+                        BarButton { text: "Exportar"; primary: true; }
+                        BarButton { text: "Cancelar"; outlined: true; }
+                        BarButton { text: "Fantasma"; }
+                        BarButton { text: "Apagar lâmina"; danger: true; outlined: true; }
+                        BarButton { text: "Desligado"; enabled: false; outlined: true; }
+                    }
+                    HorizontalLayout {
+                        spacing: Space.s2;
+                        alignment: start;
+                        IconButton { icon: Icons.home; tip: "Início"; }
+                        IconButton { icon: Icons.strips; tip: "Faixas de baixo (Alt+0)"; checked: true; }
+                        IconButton { icon: Icons.panel-right; tip: "Painel (Alt+4)"; }
+                        IconButton { icon: Icons.undo; tip: "Desfazer (Ctrl+Z)"; enabled: false; }
+                        IconTextButton { icon: Icons.plus; text: "Fotos"; }
+                        IconTextButton { icon: Icons.plus; text: "Lâmina nova"; }
+                    }
+                    HorizontalLayout {
+                        spacing: Space.s1;
+                        alignment: start;
+                        FilterTab { text: "Todas"; active: true; }
+                        FilterTab { text: "Usadas"; }
+                        FilterTab { text: "Não usadas"; }
+                    }
+                }
+            }
+            VerticalLayout {
+                spacing: Space.s4;
+                alignment: start;
+                width: 340px;
+                Rectangle {
+                    background: Theme.panel;
+                    border-width: 1px;
+                    border-color: Theme.line;
+                    VerticalLayout {
+                        padding: Space.s4;
+                        spacing: Space.s2;
+                        SectionTitle { text: "ÁLBUM"; collapsible: true; }
+                        ValueRow { label: "Lâminas"; value: "6 lâminas · 12 páginas"; }
+                        ValueRow { label: "Tamanho"; value: "30 × 30 cm"; }
+                        ValueRow { label: "Fotos"; value: "16 (12 horizontais, 4 verticais)"; }
+                        SectionTitle { text: "PRÉ-IMPRESSÃO"; collapsible: true; }
+                        ValueRow { label: "Resolução"; value: "2 avisos"; warning: true; }
+                        CheckRow { text: "Um arquivo por página"; }
+                        CheckRow { text: "Todas as lâminas"; checked: true; }
+                        NeutralSlider { label: "Temperatura"; minimum: -100; maximum: 100; value: 30; gradient: true; track-from: Fixed.cold; track-to: Fixed.warm; }
+                        LineEdit { placeholder-text: "Nome do álbum"; }
+                    }
+                }
+                Card {
+                    height: 140px;
+                    EmptyState {
+                        icon: Icons.image-plus;
+                        text: "Arraste fotos aqui ou importe uma pasta";
+                        action: "Importar fotos…";
+                    }
+                }
+                Card {
+                    selected: true;
+                    height: 56px;
+                    ProgressRow {
+                        x: Space.s3;
+                        width: parent.width - 2 * Space.s3;
+                        text: "142 de 300 miniaturas";
+                        progress: 0.47;
+                        cancelable: true;
+                    }
+                }
+                Toast { text: "Lâmina apagada"; action: "Desfazer"; shown: true; }
+                Panel {
+                    height: 96px;
+                    Text {
+                        text: "Diálogo (painel elevado com sombra)";
+                        color: Theme.text;
+                        font-size: Type.body;
+                    }
+                }
+            }
+        }
+    }
+}

@@ -2,9 +2,8 @@
 // royalty-free do Slint pede fica no selo "Made with Slint" da página de download (README do
 // repositório público e notas de cada versão), a opção 2b da licença (ADR 0002, adendo).
 
-import { Button } from "std-widgets.slint";
 import { Theme } from "theme.slint";
-import { Shade, Panel } from "widgets.slint";
+import { Shade, Panel, DialogButton } from "widgets.slint";
 
 export component AboutDialog inherits Shade {
     in property <string> version;
@@ -30,7 +29,7 @@ export component AboutDialog inherits Shade {
             }
             HorizontalLayout {
                 alignment: end;
-                Button { text: "OK"; primary: true; clicked => { root.close(); } }
+                DialogButton { text: "OK"; primary: true; clicked => { root.close(); } }
             }
         }
     }

@@ -2,9 +2,9 @@
 // variedade dos desenhos e o resultado (lâminas e páginas, com o aviso da faixa do laboratório).
 // Só desenho: as contas são do editor (`lamina_editor::building`), pelo Rust.
 
-import { Button, SpinBox, ComboBox } from "std-widgets.slint";
-import { Theme } from "theme.slint";
-import { Shade, Panel } from "widgets.slint";
+import { SpinBox, ComboBox } from "std-widgets.slint";
+import { Theme, Type } from "theme.slint";
+import { Shade, Panel, DialogButton } from "widgets.slint";
 
 export global BuildUi {
     in-out property <bool> show;
@@ -42,7 +42,7 @@ export component BuildAlbumDialog inherits Shade {
             VerticalLayout {
                 padding: 24px;
                 spacing: 12px;
-                Text { text: "Montar o álbum"; font-size: 16px; font-weight: 600; color: Theme.text; }
+                Text { text: "Montar o álbum"; font-size: Type.title; font-weight: Type.semibold; color: Theme.text; }
                 Text { text: BuildUi.what; color: Theme.text; wrap: word-wrap; }
                 HorizontalLayout {
                     spacing: 8px;
@@ -54,7 +54,7 @@ export component BuildAlbumDialog inherits Shade {
                         maximum: max(1, BuildUi.most);
                         edited => { BuildUi.changed(); }
                     }
-                    Text { text: BuildUi.suggestion; color: Theme.muted; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; }
+                    Text { text: BuildUi.suggestion; color: Theme.text-2; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; }
                 }
                 HorizontalLayout {
                     spacing: 8px;
@@ -72,8 +72,8 @@ export component BuildAlbumDialog inherits Shade {
                 HorizontalLayout {
                     alignment: end;
                     spacing: 8px;
-                    Button { text: "Cancelar"; clicked => { BuildUi.show = false; BuildUi.closed(); } }
-                    Button { text: "Montar"; primary: true; enabled: BuildUi.error == ""; clicked => { BuildUi.build(); } }
+                    DialogButton { text: "Cancelar"; clicked => { BuildUi.show = false; BuildUi.closed(); } }
+                    DialogButton { text: "Montar"; primary: true; enabled: BuildUi.error == ""; clicked => { BuildUi.build(); } }
                 }
             }
         }

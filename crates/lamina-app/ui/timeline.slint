@@ -5,7 +5,7 @@
 // toda, e troca os itens quando a rolagem passa de um trecho para outro.
 
 import { ScrollView } from "std-widgets.slint";
-import { Theme } from "theme.slint";
+import { Theme, Radius } from "theme.slint";
 import { Motion } from "motion.slint";
 import { StripTheme } from "strip_header.slint";
 import { DragUi } from "drag.slint";
@@ -110,8 +110,8 @@ export component TimelineStrip inherits Rectangle {
             y: 3px;
             width: RollUi.run-w + 6px;
             height: line-scroll.height - 6px;
-            border-radius: 4px;
-            background: #ffffff24;
+            border-radius: Radius.small;
+            background: Theme.press;
         }
         for t in root.timeline: Rectangle {
             x: t.x;
@@ -182,8 +182,8 @@ export component TimelineStrip inherits Rectangle {
                 Rectangle {
                     x: 5px;
                     width: 4px;
-                    border-radius: 2px;
-                    background: cut-touch.has-hover || cut-touch.pressed ? Theme.selected : Theme.muted;
+                    border-radius: Radius.hair;
+                    background: cut-touch.has-hover || cut-touch.pressed ? Theme.text-strong : Theme.text-2;
                 }
             }
         }
@@ -193,8 +193,8 @@ export component TimelineStrip inherits Rectangle {
             y: 2px;
             width: 3px;
             height: line-scroll.height - 4px;
-            border-radius: 1.5px;
-            background: Theme.selected;
+            border-radius: Radius.hair;
+            background: Theme.text-strong;
         }
         if root.seq-on: Image {
             accessible-role: none;

@@ -1,0 +1,157 @@
+// Superfícies (spec DF, saída 5): o véu e o painel dos diálogos, a linha de campo com rótulo, o
+// cartão, o aviso que some sozinho, o estado vazio e a barra de progresso com Cancelar.
+
+import { Theme } from "../theme/theme.slint";
+import { Radius, Line, Elevation, Space } from "../theme/metrics.slint";
+import { Type } from "../theme/type.slint";
+import { Motion } from "../motion.slint";
+import { BarButton } from "buttons.slint";
+
+// Fundo escurecido que bloqueia os cliques na janela de baixo.
+export component Shade inherits Rectangle {
+    // Não é um controle: só segura os cliques (leitores de tela pulam).
+    accessible-role: none;
+    accessible-label: "";
+    background: Theme.veil;
+    TouchArea { }
+}
+
+// O painel de um diálogo, acima do véu.
+export component Panel inherits Rectangle {
+    background: Theme.raised;
+    border-radius: Radius.large;
+    border-width: Line.thin;
+    border-color: Theme.line;
+    drop-shadow-blur: Elevation.dialog-blur;
+    drop-shadow-offset-y: Elevation.dialog-y;
+    drop-shadow-color: Elevation.dialog-color;
+}
+
+export component Field inherits HorizontalLayout {
+    in property <string> label;
+    spacing: Space.s2;
+    Text {
+        text: root.label;
+        width: 200px;
+        color: Theme.text;
+        font-size: Type.body;
+        vertical-alignment: center;
+    }
+    @children
+}
+
+// Cartão: área com fundo um degrau acima de onde está (recentes, modelos, presets).
+export component Card inherits Rectangle {
+    in property <bool> selected;
+    border-radius: Radius.medium;
+    background: Theme.raised;
+    border-width: root.selected ? Line.focus : Line.thin;
+    border-color: root.selected ? Theme.accent : Theme.line;
+}
+
+// Aviso que aparece embaixo e some sozinho (tipo "toast"), com uma ação opcional (Desfazer).
+export component Toast inherits Rectangle {
+    in property <string> text;
+    in property <string> action;
+    in property <bool> shown;
+    callback act();
+    accessible-role: AccessibleRole.text;
+    accessible-label: root.text;
+    visible: root.opacity > 0;
+    opacity: root.shown ? 1 : 0;
+    animate opacity { duration: Motion.on ? 150ms : 0ms; }
+    width: row.preferred-width;
+    height: 40px;
+    border-radius: Radius.medium;
+    background: Theme.raised;
+    border-width: Line.thin;
+    border-color: Theme.line;
+    drop-shadow-blur: Elevation.menu-blur;
+    drop-shadow-offset-y: Elevation.menu-y;
+    drop-shadow-color: Elevation.menu-color;
+    row := HorizontalLayout {
+        padding-left: Space.s4;
+        padding-right: Space.s2;
+        spacing: Space.s3;
+        Text {
+            text: root.text;
+            color: Theme.text;
+            font-size: Type.body;
+            vertical-alignment: center;
+        }
+        if root.action != "": BarButton {
+            text: root.action;
+            clicked => { root.act(); }
+        }
+    }
+}
+
+// Estado vazio: ícone, uma frase do que fazer e uma ação (regra do checklist de cada tela).
+export component EmptyState inherits VerticalLayout {
+    in property <image> icon;
+    in property <string> text;
+    in property <string> action;
+    callback act();
+    alignment: center;
+    spacing: Space.s3;
+    HorizontalLayout {
+        alignment: center;
+        Image {
+            accessible-role: none;
+            width: 32px;
+            height: 32px;
+            source: root.icon;
+            colorize: Theme.text-3;
+        }
+    }
+    Text {
+        text: root.text;
+        color: Theme.text-2;
+        font-size: Type.body;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
+    if root.action != "": HorizontalLayout {
+        alignment: center;
+        BarButton {
+            text: root.action;
+            outlined: true;
+            clicked => { root.act(); }
+        }
+    }
+}
+
+// Progresso com número e Cancelar ("142 de 300 miniaturas").
+export component ProgressRow inherits HorizontalLayout {
+    in property <string> text;
+    in property <float> progress;
+    in property <bool> cancelable;
+    callback cancel();
+    spacing: Space.s3;
+    VerticalLayout {
+        alignment: center;
+        spacing: Space.s1;
+        Text {
+            text: root.text;
+            color: Theme.text-2;
+            font-size: Type.small;
+        }
+        Rectangle {
+            height: 4px;
+            border-radius: Radius.hair;
+            background: Theme.line;
+            accessible-role: progress-indicator;
+            accessible-value: Math.round(root.progress * 100) + "%";
+            Rectangle {
+                x: 0;
+                width: parent.width * clamp(root.progress, 0, 1);
+                border-radius: Radius.hair;
+                background: Theme.accent;
+            }
+        }
+    }
+    if root.cancelable: BarButton {
+        text: "Cancelar";
+        clicked => { root.cancel(); }
+    }
+}

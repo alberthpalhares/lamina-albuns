@@ -1,0 +1,28 @@
+// Escala de letras (regra 6 da spec DF, escala fechada): Inter em seis tamanhos, multiplicados
+// pelo tamanho do texto da interface (`Theme.text-scale`, de 0,9 a 1,3), e três pesos.
+
+import { Theme } from "theme.slint";
+
+export global Type {
+    property <float> k: max(0.9, min(1.3, Theme.text-scale));
+    // Números das réguas e selos minúsculos.
+    out property <length> micro: 10px * k;
+    // Rótulos pequenos, títulos de seção em caixa-alta, contagens.
+    out property <length> caption: 11px * k;
+    // Texto secundário, dicas, miniaturas.
+    out property <length> small: 12px * k;
+    // Texto do corpo, botões, campos.
+    out property <length> body: 13px * k;
+    // Nome do álbum, títulos de painel.
+    out property <length> title: 15px * k;
+    // Títulos de diálogo.
+    out property <length> heading: 18px * k;
+    // Título da tela inicial e da janela de novidades.
+    out property <length> display: 24px * k;
+
+    out property <int> regular: 400;
+    out property <int> medium: 500;
+    out property <int> semibold: 600;
+    // Espaçamento dos títulos de seção em caixa-alta (0,08 em de 11 px).
+    out property <length> caps-spacing: 0.9px * k;
+}

@@ -40,7 +40,7 @@ fn zr_b1_balao_na_janela_e_linha_de_ajuda_na_destacada() {
         "os outros 11 são as linhas dos menus"
     );
     // O atraso do balão é o da tabela do editor.
-    let widgets = ui("widgets.slint");
+    let widgets = ui("widgets/buttons.slint");
     assert!(widgets.contains(&format!("interval: {TIP_DELAY_MS}ms;")));
 }
 

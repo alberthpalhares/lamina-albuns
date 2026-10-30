@@ -1,9 +1,8 @@
 // Limpar as lâminas (spec LL): a pergunta antes de tirar as fotos de todas as lâminas ou de apagar
 // todas elas. O texto e o botão vêm do Rust; a decisão é do editor.
 
-import { Button } from "std-widgets.slint";
-import { Theme } from "theme.slint";
-import { Shade, Panel } from "widgets.slint";
+import { Theme, Type } from "theme.slint";
+import { Shade, Panel, DialogButton } from "widgets.slint";
 
 export global ClearUi {
     in-out property <bool> show;
@@ -21,13 +20,13 @@ export component ClearAllDialog inherits Shade {
         VerticalLayout {
             padding: 24px;
             spacing: 12px;
-            Text { text: ClearUi.title; font-size: 18px; font-weight: 700; color: Theme.text; wrap: word-wrap; }
-            Text { text: ClearUi.message; color: Theme.muted; wrap: word-wrap; }
+            Text { text: ClearUi.title; font-size: Type.heading; font-weight: Type.semibold; color: Theme.text; wrap: word-wrap; }
+            Text { text: ClearUi.message; color: Theme.text-2; wrap: word-wrap; }
             HorizontalLayout {
                 alignment: end;
                 spacing: 8px;
-                Button { text: "Cancelar"; clicked => { ClearUi.show = false; root.closed(); } }
-                Button { text: ClearUi.action; primary: true; clicked => { ClearUi.show = false; ClearUi.confirmed(); root.closed(); } }
+                DialogButton { text: "Cancelar"; clicked => { ClearUi.show = false; root.closed(); } }
+                DialogButton { text: ClearUi.action; primary: true; clicked => { ClearUi.show = false; ClearUi.confirmed(); root.closed(); } }
             }
         }
     }
