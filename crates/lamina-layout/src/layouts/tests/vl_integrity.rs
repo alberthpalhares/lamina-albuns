@@ -29,7 +29,7 @@ fn check(s: &AlbumSpec, active: ActivePages, aspects: &[f64], c: &LayoutCandidat
     let spread = Rect::new(left.x, left.y, right.right() - left.x, left.height);
     let crops = matches!(
         c.family.kind(),
-        FamilyKind::Across | FamilyKind::BleedPage | FamilyKind::Mosaic
+        FamilyKind::Across | FamilyKind::BleedPage | FamilyKind::Mosaic | FamilyKind::FullBleed
     );
     for (i, (r, aspect)) in rects.iter().zip(aspects).enumerate() {
         if crops {

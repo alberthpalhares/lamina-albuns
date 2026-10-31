@@ -288,7 +288,7 @@ fn at_b10_nenhum_atalho_se_repete() {
 
 #[test]
 fn at_b12_alt_setas_fazem_o_que_a_lista_diz() {
-    let mut editor = editor_at(three_spreads(), 1);
+    let mut editor = editor_at(super::tl_common::three_spreads_whole(), 1);
     editor.select_frame(Some(0));
     let rect = |e: &Editor| {
         let s = e.session().unwrap();

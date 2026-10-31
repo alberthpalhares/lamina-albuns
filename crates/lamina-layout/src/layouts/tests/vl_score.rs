@@ -81,6 +81,9 @@ fn vl_b10_doze_fotos_numa_pagina() {
             | Family::WholeSpread(p)
             | Family::Mirrored(p)
             | Family::Mosaic { layout: p, .. }
+            | Family::FullBleed(FullBleed::Spread(p))
+            | Family::FullBleed(FullBleed::Pages { right: Some(p), .. })
+            | Family::FullBleed(FullBleed::Hero { layout: p, .. })
             | Family::Hero { layout: p, .. } => Some(p),
             _ => None,
         };

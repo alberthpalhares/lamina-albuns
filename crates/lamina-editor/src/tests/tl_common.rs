@@ -37,6 +37,24 @@ pub fn three_spreads() -> Project {
     built(spec(30.0, 30.0), &photos, 3)
 }
 
+/// Como [`three_spreads`], com fotos inteiras: os quadros não chegam às bordas do corte.
+pub fn three_spreads_whole() -> Project {
+    let photos: Vec<(u32, u32)> = (0..12).map(|i| if i % 4 == 3 { V } else { H }).collect();
+    built_whole(spec(30.0, 30.0), &photos, 3)
+}
+
+/// Como [`built`], com a montagem "fotos inteiras".
+pub fn built_whole(spec: AlbumSpec, photos: &[(u32, u32)], spreads: usize) -> Project {
+    let mut project = Project::new("teste", spec);
+    for (i, (w, h)) in photos.iter().enumerate() {
+        project.add_photo(format!("f{i:02}.jpg"), *w, *h);
+    }
+    project.mounting.crop = lamina_core::CropLevel::Whole;
+    auto_build(&project, spreads, &BuildOptions::default())
+        .unwrap()
+        .project
+}
+
 /// Editor com o projeto, na lâmina `index`.
 pub fn editor_at(project: Project, index: usize) -> Editor {
     let mut editor = Editor::new();

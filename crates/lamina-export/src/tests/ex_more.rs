@@ -54,6 +54,18 @@ fn ex_b9_perto_do_corte() {
 }
 
 #[test]
+fn sb_b11_a_pre_impressao_nao_reclama_da_borda() {
+    let mut album = Album::new(spec(), 1);
+    let e = album.photo("e.jpg", solid(9000, 6000, [9, 9, 9]));
+    let f = album.photo("f.jpg", solid(9000, 6000, [9, 9, 9]));
+    // Duas células de canto, uma em cada página, encostadas no corte e a 1,4 mm da dobra.
+    let (w, h) = (0.5 - 1.4 / 600.0, 0.5);
+    album.photo_frame(0, e, [0.0, 0.0, w, h]);
+    album.photo_frame(0, f, [1.0 - w, h, w, h]);
+    assert!(messages(&album).is_empty(), "{:?}", messages(&album));
+}
+
+#[test]
 fn quadro_exatamente_na_zona_segura_nao_e_aviso() {
     // Achado com as fotos de teste: quadro a 10 mm do corte (a borda da zona segura) virava aviso.
     let mut album = Album::new(spec(), 1);

@@ -4,7 +4,7 @@
 use std::collections::HashSet;
 
 use super::rank::Entry;
-use super::{Family, FamilyKind, PageLayout};
+use super::{Family, FamilyKind, FullBleed, PageLayout};
 
 /// Posições em que vale o rodízio de famílias.
 const ROTATION: usize = 12;
@@ -56,10 +56,44 @@ impl Family {
                     layout: b,
                 },
             ) => s1 == s2 && kind(a) == kind(b),
+            (Family::FullBleed(a), Family::FullBleed(b)) => same_full_bleed(a, b),
             // O mesmo modelo, espelhado ou não, é o mesmo desenho (spec MD, MD-B8).
             (Family::Model { name: a, .. }, Family::Model { name: b, .. }) => a == b,
             _ => false,
         }
+    }
+}
+
+/// A vaga de um candidato no rodízio: a família e, nas lâminas sem borda, o formato. Cada formato
+/// tem vaga própria, para as fotos maiores aparecerem mais de uma vez no começo (spec SB, regra 7).
+pub fn rotation_slot(family: &Family) -> (FamilyKind, u8) {
+    let format = match family {
+        Family::FullBleed(FullBleed::Pages { .. }) => 0,
+        Family::FullBleed(FullBleed::Spread(_)) => 1,
+        Family::FullBleed(FullBleed::Hero { .. }) => 2,
+        _ => 0,
+    };
+    (family.kind(), format)
+}
+
+/// Mesmo desenho geral entre lâminas sem borda: o mesmo formato com o mesmo tipo de arranjo.
+fn same_full_bleed(a: &FullBleed, b: &FullBleed) -> bool {
+    let kind = |p: &PageLayout| p.arrangement;
+    let side = |p: &Option<PageLayout>| p.as_ref().map(kind);
+    match (a, b) {
+        (
+            FullBleed::Pages {
+                left: l1,
+                right: r1,
+            },
+            FullBleed::Pages {
+                left: l2,
+                right: r2,
+            },
+        ) => side(l1) == side(l2) && side(r1) == side(r2),
+        (FullBleed::Spread(x), FullBleed::Spread(y)) => kind(x) == kind(y),
+        (FullBleed::Hero { support: s1, .. }, FullBleed::Hero { support: s2, .. }) => s1 == s2,
+        _ => false,
     }
 }
 
@@ -70,15 +104,15 @@ pub fn rotate<'a>(sorted: Vec<Entry>, family: impl Fn(&Entry) -> &'a Family) -> 
     let floor = sorted.first().map_or(0.0, |e| e.value * ROTATION_FLOOR);
     let mut rest: Vec<Option<Entry>> = sorted.into_iter().map(Some).collect();
     let mut out: Vec<Entry> = Vec::with_capacity(rest.len());
-    let mut round: HashSet<FamilyKind> = HashSet::new();
+    let mut round: HashSet<(FamilyKind, u8)> = HashSet::new();
     while out.len() < ROTATION {
         let fresh =
             |e: &Entry| e.value >= floor && !out.iter().any(|s| family(s).same_outline(family(e)));
-        let remaining: HashSet<FamilyKind> = rest
+        let remaining: HashSet<(FamilyKind, u8)> = rest
             .iter()
             .flatten()
             .filter(|e| fresh(e))
-            .map(|e| e.kind)
+            .map(|e| rotation_slot(family(e)))
             .collect();
         if remaining.is_empty() {
             break;
@@ -88,12 +122,12 @@ pub fn rotate<'a>(sorted: Vec<Entry>, family: impl Fn(&Entry) -> &'a Family) -> 
         }
         let pick = rest.iter().position(|e| {
             e.as_ref()
-                .is_some_and(|e| fresh(e) && !round.contains(&e.kind))
+                .is_some_and(|e| fresh(e) && !round.contains(&rotation_slot(family(e))))
         });
         let Some(entry) = pick.and_then(|i| rest[i].take()) else {
             break;
         };
-        round.insert(entry.kind);
+        round.insert(rotation_slot(family(&entry)));
         out.push(entry);
     }
     out.extend(rest.into_iter().flatten());

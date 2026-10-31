@@ -16,6 +16,7 @@ pub fn family_name(kind: FamilyKind) -> &'static str {
         FamilyKind::Mirrored => "Espelhado",
         FamilyKind::BleedPage => "Página sangrada",
         FamilyKind::Mosaic => "Mosaico",
+        FamilyKind::FullBleed => "Sem borda",
         FamilyKind::Model => "Modelo",
     }
 }
@@ -32,7 +33,7 @@ pub fn option_title(family: &Family) -> String {
     }
 }
 
-// As partes da nota ficam entre −15 e 50: cabem com folga em i64.
+// As partes da nota ficam entre −15 e 65: cabem com folga em i64.
 #[allow(clippy::cast_possible_truncation)]
 fn points(v: f64) -> i64 {
     v.round() as i64

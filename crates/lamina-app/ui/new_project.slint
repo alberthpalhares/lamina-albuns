@@ -123,8 +123,8 @@ component StepTwo inherits VerticalLayout {
     }
     Text { text: "Arranjos que enchem a página"; color: Theme.text; }
     if NewProjectUi.crop == 0: Hint { text: "Com as fotos sempre inteiras, estes arranjos ficam desligados, porque eles cortam um pouco as fotos."; }
-    CheckRow { text: "Foto de página inteira"; checked <=> NewProjectUi.bleed-page; enabled: NewProjectUi.crop != 0; toggled => { NewProjectUi.mount-changed(); } }
-    Hint { text: "Uma foto cobre a página toda, até a borda do papel (o que a gráfica chama de página sangrada)."; }
+    CheckRow { text: "Layouts sem borda"; checked <=> NewProjectUi.bleed-page; enabled: NewProjectUi.crop != 0; toggled => { NewProjectUi.mount-changed(); } }
+    Hint { text: "As fotos cobrem a página ou a lâmina até a borda do papel (o que a gráfica chama de sangria)."; }
     CheckRow { text: "Mosaicos"; checked <=> NewProjectUi.mosaics; enabled: NewProjectUi.crop != 0; toggled => { NewProjectUi.mount-changed(); } }
     Hint { text: "Várias fotos encostadas umas nas outras, formando um painel que enche a página."; }
     HorizontalLayout {

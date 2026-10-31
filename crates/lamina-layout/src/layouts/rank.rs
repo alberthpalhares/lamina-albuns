@@ -147,7 +147,12 @@ fn measure(ctx: &Ctx, aspects: &[f64], order: &[usize], raw: &Raw) -> Option<Mea
         .map(|s| area(&ctx.spec.safe_rect(s)))
         .sum();
     let coverage = (raw.rects.iter().map(area).sum::<f64>() / useful).min(1.0);
-    let score = score(ctx, &raw.rects, &crop, useful);
+    let cut: f64 = ctx
+        .sides()
+        .into_iter()
+        .map(|s| area(&ctx.spec.page_rect(s)))
+        .sum();
+    let score = score(ctx, &raw.rects, &crop, cut);
     Some(Measured {
         frames,
         crop,

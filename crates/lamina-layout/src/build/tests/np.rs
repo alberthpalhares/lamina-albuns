@@ -106,6 +106,36 @@ fn np_b8_recorte_leve_ate_15_por_cento() {
 }
 
 #[test]
+fn sb_b14_o_auto_build_varia() {
+    let project = built(Mounting::default(), DesignMode::Spread);
+    let families: Vec<Family> = auto_build(&project, 20, &BuildOptions::default())
+        .unwrap()
+        .report
+        .iter()
+        .map(|r| r.family.clone())
+        .collect();
+    let bleeds: Vec<&Family> = families
+        .iter()
+        .filter(|f| f.kind() == FamilyKind::FullBleed)
+        .collect();
+    assert!(!bleeds.is_empty(), "nenhuma lâmina sem borda");
+    assert!(
+        bleeds.iter().any(|f| !f.same_outline(bleeds[0])),
+        "todas com o mesmo desenho: {bleeds:?}"
+    );
+    let edge = |f: &Family| {
+        matches!(
+            f.kind(),
+            FamilyKind::Across | FamilyKind::BleedPage | FamilyKind::FullBleed
+        )
+    };
+    assert!(
+        !families.windows(3).any(|w| w.iter().all(edge)),
+        "três lâminas seguidas até a borda: {families:?}"
+    );
+}
+
+#[test]
 fn np_b8_sem_pagina_sangrada_nem_mosaicos() {
     let off = Mounting {
         bleed_page: false,
@@ -120,7 +150,9 @@ fn np_b8_sem_pagina_sangrada_nem_mosaicos() {
     for c in lists.in_order.iter().chain(&lists.reordered) {
         let kind = c.family.kind();
         assert!(
-            kind != FamilyKind::BleedPage && kind != FamilyKind::Mosaic,
+            kind != FamilyKind::BleedPage
+                && kind != FamilyKind::Mosaic
+                && kind != FamilyKind::FullBleed,
             "{kind:?}"
         );
     }

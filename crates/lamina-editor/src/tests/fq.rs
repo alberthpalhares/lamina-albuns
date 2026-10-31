@@ -3,8 +3,8 @@
 use std::time::{Duration, Instant};
 
 use lamina_core::testing::{TRIES, budget};
-use lamina_core::{Crop, FrameContent, PhotoId, Project};
-use lamina_layout::{LayoutOptions, layout_options};
+use lamina_core::{Crop, CropLevel, FrameContent, PhotoId, Project};
+use lamina_layout::{FamilyKind, LayoutOptions, layout_options};
 
 use super::tl_common::{H, V, built, editor_at, frames, single_start, spec, three_spreads};
 use crate::edits::{layout_with, spread_photos};
@@ -178,6 +178,53 @@ fn fq_b9_reordenar_com_pagina_simples() {
 }
 
 #[test]
+fn sb_b16_espelhar_uma_lamina_sem_borda() {
+    let mut project = three_spreads();
+    // De propósito: x + largura passa de 1 por arredondamento, dentro da tolerância do RelRect.
+    let rect = lamina_core::RelRect::new(0.7, 0.0, 0.3 + 1e-12, 1.0).unwrap();
+    project.spreads[1].frames[0].rect = rect;
+    crate::suggestions::mirror(&mut project, 1).unwrap();
+    let mirrored = project.spreads[1].frames[0].rect;
+    assert_eq!(mirrored.x(), 0.0);
+    assert_eq!(mirrored.width(), rect.width());
+}
+
+#[test]
+fn sb_b13_a_remontagem_usa_a_primeira_opcao() {
+    let mut project = Project::new("teste", spec(30.0, 30.0));
+    let ids = [
+        project.add_photo("a.jpg", H.0, H.1),
+        project.add_photo("b.jpg", H.0, H.1),
+    ];
+    project.add_spread();
+    project.add_spread();
+    project.add_spread();
+    layout_with(&mut project, 1, &ids).unwrap();
+    let options = LayoutOptions {
+        gap: project.spread_gap(&project.spreads[1]),
+        mounting: project.mounting,
+        ..LayoutOptions::default()
+    };
+    let both = project.spec.edges().active_pages(1, 3);
+    let aspects = [f64::from(H.0) / f64::from(H.1); 2];
+    let first = layout_options(&project.spec, both, &aspects, &options)
+        .unwrap()
+        .in_order
+        .remove(0);
+    assert_eq!(first.family.kind(), FamilyKind::FullBleed);
+    let placed: Vec<_> = project.spreads[1].frames.iter().map(|f| f.rect).collect();
+    assert_eq!(placed, first.frames);
+    // Com "fotos inteiras", a foto mantém a proporção.
+    project.mounting.crop = CropLevel::Whole;
+    layout_with(&mut project, 1, &ids).unwrap();
+    let trim = project.spec.trim_rect();
+    for frame in &project.spreads[1].frames {
+        let r = frame.rect.to_absolute(&trim);
+        assert!((r.width.get() / r.height.get() - aspects[0]).abs() < 0.01);
+    }
+}
+
+#[test]
 fn fq_b10_mover_o_corte() {
     let sizes = [H, H, H, V, H, H, H, V];
     let mut project = Project::new("teste", spec(30.0, 30.0));
@@ -294,7 +341,7 @@ fn clique_ctrl_e_shift_no_navegador() {
 
 #[test]
 fn quadro_sob_o_ponteiro() {
-    let editor = editor_at(three_spreads(), 1);
+    let editor = editor_at(super::tl_common::three_spreads_whole(), 1);
     let s = editor.session().unwrap();
     let canvas = s.project().spec.canvas_rect();
     let aspect = canvas.height.get() / canvas.width.get();

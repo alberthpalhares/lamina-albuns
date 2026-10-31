@@ -11,6 +11,8 @@ use crate::{Command, Editor, ModelError, ModelsStore, Part, TextChange, option_t
 /// Um álbum de 30 × 30 com as lâminas `groups` (cada uma com as fotos dadas).
 pub(super) fn album(groups: &[&[(u32, u32)]]) -> Project {
     let mut project = Project::new("teste", spec(30.0, 30.0));
+    // Fotos inteiras: um modelo com quadro saindo do corte por um fio é ajustado ao ler o arquivo.
+    project.mounting.crop = lamina_core::CropLevel::Whole;
     let mut n = 0;
     for (i, g) in groups.iter().enumerate() {
         project.add_spread();

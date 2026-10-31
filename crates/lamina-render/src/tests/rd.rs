@@ -197,6 +197,29 @@ fn rd_b6_sangria_nos_quadros_que_encostam_no_corte() {
 }
 
 #[test]
+fn sb_b12_a_foto_vai_ate_a_sangria_nas_celulas_de_borda() {
+    let mut album = Album::new(3.0);
+    let photo = album.photo("p.jpg", solid(3000, 2000, YELLOW));
+    // Grade 2 × 2 sem borda na página esquerda: cada célula toca dois lados do corte, e a de baixo
+    // à direita toca só o de baixo, porque a página da direita fica vazia.
+    let gap = 8.0 * 25.4 / 72.0;
+    let (w, h) = (0.25 - gap / 1200.0, 0.5 - gap / 600.0);
+    album.frame(photo, [0.0, 0.0, w, h], Crop::default());
+    album.frame(photo, [0.0, 1.0 - h, w, h], Crop::default());
+    album.frame(photo, [0.5 - w, 1.0 - h, w, h], Crop::default());
+    let img = album.render(RenderTarget::Print).unwrap();
+    let (iw, ih) = img.dimensions();
+    let px = |x: u32, y: u32| {
+        let p = img.get_pixel(x, y);
+        [p[0], p[1], p[2]]
+    };
+    for (x, y) in [(1, 1), (1, ih - 2), (iw * 3 / 8, ih - 2)] {
+        assert_eq!(px(x, y), YELLOW, "sangria em ({x}, {y})");
+    }
+    assert_eq!(px(iw * 3 / 8, 1), WHITE, "sem quadro em cima à direita");
+}
+
+#[test]
 fn rd_b7_quadro_nao_vaza() {
     let mut album = Album::new(0.0);
     let photo = album.photo("r.jpg", solid(300, 200, RED));
