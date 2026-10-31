@@ -119,6 +119,7 @@ pub fn run_command(app: &Shared, command: Command) {
                     | Command::ToggleTimeline
                     | Command::TogglePhotos
                     | Command::ToggleReduceMotion
+                    | Command::ToggleGutterShadow
                     | Command::TogglePanel
                     | Command::AdjustPhoto
                     | Command::EditText

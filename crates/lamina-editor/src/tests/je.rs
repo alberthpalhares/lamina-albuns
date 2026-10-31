@@ -84,7 +84,8 @@ fn je_b3_instalacao_nova_comeca_com_o_painel_oculto() {
     assert!(!editor.panel_shown(), "o painel começa escondido");
     // A faixa Lâminas começa aberta (spec FX, regra 10; antes, a JE a desligava).
     assert!(s.spreads, "a faixa Lâminas começa aberta");
-    assert!(s.timeline && s.photos);
+    // Lâminas e Sequência dividem a faixa, em abas (spec DJ, regra 9).
+    assert!(!s.timeline && s.photos);
     assert_eq!(s.version, STRIPS_VERSION);
     assert_eq!(s, Strips::fresh());
     assert!(!file.exists(), "nada é gravado até a primeira mudança");
@@ -349,6 +350,6 @@ fn je_b11_arquivo_ilegivel_volta_ao_padrao_novo() {
     assert!(editor.run(Command::ToggleTimeline));
     let saved = json(&file);
     assert_eq!(saved["versao"], STRIPS_VERSION);
-    assert_eq!(saved["linha_do_tempo"], false);
+    assert_eq!(saved["linha_do_tempo"], true);
     assert_eq!(saved["painel"], false);
 }

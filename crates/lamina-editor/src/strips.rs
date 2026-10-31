@@ -1,5 +1,5 @@
-//! As faixas de baixo da janela (spec PN): lâminas, linha do tempo e fotos, cada uma com título e
-//! recolhível. Quais estão recolhidas fica em `janela.json`, na pasta de configuração, e vale na
+//! As faixas de baixo da janela (spec PN; spec DJ): Lâminas e Sequência em abas, e as Fotografias à
+//! parte, recolhíveis. Quais estão recolhidas fica em `janela.json`, na pasta de configuração, e vale na
 //! próxima vez que o Lamina abrir. A versão do arquivo e a instalação nova são da spec JE.
 
 use std::io::Write as _;
@@ -20,6 +20,9 @@ pub const STRIPS_UNREADABLE: &str =
 /// A versão do estado da janela (spec FX, regra 11): um arquivo de antes da 3 é lido com a faixa
 /// Lâminas aberta, uma vez só (a JE, na versão 2, a desligava).
 pub const STRIPS_VERSION: u8 = 3;
+
+/// Abaixo desta altura de janela, em px lógicos, a faixa Lâminas fica compacta (spec DJ, regra 12).
+const COMPACT_BELOW: f32 = 760.0;
 
 /// Quem abre o Lamina (spec JE, regra 2): sem `janela.json`, a instalação nova começa com o
 /// painel da direita escondido e quem já usava (tem `ultima_versao` em `atualizacoes.json`), com
@@ -94,6 +97,9 @@ pub struct Strips {
     /// A largura do painel da direita em px lógicos (spec FX, regra 13); sem o campo, 300.
     #[serde(rename = "painel_largura", skip_serializing_if = "Option::is_none")]
     pub panel_width: Option<u32>,
+    /// A sombra da dobra na lâmina grande (spec DJ, regra 2); sem o campo, ligada.
+    #[serde(rename = "sombra_dobra")]
+    pub gutter_shadow: bool,
 }
 
 /// Tudo aberto: o editor só na memória (testes e linha de comando) e os campos que faltam num
@@ -114,16 +120,18 @@ impl Default for Strips {
             photos_height: None,
             remembered: None,
             panel_width: None,
+            gutter_shadow: true,
         }
     }
 }
 
 impl Strips {
     /// O padrão de uma instalação nova e de um arquivo ilegível (spec JE, regra 2): o painel
-    /// escondido e as três faixas de baixo abertas (spec FX, regra 10).
+    /// escondido, a aba Lâminas e as Fotografias abertas (spec DJ, regra 9).
     pub fn fresh() -> Self {
         Strips {
             panel: false,
+            timeline: false,
             ..Strips::default()
         }
     }
@@ -132,8 +140,17 @@ impl Strips {
     fn without_file(install: Install) -> Self {
         match install {
             Install::New => Strips::fresh(),
-            Install::Existing => Strips::default(),
+            Install::Existing => Strips::default().one_tab(),
         }
+    }
+
+    /// Lâminas e Sequência dividem a mesma faixa, em abas (spec DJ, regras 3 e 5): com as duas
+    /// abertas, fica a de Lâminas.
+    fn one_tab(mut self) -> Self {
+        if self.spreads && self.timeline {
+            self.timeline = false;
+        }
+        self
     }
 
     /// Um arquivo de antes da versão 3 abre a faixa Lâminas uma vez (spec FX, regra 11); um de
@@ -143,7 +160,7 @@ impl Strips {
             self.spreads = true;
             self.version = STRIPS_VERSION;
         }
-        self
+        self.one_tab()
     }
 
     pub fn is_open(&self, strip: Strip) -> bool {
@@ -168,6 +185,12 @@ impl Strips {
             Strip::Panel => &mut self.panel,
         };
         *open = !*open;
+        // Só uma aba aberta por vez (spec DJ, regra 3).
+        match strip {
+            Strip::Spreads if self.spreads => self.timeline = false,
+            Strip::Timeline if self.timeline => self.spreads = false,
+            _ => {}
+        }
     }
 
     /// O botão das faixas de baixo (spec FX, regra 8): com alguma aberta, esconde as três e lembra
@@ -181,10 +204,18 @@ impl Strips {
             self.remembered
                 .take()
                 .filter(|r| r.contains(&true))
-                .unwrap_or([true; 3])
+                .unwrap_or([true, false, true])
         };
-        [self.spreads, self.timeline, self.photos] = next;
+        // O que ele lembra nunca abre as duas abas (spec DJ, regra 6).
+        let timeline = next[1] && !next[0];
+        [self.spreads, self.timeline, self.photos] = [next[0], timeline, next[2]];
     }
+}
+
+/// A altura da faixa Lâminas (spec DJ, regra 12): compacta numa janela baixa, para sobrar lâmina no
+/// notebook.
+pub fn spread_strip_height(window: f32) -> f32 {
+    if window < COMPACT_BELOW { 96.0 } else { 128.0 }
 }
 
 /// O estado das faixas e o arquivo onde ele fica (nenhum = só na memória, nos testes).

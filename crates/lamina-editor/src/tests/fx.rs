@@ -46,9 +46,13 @@ fn fx_b6_botao_das_faixas_sem_nada_lembrado() {
     strips.toggle(Strip::Spreads);
     assert_eq!([strips.spreads, strips.timeline, strips.photos], [false; 3]);
     strips.toggle_bottom();
-    assert_eq!([strips.spreads, strips.timeline, strips.photos], [true; 3]);
+    assert_eq!(
+        [strips.spreads, strips.timeline, strips.photos],
+        [true, false, true]
+    );
     assert!(editor.toggle_bottom() && editor.toggle_bottom());
-    assert_eq!(open(&editor), [true; 3]);
+    // Sem nada lembrado, as abas nunca abrem juntas (spec DJ, regra 6).
+    assert_eq!(open(&editor), [true, false, true]);
 }
 
 #[test]
@@ -96,11 +100,11 @@ fn fx_b9_largura_do_painel() {
     let file = dir.path().join("janela.json");
     let mut editor = editor_at(three_spreads(), 0);
     editor.set_strips(StripsStore::load_for(&file, Install::Existing));
-    assert_eq!(editor.panel_width(1600), 300, "sem nada guardado");
+    assert_eq!(editor.panel_width(1600), 340, "sem nada guardado");
     assert_eq!(editor.set_panel_width(Some(200), 1600), 260);
     assert_eq!(editor.set_panel_width(Some(900), 1600), 720);
-    assert_eq!(editor.set_panel_width(None, 1600), 300);
-    assert_eq!(json(&file)["painel_largura"], 300);
+    assert_eq!(editor.set_panel_width(None, 1600), 340);
+    assert_eq!(json(&file)["painel_largura"], 340);
     // A janela que encolhe só muda o que se mostra.
     assert!(editor.set_panel_width(Some(700), 1600) == 700);
     assert_eq!(editor.panel_width(1000), 450);

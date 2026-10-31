@@ -191,6 +191,9 @@ pub fn connect(window: &AppWindow, app: &Shared) {
     let a = app.clone();
     window.on_photo_room(move |room, chrome| {
         let mut app = a.borrow_mut();
+        if let Some(w) = app.window.upgrade() {
+            w.set_strip_height(lamina_editor::spread_strip_height(room));
+        }
         app.grid_view.room = room;
         app.grid_view.chrome = chrome;
         app.show_grid_height();

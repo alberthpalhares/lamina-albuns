@@ -21,18 +21,15 @@ fn rl_b23_faixa_de_laminas_desligada_some_sem_cabecalho_e_volta_com_alt_1() {
         let s = e.strips();
         [Strip::Spreads, Strip::Timeline, Strip::Photos].map(|k| s.is_open(k))
     };
-    assert_eq!(open(&editor), [true, true, true]);
-    // O cabeçalho da faixa Lâminas existe sempre; os nomes novos das outras duas.
-    assert!(BOTTOM.contains(
-        "if root.has-project: StripHeader {
-        name: \"Lâminas\";"
-    ));
-    assert!(BOTTOM.contains("name: \"Sequência\";"));
+    assert_eq!(open(&editor), [true, false, true]);
+    // Lâminas e Sequência são abas (spec DJ, regra 3), e a fileira existe sempre; Fotografias à parte.
+    assert!(BOTTOM.contains("FilterTab { text: \"Lâminas\";"));
+    assert!(BOTTOM.contains("FilterTab { text: \"Sequência\";"));
     assert!(BOTTOM.contains("name: \"Fotografias\";"));
     assert!(editor.run(Command::ToggleSpreads));
-    assert_eq!(open(&editor), [false, true, true]);
+    assert_eq!(open(&editor), [false, false, true]);
     assert!(editor.run(Command::ToggleSpreads));
-    assert_eq!(open(&editor), [true, true, true]);
+    assert_eq!(open(&editor), [true, false, true]);
 }
 
 #[test]

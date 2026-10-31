@@ -53,9 +53,11 @@ pub fn connect_motion(window: &AppWindow, app: &Shared) {
 /// As larguras das miniaturas da faixa, em px lógicos, como a faixa as desenha (84 px de altura
 /// pela proporção, mais a borda).
 fn strip_widths(w: &AppWindow) -> Vec<f64> {
+    // A faixa pode estar compacta (spec DJ, regra 12): 44 px são a borda, o número e os vãos.
+    let thumb = f64::from(w.get_strip_height()) - 44.0;
     w.get_spreads()
         .iter()
-        .map(|s| 84.0 / f64::from(s.aspect.max(0.01)) + 6.0)
+        .map(|s| thumb / f64::from(s.aspect.max(0.01)) + 6.0)
         .collect()
 }
 

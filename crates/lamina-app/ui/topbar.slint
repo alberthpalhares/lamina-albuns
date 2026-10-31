@@ -73,7 +73,43 @@ component AlbumName inherits Rectangle {
     }
 }
 
+// Os dados do medidor de páginas, que vêm do editor (spec DJ, regra 13). `text` vazio = sem medidor.
+export struct PageMeterData {
+    text: string,
+    short: string,
+}
+
+// O medidor de páginas: um texto, que encurta em janela estreita e mostra o inteiro na dica.
+component PageMeter inherits Rectangle {
+    in property <PageMeterData> data;
+    in property <length> room;
+    property <bool> narrow: root.room < 1366px;
+    accessible-role: AccessibleRole.text;
+    accessible-label: root.data.text;
+    min-width: 0px;
+    preferred-width: label.preferred-width;
+    label := Text {
+        width: parent.width;
+        height: parent.height;
+        text: root.narrow ? root.data.short : root.data.text;
+        color: Theme.text-2;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+    area := TouchArea { }
+    if root.narrow: Tip {
+        y: parent.height + 4px;
+        text: root.data.text;
+        shown: area.has-hover;
+    }
+}
+
 export component TopBar inherits Rectangle {
+    // O medidor de páginas (spec DJ, regra 13): só em álbum com mínimo ou máximo.
+    in property <PageMeterData> page-meter;
+    // A largura copiada depois do layout: ligar o medidor direto em `width` fecharia um laço.
+    property <length> meter-room: 1920px;
+    changed width => { self.meter-room = self.width; }
     in property <bool> has-project;
     in property <string> project-title;
     // O nome sem o "• " e o campo de renomear aberto (spec NA).
@@ -117,6 +153,7 @@ export component TopBar inherits Rectangle {
         }
         Text { text: root.counter; color: Theme.text-2; vertical-alignment: center; overflow: elide; min-width: 0px; }
         if root.counter-warning != "": Text { text: root.counter-warning; color: Theme.warning; vertical-alignment: center; overflow: elide; min-width: 0px; }
+        if root.has-project && root.page-meter.text != "": PageMeter { data: root.page-meter; room: root.meter-room; }
         Rectangle { horizontal-stretch: 1; }
         if root.has-project: VerticalLayout {
             alignment: center;

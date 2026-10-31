@@ -54,6 +54,8 @@ export struct FrameData {
 }
 
 export struct SpreadData {
+    // O selo da miniatura: "1 pág." nas pontas com página simples (spec DJ, regra 17).
+    badge: string,
     aspect: float,
     bg: color,
     bg-right: color,
@@ -203,6 +205,8 @@ component Slot inherits Rectangle {
 
 export component SpreadCanvas inherits Rectangle {    in property <SpreadData> data;
     in property <bool> guides;
+    // A sombra da dobra (spec DJ, regra 1): só na lâmina grande, só na tela.
+    in property <bool> gutter-shadow;
     in property <bool> small;
     // Lâmina grande: quadros clicáveis e arrastáveis (spec FQ).
     in property <bool> interactive;
@@ -359,6 +363,15 @@ export component SpreadCanvas inherits Rectangle {    in property <SpreadData> d
         width: b.w * root.width;
         height: b.h * root.width;
         background: Theme.line;
+    }
+
+    // A sombra da dobra: 7% da largura, no máximo 10% no centro.
+    if root.gutter-shadow: Rectangle {
+        z: 999;
+        x: (root.data.spine-x - 0.035) * root.width;
+        width: 0.07 * root.width;
+        height: root.height;
+        background: @linear-gradient(90deg, Fixed.ink.with-alpha(0) 0%, Fixed.ink.with-alpha(0.1) 50%, Fixed.ink.with-alpha(0) 100%);
     }
 
     // Lombada.

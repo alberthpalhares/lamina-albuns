@@ -57,12 +57,16 @@ export component RightPanel inherits Rectangle {
     in property <string> info-photo;
     // A aba Detalhes (spec AF): as linhas e o tipo da seleção (0 álbum, 1 foto, 2 texto, 3 vários).
     in property <[DetailRow]> details;
+    // As linhas da seção Impressão (spec DJ, regra 15).
+    in property <[DetailRow]> details-print;
     in property <int> details-kind;
     in property <string> details-count;
     callback history-go(int);
     callback done();
     width: root.panel-width;
     background: Theme.panel;
+    // A zona própria do painel: um fio na borda (spec DJ, saída 5).
+    Rectangle { x: 0; width: 1px; background: Theme.line; }
     VerticalLayout {
         padding: 12px;
         spacing: 8px;
@@ -89,6 +93,7 @@ export component RightPanel inherits Rectangle {
         if !OrganizeUi.on && root.tab == 1 && root.details-kind != 2: InfoPanel {
             vertical-stretch: 1;
             rows: root.details;
+            print-rows: root.details-print;
             kind: root.details-kind;
             count: root.details-count;
             album: root.info-album;

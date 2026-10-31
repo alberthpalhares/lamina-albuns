@@ -337,6 +337,8 @@ pub(crate) fn strip_data(
 ) -> crate::SpreadData {
     let image = |id: PhotoId| images.get(&id).cloned();
     let mut data = spread_data(project, i, missing, &image, (warning, SMALL));
+    let edges = project.spec.edges();
+    data.badge = lamina_editor::page_meter::page_badge(edges, i, project.spreads.len()).into();
     // A miniatura mostra a foto ajustada (spec AF, regra 7).
     crate::adjusted::patch_small(project, i, images, &mut data);
     data

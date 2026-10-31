@@ -73,6 +73,7 @@ pub mod naming;
 pub mod new_project;
 pub mod number_step;
 pub mod organize_bar;
+pub mod page_meter;
 pub mod palette_tips;
 pub mod panel_width;
 pub mod photo_grid;
@@ -156,7 +157,7 @@ pub use session::{HistoryList, HistoryStep, Session, missing_among, photo_paths,
 pub use snap::{Grip, SnapLine};
 pub use strips::{
     Install, STRIPS_FILE, STRIPS_UNREADABLE, STRIPS_VERSION, Strip, Strips, StripsStore,
-    photos_title, strip_titles,
+    photos_title, spread_strip_height, strip_titles,
 };
 pub use suggestions::{List, Part, Unavailable};
 pub use text::{

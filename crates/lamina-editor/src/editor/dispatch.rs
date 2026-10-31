@@ -141,6 +141,7 @@ impl Editor {
             | Command::ToggleTimeline
             | Command::TogglePhotos
             | Command::TogglePanel
+            | Command::ToggleGutterShadow
             | Command::ToggleReduceMotion
             | Command::AdjustPhoto
             | Command::EditText

@@ -1,8 +1,8 @@
 //! A largura do painel da direita (spec FX, regras 13 a 15): arrastada pela borda esquerda, entre
-//! 260 px e 45% da janela, e 300 px no clique duplo ou sem nada guardado.
+//! 260 px e 45% da janela, e 340 px (spec DJ, regra 14) no clique duplo ou sem nada guardado.
 
 /// A largura de sempre, em px lógicos.
-pub const PANEL_WIDTH: u32 = 300;
+pub const PANEL_WIDTH: u32 = 340;
 /// A menor largura do painel.
 pub const PANEL_MIN: u32 = 260;
 

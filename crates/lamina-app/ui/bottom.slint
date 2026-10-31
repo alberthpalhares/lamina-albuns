@@ -5,7 +5,7 @@
 
 import { Slider } from "std-widgets.slint";
 import { SpreadData } from "canvas.slint";
-import { Theme } from "theme.slint";
+import { Theme, Type } from "theme.slint";
 import { Icons } from "icons.slint";
 import { BarButton, FilterTab, IconTextButton } from "widgets.slint";
 import { OrganizeUi } from "organize.slint";
@@ -98,7 +98,9 @@ export component BottomStrips inherits VerticalLayout {
     in-out property <float> photo-zoom: 96;
     in property <int> photo-columns: 1;
     in-out property <length> photo-scroll;
-    in property <length> photo-shown: 252px;
+    in property <length> photo-shown: 130px;
+    // A altura da faixa Lâminas: compacta numa janela baixa (spec DJ, regra 12).
+    in property <length> strip-height: 128px;
     in property <length> room;
     in property <length> above;
     pure callback lasso-speed(length, length) -> length;
@@ -114,7 +116,7 @@ export component BottomStrips inherits VerticalLayout {
     // O que não é nem a lâmina nem a grade: as barras de cima, os cabeçalhos, as outras faixas e
     // a divisória.
     property <length> chrome: root.above + (root.has-project ? 26px : 0px) + spread-strip.height
-        + (root.has-project && !OrganizeUi.on ? 52px : 0px)
+        + (root.has-project && !OrganizeUi.on ? 26px : 0px)
         + (root.has-project && root.timeline-open && !OrganizeUi.on ? 58px : 0px)
         + (root.grid-on ? 6px : 0px);
     init => { root.photo-room(root.room, root.chrome); }
@@ -127,18 +129,47 @@ export component BottomStrips inherits VerticalLayout {
         released => { root.photo-height-set(root.photo-shown); }
         reset => { root.photo-height-reset(); }
     }
-    // A faixa Lâminas tem cabeçalho sempre, como as outras (spec FX, regra 10): recolhida, fica só
-    // ele. O clique no cabeçalho passa pelo Rust, que ignora o segundo toque do clique duplo
-    // (regra 9).
-    if root.has-project: StripHeader {
-        name: "Lâminas";
-        summary: root.strip-spreads;
-        open: root.spreads-open;
-        toggled => { root.header-clicked(0); }
+    // Lâminas e Sequência dividem a mesma faixa, em abas (spec DJ, regra 3). O clique passa pelo
+    // Rust, que ignora o segundo toque do clique duplo (spec FX, regra 9).
+    if root.has-project: Rectangle {
+        height: 26px;
+        background: StripTheme.header;
+        Rectangle { y: 0; height: 1px; background: StripTheme.line; }
+        HorizontalLayout {
+            padding-left: 8px;
+            padding-right: 8px;
+            spacing: 4px;
+            spreads-tab := FilterTab { text: "Lâminas"; active: root.spreads-open; clicked => { root.header-clicked(0); } }
+            timeline-tab := FilterTab { text: "Sequência"; active: root.timeline-open; clicked => { root.header-clicked(1); } }
+            Rectangle { width: 12px; }
+            Text {
+                text: root.timeline-open ? root.strip-timeline : root.strip-spreads;
+                color: Theme.text-2;
+                font-size: Type.small;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+        }
+        // Parar 500 ms sobre a aba fechada, arrastando uma foto, abre a aba (spec DJ, regra 7).
+        Timer {
+            interval: 500ms;
+            running: DragUi.kind == 1 && !root.spreads-open
+                && DragUi.x >= spreads-tab.absolute-position.x && DragUi.x < spreads-tab.absolute-position.x + spreads-tab.width
+                && DragUi.y >= spreads-tab.absolute-position.y && DragUi.y < spreads-tab.absolute-position.y + spreads-tab.height;
+            triggered => { root.header-clicked(0); }
+        }
+        Timer {
+            interval: 500ms;
+            running: DragUi.kind == 1 && !root.timeline-open
+                && DragUi.x >= timeline-tab.absolute-position.x && DragUi.x < timeline-tab.absolute-position.x + timeline-tab.width
+                && DragUi.y >= timeline-tab.absolute-position.y && DragUi.y < timeline-tab.absolute-position.y + timeline-tab.height;
+            triggered => { root.header-clicked(1); }
+        }
     }
     spread-strip := SpreadStrip {
         visible: root.has-project && root.spreads-open;
-        height: self.visible ? 128px : 0px;
+        height: self.visible ? root.strip-height : 0px;
+        thumb: root.strip-height - 44px;
         spreads: root.spreads;
         current-index: root.current-index;
         current-aspect: root.current-aspect;
@@ -159,12 +190,6 @@ export component BottomStrips inherits VerticalLayout {
         rest := VerticalLayout {
             y: parent.height - self.preferred-height;
             height: self.preferred-height;
-            StripHeader {
-                name: "Sequência";
-                summary: root.strip-timeline;
-                open: root.timeline-open;
-                toggled => { root.header-clicked(1); }
-            }
             if root.timeline-open: TimelineStrip {
                 height: 58px;
                 timeline: root.timeline;

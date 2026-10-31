@@ -4,7 +4,7 @@
 
 import { Theme, Type } from "theme.slint";
 import { ScrollView } from "std-widgets.slint";
-import { FocusRing } from "widgets.slint";
+import { FocusRing, SectionTitle, ValueRow } from "widgets.slint";
 import { PhotoUi, PhotoSection } from "photo.slint";
 
 // Uma linha da aba Detalhes: o título e o valor.
@@ -61,6 +61,10 @@ export component PanelTabs inherits HorizontalLayout {
 // texto mostra a aba Quadro, no painel).
 export component InfoPanel inherits ScrollView {
     in property <[DetailRow]> rows;
+    in property <[DetailRow]> print-rows;
+    property <bool> album-open: true;
+    property <bool> print-open: true;
+    property <bool> spread-open: true;
     in property <int> kind;
     in property <string> count;
     in property <string> album;
@@ -74,14 +78,32 @@ export component InfoPanel inherits ScrollView {
         spacing: 8px;
         if root.kind == 1 && PhotoUi.has-photo: PhotoSection { }
         if root.kind == 3: Text { text: root.count; color: Theme.text; font-weight: Type.semibold; }
-        for r in root.rows: VerticalLayout {
-            spacing: 2px;
-            Text { text: r.title; color: Theme.text-2; font-size: Type.small; }
-            Text { text: r.value; color: Theme.text; wrap: word-wrap; }
+        // O álbum em seções (spec DJ, regra 15); a foto, em linhas como antes.
+        if root.kind == 0: SectionTitle { text: "ÁLBUM"; collapsible: true; open <=> root.album-open; }
+        if root.kind == 0 && root.album-open: VerticalLayout {
+            spacing: 4px;
+            for r in root.rows: ValueRow { label: r.title; value: r.value; }
         }
-        if root.kind == 0: Text { text: "Lâmina"; color: Theme.text-2; font-size: Type.small; }
-        if root.kind == 0: Text { text: root.spread; color: Theme.text; wrap: word-wrap; }
-        Text { text: root.warnings; color: Theme.warning; wrap: word-wrap; }
+        if root.kind == 0: SectionTitle { text: "IMPRESSÃO"; collapsible: true; open <=> root.print-open; }
+        if root.kind == 0 && root.print-open: VerticalLayout {
+            spacing: 4px;
+            for r in root.print-rows: ValueRow { label: r.title; value: r.value; }
+        }
+        if root.kind == 0: SectionTitle { text: "LÂMINA"; collapsible: true; open <=> root.spread-open; }
+        if root.kind == 0 && root.spread-open: VerticalLayout {
+            spacing: 4px;
+            Text { text: root.spread; color: Theme.text; font-size: Type.body; wrap: word-wrap; }
+            Text { text: root.warnings; color: Theme.warning; font-size: Type.body; wrap: word-wrap; }
+        }
+        if root.kind != 0: VerticalLayout {
+            spacing: 8px;
+            for r in root.rows: VerticalLayout {
+                spacing: 2px;
+                Text { text: r.title; color: Theme.text-2; font-size: Type.small; }
+                Text { text: r.value; color: Theme.text; wrap: word-wrap; }
+            }
+            Text { text: root.warnings; color: Theme.warning; wrap: word-wrap; }
+        }
         if root.kind == 1 && root.frame-warn: Text { text: root.frame; color: Theme.warning; wrap: word-wrap; }
         Rectangle { vertical-stretch: 1; }
     }
