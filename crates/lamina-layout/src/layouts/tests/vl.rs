@@ -5,6 +5,7 @@ use std::collections::HashSet;
 
 use lamina_core::{ActivePages, AlbumSpec, DesignMode, Dpi, Mm, RelRect};
 
+use super::rotation::rotation_slot;
 use super::*;
 
 const H: f64 = 1.5;
@@ -177,7 +178,7 @@ fn vl_b5_recorte_so_onde_e_permitido() {
         for c in all(&l) {
             let worst = c.crop.iter().copied().fold(0.0, f64::max);
             let limit = match c.family.kind() {
-                FamilyKind::Across | FamilyKind::BleedPage => 0.35,
+                FamilyKind::Across | FamilyKind::BleedPage | FamilyKind::FullBleed => 0.35,
                 FamilyKind::Mosaic => 0.15,
                 _ => 0.0,
             };
@@ -190,9 +191,9 @@ fn vl_b5_recorte_so_onde_e_permitido() {
 /// de pelo menos 60% da primeira) terem aparecido, e nenhum desenho geral se repete.
 fn assert_rotation(list: &[LayoutCandidate]) {
     let floor = list[0].score.total * 0.6;
-    let mut round: HashSet<FamilyKind> = HashSet::new();
+    let mut round: HashSet<(FamilyKind, u8)> = HashSet::new();
     for (i, c) in list.iter().take(12).enumerate() {
-        let kind = c.family.kind();
+        let kind = rotation_slot(&c.family);
         assert!(
             !list[..i]
                 .iter()
@@ -201,13 +202,13 @@ fn assert_rotation(list: &[LayoutCandidate]) {
             i + 1
         );
         if round.contains(&kind) {
-            let ahead: HashSet<FamilyKind> = list[i..]
+            let ahead: HashSet<(FamilyKind, u8)> = list[i..]
                 .iter()
                 .filter(|c| {
                     c.score.total >= floor
                         && !list[..i].iter().any(|s| s.family.same_outline(&c.family))
                 })
-                .map(|c| c.family.kind())
+                .map(|c| rotation_slot(&c.family))
                 .collect();
             assert!(
                 ahead.is_subset(&round),

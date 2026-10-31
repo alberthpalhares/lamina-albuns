@@ -16,9 +16,10 @@ pub mod prefs;
 
 pub use build::{AutoBuild, BuildError, BuildOptions, Reuse, SpreadReport, auto_build};
 pub use layouts::{
-    Align, Arrangement, Breathing, DEFAULT_GAP, Family, FamilyKind, LayoutCandidate, LayoutError,
-    LayoutLists, LayoutOptions, MAX_PER_PAGE, ModelLook, ModelSlot, ModelText, PageLayout, Scope,
-    Score, SpreadModel, SupportSide, add_models, assign, layout_candidates, layout_options,
+    Align, Arrangement, Breathing, DEFAULT_GAP, Family, FamilyKind, FullBleed, LayoutCandidate,
+    LayoutError, LayoutLists, LayoutOptions, MAX_PER_PAGE, ModelLook, ModelSlot, ModelText,
+    PageLayout, Scope, Score, SpreadModel, SupportSide, add_models, assign, layout_candidates,
+    layout_options,
 };
 pub use plan::{
     PHOTOS_PER_SPREAD, PlanError, PlanOptions, SpreadPlan, SpreadRole, plan_spreads,

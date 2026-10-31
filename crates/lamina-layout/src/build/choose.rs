@@ -34,14 +34,25 @@ pub fn pick(
         let bonus = if is_favorite(i) { FAVORITE_BONUS } else { 0.0 };
         adjusted(c, uses(used, &c.family), reuse) + bonus
     };
-    let free = best(list, |c| eligible(c) && !repeats_previous(c), value);
+    // Depois de duas lâminas até a borda, uma mais calma (spec SB, regra 8).
+    let rest = needs_rest(used, reuse);
+    let tiring = |c: &LayoutCandidate| rest && reaches_edge(&c.family);
+    let free = best(
+        list,
+        |c| eligible(c) && !repeats_previous(c) && !tiring(c),
+        value,
+    );
     let overall = best(list, eligible, value);
     // Sem opção livre (todas repetem a anterior), fica a melhor de todas.
     let index = free.or(overall).unwrap_or(0);
     let avoided = overall.is_some_and(|o| o != index && repeats_previous(&list[o]));
+    let rested = overall.is_some_and(|o| o != index && tiring(&list[o]));
     let mut parts = list.get(index).map_or_else(Vec::new, |c| {
         reasons(c, rhythm, uses(used, &c.family), avoided)
     });
+    if rested {
+        parts.push("respiro depois de duas lâminas até a borda".to_owned());
+    }
     if is_favorite(index) {
         parts.insert(0, "desenho favorito".to_owned());
     }
@@ -83,8 +94,25 @@ fn wants_big(spread: &SpreadPlan) -> bool {
 fn is_big(family: &Family) -> bool {
     matches!(
         family.kind(),
-        FamilyKind::Across | FamilyKind::BleedPage | FamilyKind::Hero | FamilyKind::WholeSpread
+        FamilyKind::Across
+            | FamilyKind::BleedPage
+            | FamilyKind::FullBleed
+            | FamilyKind::Hero
+            | FamilyKind::WholeSpread
     )
+}
+
+/// A foto chega ao corte em pelo menos uma página inteira?
+fn reaches_edge(family: &Family) -> bool {
+    matches!(
+        family.kind(),
+        FamilyKind::Across | FamilyKind::BleedPage | FamilyKind::FullBleed
+    )
+}
+
+/// As duas últimas lâminas foram até a borda (salvo com a reutilização alta)?
+fn needs_rest(used: &[Family], reuse: Reuse) -> bool {
+    reuse != Reuse::High && used.len() >= 2 && used[used.len() - 2..].iter().all(reaches_edge)
 }
 
 /// Quantas vezes o mesmo desenho geral já foi usado no álbum.

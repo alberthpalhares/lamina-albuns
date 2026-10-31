@@ -65,8 +65,27 @@ pub enum Family {
     },
     /// Células que enchem a área sem sobra, com recorte pequeno.
     Mosaic { scope: Scope, layout: PageLayout },
+    /// As fotos chegam ao corte por fora; só o espaço do álbum as separa (spec SB).
+    FullBleed(FullBleed),
     /// Um modelo salvo pelo fotógrafo (spec MD), talvez espelhado.
     Model { name: String, mirrored: bool },
+}
+
+/// Formato de uma lâmina sem borda (spec SB).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FullBleed {
+    /// Cada página ativa cheia até o corte; `None` = página inativa.
+    Pages {
+        left: Option<PageLayout>,
+        right: Option<PageLayout>,
+    },
+    /// Linhas ou colunas no corte inteiro.
+    Spread(PageLayout),
+    /// A primeira foto grande até o corte e as outras enchendo a faixa de apoio.
+    Hero {
+        support: SupportSide,
+        layout: PageLayout,
+    },
 }
 
 /// Família sem os detalhes, usada no rodízio (spec VL, regra 6).
@@ -79,6 +98,7 @@ pub enum FamilyKind {
     Mirrored,
     BleedPage,
     Mosaic,
+    FullBleed,
     Model,
 }
 
@@ -92,6 +112,7 @@ impl Family {
             Family::Mirrored(_) => FamilyKind::Mirrored,
             Family::BleedPage { .. } => FamilyKind::BleedPage,
             Family::Mosaic { .. } => FamilyKind::Mosaic,
+            Family::FullBleed(_) => FamilyKind::FullBleed,
             Family::Model { .. } => FamilyKind::Model,
         }
     }
@@ -121,11 +142,11 @@ pub struct Breathing {
 pub struct Score {
     /// Soma das partes, de 0 a 100.
     pub total: f64,
-    /// Até 50: área das fotos ÷ área útil.
+    /// Até 65: área das fotos ÷ área do corte das páginas ativas (spec SB, regra 6).
     pub coverage: f64,
-    /// Até 30: menor quadro ÷ quadro médio.
+    /// Até 20: menor quadro ÷ quadro médio.
     pub smallest: f64,
-    /// Até 20: áreas parecidas nas duas páginas.
+    /// Até 15: áreas parecidas nas duas páginas.
     pub balance: f64,
     /// De −15 a 0: recorte médio.
     pub crop: f64,

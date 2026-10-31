@@ -5,6 +5,7 @@ mod area;
 mod divisions;
 mod families;
 mod fill;
+mod full_bleed;
 mod hero;
 mod justified;
 mod model;
@@ -160,7 +161,7 @@ fn sequence(base: &Ctx, aspects: &[f64], order: Vec<usize>, mounting: Mounting) 
 }
 
 /// As famílias que recortam para encher: nenhuma com fotos inteiras; com recorte leve, só as que
-/// recortam até 15%; a página sangrada e os mosaicos só quando ligados.
+/// recortam até 15%; a página sangrada, as lâminas sem borda e os mosaicos só quando ligados.
 fn cropping(ctx: &Ctx, seq: &[f64], mounting: Mounting) -> Vec<Raw> {
     let max = match mounting.max_crop() {
         Some(max) if max <= 0.0 => return Vec::new(),
@@ -170,6 +171,7 @@ fn cropping(ctx: &Ctx, seq: &[f64], mounting: Mounting) -> Vec<Raw> {
     let mut raws = fill::across(ctx, seq, Some(max));
     if mounting.bleed_page {
         raws.extend(fill::bleed_page(ctx, seq, max));
+        raws.extend(full_bleed::full_bleed(ctx, seq, max));
     }
     if mounting.mosaics {
         raws.extend(fill::mosaics(ctx, seq));
@@ -225,6 +227,9 @@ fn validate(active: ActivePages, aspects: &[f64]) -> Result<(), LayoutError> {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+#[path = "tests/sb.rs"]
+mod tests_sb;
 #[cfg(test)]
 #[path = "tests/vl.rs"]
 mod tests_vl;

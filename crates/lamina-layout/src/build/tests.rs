@@ -96,6 +96,7 @@ fn ab_b2_destaque_ganha_foto_grande() {
                 r.family.kind(),
                 FamilyKind::Across
                     | FamilyKind::BleedPage
+                    | FamilyKind::FullBleed
                     | FamilyKind::Hero
                     | FamilyKind::WholeSpread
             ),
@@ -153,7 +154,7 @@ fn ab_b4_foto_inteira_quando_nao_ha_recorte() {
     for (spread, r) in result.project.spreads.iter().zip(&result.report) {
         let crops = matches!(
             r.family.kind(),
-            FamilyKind::Across | FamilyKind::BleedPage | FamilyKind::Mosaic
+            FamilyKind::Across | FamilyKind::BleedPage | FamilyKind::Mosaic | FamilyKind::FullBleed
         );
         for f in &spread.frames {
             let FrameContent::Photo { photo, .. } = f.content else {
