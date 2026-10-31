@@ -63,11 +63,7 @@ fn fix_changed(project: &mut Project, before: &Pages) -> Result<(), EditorError>
         let old = before.iter().find(|(b, _)| b == id).map(|(_, p)| *p);
         if old.is_some_and(|o| o != *pages) {
             let photos = spread_photos(project, index);
-            // Sem página com conteúdo que sobre, a marca sai: as fotos não somem do álbum.
-            let room = project.content_pages(index);
-            if !room.left && !room.right && !photos.is_empty() {
-                project.spreads[index].blank = lamina_core::BlankPages::default();
-            }
+            crate::blank::free_stuck_photos(project, index, &photos);
             layout_with(project, index, &photos)?;
         }
     }

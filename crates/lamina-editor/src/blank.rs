@@ -104,6 +104,14 @@ fn fitting(project: &Project, photos: &[PhotoId], room: usize) -> Vec<PhotoId> {
         .collect()
 }
 
+/// Sem página com conteúdo que sobre, a marca sai: as fotos não somem do álbum ao mudar de lugar.
+pub fn free_stuck_photos(project: &mut Project, index: usize, photos: &[PhotoId]) {
+    let room = project.content_pages(index);
+    if !room.left && !room.right && !photos.is_empty() {
+        project.spreads[index].blank = lamina_core::BlankPages::default();
+    }
+}
+
 /// Limpa a marca dos lados que deixaram de existir na posição de cada lâmina (regra 3).
 pub fn clear_lost_marks(project: &mut Project) {
     let edges = project.spec.edges();

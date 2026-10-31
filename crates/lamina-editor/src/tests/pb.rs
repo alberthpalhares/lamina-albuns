@@ -410,3 +410,13 @@ fn pb_b14_ia() {
         ])
     );
 }
+
+#[test]
+fn trocar_as_pontas_limpa_a_marca_da_pagina_que_sumiu() {
+    let mut start = built(spec(30.0, 30.0), &photos(12), 3);
+    set_blank(&mut start, 0, PageSide::Left, true).unwrap();
+    let new = single_start(spec(30.0, 30.0));
+    crate::respec::respec(&mut start, new).unwrap();
+    assert!(start.spreads[0].blank.is_none());
+    start.validate().unwrap();
+}
