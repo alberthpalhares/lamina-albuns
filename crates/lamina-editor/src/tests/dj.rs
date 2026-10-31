@@ -30,25 +30,19 @@ fn dj_b1_painel_da_direita_com_340_px_por_padrao() {
 
 #[test]
 fn dj_b2_medidor_com_minimo_e_maximo() {
-    let meter = page_meter(12, limits(Some(10), Some(120))).unwrap();
-    assert_eq!(meter.text, "12 páginas · mínimo 10 · máximo 120");
-    assert_eq!(meter.short, "12 de 120 páginas");
-    assert!((meter.used - 0.1).abs() < 1e-6);
-    assert!((meter.tick.unwrap() - 10.0 / 120.0).abs() < 1e-6);
-    assert!(meter.inside);
+    let meter = page_meter(limits(Some(10), Some(120))).unwrap();
+    assert_eq!(meter.text, "mínimo 10 · máximo 120 páginas");
+    assert_eq!(meter.short, "10 a 120 páginas");
 }
 
 #[test]
-fn dj_b3_medidor_fora_da_faixa_e_sem_limites() {
-    let meter = page_meter(8, limits(Some(10), None)).unwrap();
-    assert_eq!(meter.text, "8 páginas · mínimo 10");
+fn dj_b3_medidor_so_com_minimo_so_com_maximo_e_sem_limites() {
+    let meter = page_meter(limits(Some(10), None)).unwrap();
+    assert_eq!(meter.text, "mínimo 10 páginas");
     assert_eq!(meter.short, meter.text);
-    assert!(
-        (meter.used - 0.4).abs() < 1e-6,
-        "a barra vai ao dobro do mínimo"
-    );
-    assert!(!meter.inside);
-    assert_eq!(page_meter(8, limits(None, None)), None);
+    let meter = page_meter(limits(None, Some(1))).unwrap();
+    assert_eq!(meter.text, "máximo 1 página");
+    assert_eq!(page_meter(limits(None, None)), None);
 }
 
 #[test]

@@ -4,7 +4,7 @@
 // vêm do editor (`bar_tip`).
 
 import { LineEdit } from "std-widgets.slint";
-import { Radius, Space, Theme, Type } from "theme.slint";
+import { Theme, Type } from "theme.slint";
 import { Icons } from "icons.slint";
 import { BarButton, IconButton, Tip } from "widgets.slint";
 
@@ -73,55 +73,31 @@ component AlbumName inherits Rectangle {
     }
 }
 
-// Os dados do medidor de páginas, que vêm do editor (spec DJ, regra 13). `tick` negativo = sem
-// mínimo; `text` vazio = sem medidor.
+// Os dados do medidor de páginas, que vêm do editor (spec DJ, regra 13). `text` vazio = sem medidor.
 export struct PageMeterData {
     text: string,
     short: string,
-    used: float,
-    tick: float,
-    inside: bool,
 }
 
-// O medidor de páginas: a barra, o tique do mínimo e o texto, que encurta em janela estreita.
+// O medidor de páginas: um texto, que encurta em janela estreita e mostra o inteiro na dica.
 component PageMeter inherits Rectangle {
     in property <PageMeterData> data;
     in property <length> room;
-    property <bool> tiny: root.room < 1000px;
     property <bool> narrow: root.room < 1366px;
     accessible-role: AccessibleRole.text;
     accessible-label: root.data.text;
-    width: root.tiny ? 80px : root.narrow ? 120px : 232px;
-    VerticalLayout {
-        alignment: center;
-        spacing: Space.s1;
-        Rectangle {
-            height: 4px;
-            border-radius: Radius.hair;
-            background: Theme.line;
-            Rectangle {
-                x: 0;
-                width: parent.width * root.data.used;
-                border-radius: Radius.hair;
-                background: root.data.inside ? Theme.accent : Theme.warning;
-            }
-            if root.data.tick >= 0: Rectangle {
-                x: parent.width * root.data.tick;
-                y: -3px;
-                width: 1px;
-                height: 10px;
-                background: Theme.text;
-            }
-        }
-        if !root.tiny: Text {
-            text: root.narrow ? root.data.short : root.data.text;
-            color: Theme.text-2;
-            font-size: Type.caption;
-            overflow: elide;
-        }
+    min-width: 0px;
+    preferred-width: label.preferred-width;
+    label := Text {
+        width: parent.width;
+        height: parent.height;
+        text: root.narrow ? root.data.short : root.data.text;
+        color: Theme.text-2;
+        vertical-alignment: center;
+        overflow: elide;
     }
     area := TouchArea { }
-    if root.tiny: Tip {
+    if root.narrow: Tip {
         y: parent.height + 4px;
         text: root.data.text;
         shown: area.has-hover;

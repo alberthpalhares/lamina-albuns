@@ -144,9 +144,7 @@ impl Session {
 
     /// O medidor de páginas da barra de cima (spec DJ, regra 13); sem limites, nenhum.
     pub fn page_meter(&self) -> Option<crate::page_meter::PageMeter> {
-        let project = self.project();
-        let pages = project.spec.edges().page_count(project.spreads.len());
-        crate::page_meter::page_meter(pages, project.page_limits)
+        crate::page_meter::page_meter(self.project().page_limits)
     }
 
     /// Nome do projeto, para o título da janela.

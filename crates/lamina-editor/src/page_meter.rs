@@ -6,55 +6,37 @@ use lamina_core::{Edges, PageLimits};
 /// O que o medidor mostra.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PageMeter {
-    /// "12 páginas · mínimo 10 · máximo 120".
+    /// "mínimo 10 · máximo 120 páginas".
     pub text: String,
-    /// "12 de 120 páginas", para janela estreita (spec DJ, seção 6).
+    /// "10 a 120 páginas", para janela estreita (spec DJ, seção 6).
     pub short: String,
-    /// A parte usada da barra, de 0 a 1.
-    pub used: f32,
-    /// Onde fica o tique do mínimo, de 0 a 1, se houver mínimo.
-    pub tick: Option<f32>,
-    /// Dentro da faixa de páginas.
-    pub inside: bool,
 }
 
-fn pages_text(pages: usize) -> String {
-    if pages == 1 {
-        "1 página".to_owned()
-    } else {
-        format!("{pages} páginas")
-    }
+fn pages_word(pages: u32) -> &'static str {
+    if pages == 1 { "página" } else { "páginas" }
 }
 
-/// O medidor de um álbum de `pages` páginas; sem limites, não há medidor.
-#[allow(clippy::cast_precision_loss)]
-pub fn page_meter(pages: usize, limits: PageLimits) -> Option<PageMeter> {
-    if limits.is_empty() {
-        return None;
-    }
-    let mut text = pages_text(pages);
-    if let Some(min) = limits.min {
-        text.push_str(&format!(" · mínimo {min}"));
-    }
-    if let Some(max) = limits.max {
-        text.push_str(&format!(" · máximo {max}"));
-    }
-    let short = limits
-        .max
-        .map_or_else(|| text.clone(), |max| format!("{pages} de {max} páginas"));
-    // A barra vai até o máximo; só com mínimo, até o dobro dele.
-    let scale = limits
-        .max
-        .or(limits.min.map(|min| min * 2))
-        .unwrap_or(1)
-        .max(1) as f32;
-    Some(PageMeter {
-        text,
-        short,
-        used: (pages as f32 / scale).clamp(0.0, 1.0),
-        tick: limits.min.map(|min| (min as f32 / scale).clamp(0.0, 1.0)),
-        inside: limits.warning(pages).is_none(),
-    })
+/// O medidor de um álbum com estes limites; sem limites, não há medidor.
+pub fn page_meter(limits: PageLimits) -> Option<PageMeter> {
+    let (text, short) = match (limits.min, limits.max) {
+        (None, None) => return None,
+        (Some(min), None) => {
+            let text = format!("mínimo {min} {}", pages_word(min));
+            (text.clone(), text)
+        }
+        (None, Some(max)) => {
+            let text = format!("máximo {max} {}", pages_word(max));
+            (text.clone(), text)
+        }
+        (Some(min), Some(max)) => {
+            let word = pages_word(max);
+            (
+                format!("mínimo {min} · máximo {max} {word}"),
+                format!("{min} a {max} {word}"),
+            )
+        }
+    };
+    Some(PageMeter { text, short })
 }
 
 /// O selo da miniatura: só as pontas com página simples dizem "1 pág."; o total já está no resumo.

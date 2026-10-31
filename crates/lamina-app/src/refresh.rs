@@ -78,9 +78,6 @@ impl App {
             crate::PageMeterData {
                 text: m.text.into(),
                 short: m.short.into(),
-                used: m.used,
-                tick: m.tick.unwrap_or(-1.0),
-                inside: m.inside,
             }
         }));
         // "Lâminas · 4 lâminas (8 páginas)": o nome fica no cabeçalho, aqui vai só o resumo.
