@@ -105,9 +105,18 @@ fn resize(image: &RgbaImage, r: PixelRegion, size: (u32, u32)) -> Result<Vec<u8>
     )
     .map_err(|e| e.to_string())?;
     let mut dst = Image::new(size.0, size.1, PixelType::U8x4);
+    // Foto opaca (quase toda foto): sem a cópia inteira que o redutor faz para tratar o alfa, e o
+    // resultado é o mesmo (spec LV, regra 13).
+    let opaque = image
+        .as_raw()
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .all(|px| px[3] == 255);
     let options = ResizeOptions::new()
         .resize_alg(ResizeAlg::Convolution(FilterType::Lanczos3))
-        .crop(r.x, r.y, r.width, r.height);
+        .crop(r.x, r.y, r.width, r.height)
+        .use_alpha(!opaque);
     Resizer::new()
         .resize(&src, &mut dst, &options)
         .map_err(|e| e.to_string())?;

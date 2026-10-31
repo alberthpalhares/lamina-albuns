@@ -189,8 +189,8 @@ pub(crate) fn process_bytes(
     (file_size, modified): (i64, i64),
     dirs: DerivedDirs<'_>,
 ) -> Result<(CatalogEntry, Option<String>), MediaError> {
-    let (opened, decoder) = open(path, bytes)?;
-    let thumbnail = write_derived(path, decoder, &opened, dirs)?;
+    let opened = open(path, &bytes)?;
+    let thumbnail = write_derived(path, bytes, &opened, dirs)?;
     let Opened {
         fingerprint,
         metadata: meta,

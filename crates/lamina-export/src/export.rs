@@ -7,17 +7,18 @@ use std::borrow::Cow;
 
 use lamina_core::{ColorSpace, FrameContent, Project};
 use lamina_render::PhotoSource;
-use rayon::prelude::*;
 
 use crate::clean::remove_leftovers;
+use crate::in_order::in_order;
 use crate::jobs::{SpreadJob, plan};
 use crate::preflight::{Warning, preflight};
 use crate::write::{self, Ctx};
 use crate::{ExportError, ExportFormat, pdf};
 
-/// Máximo de lâminas de impressão processadas ao mesmo tempo (~175 MB cada entre a imagem e
-/// a cópia em RGB; regra 7). Codificar o JPEG é o passo mais lento e usa um núcleo por lâmina.
-const AT_ONCE: usize = 4;
+/// Máximo de lâminas de impressão processadas ao mesmo tempo (~100 MB cada para a imagem, mais os
+/// originais abertos; regra 7 e spec LV, regra 13). Codificar o JPEG é o passo mais lento e usa um
+/// núcleo por lâmina.
+const AT_ONCE: usize = 3;
 
 /// Lâminas ao mesmo tempo: até `AT_ONCE`, nunca mais que os núcleos da máquina.
 pub(crate) fn at_once() -> usize {
@@ -179,8 +180,8 @@ fn refuse_existing(names: &[String], folder: &Path) -> Result<(), ExportError> {
     }
 }
 
-/// Grava em lotes de até `at_once()` lâminas. Se uma falha, o erro leva os arquivos que ficaram
-/// gravados (inclusive os das outras lâminas do mesmo lote).
+/// Grava até `at_once()` lâminas ao mesmo tempo. Se uma falha, o erro leva os arquivos que ficaram
+/// gravados (inclusive os das outras lâminas que estavam em andamento).
 fn write_all(
     ctx: &Ctx,
     jobs: &[SpreadJob],
@@ -188,13 +189,12 @@ fn write_all(
 ) -> Result<Vec<PathBuf>, ExportError> {
     let total: usize = jobs.iter().map(|j| j.names().len()).sum();
     let mut files = Vec::with_capacity(total);
-    for chunk in jobs.chunks(at_once()) {
-        let written: Vec<Result<Vec<PathBuf>, ExportError>> = chunk
-            .par_iter()
-            .map(|job| write::spread(ctx, job))
-            .collect();
-        let mut failure = None;
-        for result in written {
+    let mut failure = None;
+    in_order(
+        jobs,
+        at_once(),
+        &|job| write::spread(ctx, job),
+        &mut |result| {
             match result {
                 Ok(paths) => {
                     for path in paths {
@@ -202,15 +202,16 @@ fn write_all(
                         progress(files.len(), total);
                     }
                 }
-                Err(e) => failure = failure.or(Some(e)),
+                Err(e) => failure = failure.take().or(Some(e)),
             }
-        }
-        if let Some(source) = failure {
-            return Err(ExportError::Stopped {
-                done: files,
-                source: Box::new(source),
-            });
-        }
+            failure.is_none()
+        },
+    );
+    match failure {
+        Some(source) => Err(ExportError::Stopped {
+            done: files,
+            source: Box::new(source),
+        }),
+        None => Ok(files),
     }
-    Ok(files)
 }

@@ -6,6 +6,7 @@
 
 mod clean;
 mod export;
+mod in_order;
 mod jobs;
 mod jpeg;
 mod once;
@@ -142,6 +143,9 @@ mod fs;
 #[cfg(test)]
 #[path = "tests/je.rs"]
 mod je;
+#[cfg(test)]
+#[path = "tests/lv.rs"]
+mod lv;
 #[cfg(test)]
 #[path = "tests/op.rs"]
 mod op;

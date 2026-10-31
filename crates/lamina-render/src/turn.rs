@@ -89,12 +89,15 @@ impl Plane<'_> {
     fn sample(&self, x: f64, y: f64) -> [u8; 3] {
         let (fx, fy) = (x - 0.5, y - 0.5);
         let (x0, y0) = (fx.floor(), fy.floor());
+        // Quatro pesos por eixo, em vez de dezesseis contas por pixel (spec LV, regra 8): o
+        // resultado é o mesmo, a soma segue a mesma ordem.
+        let weights = |f: f64, start: f64| [-1.0, 0.0, 1.0, 2.0].map(|n| cubic(f - (start + n)));
+        let (wx, wy) = (weights(fx, x0), weights(fy, y0));
+        let (ix, iy) = (x0 as isize, y0 as isize);
         let mut sum = [0.0; 3];
-        for j in -1..=2 {
-            let wy = cubic(fy - (y0 + f64::from(j)));
-            for i in -1..=2 {
-                let w = cubic(fx - (x0 + f64::from(i))) * wy;
-                let p = self.at(x0 as isize + i as isize, y0 as isize + j as isize);
+        for (j, wy) in (-1..=2).zip(wy) {
+            for (i, wx) in (-1..=2).zip(wx) {
+                let (w, p) = (wx * wy, self.at(ix + i, iy + j));
                 for k in 0..3 {
                     sum[k] += w * p[k];
                 }

@@ -3,11 +3,12 @@
 //! do cache (a miniatura quando basta, a imagem de tela quando não; nunca o original).
 
 use std::collections::BTreeMap;
-use std::path::PathBuf;
-use std::sync::Arc;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use image::{Rgba, RgbaImage};
+use lamina_core::byte_cache::ByteCache;
 use lamina_core::{FrameContent, Photo, PhotoId, Project};
 use lamina_media::THUMB_SIZE;
 use lamina_render::{
@@ -31,6 +32,44 @@ pub struct RollSource {
     thumbs: BTreeMap<PhotoId, PathBuf>,
     screens: BTreeMap<PhotoId, PathBuf>,
     incomplete: AtomicBool,
+    images: Option<Arc<RollImages>>,
+}
+
+/// Quantos bytes de imagens já lidas o rolo guarda (spec LV, regra 10).
+pub const ROLL_IMAGES_BYTES: usize = 128 * 1024 * 1024;
+
+/// As imagens do cache já lidas do disco, com limite em bytes. A chave é o caminho, que já leva a
+/// impressão digital da foto: uma imagem guardada nunca fica velha.
+#[derive(Debug)]
+pub struct RollImages(Mutex<ByteCache<PathBuf, Arc<RgbaImage>>>);
+
+impl RollImages {
+    pub fn new(limit: usize) -> Self {
+        RollImages(Mutex::new(ByteCache::new(limit)))
+    }
+
+    fn locked(&self) -> MutexGuard<'_, ByteCache<PathBuf, Arc<RgbaImage>>> {
+        self.0.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    fn get(&self, path: &Path) -> Option<Arc<RgbaImage>> {
+        self.locked().get(&path.to_path_buf())
+    }
+
+    fn insert(&self, path: PathBuf, image: Arc<RgbaImage>) {
+        let bytes = image.as_raw().len();
+        self.locked().insert(path, image, bytes);
+    }
+
+    /// Outro álbum: as imagens do anterior vão embora.
+    pub fn clear(&self) {
+        self.locked().clear();
+    }
+
+    /// Quantos bytes estão guardados agora.
+    pub fn bytes(&self) -> usize {
+        self.locked().bytes()
+    }
 }
 
 impl RollSource {
@@ -59,6 +98,7 @@ impl RollSource {
             thumbs: found(&|p| cache.thumbnail(p)),
             screens,
             incomplete: AtomicBool::new(false),
+            images: None,
         }
     }
 
@@ -67,20 +107,33 @@ impl RollSource {
         self.incomplete.load(Ordering::Relaxed)
     }
 
-    fn open(path: Option<&PathBuf>) -> Option<Arc<RgbaImage>> {
-        let image = image::open(path?).ok()?;
-        Some(Arc::new(rgba(image)))
+    /// Passa a guardar as imagens lidas em `images`: pintar a mesma lâmina de novo não lê o disco.
+    pub fn sharing(mut self, images: Arc<RollImages>) -> Self {
+        self.images = Some(images);
+        self
+    }
+
+    fn open(&self, path: Option<&PathBuf>) -> Option<Arc<RgbaImage>> {
+        let path = path?;
+        if let Some(image) = self.images.as_ref().and_then(|i| i.get(path)) {
+            return Some(image);
+        }
+        let image = Arc::new(lamina_media::to_rgba(image::open(path).ok()?));
+        if let Some(images) = &self.images {
+            images.insert(path.clone(), image.clone());
+        }
+        Some(image)
     }
 }
 
 impl PhotoSource for RollSource {
     fn load(&self, photo: &Photo, needed: (u32, u32)) -> Result<Arc<RgbaImage>, String> {
         let small = needed.0.max(needed.1) <= THUMB_SIZE;
-        let thumb = || Self::open(self.thumbs.get(&photo.id));
+        let thumb = || self.open(self.thumbs.get(&photo.id));
         let best = if small || self.tier == Tier::Small {
             thumb()
         } else {
-            Self::open(self.screens.get(&photo.id)).or_else(|| {
+            self.open(self.screens.get(&photo.id)).or_else(|| {
                 self.incomplete.store(true, Ordering::Relaxed);
                 thumb()
             })
@@ -91,21 +144,6 @@ impl PhotoSource for RollSource {
             Arc::new(RgbaImage::from_pixel(GRAY_SIDE, GRAY_SIDE, gray))
         }))
     }
-}
-
-/// A imagem em RGBA. As cópias do cache são JPEG em RGB; a conversão direta leva uma fração do
-/// tempo da genérica do `image` (medido: 23 ms por imagem de tela, a maior parte do desenho).
-pub fn rgba(image: image::DynamicImage) -> RgbaImage {
-    let image::DynamicImage::ImageRgb8(rgb) = image else {
-        return image.into_rgba8();
-    };
-    let (width, height) = rgb.dimensions();
-    let mut out = vec![255_u8; rgb.as_raw().len() / 3 * 4];
-    let (dst, src) = (out.as_chunks_mut::<4>().0, rgb.as_raw().as_chunks::<3>().0);
-    for (d, s) in dst.iter_mut().zip(src) {
-        d[..3].copy_from_slice(s);
-    }
-    RgbaImage::from_raw(width, height, out).unwrap_or_default()
 }
 
 /// Uma imagem de lâmina pronta.
@@ -166,6 +204,7 @@ fn preview_side(project: &Project, width: u32) -> u32 {
 pub struct RollPainter {
     pool: Option<rayon::ThreadPool>,
     cache: Cache,
+    images: Arc<RollImages>,
 }
 
 impl RollPainter {
@@ -176,7 +215,17 @@ impl RollPainter {
             .thread_name(|i| format!("lamina-rolo-{i}"))
             .build()
             .ok();
-        RollPainter { pool, cache }
+        let images = Arc::new(RollImages::new(ROLL_IMAGES_BYTES));
+        RollPainter {
+            pool,
+            cache,
+            images,
+        }
+    }
+
+    /// As imagens guardadas, para a janela esvaziar ao trocar de álbum.
+    pub fn images(&self) -> Arc<RollImages> {
+        self.images.clone()
     }
 
     /// Roda `f` nas linhas do desenhista (o que ele paraleliza fica nelas).
@@ -195,7 +244,8 @@ impl RollPainter {
         missing: &[PhotoId],
     ) -> Result<SpreadImage, RenderError> {
         self.run(|| {
-            let source = RollSource::new(project, ask.index, &self.cache, ask.tier);
+            let source = RollSource::new(project, ask.index, &self.cache, ask.tier)
+                .sharing(self.images.clone());
             let size = ImageSize {
                 width: ask.width,
                 shown,

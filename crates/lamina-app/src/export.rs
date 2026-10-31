@@ -190,7 +190,7 @@ pub fn run(app: &mut App, overwrite: bool) {
     session.set_export_folder(&folder);
     // O que foi escolhido passa a ser a preferência do projeto (spec PR, regra 5).
     session.set_export_prefs(form(&w).prefs());
-    let project = session.project().clone();
+    let project = session.project_shared();
     w.set_show_export(false);
     w.set_busy_text("Exportando…".into());
     app.editor.set_busy(true);

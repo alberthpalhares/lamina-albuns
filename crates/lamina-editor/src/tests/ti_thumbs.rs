@@ -18,9 +18,9 @@ fn ti_b15_a_miniatura_e_a_primeira_lamina_mesmo_parado_em_outra() {
     let (project, _) = editor.thumbnail_job().unwrap();
     let thumb = thumbnail_image(&project, &base.cache()).unwrap().unwrap();
     // Só com a primeira lâmina, a miniatura é a mesma; só com a terceira, é outra.
-    let mut first = project.clone();
+    let mut first = (*project).clone();
     first.spreads.truncate(1);
-    let mut third = project.clone();
+    let mut third = (*project).clone();
     third.spreads.drain(..2);
     let cache = base.cache();
     assert_eq!(thumb, thumbnail_image(&first, &cache).unwrap().unwrap());

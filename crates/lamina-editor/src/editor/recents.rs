@@ -2,6 +2,7 @@
 //! abrir um álbum conhecido vai direto para a lâmina em que o fotógrafo parou (regras 1 e 3).
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use lamina_core::Project;
 
@@ -87,10 +88,10 @@ impl Editor {
 
     /// O que a miniatura precisa (o projeto e onde gravar), para a janela gerar fora da linha
     /// dela depois de salvar (regra 5). Nenhum quando não há arquivo ou lista em disco.
-    pub fn thumbnail_job(&self) -> Option<(Project, PathBuf)> {
+    pub fn thumbnail_job(&self) -> Option<(Arc<Project>, PathBuf)> {
         let session = self.session.as_ref()?;
         let target = self.recents.thumb_path(session.file()?)?;
-        Some((session.project().clone(), target))
+        Some((session.project_shared(), target))
     }
 
     /// Acabou de abrir: vai para a lâmina em que parou (ou a última, se hoje há menos) e põe o

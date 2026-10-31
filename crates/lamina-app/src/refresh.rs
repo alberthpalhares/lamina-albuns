@@ -101,7 +101,7 @@ impl App {
             .iter()
             .map(ToString::to_string)
             .collect();
-        let project = session.project().clone();
+        let project = session.project_shared();
         let count = session.spread_count();
         let frames = project.spreads.get(index).map_or(0, |s| s.frames.len());
         w.set_info_album(album_info(&project).into());

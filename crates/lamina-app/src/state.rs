@@ -9,7 +9,7 @@ use lamina_editor::forms::photo_text;
 use lamina_editor::motion::{photo_rows, strip_rows};
 use lamina_editor::{
     Cache, Editor, ExportCheck, Filter, PhotoItem, Session, guarded, photo_info, photo_list,
-    photos_title, prepare_images,
+    photos_title, prepare_images, same_photo_list,
 };
 use slint::{ComponentHandle, Image};
 
@@ -99,6 +99,8 @@ pub struct App {
     /// As miniaturas dos recentes já lidas, pela data do arquivo (spec TI, regra 5).
     pub(crate) seen_thumbs: std::cell::RefCell<lamina_editor::recents::ThumbCache>,
     list: Vec<PhotoItem>,
+    /// De que álbum e filtro veio `list`: mexer num quadro não refaz a lista (spec LV, regra 6).
+    list_from: Option<(std::sync::Arc<Project>, Filter)>,
     selected: Option<PhotoId>,
 }
 
@@ -151,6 +153,7 @@ impl App {
             waits: crate::waits::Waits::default(),
             seen_thumbs: std::cell::RefCell::default(),
             list: Vec::new(),
+            list_from: None,
             selected: None,
         }
     }
@@ -167,7 +170,7 @@ impl App {
             .and_then(Session::missing_message)
             .unwrap_or_default();
         if let Some(session) = self.session() {
-            let project = session.project().clone();
+            let project = session.project_shared();
             let (cache, tx) = (self.cache.clone(), self.tx.clone());
             std::thread::spawn(move || {
                 // Uma falha inesperada vai para o registro; a janela segue com o que tem.
@@ -177,6 +180,8 @@ impl App {
             });
         }
         self.images.clear();
+        crate::texts::clear();
+        crate::adjusted::clear();
         self.roll.new_album();
         self.lists.reset();
         self.refresh_all();
@@ -196,7 +201,7 @@ impl App {
 
     /// Imagens geradas no cache: as que faltavam são pedidas de novo e as miniaturas entram.
     pub fn images_ready(&mut self) {
-        if let Some(project) = self.session().map(|s| s.project().clone()) {
+        if let Some(project) = self.session().map(|s| s.project_shared()) {
             self.images.recheck(&project);
         }
         self.lists.reset();
@@ -258,7 +263,7 @@ impl App {
         };
         let rows = strip_rows(session);
         let warned: Vec<bool> = rows.iter().map(|(_, r)| r.warned).collect();
-        let (project, missing) = (session.project().clone(), session.missing().to_vec());
+        let (project, missing) = (session.project_shared(), session.missing().to_vec());
         let images = self.thumbs(&project);
         crate::roll::edited(self, &rows);
         self.lists.strip.sync(rows, |i| {
@@ -277,11 +282,18 @@ impl App {
         let Some(session) = self.session() else {
             return;
         };
-        let project = session.project().clone();
+        let project = session.project_shared();
         let title = photos_title(session, self.editor.selection().len());
         let filter = self.editor.photo_filter();
         let missing = session.missing().to_vec();
-        self.list = photo_list(&project, filter);
+        let same = self
+            .list_from
+            .as_ref()
+            .is_some_and(|(from, seen)| *seen == filter && same_photo_list(from, &project));
+        if !same {
+            self.list = photo_list(&project, filter);
+        }
+        self.list_from = Some((project.clone(), filter));
         let mut rows = photo_rows(&self.list, self.editor.selection(), filter);
         for (id, row) in &mut rows {
             row.missing = missing.contains(id);
