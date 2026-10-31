@@ -160,6 +160,7 @@ fn menu_name(menu: Menu) -> &'static str {
         Menu::File => "Arquivo",
         Menu::Edit => "Editar",
         Menu::Spread => "Lâmina",
+        Menu::Cover => "Capa",
         Menu::Layout => "Layout",
         Menu::View => "Ver",
         Menu::Help => "Ajuda",

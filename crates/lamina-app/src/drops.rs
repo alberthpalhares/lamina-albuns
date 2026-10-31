@@ -41,11 +41,16 @@ fn inside(app: &App, fx: f32, fy: f32) -> bool {
 /// lâmina atual, uma vizinha do rolo ou uma miniatura da faixa (spec ML, regras 7 e 11).
 fn frame_target(app: &App, fx: f32, fy: f32) -> Option<CrossTarget> {
     let current = app.session()?.current();
+    let on_cover = app.editor.on_cover();
     if let Some(frame) = target(app, fx, fy) {
         return Some(CrossTarget::Frame {
             spread: current,
             frame,
         });
+    }
+    // Da capa, o quadro não vai para as lâminas: a projeção só tem a capa.
+    if on_cover {
+        return None;
     }
     let roll = crate::roll_connect::neighbor_target(app, f64::from(fx), f64::from(fy));
     roll.map(|(t, _)| t).or_else(|| strip_target(app))
@@ -107,6 +112,14 @@ pub fn connect(window: &AppWindow, app: &Shared) {
             |app| app.editor.drop_photos(place, &photos),
             App::refresh_all,
         );
+        // Na capa aberta, fora dos quadros, a foto vai para a área sob o ponteiro (spec CA, regra 19).
+        if app.editor.on_cover() && target(&app, fx, fy).is_none() {
+            let photos = app.editor.drag_photos(photo);
+            if app.editor.drop_on_cover(f64::from(fx), &photos) {
+                app.refresh_all();
+            }
+            return;
+        }
         // Mais de 24 fotos na lâmina vazia: nada muda, e o aviso aparece (spec BR, regra 4).
         if !done {
             app.refresh_current();
