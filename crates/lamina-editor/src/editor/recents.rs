@@ -77,7 +77,7 @@ impl Editor {
         let Some((file, current)) = self
             .session
             .as_ref()
-            .and_then(|s| Some((s.file()?.to_path_buf(), s.current())))
+            .and_then(|s| Some((s.file()?.to_path_buf(), s.last_spread())))
         else {
             return;
         };
@@ -114,7 +114,7 @@ impl Editor {
         let Some(session) = &self.session else {
             return;
         };
-        let missing = crate::font_picker::missing_fonts(session.project());
+        let missing = crate::font_picker::missing_fonts(session.album());
         if let Some(message) = crate::font_picker::missing_fonts_notice(&missing) {
             self.notice = Some(match self.notice.take() {
                 Some(before) => format!(
@@ -141,7 +141,7 @@ fn recent_of(session: &Session) -> Option<Recent> {
         name: session.title().to_owned(),
         opened_at: now(),
         spreads: session.spread_count(),
-        photos: session.project().photos.len(),
+        photos: session.album().photos.len(),
         current: session.current(),
         pinned: false,
     })

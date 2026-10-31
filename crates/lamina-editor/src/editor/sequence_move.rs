@@ -43,7 +43,7 @@ impl Editor {
     /// O lugar de entrada na Sequência para o ponteiro em `x` (pixels da linha) e o `x` da linha
     /// que o mostra na faixa (regra 2).
     pub fn sequence_target(&self, x: f64) -> Option<(SeqSpot, f64)> {
-        let rows = timeline_rows(self.session.as_ref()?.project());
+        let rows = timeline_rows(self.session.as_ref()?.album());
         let spot = sequence_spot(&rows, x, TIMELINE)?;
         Some((spot, spot_x(&rows, spot, TIMELINE)))
     }
@@ -51,6 +51,7 @@ impl Editor {
     /// Solta a foto da posição `row` da Sequência com o ponteiro em `x` (a faixa só conhece as
     /// posições). `false`: não era uma foto, ou nada mudou.
     pub fn sequence_drop(&mut self, row: usize, x: f64) -> bool {
+        self.leave_cover();
         let Some(s) = self.session.as_ref() else {
             return false;
         };

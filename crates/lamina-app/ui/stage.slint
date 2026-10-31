@@ -2,6 +2,7 @@
 // soltar, as camadas do modo organizar e a tela de boas-vindas. Os dados chegam pela janela
 // principal (app.slint); o estado do arrastar mora no global DragUi.
 
+import { CoverUi } from "cover.slint";
 import { Theme, Fixed, Type } from "theme.slint";
 import { SpreadCanvas, SpreadData, BoxData } from "canvas.slint";
 import { EmptyAlbum } from "importing.slint";
@@ -261,6 +262,23 @@ export component Stage inherits Rectangle {
         data: root.leaving;
         guides: root.guides;
         opacity: RollUi.leaving-index >= 0 ? 1 : 1 - root.nav-e;
+    }
+    // O atalho para a capa, ao lado da lâmina 1 no rolo (spec CA, seção 4).
+    if CoverUi.roll-pill != "": Rectangle {
+        x: 12px;
+        y: (parent.height - self.height) / 2;
+        z: 2;
+        width: pill-text.preferred-width + 24px;
+        height: 32px;
+        border-radius: self.height / 2;
+        background: Theme.panel;
+        border-width: 1px;
+        border-color: Theme.line;
+        accessible-role: button;
+        accessible-label: CoverUi.roll-pill;
+        accessible-action-default => { CoverUi.pill-clicked(); }
+        pill-text := Text { text: CoverUi.roll-pill; color: Theme.text; }
+        TouchArea { clicked => { CoverUi.pill-clicked(); } }
     }
     // Sempre na árvore (some sem projeto) para o arrastar achar a posição dela.
     big := SpreadCanvas {

@@ -9,8 +9,16 @@ impl Editor {
     /// O comando de vista pode rodar agora? `None` = não é de vista.
     pub(super) fn view_available(&self, command: Command) -> Option<bool> {
         let s = self.session.as_ref()?;
-        let last = s.spread_count().saturating_sub(1);
+        let last = s.album().spreads.len().saturating_sub(1);
+        let has_spreads = !s.album().spreads.is_empty();
         let ok = match command {
+            // Com a capa aberta, → e End andam para as lâminas, Home vai para a lâmina 1 (spec CA,
+            // regra 10); na lâmina 1, ← vai para a capa.
+            Command::NextSpread | Command::LastSpread | Command::FirstSpread if s.on_cover() => {
+                has_spreads
+            }
+            Command::PreviousSpread if s.on_cover() => false,
+            Command::PreviousSpread if s.current() == 0 && s.album().cover.is_some() => true,
             Command::NextSpread | Command::LastSpread => s.current() < last,
             Command::PreviousSpread | Command::FirstSpread => s.current() > 0,
             Command::ToggleGuides | Command::ToggleReduceMotion | Command::TogglePanel => true,
@@ -69,11 +77,15 @@ impl Editor {
         let Some(s) = self.session.as_mut() else {
             return false;
         };
+        if command == Command::PreviousSpread && s.current() == 0 && !s.on_cover() {
+            return s.go_to_cover();
+        }
         let target = match command {
+            Command::NextSpread if s.on_cover() => 0,
             Command::NextSpread => s.current() + 1,
             Command::PreviousSpread => s.current().saturating_sub(1),
             Command::FirstSpread => 0,
-            Command::LastSpread => s.spread_count().saturating_sub(1),
+            Command::LastSpread => s.album().spreads.len().saturating_sub(1),
             _ => return false,
         };
         s.go_to(target)

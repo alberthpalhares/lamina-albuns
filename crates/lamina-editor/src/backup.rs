@@ -123,7 +123,7 @@ impl Backups {
                 arquivo: session.file().map(Path::to_path_buf),
                 nome: session.title().to_owned(),
                 quando: now(),
-                lamina: session.current(),
+                lamina: session.last_spread(),
             },
             key,
             project,

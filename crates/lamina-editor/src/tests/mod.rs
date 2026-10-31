@@ -13,6 +13,7 @@ mod bo;
 mod br;
 mod br_mais;
 mod br_rapido;
+mod ca;
 mod cd;
 mod common;
 mod cs;

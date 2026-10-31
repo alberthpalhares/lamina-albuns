@@ -24,6 +24,10 @@ pub enum DropPlace {
 impl Editor {
     /// Solta `photos` em `place` (uma ação, uma edição; regra 9). `false` se nada mudou.
     pub fn drop_photos(&mut self, place: DropPlace, photos: &[PhotoId]) -> bool {
+        // Uma lâmina nova é no álbum, não na capa aberta.
+        if matches!(place, DropPlace::NewSpread(_)) {
+            self.leave_cover();
+        }
         let current = self.session.as_ref().map(crate::Session::current);
         match place {
             // Na lâmina vazia do álbum em branco, as fotos viram a lâmina 1 (spec BR, regra 4).
@@ -127,6 +131,7 @@ impl Editor {
         report: &ImportReport,
         at: usize,
     ) -> Result<ImportSummary, EditorError> {
+        self.leave_cover();
         let session = self.session_mut().ok_or(EditorError::NoProject)?;
         let fresh = crate::importing::fresh_count(session.project(), report);
         let at = at.min(session.spread_count());

@@ -27,6 +27,9 @@ import { ModelNameDialog, ModelsDialog, ModelUi } from "models.slint";
 import { HistoryItem } from "history.slint";
 import { ExportDialog } from "export.slint";
 import { PresetNameDialog, PresetsDialog, PresetUi } from "spec.slint";
+import { CoverDialog, CoverUi } from "cover.slint";
+import { CoverLook } from "cover_look.slint";
+export { CoverUi, CoverLook }
 import { TimelineItem } from "timeline.slint";
 import { PhotoData } from "photo_strip.slint";
 import { UpdateBar } from "update_bar.slint";
@@ -154,6 +157,8 @@ export component AppWindow inherits Window {
     in-out property <bool> ex-pages;
     in-out property <int> ex-quality: 95;
     in-out property <int> ex-format;
+    in-out property <int> ex-cover;
+    in-out property <bool> ex-has-cover;
     in-out property <bool> ex-marks;
     in-out property <bool> ex-adobe;
     in property <string> ex-error;
@@ -383,6 +388,15 @@ export component AppWindow inherits Window {
             MenuItem { title: "Meus modelos…"; activated => { root.command("lamina.modelos"); } }
         }
         Menu {
+            title: "Capa";
+            MenuItem { title: "Criar a capa…"; enabled: root.has-project; activated => { root.command("capa.criar"); } }
+            MenuItem { title: "Ir para a capa"; enabled: root.has-project; activated => { root.command("capa.ir"); } }
+            MenuItem { title: "Medidas da capa…"; enabled: root.has-project; activated => { root.command("capa.medidas"); } }
+            MenuItem { title: "Mostrar o guia"; enabled: root.has-project; activated => { root.command("capa.guia"); } }
+            MenuSeparator { }
+            MenuItem { title: "Apagar a capa"; enabled: root.has-project; activated => { root.command("capa.apagar"); } }
+        }
+        Menu {
             title: "Layout";
             MenuItem { title: "Próximo layout  (↓)"; enabled: root.has-project; activated => { root.command("layout.proximo"); } }
             MenuItem { title: "Layout anterior  (↑)"; enabled: root.has-project; activated => { root.command("layout.anterior"); } }
@@ -430,7 +444,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(event) => {
-            if (NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || ClearUi.show || RelinkUi.show || PhotoMenuUi.show-ask || CalibrateUi.show || ShortcutsUi.show || NewsUi.show || BuildUi.show || RecoverUi.show || root.busy-text != "") {
+            if (CoverUi.open || NewProjectUi.show || root.show-confirm || root.show-message || root.show-about || root.show-export || PresetUi.show-spec || PresetUi.show-name || PresetUi.show-list || ModelUi.show-name || ModelUi.show-list || RecentsUi.show-clear || ClearUi.show || RelinkUi.show || PhotoMenuUi.show-ask || CalibrateUi.show || ShortcutsUi.show || NewsUi.show || BuildUi.show || RecoverUi.show || root.busy-text != "") {
                 return reject;
             }
             // No modo organizar, Espaço segurado é a mão (spec EG, seção 3).
@@ -618,6 +632,8 @@ export component AppWindow inherits Window {
         all-spreads <=> root.ex-all;
         range <=> root.ex-range;
         pages <=> root.ex-pages;
+        cover <=> root.ex-cover;
+        has-cover: root.ex-has-cover;
         quality <=> root.ex-quality;
         format <=> root.ex-format;
         marks <=> root.ex-marks;
@@ -640,6 +656,7 @@ export component AppWindow inherits Window {
             root.focus-main();
         }
     }
+    if CoverUi.open: CoverDialog { }
     if PresetUi.show-list: PresetsDialog { }
     if PresetUi.show-name: PresetNameDialog { }
     if ModelUi.show-name: ModelNameDialog { }
