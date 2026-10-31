@@ -90,7 +90,7 @@ fn center(start: f64, room: f64, size: f64) -> f64 {
 }
 
 /// Divide a área no bloco do destaque e na faixa de apoio, com o espaço entre eles.
-fn divide(area: Rect, support: SupportSide, gap: f64) -> (Rect, Rect) {
+pub(super) fn divide(area: Rect, support: SupportSide, gap: f64) -> (Rect, Rect) {
     let (x, y, w, h) = (
         area.x.get(),
         area.y.get(),

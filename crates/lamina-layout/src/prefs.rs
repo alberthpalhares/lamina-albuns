@@ -6,7 +6,9 @@ use std::collections::BTreeSet;
 
 use lamina_core::{Orientation, PageSide};
 
-use crate::layouts::{Align, Arrangement, Family, LayoutCandidate, PageLayout, Scope, SupportSide};
+use crate::layouts::{
+    Align, Arrangement, Family, FullBleed, LayoutCandidate, PageLayout, Scope, SupportSide,
+};
 
 /// Pontos que um favorito ganha na escolha do Auto Build (regra 8).
 pub const FAVORITE_BONUS: f64 = 10.0;
@@ -111,6 +113,30 @@ fn scope_text(scope: Scope) -> &'static str {
     }
 }
 
+fn support_text(support: SupportSide) -> &'static str {
+    match support {
+        SupportSide::Left => "esquerda",
+        SupportSide::Right => "direita",
+        SupportSide::Below => "embaixo",
+    }
+}
+
+fn full_bleed_text(format: &FullBleed) -> String {
+    match format {
+        FullBleed::Pages { left, right } => format!(
+            "semborda:paginas:E={};D={}",
+            optional(left.as_ref()),
+            optional(right.as_ref())
+        ),
+        FullBleed::Spread(layout) => format!("semborda:lamina:{}", layout_text(layout)),
+        FullBleed::Hero { support, layout } => format!(
+            "semborda:destaque:{}:{}",
+            support_text(*support),
+            layout_text(layout)
+        ),
+    }
+}
+
 fn family_text(family: &Family) -> String {
     match family {
         Family::Across => "atravessada".to_owned(),
@@ -125,11 +151,7 @@ fn family_text(family: &Family) -> String {
             support,
             layout,
         } => {
-            let support = match support {
-                SupportSide::Left => "esquerda",
-                SupportSide::Right => "direita",
-                SupportSide::Below => "embaixo",
-            };
+            let support = support_text(*support);
             let scope = scope_text(*scope);
             format!("destaque:{scope}:{support}:{}", layout_text(layout))
         }
@@ -140,6 +162,7 @@ fn family_text(family: &Family) -> String {
         Family::Mosaic { scope, layout } => {
             format!("mosaico:{}:{}", scope_text(*scope), layout_text(layout))
         }
+        Family::FullBleed(format) => full_bleed_text(format),
         Family::Model { name, mirrored } => model_key(name, *mirrored),
     }
 }

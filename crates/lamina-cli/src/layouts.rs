@@ -8,8 +8,8 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use lamina_core::{ActivePages, AlbumSpec, DesignMode, Dpi, Mm, PageSide};
 use lamina_layout::{
-    Align, Arrangement, Family, LayoutCandidate, LayoutOptions, PageLayout, Scope, SupportSide,
-    layout_options,
+    Align, Arrangement, Family, FullBleed, LayoutCandidate, LayoutOptions, PageLayout, Scope,
+    SupportSide, layout_options,
 };
 
 /// "H,V,Q,16:9" → proporções.
@@ -134,6 +134,19 @@ pub fn family_name(family: &Family) -> String {
         Family::Mosaic { scope, layout: p } => {
             format!("mosaico {}, {}", scope_name(*scope), layout(p))
         }
+        Family::FullBleed(FullBleed::Pages { left, right }) => {
+            format!(
+                "sem borda, esq. {} | dir. {}",
+                page(left.as_ref()),
+                page(right.as_ref())
+            )
+        }
+        Family::FullBleed(FullBleed::Spread(p)) => format!("sem borda, lâmina {}", layout(p)),
+        Family::FullBleed(FullBleed::Hero { support, layout: p }) => format!(
+            "sem borda, destaque com apoio {} {}",
+            support_name(*support),
+            layout(p)
+        ),
         Family::Model { name, mirrored } => {
             let e = if *mirrored { ", espelhado" } else { "" };
             format!("modelo {name}{e}")

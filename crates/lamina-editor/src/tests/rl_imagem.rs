@@ -172,6 +172,8 @@ fn rl_b24_exportacao_nao_tem_marcas_de_tela() {
     let base = Base::with_photos(4, (600, 400));
     let mut project = base.project(2);
     let id = project.spreads[0].id;
+    // Sem foto por baixo: a 1ª opção do álbum pode ir até a borda (spec SB).
+    project.spreads[0].frames.clear();
     let rect = RelRect::new(0.7, 0.7, 0.2, 0.2).unwrap();
     project.add_frame(id, rect, FrameContent::Empty).unwrap();
     let before = export_all(&project, &base.path("antes"));

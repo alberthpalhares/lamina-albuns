@@ -185,7 +185,9 @@ pub fn mirror(project: &mut Project, index: usize) -> Result<(), CoreError> {
     };
     for frame in &mut spread.frames {
         let r = frame.rect;
-        frame.rect = RelRect::new(1.0 - r.x() - r.width(), r.y(), r.width(), r.height())?;
+        // Quadro até a borda: o arredondamento pode dar uma posição um fio abaixo de zero.
+        let x = (1.0 - r.x() - r.width()).max(0.0);
+        frame.rect = RelRect::new(x, r.y(), r.width(), r.height())?;
     }
     Ok(())
 }

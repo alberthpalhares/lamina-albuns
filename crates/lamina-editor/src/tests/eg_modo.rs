@@ -5,7 +5,7 @@ use std::collections::HashSet;
 
 use lamina_core::{FrameContent, Project};
 
-use super::tl_common::{H, V, built, editor_at, spec};
+use super::tl_common::{H, V, built_whole, editor_at, spec};
 use crate::commands::Mode;
 use crate::editor::{DoubleClick, SidePanel};
 use crate::keys::{Key, Shortcut};
@@ -16,7 +16,8 @@ fn album(spreads: usize) -> Project {
     let photos: Vec<(u32, u32)> = (0..spreads * 4)
         .map(|i| if i % 4 == 3 { V } else { H })
         .collect();
-    built(spec(30.0, 30.0), &photos, spreads)
+    // Fotos inteiras: as setas precisam de espaço até as bordas do corte.
+    built_whole(spec(30.0, 30.0), &photos, spreads)
 }
 
 /// No modo organizar, numa lâmina com pelo menos quatro quadros (`index` é só o ponto de partida).
